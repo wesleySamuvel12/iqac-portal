@@ -1,0 +1,693 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import React, { useState, useEffect } from 'react'
+     4→     4→import { useAuthStore } from '@/lib/store/auth-store'
+     5→     5→import { Button } from '@/components/ui/button'
+     6→     6→import { Input } from '@/components/ui/input'
+     7→     7→import { Card, CardContent } from '@/components/ui/card'
+     8→     8→import { Badge } from '@/components/ui/badge'
+     9→     9→import { 
+    10→    10→  Building2, Mail, Lock, Eye, EyeOff, Loader2, 
+    11→    11→  LayoutDashboard, Users, GraduationCap, FileText,
+    12→    12→  BarChart3, Settings, Bell, LogOut, Menu, X,
+    13→    13→  Home, UserCheck, BookOpen, Award, TrendingUp,
+    14→    14→  CheckCircle, Clock, AlertCircle, ChevronRight,
+    15→    15→  Shield, Star, Activity, Zap, Database
+    16→    16→} from 'lucide-react'
+    17→    17→
+    18→    18→// Types
+    19→    19→interface Department {
+    20→    20→  id: string
+    21→    21→  name: string
+    22→    22→  code: string
+    23→    23→  vision?: string
+    24→    24→  mission?: string
+    25→    25→  _count?: {
+    26→    26→    faculty: number
+    27→    27→    students: number
+    28→    28→    activities: number
+    29→    29→  }
+    30→    30→}
+    31→    31→
+    32→    32→interface DashboardStats {
+    33→    33→  totalDepartments: number
+    34→    34→  totalFaculty: number
+    35→    35→  totalStudents: number
+    36→    36→  totalActivities: number
+    37→    37→  totalResearch: number
+    38→    38→  pendingApprovals: number
+    39→    39→}
+    40→    40→
+    41→    41→// ============ LOGIN PAGE ============
+    42→    42→function LoginPage() {
+    43→    43→  const [email, setEmail] = useState('')
+    44→    44→  const [password, setPassword] = useState('')
+    45→    45→  const [showPassword, setShowPassword] = useState(false)
+    46→    46→  const [isLoading, setIsLoading] = useState(false)
+    47→    47→  const [error, setError] = useState('')
+    48→    48→  const login = useAuthStore((state) => state.login)
+    49→    49→
+    50→    50→  const handleSubmit = async (e: React.FormEvent) => {
+    51→    51→    e.preventDefault()
+    52→    52→    setError('')
+    53→    53→    setIsLoading(true)
+    54→    54→
+    55→    55→    const result = await login(email, password)
+    56→    56→    
+    57→    57→    if (!result.success) {
+    58→    58→      setError(result.error || 'Login failed')
+    59→    59→    }
+    60→    60→    setIsLoading(false)
+    61→    61→  }
+    62→    62→
+    63→    63→  const quickLogin = (emailVal: string, passVal: string) => {
+    64→    64→    setEmail(emailVal)
+    65→    65→    setPassword(passVal)
+    66→    66→  }
+    67→    67→
+    68→    68→  return (
+    69→    69→    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
+    70→    70→      {/* Background Pattern */}
+    71→    71→      <div className="absolute inset-0 overflow-hidden">
+    72→    72→        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse" />
+    73→    73→        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse" style={{ animationDelay: '2s' }} />
+    74→    74→        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-pulse" style={{ animationDelay: '4s' }} />
+    75→    75→        
+    76→    76→        {/* Grid Pattern */}
+    77→    77→        <div className="absolute inset-0" style={{
+    78→    78→          backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.05) 1px, transparent 0)',
+    79→    79→          backgroundSize: '40px 40px'
+    80→    80→        }} />
+    81→    81→      </div>
+    82→    82→
+    83→    83→      <div className="relative z-10 w-full max-w-md">
+    84→    84→        {/* Logo & Header */}
+    85→    85→        <div className="text-center mb-8">
+    86→    86→          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 shadow-xl shadow-blue-500/25 mb-6">
+    87→    87→            <Building2 className="w-10 h-10 text-white" />
+    88→    88→          </div>
+    89→    89→          <h1 className="text-3xl font-bold text-gray-900 mb-2">IQAC Portal</h1>
+    90→    90→          <p className="text-gray-600 text-base">Nehru Institute of Engineering and Technology</p>
+    91→    91→          <Badge variant="secondary" className="mt-2 bg-indigo-100 text-indigo-700 border-0">Autonomous</Badge>
+    92→    92→        </div>
+    93→    93→
+    94→    94→        {/* Login Card */}
+    95→    95→        <Card className="shadow-2xl border-0 bg-white/80 backdrop-blur-xl">
+    96→    96→          <CardContent className="p-8">
+    97→    97→            {/* Error Message */}
+    98→    98→            {error && (
+    99→    99→              <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100">
+   100→   100→                <p className="text-red-700 text-sm flex items-center gap-2">
+   101→   101→                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+   102→   102→                  {error}
+   103→   103→                </p>
+   104→   104→              </div>
+   105→   105→            )}
+   106→   106→
+   107→   107→            <form onSubmit={handleSubmit} className="space-y-5">
+   108→   108→              <div className="space-y-2">
+   109→   109→                <label className="text-sm font-medium text-gray-700">Email Address</label>
+   110→   110→                <div className="relative">
+   111→   111→                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+   112→   112→                  <Input
+   113→   113→                    type="email"
+   114→   114→                    value={email}
+   115→   115→                    onChange={(e) => setEmail(e.target.value)}
+   116→   116→                    placeholder="Enter your email"
+   117→   117→                    className="pl-12 py-6 h-auto border-gray-200 bg-white/50 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl text-base"
+   118→   118→                    required
+   119→   119→                  />
+   120→   120→                </div>
+   121→   121→              </div>
+   122→   122→
+   123→   123→              <div className="space-y-2">
+   124→   124→                <label className="text-sm font-medium text-gray-700">Password</label>
+   125→   125→                <div className="relative">
+   126→   126→                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+   127→   127→                  <Input
+   128→   128→                    type={showPassword ? "text" : "password"}
+   129→   129→                    value={password}
+   130→   130→                    onChange={(e) => setPassword(e.target.value)}
+   131→   131→                    placeholder="Enter your password"
+   132→   132→                    className="pl-12 pr-12 py-6 h-auto border-gray-200 bg-white/50 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl text-base"
+   133→   133→                    required
+   134→   134→                  />
+   135→   135→                  <button
+   136→   136→                    type="button"
+   137→   137→                    onClick={() => setShowPassword(!showPassword)}
+   138→   138→                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+   139→   139→                  >
+   140→   140→                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+   141→   141→                  </button>
+   142→   142→                </div>
+   143→   143→              </div>
+   144→   144→
+   145→   145→              <Button
+   146→   146→                type="submit"
+   147→   147→                disabled={isLoading}
+   148→   148→                className="w-full py-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/25 transition-all duration-300 text-base"
+   149→   149→              >
+   150→   150→                {isLoading ? (
+   151→   151→                  <span className="flex items-center gap-2">
+   152→   152→                    <Loader2 className="w-5 h-5 animate-spin" />
+   153→   153→                    Signing in...
+   154→   154→                  </span>
+   155→   155→                ) : (
+   156→   156→                  'Sign In'
+   157→   157→                )}
+   158→   158→              </Button>
+   159→   159→            </form>
+   160→   160→
+   161→   161→            {/* Quick Login */}
+   162→   162→            <div className="mt-8 pt-6 border-t border-gray-100">
+   163→   163→              <p className="text-xs text-gray-500 text-center mb-4 uppercase tracking-wider">Quick Demo Access</p>
+   164→   164→              <div className="grid grid-cols-2 gap-3">
+   165→   165→                <button
+   166→   166→                  onClick={() => quickLogin('admin@niet.ac.in', 'admin123')}
+   167→   167→                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-50 hover:bg-blue-50 hover:text-blue-700 text-gray-600 text-sm font-medium transition-all border border-gray-100 hover:border-blue-200"
+   168→   168→                >
+   169→   169→                  <Shield className="w-4 h-4" />
+   170→   170→                  Admin
+   171→   171→                </button>
+   172→   172→                <button
+   173→   173→                  onClick={() => quickLogin('hod_cse@niet.ac.in', 'hod123')}
+   174→   174→                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-50 hover:bg-purple-50 hover:text-purple-700 text-gray-600 text-sm font-medium transition-all border border-gray-100 hover:border-purple-200"
+   175→   175→                >
+   176→   176→                  <UserCheck className="w-4 h-4" />
+   177→   177→                  HOD CSE
+   178→   178→                </button>
+   179→   179→                <button
+   180→   180→                  onClick={() => quickLogin('staff_cse1@niet.ac.in', 'staff123')}
+   181→   181→                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-50 hover:bg-green-50 hover:text-green-700 text-gray-600 text-sm font-medium transition-all border border-gray-100 hover:border-green-200"
+   182→   182→                >
+   183→   183→                  <BookOpen className="w-4 h-4" />
+   184→   184→                  Staff
+   185→   185→                </button>
+   186→   186→                <button
+   187→   187→                  onClick={() => quickLogin('student_cse1@niet.ac.in', 'student123')}
+   188→   188→                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-50 hover:bg-amber-50 hover:text-amber-700 text-gray-600 text-sm font-medium transition-all border border-gray-100 hover:border-amber-200"
+   189→   189→                >
+   190→   190→                  <GraduationCap className="w-4 h-4" />
+   191→   191→                  Student
+   192→   192→                </button>
+   193→   193→              </div>
+   194→   194→            </div>
+   195→   195→          </CardContent>
+   196→   196→        </Card>
+   197→   197→
+   198→   198→        {/* Footer */}
+   199→   199→        <p className="text-center text-gray-400 text-sm mt-6">
+   200→   200→          © 2024 NIET IQAC Management System. All rights reserved.
+   201→   201→        </p>
+   202→   202→      </div>
+   203→   203→    </div>
+   204→   204→  )
+   205→   205→}
+   206→   206→
+   207→   207→// ============ STAT CARD COMPONENT ============
+   208→   208→function StatCard({ title, value, icon: Icon, color, trend }: { 
+   209→   209→  title: string; 
+   210→   210→  value: string | number; 
+   211→   211→  icon: any; 
+   212→   212→  color: string;
+   213→   213→  trend?: string;
+   214→   214→}) {
+   215→   215→  const colorClasses: Record<string, string> = {
+   216→   216→    blue: 'from-blue-500 to-blue-600 shadow-blue-500/20',
+   217→   217→    green: 'from-emerald-500 to-emerald-600 shadow-emerald-500/20',
+   218→   218→    purple: 'from-purple-500 to-purple-600 shadow-purple-500/20',
+   219→   219→    amber: 'from-amber-500 to-amber-600 shadow-amber-500/20',
+   220→   220→    rose: 'from-rose-500 to-rose-600 shadow-rose-500/20',
+   221→   221→    indigo: 'from-indigo-500 to-indigo-600 shadow-indigo-500/20',
+   222→   222→  }
+   223→   223→
+   224→   224→  return (
+   225→   225→    <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 group overflow-hidden">
+   226→   226→      <CardContent className="p-6">
+   227→   227→        <div className="flex items-start justify-between">
+   228→   228→          <div className="space-y-3">
+   229→   229→            <p className="text-sm font-medium text-gray-500">{title}</p>
+   230→   230→            <p className="text-3xl font-bold text-gray-900">{value}</p>
+   231→   231→            {trend && (
+   232→   232→              <p className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+   233→   233→                <TrendingUp className="w-3 h-3" /> {trend}
+   234→   234→              </p>
+   235→   235→            )}
+   236→   236→          </div>
+   237→   237→          <div className={`p-3 rounded-xl bg-gradient-to-br ${colorClasses[color]} shadow-lg`}>
+   238→   238→            <Icon className="w-6 h-6 text-white" />
+   239→   239→          </div>
+   240→   240→        </div>
+   241→   241→      </CardContent>
+   242→   242→    </Card>
+   243→   243→  )
+   244→   244→}
+   245→   245→
+   246→   246→// ============ DEPARTMENT CARD ============
+   247→   247→function DeptCard({ dept }: { dept: Department }) {
+   248→   248→  return (
+   249→   249→    <Card className="border border-gray-100 hover:border-blue-200 hover:shadow-lg transition-all duration-300 group cursor-pointer overflow-hidden">
+   250→   250→      <CardContent className="p-6">
+   251→   251→        <div className="flex items-start justify-between mb-4">
+   252→   252→          <div className={`p-3 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-sm`}>
+   253→   253→            {dept.code}
+   254→   254→          </div>
+   255→   255→          <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+   256→   256→        </div>
+   257→   257→        <h3 className="font-semibold text-gray-900 mb-3 line-clamp-2 leading-snug">{dept.name}</h3>
+   258→   258→        {dept._count && (
+   259→   259→          <div className="flex items-center gap-4 text-sm text-gray-500">
+   260→   260→            <span className="flex items-center gap-1">
+   261→   261→              <Users className="w-4 h-4" /> {dept._count.faculty} Faculty
+   262→   262→            </span>
+   263→   263→            <span className="flex items-center gap-1">
+   264→   264→              <GraduationCap className="w-4 h-4" /> {dept._count.students} Students
+   265→   265→            </span>
+   266→   266→          </div>
+   267→   267→        )}
+   268→   268→      </CardContent>
+   269→   269→    </Card>
+   270→   270→  )
+   271→   271→}
+   272→   272→
+   273→   273→// ============ ADMIN DASHBOARD ============
+   274→   274→function AdminDashboard({ departments, stats }: { departments: Department[], stats: DashboardStats }) {
+   275→   275→  return (
+   276→   276→    <div className="space-y-8">
+   277→   277→      {/* Welcome Header */}
+   278→   278→      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 text-white">
+   279→   279→        <div className="flex items-center justify-between">
+   280→   280→          <div>
+   281→   281→            <h1 className="text-2xl md:text-3xl font-bold mb-2">Welcome, Administrator</h1>
+   282→   282→            <p className="text-blue-100">Here's what's happening across all departments today.</p>
+   283→   283→          </div>
+   284→   284→          <div className="hidden md:block">
+   285→   285→            <Building2 className="w-16 h-16 text-white/20" />
+   286→   286→          </div>
+   287→   287→        </div>
+   288→   288→      </div>
+   289→   289→
+   290→   290→      {/* Stats Grid */}
+   291→   291→      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+   292→   292→        <StatCard title="Departments" value={stats.totalDepartments} icon={Database} color="blue" />
+   293→   293→        <StatCard title="Faculty" value={stats.totalFaculty} icon={UserCheck} color="green" />
+   294→   294→        <StatCard title="Students" value={stats.totalStudents} icon={GraduationCap} color="purple" />
+   295→   295→        <StatCard title="Activities" value={stats.totalActivities} icon={Activity} color="amber" />
+   296→   296→        <StatCard title="Research" value={stats.totalResearch} icon={FileText} color="rose" />
+   297→   297→        <StatCard title="Pending" value={stats.pendingApprovals} icon={Clock} color="indigo" trend="Needs review" />
+   298→   298→      </div>
+   299→   299→
+   300→   300→      {/* Departments Section */}
+   301→   301→      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+   302→   302→        <div className="flex items-center justify-between mb-6">
+   303→   303→          <div>
+   304→   304→            <h2 className="text-xl font-bold text-gray-900">Departments Overview</h2>
+   305→   305→            <p className="text-sm text-gray-500 mt-1">{departments.length} academic departments</p>
+   306→   306→          </div>
+   307→   307→          <Button variant="outline" size="sm" className="rounded-lg">
+   308→   308→            View All
+   309→   309→          </Button>
+   310→   310→        </div>
+   311→   311→        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+   312→   312→          {departments.slice(0, 8).map(dept => (
+   313→   313→            <DeptCard key={dept.id} dept={dept} />
+   314→   314→          ))}
+   315→   315→        </div>
+   316→   316→      </div>
+   317→   317→
+   318→   318→      {/* Quick Actions */}
+   319→   319→      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+   320→   320→        <Card className="border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all cursor-pointer">
+   321→   321→          <CardContent className="p-6 flex items-center gap-4">
+   322→   322→            <div className="p-3 rounded-xl bg-blue-100 text-blue-600">
+   323→   323→              <UserCheck className="w-6 h-6" />
+   324→   324→            </div>
+   325→   325→            <div>
+   326→   326→              <h3 className="font-semibold text-gray-900">Manage Users</h3>
+   327→   327→              <p className="text-sm text-gray-500">Add or modify user accounts</p>
+   328→   328→            </div>
+   329→   329→          </CardContent>
+   330→   330→        </Card>
+   331→   331→        <Card className="border border-gray-100 hover:border-purple-200 hover:shadow-md transition-all cursor-pointer">
+   332→   332→          <CardContent className="p-6 flex items-center gap-4">
+   333→   333→            <div className="p-3 rounded-xl bg-purple-100 text-purple-600">
+   334→   334→              <FileText className="w-6 h-6" />
+   335→   335→            </div>
+   336→   336→            <div>
+   337→   337→              <h3 className="font-semibold text-gray-900">Approvals</h3>
+   338→   338→              <p className="text-sm text-gray-500">Review pending submissions</p>
+   339→   339→            </div>
+   340→   340→          </CardContent>
+   341→   341→        </Card>
+   342→   342→        <Card className="border border-gray-100 hover:border-emerald-200 hover:shadow-md transition-all cursor-pointer">
+   343→   343→          <CardContent className="p-6 flex items-center gap-4">
+   344→   344→            <div className="p-3 rounded-xl bg-emerald-100 text-emerald-600">
+   345→   345→              <BarChart3 className="w-6 h-6" />
+   346→   346→            </div>
+   347→   347→            <div>
+   348→   348→              <h3 className="font-semibold text-gray-900">Analytics</h3>
+   349→   349→              <p className="text-sm text-gray-500">View reports and insights</p>
+   350→   350→            </div>
+   351→   351→          </CardContent>
+   352→   352→        </Card>
+   353→   353→      </div>
+   354→   354→    </div>
+   355→   355→  )
+   356→   356→}
+   357→   357→
+   358→   358→// ============ HOD DASHBOARD ============
+   359→   359→function HODDashboard({ department }: { department: any }) {
+   360→   360→  return (
+   361→   361→    <div className="space-y-8">
+   362→   362→      <div className="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-2xl p-8 text-white">
+   363→   363→        <h1 className="text-2xl md:text-3xl font-bold mb-2">Department Dashboard</h1>
+   364→   364→        <p className="text-purple-100">{department?.name || 'My Department'} - Management View</p>
+   365→   365→      </div>
+   366→   366→
+   367→   367→      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   368→   368→        <StatCard title="Faculty" value="12" icon={UserCheck} color="green" />
+   369→   369→        <StatCard title="Students" value="156" icon={GraduationCap} color="purple" />
+   370→   370→        <StatCard title="Activities" value="24" icon={Activity} color="blue" />
+   371→   371→        <StatCard title="Research" value="18" icon={FileText} color="amber" />
+   372→   372→      </div>
+   373→   373→
+   374→   374→      <Card className="border border-gray-100 p-6">
+   375→   375→        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activities</h2>
+   376→   376→        <div className="space-y-4">
+   377→   377→          {[1,2,3].map(i => (
+   378→   378→            <div key={i} className="flex items-center gap-4 p-4 rounded-xl bg-gray-50">
+   379→   379→              <div className="p-2 rounded-lg bg-blue-100"><Activity className="w-5 h-5 text-blue-600"/></div>
+   380→   380→              <div className="flex-1">
+   381→   381→                <p className="font-medium text-gray-900">Department Activity #{i}</p>
+   382→   382→                <p className="text-sm text-gray-500">Status: {i === 1 ? 'Completed' : i === 2 ? 'Ongoing' : 'Planned'}</p>
+   383→   383→              </div>
+   384→   384→              <Badge variant={i === 1 ? 'default' : 'secondary'}>{i === 1 ? 'Done' : i === 2 ? 'Active' : 'Pending'}</Badge>
+   385→   385→            </div>
+   386→   386→          ))}
+   387→   387→        </div>
+   388→   388→      </Card>
+   389→   389→    </div>
+   390→   390→  )
+   391→   391→}
+   392→   392→
+   393→   393→// ============ STAFF DASHBOARD ============
+   394→   394→function StaffDashboard({ user }: { user: any }) {
+   395→   395→  return (
+   396→   396→    <div className="space-y-8">
+   397→   397→      <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-2xl p-8 text-white">
+   398→   398→        <h1 className="text-2xl md:text-3xl font-bold mb-2">Welcome, {user?.name || 'Staff Member'}</h1>
+   399→   399→        <p className="text-emerald-100">Your personal dashboard and activity tracker</p>
+   400→   400→      </div>
+   401→   401→
+   402→   402→      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   403→   403→        <StatCard title="My Activities" value="8" icon={Activity} color="blue" />
+   404→   404→        <StatCard title="Publications" value="5" icon={FileText} color="purple" />
+   405→   405→        <StatCard title="Certifications" value="3" icon={Award} color="amber" />
+   406→   406→        <StatCard title="Hours Logged" value="128" icon={Clock} color="green" />
+   407→   407→      </div>
+   408→   408→
+   409→   409→      <Card className="border border-gray-100 p-6">
+   410→   410→        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+   411→   411→        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+   412→   412→          {['Add Activity', 'Submit Research', 'Upload Document', 'View Reports'].map(action => (
+   413→   413→            <button key={action} className="p-4 rounded-xl border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 text-sm font-medium text-gray-700 hover:text-emerald-700 transition-all">
+   414→   414→              + {action}
+   415→   415→            </button>
+   416→   416→          ))}
+   417→   417→        </div>
+   418→   418→      </Card>
+   419→   419→    </div>
+   420→   420→  )
+   421→   421→}
+   422→   422→
+   423→   423→// ============ STUDENT DASHBOARD ============
+   424→   424→function StudentDashboard({ user }: { user: any }) {
+   425→   425→  return (
+   426→   426→    <div className="space-y-8">
+   427→   427→      <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl p-8 text-white">
+   428→   428→        <h1 className="text-2xl md:text-3xl font-bold mb-2">Student Portal</h1>
+   429→   429→        <p className="text-amber-100">Welcome, {user?.name || 'Student'}</p>
+   430→   430→      </div>
+   431→   431→
+   432→   432→      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   433→   433→        <StatCard title="CGPA" value="8.5" icon={Star} color="amber" />
+   434→   434→        <StatCard title="Attendance" value="92%" icon={CheckCircle} color="green" />
+   435→   435→        <StatCard title="Courses" value="6" icon={BookOpen} color="blue" />
+   436→   436→        <StatCard title="Achievements" value="4" icon={Award} color="purple" />
+   437→   437→      </div>
+   438→   438→
+   439→   439→      <Card className="border border-gray-100 p-6">
+   440→   440→        <h2 className="text-lg font-semibold text-gray-900 mb-4">My Submissions</h2>
+   441→   441→        <div className="space-y-3">
+   442→   442→          {[
+   443→   443→            { name: 'Project Report', status: 'Approved', color: 'emerald' },
+   444→   444→            { name: 'Internship Certificate', status: 'Pending', color: 'amber' },
+   445→   445→            { name: 'Course Feedback', status: 'Draft', color: 'gray' },
+   446→   446→          ].map((item, i) => (
+   447→   447→            <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-gray-50">
+   448→   448→              <span className="font-medium text-gray-900">{item.name}</span>
+   449→   449→              <Badge variant="outline" className={`border-${item.color}-300 text-${item.color}-700`}>{item.status}</Badge>
+   450→   450→            </div>
+   451→   451→          ))}
+   452→   452→        </div>
+   453→   453→      </Card>
+   454→   454→    </div>
+   455→   455→  )
+   456→   456→}
+   457→   457→
+   458→   458→// ============ SIDEBAR ============
+   459→   459→function Sidebar({ isOpen, onClose, activeTab, setActiveTab, userRole }: {
+   460→   460→  isOpen: boolean;
+   461→   461→  onClose: () => void;
+   462→   462→  activeTab: string;
+   463→   463→  setActiveTab: (tab: string) => void;
+   464→   464→  userRole: string;
+   465→   465→}) {
+   466→   466→  const menuItems = [
+   467→   467→    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+   468→   468→    { id: 'departments', label: 'Departments', icon: Database },
+   469→   469→    { id: 'faculty', label: 'Faculty', icon: Users },
+   470→   470→    { id: 'students', label: 'Students', icon: GraduationCap },
+   471→   471→    { id: 'activities', label: 'Activities', icon: Activity },
+   472→   472→    { id: 'research', label: 'Research', icon: FileText },
+   473→   473→    { id: 'approvals', label: 'Approvals', icon: CheckCircle },
+   474→   474→    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+   475→   475→    { id: 'documents', label: 'Documents', icon: Database },
+   476→   476→    { id: 'settings', label: 'Settings', icon: Settings },
+   477→   477→  ]
+   478→   478→
+   479→   479→  // Filter menu based on role
+   480→   480→  const filteredMenu = userRole === 'ADMIN' ? menuItems : 
+   481→   481→                       userRole === 'HOD' ? menuItems.filter(m => ['dashboard','faculty','students','activities','research','approvals','analytics'].includes(m.id)) :
+   482→   482→                       userRole === 'STAFF' ? menuItems.filter(m => ['dashboard','activities','research','documents'].includes(m.id)) :
+   483→   483→                       ['dashboard', 'activities', 'documents'].map(id => menuItems.find(m => m.id === id)!).filter(Boolean)
+   484→   484→
+   485→   485→  return (
+   486→   486→    <>
+   487→   487→      {/* Overlay */}
+   488→   488→      {isOpen && (
+   489→   489→        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden" onClick={onClose} />
+   490→   490→      )}
+   491→   491→      
+   492→   492→      {/* Sidebar */}
+   493→   493→      <aside className={`fixed top-0 left-0 z-50 h-full w-72 bg-white border-r border-gray-100 shadow-xl transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+   494→   494→        <div className="flex flex-col h-full">
+   495→   495→          {/* Logo */}
+   496→   496→          <div className="p-6 border-b border-gray-100">
+   497→   497→            <div className="flex items-center gap-3">
+   498→   498→              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center">
+   499→   499→                <Building2 className="w-5 h-5 text-white" />
+   500→   500→              </div>
+   501→   501→              <div>
+   502→   502→                <h1 className="font-bold text-gray-900">IQAC Portal</h1>
+   503→   503→                <p className="text-xs text-gray-500">NIET Management System</p>
+   504→   504→              </div>
+   505→   505→            </div>
+   506→   506→          </div>
+   507→   507→
+   508→   508→          {/* Navigation */}
+   509→   509→          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+   510→   510→            {filteredMenu.map(item => (
+   511→   511→              <button
+   512→   512→                key={item.id}
+   513→   513→                onClick={() => { setActiveTab(item.id); onClose(); }}
+   514→   514→                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all ${
+   515→   515→                  activeTab === item.id 
+   516→   516→                    ? 'bg-blue-50 text-blue-700 font-medium' 
+   517→   517→                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+   518→   518→                }`}
+   519→   519→              >
+   520→   520→                <item.icon className="w-5 h-5" />
+   521→   521→                {item.label}
+   522→   522→              </button>
+   523→   523→            ))}
+   524→   524→          </nav>
+   525→   525→
+   526→   526→          {/* Footer */}
+   527→   527→          <div className="p-4 border-t border-gray-100">
+   528→   528→            <div className="px-4 py-3 rounded-xl bg-gray-50">
+   529→   529→              <p className="text-xs text-gray-500">Need help?</p>
+   530→   530→              <p className="text-sm font-medium text-gray-900">Contact IT Support</p>
+   531→   531→            </div>
+   532→   532→          </div>
+   533→   533→        </div>
+   534→   534→      </aside>
+   535→   535→    </>
+   536→   536→  )
+   537→   537→}
+   538→   538→
+   539→   539→// ============ MAIN APP ============
+   540→   540→export default function IQACPortal() {
+   541→   541→  const { user, isAuthenticated, isLoading, logout } = useAuthStore()
+   542→   542→  const [activeTab, setActiveTab] = useState('dashboard')
+   543→   543→  const [sidebarOpen, setSidebarOpen] = useState(false)
+   544→   544→  const [departments, setDepartments] = useState<Department[]>([])
+   545→   545→  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
+   546→   546→
+   547→   547→  // Fetch data when authenticated
+   548→   548→  useEffect(() => {
+   549→   549→    if (!isAuthenticated) return
+   550→   550→    
+   551→   551→    let isMounted = true
+   552→   552→    
+   553→   553→    const loadData = async () => {
+   554→   554→      try {
+   555→   555→        const [deptRes, dashRes] = await Promise.all([
+   556→   556→          fetch('/api/departments'),
+   557→   557→          fetch('/api/dashboard')
+   558→   558→        ])
+   559→   559→        
+   560→   560→        if (isMounted) {
+   561→   561→          const deptData = await deptRes.json()
+   562→   562→          if (deptData.success) setDepartments(deptData.departments)
+   563→   563→          
+   564→   564→          const dashData = await dashRes.json()
+   565→   565→          if (dashData.success) setDashboardStats(dashData.data.stats)
+   566→   566→        }
+   567→   567→      } catch (error) {
+   568→   568→        console.error('Error loading data:', error)
+   569→   569→      }
+   570→   570→    }
+   571→   571→    
+   572→   572→    loadData()
+   573→   573→    return () => { isMounted = false }
+   574→   574→  }, [isAuthenticated])
+   575→   575→
+   576→   576→  // Loading State
+   577→   577→  if (isLoading) {
+   578→   578→    return (
+   579→   579→      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+   580→   580→        <div className="text-center">
+   581→   581→          <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+   582→   582→          <p className="text-gray-600 font-medium">Loading...</p>
+   583→   583→        </div>
+   584→   584→      </div>
+   585→   585→    )
+   586→   586→  }
+   587→   587→
+   588→   588→  // Show login if not authenticated
+   589→   589→  if (!isAuthenticated || !user) {
+   590→   590→    return <LoginPage />
+   591→   591→  }
+   592→   592→
+   593→   593→  // Default stats if not loaded
+   594→   594→  const defaultStats: DashboardStats = {
+   595→   595→    totalDepartments: departments.length,
+   596→   596→    totalFaculty: 120,
+   597→   597→    totalStudents: 1500,
+   598→   598→    totalActivities: 45,
+   599→   599→    totalResearch: 32,
+   600→   600→    pendingApprovals: 8,
+   601→   601→  }
+   602→   602→  
+   603→   603→  const stats = dashboardStats || defaultStats
+   604→   604→
+   605→   605→  // Render dashboard by role
+   606→   606→  const renderDashboard = () => {
+   607→   607→    switch (user.role) {
+   608→   608→      case 'ADMIN':
+   609→   609→        return <AdminDashboard departments={departments} stats={stats} />
+   610→   610→      case 'HOD':
+   611→   611→        return <HODDashboard department={departments.find(d => d.id === user.departmentId)} />
+   612→   612→      case 'STAFF':
+   613→   613→        return <StaffDashboard user={user} />
+   614→   614→      case 'STUDENT':
+   615→   615→        return <StudentDashboard user={user} />
+   616→   616→      default:
+   617→   617→        return <AdminDashboard departments={departments} stats={stats} />
+   618→   618→    }
+   619→   619→  }
+   620→   620→
+   621→   621→  return (
+   622→   622→    <div className="min-h-screen bg-gray-50">
+   623→   623→      <Sidebar
+   624→   624→        isOpen={sidebarOpen}
+   625→   625→        onClose={() => setSidebarOpen(false)}
+   626→   626→        activeTab={activeTab}
+   627→   627→        setActiveTab={setActiveTab}
+   628→   628→        userRole={user.role}
+   629→   629→      />
+   630→   630→
+   631→   631→      <div className="lg:ml-72 min-h-screen flex flex-col">
+   632→   632→        {/* Top Bar */}
+   633→   633→        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+   634→   634→          <div className="flex items-center justify-between px-6 py-4">
+   635→   635→            <div className="flex items-center gap-4">
+   636→   636→              <button
+   637→   637→                onClick={() => setSidebarOpen(true)}
+   638→   638→                className="lg:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+   639→   639→              >
+   640→   640→                <Menu className="w-6 h-6" />
+   641→   641→              </button>
+   642→   642→              <div className="hidden sm:flex items-center gap-2 text-sm text-gray-500">
+   643→   643→                <Home className="w-4 h-4" />
+   644→   644→                <span>/</span>
+   645→   645→                <span className="text-gray-900 capitalize font-medium">{activeTab}</span>
+   646→   646→              </div>
+   647→   647→            </div>
+   648→   648→
+   649→   649→            <div className="flex items-center gap-3">
+   650→   650→              {/* Notifications */}
+   651→   651→              <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+   652→   652→                <Bell className="w-5 h-5" />
+   653→   653→                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+   654→   654→              </button>
+   655→   655→
+   656→   656→              {/* Profile */}
+   657→   657→              <div className="flex items-center gap-3 pl-3 border-l border-gray-200">
+   658→   658→                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm">
+   659→   659→                  {user.name.charAt(0)}
+   660→   660→                </div>
+   661→   661→                <div className="hidden sm:block">
+   662→   662→                  <p className="text-sm font-medium text-gray-900">{user.name}</p>
+   663→   663→                  <p className="text-xs text-gray-500 capitalize">{user.role.toLowerCase()}</p>
+   664→   664→                </div>
+   665→   665→                <button
+   666→   666→                  onClick={logout}
+   667→   667→                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+   668→   668→                  title="Logout"
+   669→   669→                >
+   670→   670→                  <LogOut className="w-4 h-4" />
+   671→   671→                </button>
+   672→   672→              </div>
+   673→   673→            </div>
+   674→   674→          </div>
+   675→   675→        </header>
+   676→   676→
+   677→   677→        {/* Main Content */}
+   678→   678→        <main className="flex-1 p-6">
+   679→   679→          {renderDashboard()}
+   680→   680→        </main>
+   681→   681→
+   682→   682→        {/* Footer */}
+   683→   683→        <footer className="py-4 px-6 border-t border-gray-100 bg-white">
+   684→   684→          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-gray-500">
+   685→   685→            <p>© 2024 NIET IQAC Enterprise Management System</p>
+   686→   686→            <p>Nehru Institute of Engineering and Technology (Autonomous)</p>
+   687→   687→          </div>
+   688→   688→        </footer>
+   689→   689→      </div>
+   690→   690→    </div>
+   691→   691→  )
+   692→   692→}
+   693→   693→
