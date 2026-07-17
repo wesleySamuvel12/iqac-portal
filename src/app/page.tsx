@@ -200,14 +200,14 @@ function LoginPage() {
                   HOD CSE
                 </button>
                 <button
-                  onClick={() => quickLogin('staff_cse1@niet.ac.in', 'staff123')}
-                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-emerald-500/20 text-emerald-200 hover:text-white text-sm font-medium transition-all border border-white/10 hover:border-emerald-400/30"
+                  onClick={() => quickLogin('staff@niet.ac.in', 'staff123')}
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-green-500/20 text-green-200 hover:text-white text-sm font-medium transition-all border border-white/10 hover:border-green-400/30"
                 >
                   <BookOpen className="w-4 h-4" />
                   Staff
                 </button>
                 <button
-                  onClick={() => quickLogin('student_cse1@niet.ac.in', 'student123')}
+                  onClick={() => quickLogin('student@niet.ac.in', 'student123')}
                   className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-amber-500/20 text-amber-200 hover:text-white text-sm font-medium transition-all border border-white/10 hover:border-amber-400/30"
                 >
                   <GraduationCap className="w-4 h-4" />
@@ -218,53 +218,45 @@ function LoginPage() {
           </CardContent>
         </Card>
 
-        {/* Footer */}
-        <p className="text-center text-blue-300/50 text-sm mt-8">
-          © 2024 NIET IQAC Management System. All rights reserved.
+        <p className="text-center mt-6 text-blue-300/60 text-xs">
+          Secure Authentication System • NAAC Accredited Institution
         </p>
       </div>
     </div>
   )
 }
 
-// ============ STAT CARD COMPONENT ============
-function StatCard({ title, value, icon: Icon, color, trend, subtitle }: { 
+// ============ STAT CARD ============
+function StatCard({ title, value, icon: Icon, trend, color = "blue" }: { 
   title: string; 
   value: string | number; 
   icon: React.ElementType; 
-  color: string;
   trend?: string;
-  subtitle?: string;
+  color?: "blue" | "green" | "purple" | "orange" | "red" | "pink";
 }) {
-  const colorConfig: Record<string, { gradient: string; shadow: string; bg: string }> = {
-    blue: { gradient: 'from-blue-500 to-blue-600', shadow: 'shadow-blue-500/30', bg: 'bg-blue-50' },
-    green: { gradient: 'from-emerald-500 to-emerald-600', shadow: 'shadow-emerald-500/30', bg: 'bg-emerald-50' },
-    purple: { gradient: 'from-purple-500 to-purple-600', shadow: 'shadow-purple-500/30', bg: 'bg-purple-50' },
-    amber: { gradient: 'from-amber-500 to-amber-600', shadow: 'shadow-amber-500/30', bg: 'bg-amber-50' },
-    rose: { gradient: 'from-rose-500 to-rose-600', shadow: 'shadow-rose-500/30', bg: 'bg-rose-50' },
-    indigo: { gradient: 'from-indigo-500 to-indigo-600', shadow: 'shadow-indigo-500/30', bg: 'bg-indigo-50' },
-    cyan: { gradient: 'from-cyan-500 to-cyan-600', shadow: 'shadow-cyan-500/30', bg: 'bg-cyan-50' },
+  const colorClasses = {
+    blue: "from-blue-500 to-blue-600 shadow-blue-500/25",
+    green: "from-emerald-500 to-emerald-600 shadow-emerald-500/25",
+    purple: "from-violet-500 to-violet-600 shadow-violet-500/25",
+    orange: "from-orange-500 to-orange-600 shadow-orange-500/25",
+    red: "from-red-500 to-red-600 shadow-red-500/25",
+    pink: "from-pink-500 to-pink-600 shadow-pink-500/25",
   }
 
-  const config = colorConfig[color] || colorConfig.blue
-
   return (
-    <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 group overflow-hidden bg-white">
-      <CardContent className="p-6">
+    <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm overflow-hidden">
+      <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">{title}</p>
+            <p className="text-sm font-medium text-gray-500">{title}</p>
             <p className="text-3xl font-bold text-gray-900">{value}</p>
-            {subtitle && (
-              <p className="text-xs text-gray-400">{subtitle}</p>
-            )}
             {trend && (
-              <p className="text-xs text-emerald-600 font-medium flex items-center gap-1 mt-1">
+              <p className="text-xs text-emerald-600 flex items-center gap-1">
                 <TrendingUp className="w-3 h-3" /> {trend}
               </p>
             )}
           </div>
-          <div className={`p-3 rounded-xl bg-gradient-to-br ${config.gradient} shadow-lg ${config.shadow}`}>
+          <div className={`p-3 rounded-xl bg-gradient-to-br ${colorClasses[color]} shadow-lg`}>
             <Icon className="w-6 h-6 text-white" />
           </div>
         </div>
@@ -274,350 +266,232 @@ function StatCard({ title, value, icon: Icon, color, trend, subtitle }: {
 }
 
 // ============ DEPARTMENT CARD ============
-function DeptCard({ dept, onClick }: { dept: Department; onClick?: () => void }) {
+function DeptCard({ dept }: { dept: Department }) {
   return (
-    <Card 
-      className="border border-gray-100 hover:border-blue-300 hover:shadow-xl transition-all duration-300 group cursor-pointer overflow-hidden bg-white"
-      onClick={onClick}
-    >
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className={`p-3 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-sm shadow-lg`}>
-            {dept.code}
-          </div>
-          <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all duration-300" />
-        </div>
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1">{dept.name}</h3>
-        {dept.hod && (
-          <p className="text-sm text-gray-500 mb-3">HOD: {dept.hod}</p>
-        )}
-        <div className="flex items-center gap-4 text-sm text-gray-500 pt-3 border-t border-gray-100">
-          <span className="flex items-center gap-1">
-            <Users className="w-4 h-4 text-blue-500" /> 
-            <span className="font-medium text-gray-700">{dept.facultyCount || 0}</span> Faculty
-          </span>
-          <span className="flex items-center gap-1">
-            <GraduationCap className="w-4 h-4 text-purple-500" /> 
-            <span className="font-medium text-gray-700">{dept.studentCount || 0}</span> Students
-          </span>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-// ============ ACTIVITY CARD ============
-function ActivityCard({ activity }: { activity: any }) {
-  return (
-    <Card className="border border-gray-100 hover:shadow-md transition-all bg-white">
+    <Card className="group hover:shadow-xl transition-all duration-300 border border-gray-100 bg-white overflow-hidden">
       <CardContent className="p-5">
-        <div className="flex items-start gap-4">
-          <div className="p-2.5 rounded-xl bg-blue-50">
-            <Activity className="w-5 h-5 text-blue-600" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-gray-900 truncate">{activity.title || 'Department Activity'}</h4>
-            <p className="text-sm text-gray-500 mt-1">{activity.description || 'Activity description'}</p>
-            <div className="flex items-center gap-3 mt-3">
-              <Badge variant={activity.status === 'Completed' ? 'default' : 'secondary'} 
-                     className={activity.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}>
-                {activity.status || 'Pending'}
-              </Badge>
-              <span className="text-xs text-gray-400">{activity.date || 'Today'}</span>
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20">
+              {dept.code?.substring(0, 2) || 'DE'}
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{dept.name}</h3>
+              <p className="text-sm text-gray-500">{dept.code}</p>
             </div>
           </div>
+          <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
+            Active
+          </Badge>
         </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-// ============ ACTION CARD ============
-function ActionCard({ title, description, icon: Icon, color, onClick }: {
-  title: string;
-  description: string;
-  icon: React.ElementType;
-  color: string;
-  onClick: () => void;
-}) {
-  const colors: Record<string, string> = {
-    blue: 'hover:bg-blue-50 hover:border-blue-200 group-hover:text-blue-600',
-    purple: 'hover:bg-purple-50 hover:border-purple-200 group-hover:text-purple-600',
-    green: 'hover:bg-emerald-50 hover:border-emerald-200 group-hover:text-emerald-600',
-    amber: 'hover:bg-amber-50 hover:border-amber-200 group-hover:text-amber-600',
-    rose: 'hover:bg-rose-50 hover:border-rose-200 group-hover:text-rose-600',
-  }
-
-  const iconColors: Record<string, string> = {
-    blue: 'bg-blue-100 text-blue-600',
-    purple: 'bg-purple-100 text-purple-600',
-    green: 'bg-emerald-100 text-emerald-600',
-    amber: 'bg-amber-100 text-amber-600',
-    rose: 'bg-rose-100 text-rose-600',
-  }
-
-  return (
-    <Card 
-      className={`border border-gray-100 hover:shadow-lg transition-all cursor-pointer group ${colors[color] || colors.blue}`}
-      onClick={onClick}
-    >
-      <CardContent className="p-6 flex items-center gap-4">
-        <div className={`p-3 rounded-xl ${iconColors[color] || iconColors.blue}`}>
-          <Icon className="w-6 h-6" />
+        
+        <div className="grid grid-cols-3 gap-3 mt-4">
+          <div className="text-center p-2 rounded-lg bg-blue-50/50">
+            <p className="text-lg font-bold text-blue-700">{dept.facultyCount || 0}</p>
+            <p className="text-xs text-gray-500">Faculty</p>
+          </div>
+          <div className="text-center p-2 rounded-lg bg-purple-50/50">
+            <p className="text-lg font-bold text-purple-700">{dept.studentCount || 0}</p>
+            <p className="text-xs text-gray-500">Students</p>
+          </div>
+          <div className="text-center p-2 rounded-lg bg-amber-50/50">
+            <p className="text-lg font-bold text-amber-700">{dept.activityCount || 0}</p>
+            <p className="text-xs text-gray-500">Activities</p>
+          </div>
         </div>
-        <div className="flex-1">
-          <h3 className="font-semibold text-gray-900 group-transition-colors">{title}</h3>
-          <p className="text-sm text-gray-500 mt-0.5">{description}</p>
-        </div>
-        <ArrowRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 group-hover:text-current transition-all" />
       </CardContent>
     </Card>
   )
 }
 
 // ============ DATA TABLE ============
-function DataTable({ 
-  data, 
-  columns, 
-  title,
-  onAdd,
-  onEdit,
-  onDelete,
-  onExport
-}: {
-  data: any[];
-  columns: { key: string; label: string; render?: (val: any) => React.ReactNode }[];
-  title: string;
-  onAdd?: () => void;
-  onEdit?: (item: any) => void;
-  onDelete?: (item: any) => void;
-  onExport?: () => void;
-}) {
-  const [searchTerm, setSearchTerm] = useState('')
-  
-  const filteredData = data.filter(item =>
-    Object.values(item).some(val =>
-      String(val).toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  )
-
+function DataTable({ data, columns }: { data: any[]; columns: { key: string; label: string }[] }) {
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h2 className="text-xl font-bold text-gray-900">{title}</h2>
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-64"
-            />
-          </div>
-          {onExport && (
-            <Button variant="outline" size="sm" onClick={onExport}>
-              <Download className="w-4 h-4 mr-2" />
-              Export
-            </Button>
-          )}
-          {onAdd && (
-            <Button size="sm" onClick={onAdd}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add New
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Table */}
-      <Card className="border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-100">
+    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              {columns.map(col => (
+                <th key={col.key} className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  {col.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {data.map((row, idx) => (
+              <tr key={idx} className="hover:bg-gray-50 transition-colors">
                 {columns.map(col => (
-                  <th key={col.key} className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    {col.label}
-                  </th>
-                ))}
-                {(onEdit || onDelete) && (
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredData.length > 0 ? filteredData.map((item, idx) => (
-                <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                  {columns.map(col => (
-                    <td key={col.key} className="px-6 py-4 text-sm text-gray-700">
-                      {col.render ? col.render(item[col.key]) : item[col.key]}
-                    </td>
-                  ))}
-                  {(onEdit || onDelete) && (
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {onEdit && (
-                          <Button variant="ghost" size="sm" onClick={() => onEdit(item)}>
-                            <Edit3 className="w-4 h-4" />
-                          </Button>
-                        )}
-                        {onDelete && (
-                          <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700" onClick={() => onDelete(item)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              )) : (
-                <tr>
-                  <td colSpan={columns.length + 1} className="px-6 py-12 text-center text-gray-500">
-                    <div className="flex flex-col items-center">
-                      <Database className="w-12 h-12 text-gray-300 mb-3" />
-                      <p>No data found</p>
-                    </div>
+                  <td key={col.key} className="px-6 py-4 text-sm text-gray-700">
+                    {row[col.key] ?? '-'}
                   </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {data.length === 0 && (
+        <div className="text-center py-12 text-gray-500">
+          No data available
         </div>
-      </Card>
+      )}
     </div>
   )
 }
 
-// ============ DASHBOARD CONTENT BY ROLE ============
-function DashboardContent({ user, departments, stats, setActiveTab }: {
-  user: User;
-  departments: Department[];
-  stats: DashboardStats;
-  setActiveTab: (tab: TabType) => void;
+// ============ ACTION CARD ============
+function ActionCard({ icon: Icon, title, description, color, onClick }: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  color: string;
+  onClick?: () => void;
 }) {
+  return (
+    <Card 
+      className="group cursor-pointer hover:shadow-xl transition-all duration-300 border border-gray-100 bg-white overflow-hidden"
+      onClick={onClick}
+    >
+      <CardContent className="p-6">
+        <div className={`w-14 h-14 rounded-2xl ${color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg`}>
+          <Icon className="w-7 h-7 text-white" />
+        </div>
+        <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">{title}</h3>
+        <p className="text-sm text-gray-500 leading-relaxed">{description}</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ============ DASHBOARD CONTENT ============
+function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (tab: TabType) => void }) {
+  const [stats, setStats] = useState<DashboardStats>({
+    totalDepartments: 0,
+    totalFaculty: 0,
+    totalStudents: 0,
+    totalActivities: 0,
+    totalResearch: 0,
+    pendingApprovals: 0
+  })
+  const [recentActivities, setRecentActivities] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchDashboardData()
+  }, [])
+
+  const fetchDashboardData = async () => {
+    try {
+      const res = await fetch('/api/dashboard')
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success) {
+          setStats(data.data.stats)
+          setRecentActivities(data.data.recentActivities || [])
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    )
+  }
+
   // Admin Dashboard
   if (user.role === 'ADMIN') {
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
         {/* Welcome Banner */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-8 text-white">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-          
-          <div className="relative z-10 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-2">Welcome back, Administrator</h1>
-              <p className="text-blue-100 text-lg">Here's what's happening across all departments today.</p>
-              <div className="flex items-center gap-4 mt-6">
-                <Button variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-0">
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Refresh Data
-                </Button>
-                <Button variant="outline" className="border-white/30 text-white hover:bg-white/10" onClick={() => setActiveTab('analytics')}>
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  View Analytics
-                </Button>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl" />
+          <div className="relative z-10">
+            <h2 className="text-2xl md:text-3xl font-bold mb-2">Welcome back, {user.name}!</h2>
+            <p className="text-blue-100 text-lg">Here's what's happening across the institution today.</p>
+            <div className="flex flex-wrap gap-4 mt-6">
+              <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3">
+                <p className="text-2xl font-bold">{stats.pendingApprovals}</p>
+                <p className="text-sm text-blue-100">Pending Approvals</p>
               </div>
-            </div>
-            <div className="hidden lg:block">
-              <Building2 className="w-32 h-32 text-white/10" />
+              <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3">
+                <p className="text-2xl font-bold">{stats.totalActivities}</p>
+                <p className="text-sm text-blue-100">Activities This Month</p>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          <StatCard title="Departments" value={stats.totalDepartments} icon={Database} color="blue" subtitle="Total academic units" />
-          <StatCard title="Faculty" value={stats.totalFaculty} icon={UserCheck} color="green" subtitle="Teaching staff" />
-          <StatCard title="Students" value={stats.totalStudents} icon={GraduationCap} color="purple" subtitle="Enrolled students" />
-          <StatCard title="Activities" value={stats.totalActivities} icon={Activity} color="amber" subtitle="This semester" />
-          <StatCard title="Research" value={stats.totalResearch} icon={FileText} color="rose" subtitle="Publications" />
-          <StatCard title="Pending" value={stats.pendingApprovals} icon={Clock} color="indigo" trend="Needs review" subtitle="Awaiting action" />
+          <StatCard title="Departments" value={stats.totalDepartments} icon={Building2} color="blue" />
+          <StatCard title="Faculty" value={stats.totalFaculty} icon={Users} color="green" />
+          <StatCard title="Students" value={stats.totalStudents} icon={GraduationCap} color="purple" />
+          <StatCard title="Activities" value={stats.totalActivities} icon={Activity} color="orange" />
+          <StatCard title="Research" value={stats.totalResearch} icon={Award} color="pink" />
+          <StatCard title="Pending" value={stats.pendingApprovals} icon={Clock} color="red" trend="Needs attention" />
         </div>
 
-        {/* Departments & Quick Actions */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          {/* Departments Overview */}
-          <Card className="xl:col-span-2 border border-gray-100">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg font-bold text-gray-900">Departments Overview</CardTitle>
-                  <p className="text-sm text-gray-500 mt-1">{departments.length} academic departments</p>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setActiveTab('departments')}>
-                  View All <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {departments.slice(0, 6).map(dept => (
-                  <DeptCard key={dept.id} dept={dept} />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <div className="space-y-4">
-            <Card className="border border-gray-100">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-bold text-gray-900">Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <ActionCard 
-                  title="Manage Users" 
-                  description="Add or modify accounts" 
-                  icon={Users} 
-                  color="blue"
-                  onClick={() => setActiveTab('faculty')}
-                />
-                <ActionCard 
-                  title="Approvals" 
-                  description="Review submissions" 
-                  icon={CheckCircle} 
-                  color="purple"
-                  onClick={() => setActiveTab('approvals')}
-                />
-                <ActionCard 
-                  title="Analytics" 
-                  description="View reports & insights" 
-                  icon={BarChart3} 
-                  color="green"
-                  onClick={() => setActiveTab('analytics')}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Recent Activity */}
-            <Card className="border border-gray-100">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-bold text-gray-900">Recent Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { action: 'New faculty added', dept: 'CSE', time: '2 hours ago', color: 'bg-blue-500' },
-                    { action: 'Research paper approved', dept: 'ECE', time: '4 hours ago', color: 'bg-emerald-500' },
-                    { action: 'Activity report submitted', dept: 'IT', time: '6 hours ago', color: 'bg-purple-500' },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${item.color}`} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{item.action}</p>
-                        <p className="text-xs text-gray-500">{item.dept} • {item.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+        {/* Quick Actions */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <ActionCard 
+              icon={UserPlus} 
+              title="Add Faculty" 
+              description="Register new faculty members"
+              color="bg-gradient-to-br from-blue-500 to-blue-600"
+              onClick={() => setActiveTab('faculty')}
+            />
+            <ActionCard 
+              icon={Calendar} 
+              title="New Activity" 
+              description="Schedule institutional activities"
+              color="bg-gradient-to-br from-purple-500 to-purple-600"
+              onClick={() => setActiveTab('activities')}
+            />
+            <ActionCard 
+              icon={FileCheck} 
+              title="Approvals" 
+              description="Review pending approval requests"
+              color="bg-gradient-to-br from-amber-500 to-orange-500"
+              onClick={() => setActiveTab('approvals')}
+            />
+            <ActionCard 
+              icon={BarChart3} 
+              title="Analytics" 
+              description="View detailed reports & insights"
+              color="bg-gradient-to-br from-emerald-500 to-teal-600"
+              onClick={() => setActiveTab('analytics')}
+            />
           </div>
+        </div>
+
+        {/* Recent Activity Table */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Recent Activities</h3>
+            <Button variant="outline" size="sm" onClick={() => setActiveTab('activities')}>
+              View All <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+          <DataTable 
+            data={recentActivities.slice(0, 5)} 
+            columns={[
+              { key: 'title', label: 'Activity' },
+              { key: 'type', label: 'Type' },
+              { key: 'date', label: 'Date' },
+              { key: 'status', label: 'Status' }
+            ]} 
+          />
         </div>
       </div>
     )
@@ -625,72 +499,28 @@ function DashboardContent({ user, departments, stats, setActiveTab }: {
 
   // HOD Dashboard
   if (user.role === 'HOD') {
-    const dept = departments.find(d => d.id === user.departmentId)
     return (
-      <div className="space-y-8">
-        <div className="rounded-2xl bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 p-8 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-purple-200 text-sm font-medium uppercase tracking-wide">Department Head Dashboard</p>
-              <h1 className="text-3xl font-bold mt-2">{dept?.name || 'My Department'}</h1>
-              <p className="text-purple-100 mt-2">Manage your department activities and faculty</p>
-            </div>
-            <div className="hidden md:flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-3xl font-bold">{dept?.facultyCount || 12}</p>
-                <p className="text-purple-200 text-sm">Faculty Members</p>
-              </div>
-            </div>
-          </div>
+      <div className="space-y-6">
+        <div className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl p-8 text-white">
+          <h2 className="text-2xl font-bold mb-2">Department Dashboard</h2>
+          <p className="text-violet-100">{user.departmentName || 'Your Department'} • Head of Department</p>
         </div>
-
+        
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Faculty" value={dept?.facultyCount || 12} icon={UserCheck} color="green" />
-          <StatCard title="Students" value={dept?.studentCount || 156} icon={GraduationCap} color="purple" />
-          <StatCard title="Activities" value={dept?.activityCount || 24} icon={Activity} color="blue" />
-          <StatCard title="Research Papers" value={18} icon={FileText} color="amber" />
+          <StatCard title="Faculty Members" value="24" icon={Users} color="blue" />
+          <StatCard title="Students" value="420" icon={GraduationCap} color="green" />
+          <StatCard title="Active Projects" value="12" icon={Target} color="purple" />
+          <StatCard title="Publications" value="38" icon={Award} color="orange" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="border border-gray-100">
-            <CardHeader>
-              <CardTitle className="text-lg font-bold">Recent Activities</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[1,2,3,4].map(i => (
-                <ActivityCard key={i} activity={{
-                  title: `Department Activity #${i}`,
-                  status: i === 1 ? 'Completed' : i === 2 ? 'Ongoing' : 'Pending',
-                  date: `${i} day(s) ago`
-                }} />
-              ))}
-            </CardContent>
+          <Card className="p-6">
+            <h3 className="font-semibold text-gray-900 mb-4">Department Activities</h3>
+            <DataTable data={[]} columns={[{ key: 'title', label: 'Title' }, { key: 'status', label: 'Status' }]} />
           </Card>
-
-          <Card className="border border-gray-100">
-            <CardHeader>
-              <CardTitle className="text-lg font-bold">Faculty Performance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {['Dr. Kumar', 'Prof. Sharma', 'Dr. Ravi', 'Prof. Priya'].map((name, i) => (
-                  <div key={i} className="flex items-center gap-4 p-3 rounded-xl bg-gray-50">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
-                      {name.charAt(0)}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{name}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full" style={{ width: `${85 - i * 10}%` }} />
-                        </div>
-                        <span className="text-xs text-gray-500">{85 - i * 10}%</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
+          <Card className="p-6">
+            <h3 className="font-semibold text-gray-900 mb-4">Pending Approvals</h3>
+            <DataTable data={[]} columns={[{ key: 'title', label: 'Request' }, { key: 'by', label: 'Requested By' }]} />
           </Card>
         </div>
       </div>
@@ -700,167 +530,64 @@ function DashboardContent({ user, departments, stats, setActiveTab }: {
   // Staff Dashboard
   if (user.role === 'STAFF') {
     return (
-      <div className="space-y-8">
-        <div className="rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 p-8 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-emerald-100 text-sm font-medium uppercase tracking-wide">Staff Portal</p>
-              <h1 className="text-3xl font-bold mt-2">Welcome, {user.name}</h1>
-              <p className="text-emerald-100 mt-2">{user.departmentName || 'Your Department'} • Faculty Member</p>
-            </div>
-            <div className="hidden md:block">
-              <Award className="w-20 h-20 text-white/20" />
-            </div>
-          </div>
+      <div className="space-y-6">
+        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-white">
+          <h2 className="text-2xl font-bold mb-2">Staff Portal</h2>
+          <p className="text-emerald-100">Welcome, {user.name}</p>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard title="My Activities" value="8" icon={Calendar} color="blue" />
+          <StatCard title="Research Papers" value="5" icon={FileText} color="green" />
+          <StatCard title="Attendance" value="95%" icon={CheckCircle} color="purple" />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="My Activities" value="8" icon={Activity} color="blue" />
-          <StatCard title="Publications" value="5" icon={FileText} color="purple" />
-          <StatCard title="Certifications" value="3" icon={Award} color="amber" />
-          <StatCard title="Hours Logged" value="128" icon={Clock} color="green" />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="border border-gray-100">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-bold">Quick Actions</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: 'Add Activity', icon: Plus, color: 'blue' },
-                  { label: 'Submit Research', icon: Send, color: 'purple' },
-                  { label: 'Upload Document', icon: Upload, color: 'green' },
-                  { label: 'View Reports', icon: BarChart3, color: 'amber' },
-                ].map(action => (
-                  <button 
-                    key={action.label}
-                    className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 text-left transition-all group"
-                  >
-                    <div className={`p-2 rounded-lg bg-${action.color}-100 text-${action.color}-600 group-hover:scale-110 transition-transform`}>
-                      <action.icon className="w-5 h-5" />
-                    </div>
-                    <span className="font-medium text-gray-700 group-hover:text-emerald-700">{action.label}</span>
-                  </button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border border-gray-100">
-            <CardHeader>
-              <CardTitle className="text-lg font-bold">My Recent Submissions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                { name: 'Workshop Report', date: 'Today', status: 'Approved', color: 'emerald' },
-                { name: 'Conference Paper', date: 'Yesterday', status: 'Under Review', color: 'amber' },
-                { name: 'Student Mentorship Log', date: '2 days ago', status: 'Draft', color: 'gray' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-gray-50">
-                  <div>
-                    <p className="font-medium text-gray-900">{item.name}</p>
-                    <p className="text-xs text-gray-500 mt-1">{item.date}</p>
-                  </div>
-                  <Badge variant="outline" className={
-                    item.color === 'emerald' ? 'border-emerald-300 text-emerald-700 bg-emerald-50' :
-                    item.color === 'amber' ? 'border-amber-300 text-amber-700 bg-amber-50' :
-                    'border-gray-300 text-gray-700 bg-gray-50'
-                  }>
-                    {item.status}
-                  </Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+        <ActionCard 
+          icon={Plus} 
+          title="Submit New Activity" 
+          description="Report a new activity or event"
+          color="bg-gradient-to-br from-blue-500 to-indigo-600"
+        />
       </div>
     )
   }
 
   // Student Dashboard
   return (
-    <div className="space-y-8">
-      <div className="rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 p-8 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-amber-100 text-sm font-medium uppercase tracking-wide">Student Portal</p>
-            <h1 className="text-3xl font-bold mt-2">Welcome, {user.name}</h1>
-            <p className="text-amber-100 mt-2">{user.departmentName || 'Your Department'} • Student</p>
-          </div>
-          <div className="hidden md:block">
-            <GraduationCap className="w-20 h-20 text-white/20" />
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-8 text-white">
+        <h2 className="text-2xl font-bold mb-2">Student Portal</h2>
+        <p className="text-amber-100">Welcome, {user.name}</p>
       </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Current CGPA" value="8.5" icon={Star} color="amber" />
-        <StatCard title="Attendance" value="92%" icon={CheckCircle} color="green" />
-        <StatCard title="Courses" value="6" icon={BookOpen} color="blue" />
-        <StatCard title="Achievements" value="4" icon={Trophy} color="purple" />
+      
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatCard title="Attendance" value="87%" icon={CheckCircle} color="green" />
+        <StatCard title="CGPA" value="8.5" icon={Star} color="purple" />
+        <StatCard title="Credits" value="120" icon={BookOpen} color="blue" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border border-gray-100">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold">My Submissions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {[
-              { name: 'Project Report', status: 'Approved', color: 'emerald' },
-              { name: 'Internship Certificate', status: 'Pending', color: 'amber' },
-              { name: 'Course Feedback', status: 'Draft', color: 'gray' },
-              { name: 'Assignment 3', status: 'Submitted', color: 'blue' },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-gray-50">
-                <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${
-                    item.color === 'emerald' ? 'bg-emerald-500' :
-                    item.color === 'amber' ? 'bg-amber-500' :
-                    item.color === 'blue' ? 'bg-blue-500' : 'bg-gray-400'
-                  }`} />
-                  <span className="font-medium text-gray-900">{item.name}</span>
-                </div>
-                <Badge variant="outline" className={
-                  item.color === 'emerald' ? 'border-emerald-300 text-emerald-700 bg-emerald-50' :
-                  item.color === 'amber' ? 'border-amber-300 text-amber-700 bg-amber-50' :
-                  item.color === 'blue' ? 'border-blue-300 text-blue-700 bg-blue-50' :
-                  'border-gray-300 text-gray-700 bg-gray-50'
-                }>
-                  {item.status}
-                </Badge>
+        <Card className="p-6">
+          <h3 className="font-semibold text-gray-900 mb-4">Upcoming Events</h3>
+          <div className="space-y-3">
+            {['Technical Symposium', 'Workshop on AI', 'Cultural Fest'].map((event, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+                <Calendar className="w-5 h-5 text-blue-500" />
+                <span className="text-sm text-gray-700">{event}</span>
               </div>
             ))}
-          </CardContent>
+          </div>
         </Card>
-
-        <Card className="border border-gray-100">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold">Upcoming Events</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {[
-              { title: 'Technical Symposium', date: 'Dec 15, 2024', type: 'Academic' },
-              { title: 'Workshop on AI', date: 'Dec 18, 2024', type: 'Workshop' },
-              { title: 'Semester Exams', date: 'Jan 5, 2025', type: 'Exam' },
-              { title: 'Cultural Fest', date: 'Jan 20, 2025', type: 'Event' },
-            ].map((event, i) => (
-              <div key={i} className="flex items-start gap-4 p-4 rounded-xl bg-gray-50">
-                <div className="p-2 rounded-lg bg-orange-100 text-orange-600">
-                  <Calendar className="w-5 h-5" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">{event.title}</p>
-                  <p className="text-sm text-gray-500 mt-1">{event.date}</p>
-                </div>
-                <Badge variant="secondary">{event.type}</Badge>
+        <Card className="p-6">
+          <h3 className="font-semibold text-gray-900 mb-4">Recent Announcements</h3>
+          <div className="space-y-3">
+            {['Exam Schedule Released', 'Holiday Notice', 'Placement Drive'].map((item, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+                <Bell className="w-5 h-5 text-amber-500" />
+                <span className="text-sm text-gray-700">{item}</span>
               </div>
             ))}
-          </CardContent>
+          </div>
         </Card>
       </div>
     </div>
@@ -868,21 +595,45 @@ function DashboardContent({ user, departments, stats, setActiveTab }: {
 }
 
 // ============ DEPARTMENTS PAGE ============
-function DepartmentsPage({ departments }: { departments: Department[] }) {
+function DepartmentsPage() {
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/departments')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setDepartments(data.data.map((d: any) => ({
+            id: d.id,
+            name: d.name,
+            code: d.code,
+            facultyCount: d._count?.faculty || 0,
+            studentCount: d._count?.students || 0,
+            activityCount: d._count?.activities || 0
+          })))
+        }
+      })
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Departments</h1>
-          <p className="text-gray-500 mt-1">Manage all academic departments</p>
+          <h2 className="text-2xl font-bold text-gray-900">Departments</h2>
+          <p className="text-gray-500">Manage all academic departments</p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Department
+        <Button className="gap-2">
+          <Plus className="w-4 h-4" /> Add Department
         </Button>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {departments.map(dept => (
           <DeptCard key={dept.id} dept={dept} />
         ))}
@@ -893,182 +644,105 @@ function DepartmentsPage({ departments }: { departments: Department[] }) {
 
 // ============ FACULTY PAGE ============
 function FacultyPage() {
-  const facultyData = [
-    { id: '1', name: 'Dr. Ramesh Kumar', email: 'ramesh@niet.ac.in', department: 'CSE', role: 'Professor', status: 'Active' },
-    { id: '2', name: 'Prof. Sita Lakshmi', email: 'sita@niet.ac.in', department: 'ECE', role: 'Associate Professor', status: 'Active' },
-    { id: '3', name: 'Dr. Arun Prakash', email: 'arun@niet.ac.in', department: 'IT', role: 'Assistant Professor', status: 'On Leave' },
-    { id: '4', name: 'Prof. Divya Reddy', email: 'divya@niet.ac.in', department: 'EEE', role: 'Professor', status: 'Active' },
-    { id: '5', name: 'Dr. Karthik Rajan', email: 'karthik@niet.ac.in', department: 'MECH', role: 'Associate Professor', status: 'Active' },
-  ]
-
   return (
-    <DataTable
-      data={facultyData}
-      title="Faculty Members"
-      columns={[
-        { key: 'name', label: 'Name' },
-        { key: 'email', label: 'Email' },
-        { key: 'department', label: 'Department', render: (v) => <Badge variant="secondary">{v}</Badge> },
-        { key: 'role', label: 'Role' },
-        { key: 'status', label: 'Status', render: (v) => (
-          <Badge className={v === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}>{v}</Badge>
-        )},
-      ]}
-      onAdd={() => {}}
-      onEdit={() => {}}
-      onDelete={() => {}}
-      onExport={() => {}}
-    />
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Faculty Management</h2>
+          <p className="text-gray-500">View and manage faculty members</p>
+        </div>
+        <Button className="gap-2"><Plus className="w-4 h-4" /> Add Faculty</Button>
+      </div>
+      
+      <Card className="p-6">
+        <div className="flex gap-4 mb-6">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Input placeholder="Search faculty..." className="pl-10" />
+          </div>
+          <select className="border rounded-lg px-4 bg-white">
+            <option>All Departments</option>
+          </select>
+        </div>
+        <DataTable 
+          data={[
+            { name: 'Dr. R. Kumar', email: 'rkumar@niet.ac.in', department: 'CSE', designation: 'Professor', status: 'Active' },
+            { name: 'Dr. S. Devi', email: 'sdevi@niet.ac.in', department: 'ECE', designation: 'Associate Professor', status: 'Active' },
+          ]}
+          columns={[{ key: 'name', label: 'Name' }, { key: 'email', label: 'Email' }, { key: 'department', label: 'Department' }, { key: 'designation', label: 'Designation' }, { key: 'status', label: 'Status' }]}
+        />
+      </Card>
+    </div>
   )
 }
 
 // ============ STUDENTS PAGE ============
 function StudentsPage() {
-  const studentData = [
-    { id: '1', name: 'Arun Kumar', regNo: '2024CS001', department: 'CSE', year: 'II', cgpa: '8.5' },
-    { id: '2', name: 'Priya Sharma', regNo: '2024CS002', department: 'CSE', year: 'II', cgpa: '9.1' },
-    { id: '3', name: 'Rahul Dev', regNo: '2024EC001', department: 'ECE', year: 'III', cgpa: '7.8' },
-    { id: '4', name: 'Sneha Patel', regNo: '2024IT001', department: 'IT', year: 'II', cgpa: '8.9' },
-    { id: '5', name: 'Mohammed Ali', regNo: '2024ME001', department: 'MECH', year: 'IV', cgpa: '7.5' },
-  ]
-
   return (
-    <DataTable
-      data={studentData}
-      title="Students"
-      columns={[
-        { key: 'regNo', label: 'Reg. No.' },
-        { key: 'name', label: 'Name' },
-        { key: 'department', label: 'Dept.', render: (v) => <Badge variant="secondary">{v}</Badge> },
-        { key: 'year', label: 'Year' },
-        { key: 'cgpa', label: 'CGPA', render: (v) => <span className="font-semibold text-emerald-600">{v}</span> },
-      ]}
-      onAdd={() => {}}
-      onEdit={() => {}}
-      onExport={() => {}}
-    />
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Student Records</h2>
+          <p className="text-gray-500">Manage student information</p>
+        </div>
+        <Button className="gap-2"><Upload className="w-4 h-4" /> Import Students</Button>
+      </div>
+      
+      <Card className="p-6">
+        <div className="flex gap-4 mb-6">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Input placeholder="Search students..." className="pl-10" />
+          </div>
+          <select className="border rounded-lg px-4 bg-white">
+            <option>All Departments</option>
+          </select>
+          <select className="border rounded-lg px-4 bg-white">
+            <option>All Years</option>
+          </select>
+        </div>
+        <DataTable 
+          data={[
+            { name: 'Arun Prakash', regNo: '2024CS001', department: 'CSE', year: 'III', cgpa: '8.9' },
+            { name: 'Bhavani S.', regNo: '2024EC002', department: 'ECE', year: 'II', cgpa: '9.1' },
+          ]}
+          columns={[{ key: 'name', label: 'Name' }, { key: 'regNo', label: 'Reg. No.' }, { key: 'department', label: 'Department' }, { key: 'year', label: 'Year' }, { key: 'cgpa', label: 'CGPA' }]}
+        />
+      </Card>
+    </div>
   )
 }
 
 // ============ ACTIVITIES PAGE ============
 function ActivitiesPage() {
-  const activityData = [
-    { id: '1', title: 'Workshop on AI/ML', department: 'CSE', date: '2024-12-10', participants: 45, status: 'Completed' },
-    { id: '2', title: 'Industry Visit - TCS', department: 'IT', date: '2024-12-15', participants: 60, status: 'Upcoming' },
-    { id: '3', title: 'Hackathon 2024', department: 'CSE', date: '2024-12-20', participants: 120, status: 'Planning' },
-    { id: '4', title: 'Guest Lecture - Cloud Computing', department: 'ECE', date: '2024-12-08', participants: 80, status: 'Completed' },
-    { id: '5', title: 'Technical Symposium', department: 'All', date: '2024-12-25', participants: 200, status: 'Planning' },
-  ]
-
-  return (
-    <DataTable
-      data={activityData}
-      title="Activities & Events"
-      columns={[
-        { key: 'title', label: 'Activity' },
-        { key: 'department', label: 'Department', render: (v) => <Badge variant="secondary">{v}</Badge> },
-        { key: 'date', label: 'Date' },
-        { key: 'participants', label: 'Participants', render: (v) => `${v} students` },
-        { key: 'status', label: 'Status', render: (v) => (
-          <Badge className={
-            v === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
-            v === 'Upcoming' ? 'bg-blue-100 text-blue-700' :
-            'bg-amber-100 text-amber-700'
-          }>{v}</Badge>
-        )},
-      ]}
-      onAdd={() => {}}
-      onEdit={() => {}}
-      onDelete={() => {}}
-      onExport={() => {}}
-    />
-  )
-}
-
-// ============ RESEARCH PAGE ============
-function ResearchPage() {
-  const researchData = [
-    { id: '1', title: 'Deep Learning for Medical Imaging', authors: 'Dr. Ramesh, Prof. Sita', journal: 'IEEE Transactions', year: '2024', citations: 15 },
-    { id: '2', title: 'IoT-Based Smart Agriculture', authors: 'Dr. Arun, Prof. Divya', journal: 'Springer', year: '2024', citations: 8 },
-    { id: '3', title: 'Blockchain in Supply Chain', authors: 'Dr. Karthik', journal: 'Elsevier', year: '2023', citations: 32 },
-    { id: '4', title: 'Renewable Energy Systems', authors: 'Prof. Mohan, Dr. Lakshmi', journal: 'Taylor & Francis', year: '2024', citations: 5 },
-  ]
-
-  return (
-    <DataTable
-      data={researchData}
-      title="Research Publications"
-      columns={[
-        { key: 'title', label: 'Title' },
-        { key: 'authors', label: 'Authors' },
-        { key: 'journal', label: 'Journal/Publisher' },
-        { key: 'year', label: 'Year' },
-        { key: 'citations', label: 'Citations', render: (v) => <span className="font-semibold text-blue-600">{v}</span> },
-      ]}
-      onAdd={() => {}}
-      onEdit={() => {}}
-      onExport={() => {}}
-    />
-  )
-}
-
-// ============ APPROVALS PAGE ============
-function ApprovalsPage() {
-  const approvalData = [
-    { id: '1', type: 'Activity Report', submittedBy: 'Prof. Sita', department: 'ECE', date: '2024-12-10', status: 'Pending' },
-    { id: '2', type: 'Research Paper', submittedBy: 'Dr. Arun', department: 'IT', date: '2024-12-09', status: 'Pending' },
-    { id: '3', type: 'Leave Request', submittedBy: 'Prof. Divya', department: 'EEE', date: '2024-12-08', status: 'Approved' },
-    { id: '4', type: 'Budget Request', submittedBy: 'Dr. Karthik', department: 'MECH', date: '2024-12-07', status: 'Rejected' },
-  ]
-
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Approvals</h1>
-        <p className="text-gray-500 mt-1">Review and manage pending requests</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Activities & Events</h2>
+          <p className="text-gray-500">Track institutional activities</p>
+        </div>
+        <Button className="gap-2"><Plus className="w-4 h-4" /> New Activity</Button>
       </div>
-
-      <div className="grid gap-4">
-        {approvalData.map(item => (
-          <Card key={item.id} className="border border-gray-100 hover:shadow-md transition-all">
-            <CardContent className="p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <div className={`p-3 rounded-xl ${
-                    item.type === 'Activity Report' ? 'bg-blue-100 text-blue-600' :
-                    item.type === 'Research Paper' ? 'bg-purple-100 text-purple-600' :
-                    item.type === 'Leave Request' ? 'bg-amber-100 text-amber-600' :
-                    'bg-rose-100 text-rose-600'
-                  }`}>
-                    <FileText className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{item.type}</h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Submitted by {item.submittedBy} • {item.department}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">{item.date}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Badge className={
-                    item.status === 'Pending' ? 'bg-amber-100 text-amber-700' :
-                    item.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' :
-                    'bg-red-100 text-red-700'
-                  }>{item.status}</Badge>
-                  {item.status === 'Pending' && (
-                    <div className="flex gap-2">
-                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
-                        <CheckCircle className="w-4 h-4 mr-1" />
-                        Approve
-                      </Button>
-                      <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
-                        <X className="w-4 h-4 mr-1" />
-                        Reject
-                      </Button>
-                    </div>
-                  )}
-                </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[
+          { title: 'Technical Symposium', type: 'Workshop', date: '2024-01-15', participants: 250, status: 'Completed' },
+          { title: 'Hackathon 2024', type: 'Event', date: '2024-02-20', participants: 180, status: 'Upcoming' },
+          { title: 'Guest Lecture - AI', type: 'Lecture', date: '2024-01-28', participants: 320, status: 'Completed' },
+        ].map((activity, i) => (
+          <Card key={i} className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between mb-3">
+                <Badge variant={activity.status === 'Completed' ? 'default' : 'secondary'}>
+                  {activity.status}
+                </Badge>
+                <span className="text-xs text-gray-500">{activity.type}</span>
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">{activity.title}</h3>
+              <div className="flex items-center gap-4 text-sm text-gray-500">
+                <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {activity.date}</span>
+                <span className="flex items-center gap-1"><Users className="w-4 h-4" /> {activity.participants}</span>
               </div>
             </CardContent>
           </Card>
@@ -1078,166 +752,183 @@ function ApprovalsPage() {
   )
 }
 
+// ============ RESEARCH PAGE ============
+function ResearchPage() {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Research & Publications</h2>
+          <p className="text-gray-500">Track research output</p>
+        </div>
+        <Button className="gap-2"><Plus className="w-4 h-4" /> Add Publication</Button>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatCard title="Journal Papers" value="45" icon={FileText} color="blue" />
+        <StatCard title="Conferences" value="32" icon={Globe} color="green" />
+        <StatCard title="Patents" value="8" icon={Award} color="purple" />
+        <StatCard title="Funded Projects" value="12" target={Trophy} color="orange" />
+      </div>
+      
+      <Card className="p-6">
+        <DataTable 
+          data={[
+            { title: 'Machine Learning in Healthcare', authors: 'Dr. R. Kumar et al.', venue: 'IEEE ICML', year: '2024', citations: 15 },
+            { title: 'IoT-Based Smart Agriculture', authors: 'Prof. S. Devi', venue: 'Springer IoT Journal', year: '2023', citations: 23 },
+          ]}
+          columns={[{ key: 'title', label: 'Title' }, { key: 'authors', label: 'Authors' }, { key: 'venue', label: 'Venue' }, { key: 'year', label: 'Year' }, { key: 'citations', label: 'Citations' }]}
+        />
+      </Card>
+    </div>
+  )
+}
+
+// ============ APPROVALS PAGE ============
+function ApprovalsPage() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900">Approval Requests</h2>
+        <p className="text-gray-500">Review and manage pending approvals</p>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-4 border-l-4 border-l-amber-500">
+          <p className="text-sm text-gray-500">Pending</p>
+          <p className="text-3xl font-bold text-amber-600">12</p>
+        </Card>
+        <Card className="p-4 border-l-4 border-l-green-500">
+          <p className="text-sm text-gray-500">Approved Today</p>
+          <p className="text-3xl font-bold text-green-600">8</p>
+        </Card>
+        <Card className="p-4 border-l-4 border-l-red-500">
+          <p className="text-sm text-gray-500">Rejected</p>
+          <p className="text-3xl font-bold text-red-600">2</p>
+        </Card>
+      </div>
+      
+      <Card className="p-6">
+        <DataTable 
+          data={[
+            { id: 'REQ001', type: 'Activity', requestedBy: 'Dr. K. Singh', department: 'CSE', date: '2024-01-15', status: 'Pending' },
+            { id: 'REQ002', type: 'Leave', requestedBy: 'Prof. M. Rao', department: 'ECE', date: '2024-01-14', status: 'Pending' },
+          ]}
+          columns={[{ key: 'id', label: 'Request ID' }, { key: 'type', label: 'Type' }, { key: 'requestedBy', label: 'Requested By' }, { key: 'department', label: 'Department' }, { key: 'date', label: 'Date' }, { key: 'status', label: 'Status' }]}
+        />
+      </Card>
+    </div>
+  )
+}
+
 // ============ ANALYTICS PAGE ============
 function AnalyticsPage() {
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Analytics & Reports</h1>
-          <p className="text-gray-500 mt-1">Comprehensive insights and statistics</p>
-        </div>
-        <Button variant="outline">
-          <Download className="w-4 h-4 mr-2" />
-          Export Report
-        </Button>
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h2>
+        <p className="text-gray-500">Institutional performance metrics</p>
       </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border border-gray-100">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Total Activities</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">156</p>
-                <p className="text-xs text-emerald-600 mt-1">+12% from last month</p>
-              </div>
-              <div className="p-3 rounded-xl bg-blue-100">
-                <Activity className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border border-gray-100">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Participation Rate</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">87%</p>
-                <p className="text-xs text-emerald-600 mt-1">+5% from last month</p>
-              </div>
-              <div className="p-3 rounded-xl bg-emerald-100">
-                <TrendingUp className="w-6 h-6 text-emerald-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border border-gray-100">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Research Output</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">42</p>
-                <p className="text-xs text-emerald-600 mt-1">+8 new papers</p>
-              </div>
-              <div className="p-3 rounded-xl bg-purple-100">
-                <FileText className="w-6 h-6 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border border-gray-100">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Avg. CGPA</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">8.2</p>
-                <p className="text-xs text-amber-600 mt-1">+0.3 improvement</p>
-              </div>
-              <div className="p-3 rounded-xl bg-amber-100">
-                <Star className="w-6 h-6 text-amber-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard title="Placement Rate" value="92%" icon={TrendingUp} color="green" trend="+5% from last year" />
+        <StatCard title="Pass Percentage" value="94%" icon={CheckCircle} color="blue" />
+        <StatCard title="Industry Connect" value="45" icon={HeartHandshake} color="purple" />
+        <StatCell title="Accreditation Score" value="A+" icon={Star} color="orange" />
       </div>
-
-      {/* Charts Placeholder */}
+      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border border-gray-100">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold">Activities by Department</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl">
-              <div className="text-center">
-                <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500">Chart visualization area</p>
-                <p className="text-sm text-gray-400">Integration with Chart.js available</p>
+        <Card className="p-6">
+          <h3 className="font-semibold text-gray-900 mb-4">Department-wise Results</h3>
+          <div className="space-y-4">
+            {['CSE', 'ECE', 'EEE', 'MECH', 'CIVIL'].map((dept, i) => (
+              <div key={dept}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span>{dept}</span>
+                  <span>{90 + i}%</span>
+                </div>
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full" style={{ width: `${90 + i}%` }} />
+                </div>
               </div>
-            </div>
-          </CardContent>
+            ))}
+          </div>
         </Card>
-        <Card className="border border-gray-100">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold">Monthly Trends</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl">
-              <div className="text-center">
-                <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500">Line chart visualization area</p>
-                <p className="text-sm text-gray-400">Integration with Chart.js available</p>
+        
+        <Card className="p-6">
+          <h3 className="font-semibold text-gray-900 mb-4">Activity Distribution</h3>
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { label: 'Workshops', value: 35, color: 'bg-blue-500' },
+              { label: 'Seminars', value: 28, color: 'bg-purple-500' },
+              { label: 'FDPs', value: 18, color: 'bg-green-500' },
+              { label: 'Events', value: 19, color: 'bg-orange-500' },
+            ].map(item => (
+              <div key={item.label} className="p-4 rounded-xl bg-gray-50">
+                <p className="text-2xl font-bold text-gray-900">{item.value}%</p>
+                <p className="text-sm text-gray-500">{item.label}</p>
+                <div className={`h-1.5 ${item.color} rounded-full mt-2`} />
               </div>
-            </div>
-          </CardContent>
+            ))}
+          </div>
         </Card>
       </div>
     </div>
   )
 }
 
+// Helper component for analytics
+function StatCell({ title, value, icon: Icon, color }: { title: string; value: string; icon: React.ElementType; color: string }) {
+  return (
+    <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm overflow-hidden">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between">
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-gray-500">{title}</p>
+            <p className="text-3xl font-bold text-gray-900">{value}</p>
+          </div>
+          <div className={`p-3 rounded-xl bg-gradient-to-br from-${color}-500 to-${color}-600 shadow-lg`}>
+            <Icon className="w-6 h-6 text-white" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 // ============ DOCUMENTS PAGE ============
 function DocumentsPage() {
-  const documents = [
-    { id: '1', name: 'AQAR 2023-24.pdf', type: 'PDF', size: '2.4 MB', uploadedBy: 'IQAC Cell', date: '2024-01-15' },
-    { id: '2', name: 'NAAC Criteria Report.docx', type: 'DOCX', size: '1.8 MB', uploadedBy: 'Dr. Ramesh', date: '2024-02-20' },
-    { id: '3', name: 'SSR Documentation.xlsx', type: 'XLSX', size: '856 KB', uploadedBy: 'Prof. Sita', date: '2024-03-10' },
-    { id: '4', name: 'Meeting Minutes Dec.pdf', type: 'PDF', size: '425 KB', uploadedBy: 'HOD-CSE', date: '2024-12-05' },
-  ]
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
-          <p className="text-gray-500 mt-1">Manage and upload institutional documents</p>
+          <h2 className="text-2xl font-bold text-gray-900">Document Management</h2>
+          <p className="text-gray-500">IQAC reports and documents</p>
         </div>
-        <Button>
-          <Upload className="w-4 h-4 mr-2" />
-          Upload Document
-        </Button>
+        <Button className="gap-2"><Upload className="w-4 h-4" /> Upload Document</Button>
       </div>
-
-      <div className="grid gap-4">
-        {documents.map(doc => (
-          <Card key={doc.id} className="border border-gray-100 hover:shadow-md transition-all">
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[
+          { name: 'AQAR 2023-24', type: 'PDF', size: '2.4 MB', date: '2024-04-15', icon: FileText },
+          { name: 'SSR Report', type: 'PDF', size: '5.8 MB', date: '2024-03-20', icon: FileText },
+          { name: 'IIQA Document', type: 'DOCX', size: '1.2 MB', date: '2024-02-10', icon: FileText },
+          { name: 'Criteria Reports', type: 'ZIP', size: '12.4 MB', date: '2024-04-01', icon: FolderOpen },
+        ].map((doc, i) => (
+          <Card key={i} className="hover:shadow-md transition-shadow cursor-pointer">
             <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-xl ${
-                    doc.type === 'PDF' ? 'bg-red-100 text-red-600' :
-                    doc.type === 'DOCX' ? 'bg-blue-100 text-blue-600' :
-                    'bg-emerald-100 text-emerald-600'
-                  }`}>
-                    <FileText className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{doc.name}</h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Uploaded by {doc.uploadedBy} • {doc.size} • {doc.date}
-                    </p>
-                  </div>
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-xl bg-red-50">
+                  <doc.icon className="w-6 h-6 text-red-500" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm">
-                    <Download className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <Eye className="w-4 h-4" />
-                  </Button>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 truncate">{doc.name}</p>
+                  <p className="text-sm text-gray-500">{doc.type} • {doc.size}</p>
+                  <p className="text-xs text-gray-400 mt-1">{doc.date}</p>
                 </div>
+                <Button variant="ghost" size="icon">
+                  <Download className="w-4 h-4" />
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -1248,334 +939,249 @@ function DocumentsPage() {
 }
 
 // ============ SETTINGS PAGE ============
-function SettingsPage() {
+function SettingsPage({ user }: { user: User }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-500 mt-1">Manage system configuration and preferences</p>
+        <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
+        <p className="text-gray-500">Manage your account settings</p>
       </div>
-
-      <div className="grid gap-6">
-        <Card className="border border-gray-100">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold">Profile Settings</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Full Name</label>
-                <Input defaultValue="Administrator" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Email</label>
-                <Input defaultValue="admin@niet.ac.in" />
-              </div>
+      
+      <Card className="p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Profile Information</h3>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Full Name</label>
+              <Input defaultValue={user.name} className="mt-1" />
             </div>
-            <Button>Save Changes</Button>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-gray-100">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold">Notification Preferences</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {[
-              { label: 'Email notifications for approvals', checked: true },
-              { label: 'Weekly activity digest', checked: true },
-              { label: 'System announcements', checked: false },
-              { label: 'Deadline reminders', checked: true },
-            ].map((pref, i) => (
-              <label key={i} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors">
-                <span className="text-gray-700">{pref.label}</span>
-                <input type="checkbox" defaultChecked={pref.checked} className="w-5 h-5 rounded text-blue-600" />
-              </label>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Email</label>
+              <Input defaultValue={user.email} className="mt-1" disabled />
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700">Role</label>
+            <Input defaultValue={user.role} className="mt-1" disabled />
+          </div>
+          <Button>Save Changes</Button>
+        </div>
+      </Card>
+      
+      <Card className="p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Security</h3>
+        <div className="space-y-4">
+          <Button variant="outline" className="gap-2">
+            <Lock className="w-4 h-4" /> Change Password
+          </Button>
+        </div>
+      </Card>
     </div>
   )
 }
 
+// ============ ICON IMPORT FIX ============
+const UserPlus = Users
+const FileCheck = FileText
+
 // ============ SIDEBAR ============
-function Sidebar({ isOpen, onClose, activeTab, setActiveTab, userRole }: {
-  isOpen: boolean;
-  onClose: () => void;
-  activeTab: TabType;
-  setActiveTab: (tab: TabType) => void;
-  userRole: string;
-}) {
-  const menuItems: { id: TabType; label: string; icon: React.ElementType }[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'departments', label: 'Departments', icon: Database },
-    { id: 'faculty', label: 'Faculty', icon: Users },
-    { id: 'students', label: 'Students', icon: GraduationCap },
-    { id: 'activities', label: 'Activities', icon: Activity },
-    { id: 'research', label: 'Research', icon: FileText },
-    { id: 'approvals', label: 'Approvals', icon: CheckCircle },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'documents', label: 'Documents', icon: FolderOpen },
-    { id: 'settings', label: 'Settings', icon: Settings },
+function Sidebar({ activeTab, setActiveTab, user }: { activeTab: TabType; setActiveTab: (t: TabType) => void; user: User }) {
+  const [collapsed, setCollapsed] = useState(false)
+  
+  const menuItems: { id: TabType; icon: React.ElementType; label: string }[] = [
+    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'departments', icon: Building2, label: 'Departments' },
+    { id: 'faculty', icon: Users, label: 'Faculty' },
+    { id: 'students', icon: GraduationCap, label: 'Students' },
+    { id: 'activities', icon: Activity, label: 'Activities' },
+    { id: 'research', icon: Award, label: 'Research' },
+    { id: 'approvals', icon: CheckCircle, label: 'Approvals' },
+    { id: 'analytics', icon: BarChart3, label: 'Analytics' },
+    { id: 'documents', icon: FolderOpen, label: 'Documents' },
+    { id: 'settings', icon: Settings, label: 'Settings' },
   ]
 
-  const filteredMenu = menuItems.filter(item => {
-    if (userRole === 'ADMIN') return true
-    if (userRole === 'HOD') return ['dashboard','departments','faculty','students','activities','research','approvals','analytics'].includes(item.id)
-    if (userRole === 'STAFF') return ['dashboard','activities','research','documents','settings'].includes(item.id)
-    return ['dashboard','activities','documents'].includes(item.id)
-  })
+  return (
+    <aside className={`${collapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 flex flex-col transition-all duration-300 hidden lg:flex`}>
+      {/* Logo */}
+      <div className="p-4 border-b border-gray-100">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <Building2 className="w-5 h-5 text-white" />
+          </div>
+          {!collapsed && <span className="font-bold text-gray-900">IQAC ERP</span>}
+        </div>
+      </div>
+
+      {/* Menu Items */}
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+        {menuItems.map(item => (
+          <button
+            key={item.id}
+            onClick={() => setActiveTab(item.id)}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              activeTab === item.id
+                ? 'bg-blue-50 text-blue-700'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            }`}
+          >
+            <item.icon className="w-5 h-5 flex-shrink-0" />
+            {!collapsed && <span>{item.label}</span>}
+          </button>
+        ))}
+      </nav>
+
+      {/* Collapse Toggle */}
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="m-3 p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+    </aside>
+  )
+}
+
+// ============ MOBILE NAV ============
+function MobileNav({ activeTab, setActiveTab, user }: { activeTab: TabType; setActiveTab: (t: TabType) => void; user: User }) {
+  const [open, setOpen] = useState(false)
+  
+  const menuItems: { id: TabType; icon: React.ElementType; label: string }[] = [
+    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'departments', icon: Building2, label: 'Departments' },
+    { id: 'faculty', icon: Users, label: 'Faculty' },
+    { id: 'students', icon: GraduationCap, label: 'Students' },
+    { id: 'activities', icon: Activity, label: 'Activities' },
+    { id: 'research', icon: Award, label: 'Research' },
+    { id: 'approvals', icon: CheckCircle, label: 'Approvals' },
+    { id: 'analytics', icon: BarChart3, label: 'Analytics' },
+    { id: 'documents', icon: FolderOpen, label: 'Documents' },
+    { id: 'settings', icon: Settings, label: 'Settings' },
+  ]
 
   return (
     <>
-      {/* Overlay */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden" 
-          onClick={onClose}
-        />
-      )}
+      <button
+        onClick={() => setOpen(true)}
+        className="lg:hidden fixed bottom-4 left-4 z-50 p-4 bg-blue-600 text-white rounded-full shadow-lg"
+      >
+        <Menu className="w-6 h-6" />
+      </button>
       
-      {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 z-50 h-full w-72 bg-white/95 backdrop-blur-xl border-r border-gray-200/50 shadow-xl transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
-        <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="p-6 border-b border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <Building2 className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="font-bold text-gray-900 text-lg">IQAC Portal</h1>
-                <p className="text-xs text-gray-500">NIET Management System</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {filteredMenu.map(item => (
-              <button
-                key={item.id}
-                onClick={() => { setActiveTab(item.id); onClose(); }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${
-                  activeTab === item.id 
-                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25' 
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                }`}
-              >
-                <item.icon className="w-5 h-5" />
-                <span className="font-medium">{item.label}</span>
-                {activeTab === item.id && (
-                  <div className="ml-auto w-2 h-2 rounded-full bg-white" />
-                )}
+      {open && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-xl">
+            <div className="p-4 border-b flex items-center justify-between">
+              <span className="font-bold text-gray-900">Menu</span>
+              <button onClick={() => setOpen(false)}>
+                <X className="w-6 h-6" />
               </button>
-            ))}
-          </nav>
-
-          {/* Footer */}
-          <div className="p-4 border-t border-gray-100">
-            <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100">
-              <p className="text-xs text-gray-500">Need help?</p>
-              <p className="text-sm font-semibold text-gray-900">Contact IT Support</p>
             </div>
+            <nav className="p-3 space-y-1">
+              {menuItems.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => { setActiveTab(item.id); setOpen(false) }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium ${
+                    activeTab === item.id ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </nav>
           </div>
         </div>
-      </aside>
+      )}
     </>
   )
 }
 
 // ============ MAIN APP COMPONENT ============
 export default function IQACPortal() {
-  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuthStore()
+  const { isAuthenticated, user, logout } = useAuthStore()
   const [activeTab, setActiveTab] = useState<TabType>('dashboard')
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [departments, setDepartments] = useState<Department[]>([])
-  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
-  const [isInitialized, setIsInitialized] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
-  // Fetch data when authenticated
   useEffect(() => {
-    if (!isAuthenticated || isInitialized) return
-    
-    let isMounted = true
-    
-    const loadData = async () => {
-      try {
-        const [deptRes, dashRes] = await Promise.all([
-          fetch('/api/departments'),
-          fetch('/api/dashboard')
-        ])
-        
-        if (isMounted) {
-          // Process departments
-          if (deptRes.ok) {
-            const deptData = await deptRes.json()
-            if (deptData.success && deptData.departments) {
-              // Map _count to expected format
-              const mappedDepts = deptData.departments.map((d: any) => ({
-                id: d.id,
-                name: d.name,
-                code: d.code,
-                vision: d.vision,
-                mission: d.mission,
-                hod: d.hod || 'TBA',
-                facultyCount: d._count?.faculty || 0,
-                studentCount: d._count?.students || 0,
-                activityCount: d._count?.activities || 0,
-              }))
-              setDepartments(mappedDepts)
-            }
-          }
-          
-          // Process dashboard stats
-          if (dashRes.ok) {
-            const dashData = await dashRes.json()
-            if (dashData.success && dashData.data?.stats) {
-              setDashboardStats(dashData.data.stats)
-            }
-          }
-          
-          setIsInitialized(true)
-        }
-      } catch (error) {
-        console.error('Error loading data:', error)
-        // Set default data even on error
-        if (isMounted) {
-          setIsInitialized(true)
-        }
-      }
-    }
-    
-    loadData()
-    return () => { isMounted = false }
-  }, [isAuthenticated, isInitialized])
+    setMounted(true)
+  }, [])
 
-  // Show loading spinner while checking auth
-  if (authLoading) {
+  if (!mounted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
-        <div className="text-center">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-blue-500" />
-            </div>
-          </div>
-          <p className="text-blue-200 font-medium mt-6">Loading IQAC Portal...</p>
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
       </div>
     )
   }
 
-  // Show login if not authenticated
   if (!isAuthenticated || !user) {
     return <LoginPage />
   }
 
-  // Default stats if not loaded
-  const defaultStats: DashboardStats = {
-    totalDepartments: departments.length || 12,
-    totalFaculty: 120,
-    totalStudents: 1500,
-    totalActivities: 45,
-    totalResearch: 32,
-    pendingApprovals: 8,
-  }
-  
-  const stats = dashboardStats || defaultStats
-
-  // Render content based on active tab
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard':
-        return <DashboardContent user={user} departments={departments} stats={stats} setActiveTab={setActiveTab} />
-      case 'departments':
-        return <DepartmentsPage departments={departments} />
-      case 'faculty':
-        return <FacultyPage />
-      case 'students':
-        return <StudentsPage />
-      case 'activities':
-        return <ActivitiesPage />
-      case 'research':
-        return <ResearchPage />
-      case 'approvals':
-        return <ApprovalsPage />
-      case 'analytics':
-        return <AnalyticsPage />
-      case 'documents':
-        return <DocumentsPage />
-      case 'settings':
-        return <SettingsPage />
-      default:
-        return <DashboardContent user={user} departments={departments} stats={stats} setActiveTab={setActiveTab} />
+      case 'dashboard': return <DashboardContent user={user} setActiveTab={setActiveTab} />
+      case 'departments': return <DepartmentsPage />
+      case 'faculty': return <FacultyPage />
+      case 'students': return <StudentsPage />
+      case 'activities': return <ActivitiesPage />
+      case 'research': return <ResearchPage />
+      case 'approvals': return <ApprovalsPage />
+      case 'analytics': return <AnalyticsPage />
+      case 'documents': return <DocumentsPage />
+      case 'settings': return <SettingsPage user={user} />
+      default: return <DashboardContent user={user} setActiveTab={setActiveTab} />
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50">
-      <Sidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        userRole={user.role}
-      />
-
-      <div className="lg:ml-72 min-h-screen flex flex-col">
-        {/* Top Bar */}
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-200/50 shadow-sm">
-          <div className="flex items-center justify-between px-4 lg:px-6 py-4">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
-              >
-                <Menu className="w-5 h-5" />
-              </button>
-              <div className="hidden sm:flex items-center gap-2 text-sm text-gray-500">
-                <Home className="w-4 h-4" />
-                <span>/</span>
-                <span className="text-gray-900 capitalize font-medium">{activeTab}</span>
-              </div>
-              {/* Mobile Title */}
-              <h2 className="lg:hidden font-semibold text-gray-900 capitalize">{activeTab}</h2>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user} />
+      
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-h-screen">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+          <div className="flex items-center justify-between px-4 lg:px-6 h-16">
+            {/* Mobile Title */}
+            <div className="lg:hidden flex items-center gap-3">
+              <Building2 className="w-6 h-6 text-blue-600" />
+              <span className="font-semibold text-gray-900">IQAC Portal</span>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3">
-              {/* Search */}
-              <button className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors">
-                <Search className="w-4 h-4" />
-                <span className="text-sm">Search...</span>
-                <kbd className="hidden lg:inline-flex items-center px-2 py-0.5 rounded bg-gray-200 text-xs text-gray-600">⌘K</kbd>
-              </button>
+            {/* Search */}
+            <button className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors">
+              <Search className="w-4 h-4" />
+              <span className="text-sm">Search...</span>
+              <kbd className="hidden lg:inline-flex items-center px-2 py-0.5 rounded bg-gray-200 text-xs text-gray-600">⌘K</kbd>
+            </button>
 
-              {/* Notifications */}
-              <button className="relative p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white" />
-              </button>
+            {/* Notifications */}
+            <button className="relative p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white" />
+            </button>
 
-              {/* Profile */}
-              <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-3 border-l border-gray-200">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm shadow-lg shadow-blue-500/20">
-                  {user.name?.charAt(0) || 'U'}
-                </div>
-                <div className="hidden sm:block">
-                  <p className="text-sm font-semibold text-gray-900">{user.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user.role?.toLowerCase()}</p>
-                </div>
-                <button
-                  onClick={logout}
-                  className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                  title="Logout"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
+            {/* Profile */}
+            <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-3 border-l border-gray-200">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm shadow-lg shadow-blue-500/20">
+                {user.name?.charAt(0) || 'U'}
               </div>
+              <div className="hidden sm:block">
+                <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+                <p className="text-xs text-gray-500 capitalize">{user.role?.toLowerCase()}</p>
+              </div>
+              <button
+                onClick={logout}
+                className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </header>
@@ -1593,6 +1199,9 @@ export default function IQACPortal() {
           </div>
         </footer>
       </div>
+
+      {/* Mobile Navigation */}
+      <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} user={user} />
     </div>
   )
 }
