@@ -1,0 +1,876 @@
+// IQAC Enterprise ERP Management System - Complete Database Schema
+// Nehru Institute of Engineering and Technology (Autonomous)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USER & AUTHENTICATION ====================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          UserRole  @default(STAFF)
+  phone         String?
+  avatar        String?
+  isActive      Boolean   @default(true)
+  departmentId  String?
+  lastLogin     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  department    Department? @relation(fields: [departmentId], references: [id])
+  faculty       Faculty?
+  student       Student[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
+  feedbacks     Feedback[]
+  
+  @@index([departmentId])
+  @@index([role])
+  @@index([email])
+}
+
+enum UserRole {
+  ADMIN
+  HOD
+  STAFF
+  STUDENT
+}
+
+// ==================== DEPARTMENT ====================
+
+model Department {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  code            String   @unique
+  description     String?
+  vision          String?
+  mission         String?
+  peo             String?
+  po              String?
+  pso             String?
+  logo            String?
+  hodId           String?
+  establishedYear Int?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  users           User[]
+  faculty         Faculty[]
+  students        Student[]
+  activities      Activity[]
+  research        Research[]
+  
+  @@index([code])
+}
+
+// ==================== FACULTY ====================
+
+model Faculty {
+  id                String    @id @default(cuid())
+  employeeId        String    @unique
+  userId            String    @unique
+  departmentId      String
+  designation       String?
+  qualification     String?
+  specialization    String?
+  experience        Float?
+  dateOfJoining     DateTime?
+  researchArea      String?
+  photo             String?
+  isHOD             Boolean   @default(false)
+  approvalStatus    ApprovalStatus @default(APPROVED)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  user              User      @relation(fields: [userId], references: [id])
+  department        Department @relation(fields: [departmentId], references: [id])
+  activities        FacultyActivity[]
+  researchPublications ResearchPublication[]
+  certifications    Certification[]
+  awards             Award[]
+  consultations      Consultancy[]
+  patents            Patent[]
+  books              Book[]
+  projects           Project[]
+  fdpPrograms        FDPProgram[]
+  
+  @@index([departmentId])
+  @@index([employeeId])
+  @@index([userId])
+}
+
+// ==================== STUDENT ====================
+
+model Student {
+  id                String    @id @default(cuid())
+  registerNumber    String    @unique
+  rollNumber        String?
+  userId            String    @unique
+  departmentId      String
+  semester          Int?
+  section           String?
+  batch             String?
+  cgpa              Float?
+  admissionYear     Int?
+  graduationYear    Int?
+  photo             String?
+  approvalStatus    ApprovalStatus @default(APPROVED)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  user              User      @relation(fields: [userId], references: [id])
+  department        Department @relation(fields: [departmentId], references: [id])
+  activities        StudentActivity[]
+  achievements      StudentAchievement[]
+  internships       Internship[]
+  placements        Placement[]
+  certifications    StudentCertification[]
+  npCourses         NPCourse[]
+  hackathons        HackathonParticipation[]
+  startups          Startup[]
+  
+  @@index([departmentId])
+  @@index([registerNumber])
+  @@index([userId])
+}
+
+// ==================== ACTIVITY MODULES ====================
+
+model Activity {
+  id               String        @id @default(cuid())
+  title            String
+  type             ActivityType
+  description      String?
+  startDate        DateTime?
+  endDate          DateTime?
+  venue            String?
+  organizer        String?
+  participants     Int?
+  outcome          String?
+  status           ActivityStatus @default(PLANNED)
+  departmentId     String
+  conductedBy      String?
+  attachments      String?
+  reportUrl        String?
+  approvalStatus   ApprovalStatus @default(PENDING)
+  approvedBy       String?
+  approvedAt       DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  
+  department       Department     @relation(fields: [departmentId], references: [id])
+  facultyActivities FacultyActivity[]
+  studentActivities StudentActivity[]
+  
+  @@index([departmentId])
+  @@index([type])
+  @@index([status])
+  @@index([approvalStatus])
+}
+
+enum ActivityType {
+  EVENT
+  WORKSHOP
+  SEMINAR
+  CONFERENCE
+  GUEST_LECTURE
+  FDP
+  INDUSTRIAL_VISIT
+  RESOURCE_PERSON
+  EXTENSION_ACTIVITY
+  INDUSTRY_COLLABORATION
+  MOU_SIGNED
+  OTHER
+}
+
+enum ActivityStatus {
+  PLANNED
+  ONGOING
+  COMPLETED
+  CANCELLED
+  POSTPONED
+}
+
+model FacultyActivity {
+  id          String   @id @default(cuid())
+  facultyId   String
+  activityId  String
+  role        String?
+  hoursSpent  Float?
+  remarks     String?
+  createdAt   DateTime @default(now())
+  
+  faculty     Faculty  @relation(fields: [facultyId], references: [id])
+  activity    Activity @relation(fields: [activityId], references: [id])
+  
+  @@unique([facultyId, activityId])
+}
+
+model StudentActivity {
+  id          String   @id @default(cuid())
+  studentId   String
+  activityId  String
+  role        String?
+  remarks     String?
+  createdAt   DateTime @default(now())
+  
+  student     Student  @relation(fields: [studentId], references: [id])
+  activity    Activity @relation(fields: [activityId], references: [id])
+  
+  @@unique([studentId, activityId])
+}
+
+// ==================== RESEARCH MODULES ====================
+
+model Research {
+  id               String         @id @default(cuid())
+  title            String
+  type             ResearchType
+  description      String?
+  authors          String?
+  publication      String?
+  publisher        String?
+  doi              String?
+  isbn             String?
+  issn             String?
+  volume           String?
+  issue            String?
+  pages            String?
+  publishDate      DateTime?
+  indexedIn        String?
+  impactFactor     Float?
+  citations        Int            @default(0)
+  url              String?
+  departmentId     String
+  facultyId        String?
+  status           ResearchStatus @default(PUBLISHED)
+  approvalStatus   ApprovalStatus @default(PENDING)
+  approvedBy       String?
+  approvedAt       DateTime?
+  attachments      String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  
+  department       Department            @relation(fields: [departmentId], references: [id])
+  publications     ResearchPublication[]
+  
+  @@index([departmentId])
+  @@index([type])
+  @@index([status])
+}
+
+enum ResearchType {
+  JOURNAL
+  CONFERENCE
+  PATENT
+  BOOK
+  BOOK_CHAPTER
+  PROJECT
+  CONSULTANCY
+  RESEARCH_GRANT
+}
+
+enum ResearchStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  ACCEPTED
+  PUBLISHED
+  REJECTED
+  WITHDRAWN
+}
+
+model ResearchPublication {
+  id          String   @id @default(cuid())
+  researchId  String
+  facultyId   String
+  authorOrder Int?
+  createdAt   DateTime @default(now())
+  
+  research    Research @relation(fields: [researchId], references: [id])
+  faculty     Faculty  @relation(fields: [facultyId], references: [id])
+  
+  @@unique([researchId, facultyId])
+}
+
+// ==================== CERTIFICATION & AWARDS ====================
+
+model Certification {
+  id                String   @id @default(cuid())
+  title             String
+  issuer            String?
+  certificateNumber String?
+  issuedDate        DateTime?
+  validUntil        DateTime?
+  credentialUrl     String?
+  facultyId         String
+  attachments       String?
+  approvalStatus    ApprovalStatus @default(PENDING)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  faculty           Faculty  @relation(fields: [facultyId], references: [id])
+  
+  @@index([facultyId])
+}
+
+model StudentCertification {
+  id                String   @id @default(cuid())
+  title             String
+  issuer            String?
+  certificateNumber String?
+  issuedDate        DateTime?
+  validUntil        DateTime?
+  credentialUrl     String?
+  studentId         String
+  attachments       String?
+  approvalStatus    ApprovalStatus @default(PENDING)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  student           Student  @relation(fields: [studentId], references: [id])
+  
+  @@index([studentId])
+}
+
+model Award {
+  id           String   @id @default(cuid())
+  title        String
+  awardedBy    String?
+  awardDate    DateTime?
+  category     String?
+  level        String?
+  description  String?
+  facultyId    String
+  attachments  String?
+  createdAt    DateTime @default(now())
+  
+  faculty      Faculty  @relation(fields: [facultyId], references: [id])
+  
+  @@index([facultyId])
+}
+
+model StudentAchievement {
+  id            String          @id @default(cuid())
+  title         String
+  type          AchievementType
+  description   String?
+  achievedDate  DateTime?
+  level         String?
+  position      String?
+  organizedBy   String?
+  studentId     String
+  attachments   String?
+  approvalStatus ApprovalStatus @default(PENDING)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  student       Student          @relation(fields: [studentId], references: [id])
+  
+  @@index([studentId])
+  @@index([type])
+}
+
+enum AchievementType {
+  SPORTS
+  CULTURAL
+  TECHNICAL
+  ACADEMIC
+  EXTRA_CURRICULAR
+  CO_CURRICULAR
+  COMMUNITY_SERVICE
+  PROJECT
+  COMPETITION
+  OTHER
+}
+
+// ==================== INTERNSHIP & PLACEMENT ====================
+
+model Internship {
+  id               String   @id @default(cuid())
+  company          String
+  location         String?
+  domain           String?
+  startDate        DateTime?
+  endDate          DateTime?
+  stipend          Float?
+  offerLetter      Boolean  @default(false)
+  completionCert   Boolean  @default(false)
+  description      String?
+  studentId        String
+  supervisor       String?
+  supervisorEmail  String?
+  attachments      String?
+  approvalStatus   ApprovalStatus @default(PENDING)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  student          Student  @relation(fields: [studentId], references: [id])
+  
+  @@index([studentId])
+}
+
+model Placement {
+  id               String   @id @default(cuid())
+  company          String
+  location         String?
+  designation      String?
+  packageLPA       Float?
+  offerDate        DateTime?
+  joiningDate      DateTime?
+  accepted         Boolean  @default(false)
+  joined           Boolean  @default(false)
+  description      String?
+  studentId        String
+  attachments      String?
+  approvalStatus   ApprovalStatus @default(PENDING)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  student          Student  @relation(fields: [studentId], references: [id])
+  
+  @@index([studentId])
+}
+
+// ==================== NPTEL & ONLINE COURSES ====================
+
+model NPCourse {
+  id             String   @id @default(cuid())
+  courseName     String
+  courseId       String?
+  platform       String?
+  instructor     String?
+  startDate      DateTime?
+  endDate        DateTime?
+  score          Float?
+  grade          String?
+  certificateUrl String?
+  studentId      String
+  attachments    String?
+  approvalStatus ApprovalStatus @default(PENDING)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  student        Student  @relation(fields: [studentId], references: [id])
+  
+  @@index([studentId])
+}
+
+// ==================== HACKATHON & STARTUP ====================
+
+model HackathonParticipation {
+  id           String   @id @default(cuid())
+  name         String
+  organizer    String?
+  level        String?
+  startDate    DateTime?
+  endDate      DateTime?
+  position     String?
+  projectTitle String?
+  teamSize     Int?
+  description  String?
+  studentId    String
+  attachments  String?
+  approvalStatus ApprovalStatus @default(PENDING)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+    
+  student      Student  @relation(fields: [studentId], references: [id])
+  
+  @@index([studentId])
+}
+
+model Startup {
+  id           String   @id @default(cuid())
+  name         String
+  domain       String?
+  founderRole  String?
+  foundedDate  DateTime?
+  funding      Float?
+  stage        String?
+  description  String?
+  website      String?
+  studentId    String
+  incubator    String?
+  attachments  String?
+  approvalStatus ApprovalStatus @default(PENDING)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  student      Student  @relation(fields: [studentId], references: [id])
+  
+  @@index([studentId])
+}
+
+// ==================== PATENTS & BOOKS ====================
+
+model Patent {
+  id           String        @id @default(cuid())
+  title        String
+  patentNumber String?
+  inventors    String?
+  filingDate   DateTime?
+  publishDate  DateTime?
+  grantDate    DateTime?
+  status       PatentStatus @default(FILED)
+  country      String?
+  category     String?
+  facultyId    String
+  attachments  String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  
+  faculty      Faculty  @relation(fields: [facultyId], references: [id])
+  
+  @@index([facultyId])
+}
+
+enum PatentStatus {
+  FILED
+  PUBLISHED
+  GRANTED
+  ABANDONED
+  REJECTED
+}
+
+model Book {
+  id           String   @id @default(cuid())
+  title        String
+  authors      String?
+  publisher    String?
+  isbn         String?
+  edition      String?
+  publishDate  DateTime?
+  bookType     BookType @default(TEXTBOOK)
+  category     String?
+  facultyId    String
+  attachments  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  faculty      Faculty  @relation(fields: [facultyId], references: [id])
+  
+  @@index([facultyId])
+}
+
+enum BookType {
+  TEXTBOOK
+  REFERENCE_BOOK
+  EDITED_BOOK
+  BOOK_CHAPTER
+  MANUAL
+}
+
+// ==================== PROJECTS & CONSULTANCY ====================
+
+model Project {
+  id                   String        @id @default(cuid())
+  title                String
+  type                 ProjectType   @default(RESEARCH)
+  description          String?
+  principalInvestigator String?
+  coInvestigators      String?
+  fundingAgency        String?
+  amount               Float?
+  startDate            DateTime?
+  endDate              DateTime?
+  status               ProjectStatus @default(ONGOING)
+  outcomes             String?
+  facultyId            String
+  attachments          String?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  
+  faculty              Faculty  @relation(fields: [facultyId], references: [id])
+  
+  @@index([facultyId])
+  @@index([type])
+  @@index([status])
+}
+
+enum ProjectType {
+  RESEARCH
+  CONSULTANCY
+  SPONSORED
+  INTERNALLY_FUNDED
+  STUDENT_PROJECT
+}
+
+enum ProjectStatus {
+  PROPOSED
+  APPROVED
+  ONGOING
+  COMPLETED
+  ON_HOLD
+  TERMINATED
+}
+
+model Consultancy {
+  id           String             @id @default(cuid())
+  title        String
+  client       String?
+  amount       Float?
+  startDate    DateTime?
+  endDate      DateTime?
+  status       ConsultancyStatus @default(ONGOING)
+  description  String?
+  facultyId    String
+  attachments  String?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  
+  faculty      Faculty  @relation(fields: [facultyId], references: [id])
+  
+  @@index([facultyId])
+}
+
+enum ConsultancyStatus {
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+// ==================== FDP & TRAINING ====================
+
+model FDPProgram {
+  id             String   @id @default(cuid())
+  title          String
+  organizer      String?
+  type           String?
+  startDate      DateTime?
+  endDate        DateTime?
+  durationDays   Int?
+  venue          String?
+  level          String?
+  topics         String?
+  facultyId      String
+  attachments    String?
+  certificateUrl String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  faculty        Faculty  @relation(fields: [facultyId], references: [id])
+  
+  @@index([facultyId])
+}
+
+// ==================== APPROVAL WORKFLOW ====================
+
+model Approval {
+  id           String         @id @default(cuid())
+  entityType   EntityType
+  entityId     String
+  requestedBy  String
+  currentStage ApprovalStage @default(STAFF_REVIEW)
+  status       ApprovalStatus @default(PENDING)
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  comments     String?
+  activityId   String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  @@index([entityType, entityId])
+  @@index([requestedBy])
+  @@index([status])
+  @@index([currentStage])
+}
+
+enum EntityType {
+  ACTIVITY
+  RESEARCH
+  ACHIEVEMENT
+  INTERNSHIP
+  PLACEMENT
+  CERTIFICATION
+  NPTEL_COURSE
+  HACKATHON
+  STARTUP
+  PATENT
+  BOOK
+  PROJECT
+  CONSULTANCY
+  FDP
+  FACULTY_PROFILE
+  STUDENT_PROFILE
+}
+
+enum ApprovalStage {
+  STAFF_REVIEW
+  HOD_REVIEW
+  ADMIN_REVIEW
+  APPROVED
+  REJECTED
+  NEEDS_REVISION
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  NEEDS_REVISION
+  WITHDRAWN
+}
+
+// ==================== NOTIFICATIONS ====================
+
+model Notification {
+  id          String           @id @default(cuid())
+  title       String
+  message     String
+  type        NotificationType @default(INFO)
+  userId      String
+  isRead      Boolean          @default(false)
+  actionUrl   String?
+  relatedId   String?
+  entityType  EntityType?
+  createdAt   DateTime         @default(now())
+  
+  user        User             @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  APPROVAL_REQUIRED
+  APPROVED
+  REJECTED
+  REMINDER
+  DEADLINE
+  SYSTEM
+}
+
+// ==================== FEEDBACK ====================
+
+model Feedback {
+  id          String   @id @default(cuid())
+  category    String
+  rating      Int
+  comments    String?
+  anonymous   Boolean  @default(false)
+  userId      String
+  response    String?
+  respondedAt DateTime?
+  respondedBy String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User     @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([category])
+  @@index([rating])
+}
+
+// ==================== DOCUMENT MANAGEMENT ====================
+
+model Document {
+  id            String           @id @default(cuid())
+  name          String
+  originalName  String
+  mimeType      String
+  size          Int
+  url           String
+  uploadedBy    String
+  category      DocumentCategory @default(OTHER)
+  entityType    EntityType?
+  entityId      String?
+  version       Int             @default(1)
+  isLatest      Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  
+  @@index([entityType, entityId])
+  @@index([uploadedBy])
+  @@index([category])
+}
+
+enum DocumentCategory {
+  REPORT
+  CERTIFICATE
+  PUBLICATION
+  PRESENTATION
+  SPREADSHEET
+  IMAGE
+  VIDEO
+  ARCHIVE
+  TEMPLATE
+  OTHER
+}
+
+// ==================== AUDIT LOGS ====================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  entityType String?
+  entityId   String?
+  oldValue   String?
+  newValue   String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt DateTime @default(now())
+  
+  user       User     @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ==================== SETTINGS & CONFIGURATION ====================
+
+model Setting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  category    String   @default("GENERAL")
+  description String?
+  updatedAt   DateTime @updatedAt
+  
+  @@index([key])
+  @@index([category])
+}
+
+// ==================== INSTITUTION INFO ====================
+
+model Institution {
+  id                  String   @id @default(cuid())
+  name                String
+  shortName           String?
+  address             String?
+  city                String?
+  state               String?
+  pincode             String?
+  country             String   @default("India")
+  phone               String?
+  email               String?
+  website             String?
+  logo                String?
+  establishedYear     Int?
+  accreditation       String?
+  accreditationGrade  String?
+  affiliation         String?
+  type                String?
+  currentAcademicYear String?
+  currentSemester     String?
+  updatedAt           DateTime @updatedAt
+}
