@@ -1,0 +1,968 @@
+     1→'use client'
+     2→
+     3→import React, { useState, useEffect, useCallback } from 'react'
+     4→import { useAuthStore } from '@/lib/store/auth-store'
+     5→import { Button } from '@/components/ui/button'
+     6→import { Input } from '@/components/ui/input'
+     7→import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+     8→import { Badge } from '@/components/ui/badge'
+     9→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+    10→import { 
+    11→  Building2, Users, GraduationCap, FileText, BarChart3, Settings, Bell,
+    12→  LogOut, Search, Menu, X, Home, UserCheck, BookOpen, Award, TrendingUp,
+    13→  Calendar, CheckCircle, Clock, AlertCircle, Plus, Download, Eye,
+    14→  ChevronRight, Shield, Target, Star, Activity as ActivityIcon, Zap,
+    15→  Layers, Database, Lock, Mail, Phone, MapPin, Globe, Briefcase,
+    16→  Trophy, ClipboardList, LayoutDashboard, FolderOpen,
+    17→  MessageSquare, ThumbsUp, ThumbsDown, RefreshCw, Filter, Grid3X3,
+    18→  List, Upload, Image, Video, FileArchive, Table, FileSpreadsheet,
+    19→  Send, Edit3, Trash2, Save, XCircle, CheckSquare, Square,
+    20→  ArrowLeft, MoreVertical, ExternalLink, Copy, Printer, Share2,
+    21→  Heart, Bookmark, Flag, Tag, Package, Truck, Wrench, Cpu,
+    22→  Microscope, FlaskConical, Atom, Calculator, PenTool, Palette,
+    23→  Music, Drama, Dumbbell, TreePine, HandHeart, Rocket, Lightbulb,
+    24→  Brain, Fingerprint, Wifi, Server, Cloud, Code, Terminal
+    25→} from 'lucide-react'
+    26→
+    27→// Types
+    28→interface Department {
+    29→  id: string
+    30→  name: string
+    31→  code: string
+    32→  vision?: string
+    33→  mission?: string
+    34→  _count?: {
+    35→    faculty: number
+    36→    students: number
+    37→    activities: number
+    38→  }
+    39→}
+    40→
+    41→interface DashboardStats {
+    42→  totalDepartments: number
+    43→  totalFaculty: number
+    44→  totalStudents: number
+    45→  totalActivities: number
+    46→  totalResearch: number
+    47→  pendingApprovals: number
+    48→}
+    49→
+    50→// Login Component
+    51→function LoginPage() {
+    52→  const [email, setEmail] = useState('')
+    53→  const [password, setPassword] = useState('')
+    54→  const [isLoading, setIsLoading] = useState(false)
+    55→  const [error, setError] = useState('')
+    56→  const login = useAuthStore((state) => state.login)
+    57→
+    58→  const handleSubmit = async (e: React.FormEvent) => {
+    59→    e.preventDefault()
+    60→    setError('')
+    61→    setIsLoading(true)
+    62→
+    63→    const result = await login(email, password)
+    64→    
+    65→    if (!result.success) {
+    66→      setError(result.error || 'Login failed')
+    67→    }
+    68→    setIsLoading(false)
+    69→  }
+    70→
+    71→  return (
+    72→    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    73→      {/* Animated Background */}
+    74→      <div className="absolute inset-0 overflow-hidden">
+    75→        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" />
+    76→        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse animation-delay-2000" />
+    77→        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse animation-delay-4000" />
+    78→      </div>
+    79→
+    80→      {/* Floating Particles */}
+    81→      {[...Array(20)].map((_, i) => (
+    82→        <div
+    83→          key={i}
+    84→          className="absolute w-2 h-2 bg-white/20 rounded-full animate-float"
+    85→          style={{
+    86→            left: `${Math.random() * 100}%`,
+    87→            top: `${Math.random() * 100}%`,
+    88→            animationDelay: `${Math.random() * 5}s`,
+    89→            animationDuration: `${5 + Math.random() * 10}s`,
+    90→          }}
+    91→        />
+    92→      ))}
+    93→
+    94→      {/* Login Card */}
+    95→      <div className="relative z-10 w-full max-w-md mx-4">
+    96→        <div className="backdrop-blur-xl bg-white/10 rounded-3xl shadow-2xl border border-white/20 p-8">
+    97→          {/* Logo & Header */}
+    98→          <div className="text-center mb-8">
+    99→            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 mb-4 shadow-lg shadow-purple-500/30">
+   100→              <Building2 className="w-10 h-10 text-white" />
+   101→            </div>
+   102→            <h1 className="text-3xl font-bold text-white mb-2">IQAC Portal</h1>
+   103→            <p className="text-white/70 text-sm">Nehru Institute of Engineering and Technology</p>
+   104→            <p className="text-white/50 text-xs mt-1">(Autonomous)</p>
+   105→          </div>
+   106→
+   107→          {/* Error Message */}
+   108→          {error && (
+   109→            <div className="mb-6 p-3 rounded-xl bg-red-500/20 border border-red-500/30 backdrop-blur-sm">
+   110→              <p className="text-red-300 text-sm flex items-center gap-2">
+   111→                <AlertCircle className="w-4 h-4" />
+   112→                {error}
+   113→              </p>
+   114→            </div>
+   115→          )}
+   116→
+   117→          {/* Login Form */}
+   118→          <form onSubmit={handleSubmit} className="space-y-5">
+   119→            <div className="space-y-2">
+   120→              <label className="text-white/80 text-sm font-medium">Email Address</label>
+   121→              <div className="relative">
+   122→                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/50" />
+   123→                <Input
+   124→                  type="email"
+   125→                  value={email}
+   126→                  onChange={(e) => setEmail(e.target.value)}
+   127→                  placeholder="Enter your email"
+   128→                  className="pl-12 py-3 bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-purple-400 focus:ring-purple-400/20 rounded-xl"
+   129→                  required
+   130→                />
+   131→              </div>
+   132→            </div>
+   133→
+   134→            <div className="space-y-2">
+   135→              <label className="text-white/80 text-sm font-medium">Password</label>
+   136→              <div className="relative">
+   137→                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/50" />
+   138→                <Input
+   139→                  type="password"
+   140→                  value={password}
+   141→                  onChange={(e) => setPassword(e.target.value)}
+   142→                  placeholder="Enter your password"
+   143→                  className="pl-12 py-3 bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-purple-400 focus:ring-purple-400/20 rounded-xl"
+   144→                  required
+   145→                />
+   146→              </div>
+   147→            </div>
+   148→
+   149→            <Button
+   150→              type="submit"
+   151→              disabled={isLoading}
+   152→              className="w-full py-3 bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 hover:-translate-y-0.5"
+   153→            >
+   154→              {isLoading ? (
+   155→                <span className="flex items-center gap-2">
+   156→                  <RefreshCw className="w-5 h-5 animate-spin" />
+   157→                  Signing in...
+   158→                </span>
+   159→              ) : (
+   160→                'Sign In'
+   161→              )}
+   162→            </Button>
+   163→          </form>
+   164→
+   165→          {/* Quick Login Options */}
+   166→          <div className="mt-8 pt-6 border-t border-white/10">
+   167→            <p className="text-white/50 text-xs text-center mb-4">Quick Login (Demo)</p>
+   168→            <div className="grid grid-cols-2 gap-2">
+   169→              <button
+   170→                onClick={() => { setEmail('admin@niet.ac.in'); setPassword('admin123'); }}
+   171→                className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs transition-all border border-white/10"
+   172→              >
+   173→                🔐 Admin
+   174→              </button>
+   175→              <button
+   176→                onClick={() => { setEmail('hod_cse@niet.ac.in'); setPassword('hod123'); }}
+   177→                className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs transition-all border border-white/10"
+   178→              >
+   179→                👨‍🏫 HOD CSE
+   180→              </button>
+   181→              <button
+   182→                onClick={() => { setEmail('staff_cse1@niet.ac.in'); setPassword('staff123'); }}
+   183→                className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs transition-all border border-white/10"
+   184→              >
+   185→                👨‍🔧 Staff
+   186→              </button>
+   187→              <button
+   188→                onClick={() => { setEmail('student_cse1@niet.ac.in'); setPassword('student123'); }}
+   189→                className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs transition-all border border-white/10"
+   190→              >
+   191→                🎓 Student
+   192→              </button>
+   193→            </div>
+   194→          </div>
+   195→        </div>
+   196→
+   197→        {/* Footer */}
+   198→        <p className="text-center text-white/30 text-xs mt-6">
+   199→          © 2024 NIET IQAC Management System
+   200→        </p>
+   201→      </div>
+   202→
+   203→      <style jsx>{`
+   204→        @keyframes float {
+   205→          0%, 100% { transform: translateY(0) rotate(0deg); }
+   206→          50% { transform: translateY(-20px) rotate(180deg); }
+   207→        }
+   208→        .animate-float {
+   209→          animation: float 6s ease-in-out infinite;
+   210→        }
+   211→        .animation-delay-2000 {
+   212→          animation-delay: 2s;
+   213→        }
+   214→        .animation-delay-4000 {
+   215→          animation-delay: 4s;
+   216→        }
+   217→      `}</style>
+   218→    </div>
+   219→  )
+   220→}
+   221→
+   222→// Sidebar Component
+   223→function Sidebar({ isOpen, onClose, activeTab, setActiveTab, userRole }: {
+   224→  isOpen: boolean
+   225→  onClose: () => void
+   226→  activeTab: string
+   227→  setActiveTab: (tab: string) => void
+   228→  userRole: string
+   229→}) {
+   230→  const isAdmin = userRole === 'ADMIN'
+   231→  const isHOD = userRole === 'HOD'
+   232→  const isStaff = userRole === 'STAFF'
+   233→  const isStudent = userRole === 'STUDENT'
+   234→
+   235→  const adminMenu = [
+   236→    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+   237→    { id: 'departments', label: 'Departments', icon: Building2 },
+   238→    { id: 'faculty', label: 'Faculty', icon: Users },
+   239→    { id: 'students', label: 'Students', icon: GraduationCap },
+   240→    { id: 'activities', label: 'Activities', icon: Calendar },
+   241→    { id: 'research', label: 'Research', icon: BookOpen },
+   242→    { id: 'approvals', label: 'Approvals', icon: CheckCircle },
+   243→    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+   244→    { id: 'notifications', label: 'Notifications', icon: Bell },
+   245→    { id: 'settings', label: 'Settings', icon: Settings },
+   246→  ]
+   247→
+   248→  const hodMenu = [
+   249→    { id: 'dashboard', label: 'My Department', icon: LayoutDashboard },
+   250→    { id: 'faculty', label: 'Faculty', icon: Users },
+   251→    { id: 'students', label: 'Students', icon: GraduationCap },
+   252→    { id: 'activities', label: 'Activities', icon: Calendar },
+   253→    { id: 'research', label: 'Research', icon: BookOpen },
+   254→    { id: 'approvals', label: 'Approvals', icon: CheckCircle },
+   255→    { id: 'analytics', label: 'Reports', icon: BarChart3 },
+   256→    { id: 'notifications', label: 'Notifications', icon: Bell },
+   257→  ]
+   258→
+   259→  const staffMenu = [
+   260→    { id: 'dashboard', label: 'My Activities', icon: LayoutDashboard },
+   261→    { id: 'students', label: 'Students', icon: GraduationCap },
+   262→    { id: 'activities', label: 'Activities', icon: Calendar },
+   263→    { id: 'research', label: 'Research', icon: BookOpen },
+   264→    { id: 'approvals', label: 'Reviews', icon: CheckCircle },
+   265→    { id: 'notifications', label: 'Notifications', icon: Bell },
+   266→  ]
+   267→
+   268→  const studentMenu = [
+   269→    { id: 'dashboard', label: 'My Profile', icon: LayoutDashboard },
+   270→    { id: 'submissions', label: 'My Submissions', icon: Upload },
+   271→    { id: 'activities', label: 'Activities', icon: Calendar },
+   272→    { id: 'achievements', label: 'Achievements', icon: Trophy },
+   273→    { id: 'certificates', label: 'Certificates', icon: Award },
+   274→    { id: 'notifications', label: 'Notifications', icon: Bell },
+   275→  ]
+   276→
+   277→  const menu = isAdmin ? adminMenu : isHOD ? hodMenu : isStaff ? staffMenu : studentMenu
+   278→
+   279→  return (
+   280→    <>
+   281→      {/* Mobile Overlay */}
+   282→      {isOpen && (
+   283→        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden" onClick={onClose} />
+   284→      )}
+   285→
+   286→      {/* Sidebar */}
+   287→      <aside className={`fixed left-0 top-0 h-full z-50 w-72 backdrop-blur-xl bg-slate-900/90 border-r border-white/10 transform transition-transform duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+   288→        {/* Header */}
+   289→        <div className="p-6 border-b border-white/10">
+   290→          <div className="flex items-center justify-between">
+   291→            <div className="flex items-center gap-3">
+   292→              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center">
+   293→                <Building2 className="w-5 h-5 text-white" />
+   294→              </div>
+   295→              <div>
+   296→                <h2 className="text-white font-bold text-lg">IQAC ERP</h2>
+   297→                <p className="text-white/50 text-xs">NIET Autonomous</p>
+   298→              </div>
+   299→            </div>
+   300→            <button onClick={onClose} className="lg:hidden p-2 text-white/60 hover:text-white">
+   301→              <X className="w-5 h-5" />
+   302→            </button>
+   303→          </div>
+   304→        </div>
+   305→
+   306→        {/* Navigation */}
+   307→        <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-180px)]">
+   308→          {menu.map((item) => (
+   309→            <button
+   310→              key={item.id}
+   311→              onClick={() => { setActiveTab(item.id); onClose(); }}
+   312→              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+   313→                activeTab === item.id
+   314→                  ? 'bg-gradient-to-r from-purple-600/30 to-cyan-600/30 text-white border border-purple-500/30'
+   315→                  : 'text-white/60 hover:text-white hover:bg-white/5'
+   316→              }`}
+   317→            >
+   318→              <item.icon className="w-5 h-5" />
+   319→              <span className="font-medium">{item.label}</span>
+   320→            </button>
+   321→          ))}
+   322→        </nav>
+   323→
+   324→        {/* Footer */}
+   325→        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
+   326→          <div className="flex items-center gap-3 px-4 py-3">
+   327→            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white font-bold text-sm">
+   328→              {userRole[0]}
+   329→            </div>
+   330→            <div className="flex-1 min-w-0">
+   331→              <p className="text-white text-sm font-medium truncate capitalize">{userRole}</p>
+   332→              <p className="text-white/50 text-xs">Online</p>
+   333→            </div>
+   334→          </div>
+   335→        </div>
+   336→      </aside>
+   337→    </>
+   338→  )
+   339→}
+   340→
+   341→// Stats Card Component
+   342→function StatsCard({ title, value, icon: Icon, color, trend }: {
+   343→  title: string
+   344→  value: number | string
+   345→  icon: any
+   346→  color: string
+   347→  trend?: string
+   348→}) {
+   349→  return (
+   350→    <Card className="backdrop-blur-xl bg-white/10 border-white/20 hover:bg-white/15 transition-all duration-300 group hover:-translate-y-1">
+   351→      <CardContent className="p-6">
+   352→        <div className="flex items-start justify-between">
+   353→          <div className="space-y-2">
+   354→            <p className="text-white/60 text-sm font-medium">{title}</p>
+   355→            <p className="text-3xl font-bold text-white">{value}</p>
+   356→            {trend && (
+   357→              <p className="text-emerald-400 text-xs flex items-center gap-1">
+   358→                <TrendingUp className="w-3 h-3" /> {trend}
+   359→              </p>
+   360→            )}
+   361→          </div>
+   362→          <div className={`p-3 rounded-xl ${color} group-hover:scale-110 transition-transform`}>
+   363→            <Icon className="w-6 h-6 text-white" />
+   364→          </div>
+   365→        </div>
+   366→      </CardContent>
+   367→    </Card>
+   368→  )
+   369→}
+   370→
+   371→// Department Card Component
+   372→function DepartmentCard({ dept, onView }: { dept: Department; onView: () => void }) {
+   373→  return (
+   374→    <Card className="backdrop-blur-xl bg-white/10 border-white/20 hover:bg-white/15 transition-all duration-300 group cursor-pointer hover:-translate-y-2 hover:shadow-2xl hover:shadow-purple-500/10" onClick={onView}>
+   375→      <CardHeader className="pb-4">
+   376→        <div className="flex items-start justify-between">
+   377→          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-purple-500/30 group-hover:scale-110 transition-transform">
+   378→            {dept.code.substring(0, 2)}
+   379→          </div>
+   380→          <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30">
+   381→            Active
+   382→          </Badge>
+   383→        </div>
+   384→        <CardTitle className="text-white text-lg mt-3 line-clamp-1">{dept.name}</CardTitle>
+   385→        <CardDescription className="text-white/50 text-sm">{dept.code}</CardDescription>
+   386→      </CardHeader>
+   387→      <CardContent>
+   388→        <div className="grid grid-cols-3 gap-4">
+   389→          <div className="text-center p-3 rounded-xl bg-white/5">
+   390→            <Users className="w-5 h-5 mx-auto mb-1 text-cyan-400" />
+   391→            <p className="text-white font-bold">{dept._count?.faculty || 0}</p>
+   392→            <p className="text-white/50 text-xs">Faculty</p>
+   393→          </div>
+   394→          <div className="text-center p-3 rounded-xl bg-white/5">
+   395→            <GraduationCap className="w-5 h-5 mx-auto mb-1 text-purple-400" />
+   396→            <p className="text-white font-bold">{dept._count?.students || 0}</p>
+   397→            <p className="text-white/50 text-xs">Students</p>
+   398→          </div>
+   399→          <div className="text-center p-3 rounded-xl bg-white/5">
+   400→            <Calendar className="w-5 h-5 mx-auto mb-1 text-pink-400" />
+   401→            <p className="text-white font-bold">{dept._count?.activities || 0}</p>
+   402→            <p className="text-white/50 text-xs">Activities</p>
+   403→          </div>
+   404→        </div>
+   405→        <button className="w-full mt-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-sm font-medium transition-all flex items-center justify-center gap-2">
+   406→          View Department <ChevronRight className="w-4 h-4" />
+   407→        </button>
+   408→      </CardContent>
+   409→    </Card>
+   410→  )
+   411→}
+   412→
+   413→// Admin Dashboard Component
+   414→function AdminDashboard({ departments, stats }: { departments: Department[]; stats: DashboardStats }) {
+   415→  return (
+   416→    <div className="space-y-6">
+   417→      {/* Welcome Banner */}
+   418→      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-600 p-8">
+   419→        <div className="absolute inset-0 bg-black/20" />
+   420→        <div className="absolute -right-20 -top-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+   421→        <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+   422→        <div className="relative z-10">
+   423→          <h1 className="text-3xl font-bold text-white mb-2">Welcome, Administrator</h1>
+   424→          <p className="text-white/80 max-w-xl">Complete control over your institution&apos;s IQAC management system. Monitor all departments, faculty, students, and activities from this central dashboard.</p>
+   425→        </div>
+   426→      </div>
+   427→
+   428→      {/* Stats Grid */}
+   429→      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+   430→        <StatsCard title="Departments" value={stats.totalDepartments} icon={Building2} color="bg-blue-500" />
+   431→        <StatsCard title="Faculty" value={stats.totalFaculty} icon={Users} color="bg-purple-500" />
+   432→        <StatsCard title="Students" value={stats.totalStudents} icon={GraduationCap} color="bg-emerald-500" />
+   433→        <StatsCard title="Activities" value={stats.totalActivities} icon={Calendar} color="bg-orange-500" />
+   434→        <StatsCard title="Research" value={stats.totalResearch} icon={BookOpen} color="bg-pink-500" />
+   435→        <StatsCard title="Pending Approvals" value={stats.pendingApprovals} icon={Clock} color="bg-yellow-500" trend="+12%" />
+   436→      </div>
+   437→
+   438→      {/* Departments Section */}
+   439→      <div className="space-y-4">
+   440→        <div className="flex items-center justify-between">
+   441→          <div>
+   442→            <h2 className="text-2xl font-bold text-white">Department Overview</h2>
+   443→            <p className="text-white/60 text-sm">Manage and monitor all {departments.length} departments</p>
+   444→          </div>
+   445→          <div className="flex items-center gap-2">
+   446→            <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10">
+   447→              <Filter className="w-4 h-4 mr-2" /> Filter
+   448→            </Button>
+   449→            <Button size="sm" className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700">
+   450→              <Plus className="w-4 h-4 mr-2" /> Add Department
+   451→            </Button>
+   452→          </div>
+   453→        </div>
+   454→
+   455→        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+   456→          {departments.map((dept) => (
+   457→            <DepartmentCard key={dept.id} dept={dept} onView={() => {}} />
+   458→          ))}
+   459→        </div>
+   460→      </div>
+   461→
+   462→      {/* Recent Activity & Quick Actions */}
+   463→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+   464→        {/* Recent Activity */}
+   465→        <Card className="backdrop-blur-xl bg-white/10 border-white/20">
+   466→          <CardHeader>
+   467→            <CardTitle className="text-white flex items-center gap-2">
+   468→              <ActivityIcon className="w-5 h-5 text-purple-400" /> Recent Activity
+   469→            </CardTitle>
+   470→          </CardHeader>
+   471→          <CardContent className="space-y-4">
+   472→            {[
+   473→              { action: 'New research paper submitted', dept: 'CSE', time: '2 mins ago', type: 'research' },
+   474→              { action: 'Student registration approved', dept: 'AI&DS', time: '15 mins ago', type: 'student' },
+   475→              { action: 'Workshop completed', dept: 'ECE', time: '1 hour ago', type: 'activity' },
+   476→              { action: 'FDP proposal submitted', dept: 'IT', time: '2 hours ago', type: 'fdp' },
+   477→              { action: 'Placement update received', dept: 'CSE', time: '3 hours ago', type: 'placement' },
+   478→            ].map((activity, i) => (
+   479→              <div key={i} className="flex items-center gap-4 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+   480→                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+   481→                  activity.type === 'research' ? 'bg-pink-500/20' :
+   482→                  activity.type === 'student' ? 'bg-emerald-500/20' :
+   483→                  activity.type === 'activity' ? 'bg-blue-500/20' :
+   484→                  activity.type === 'fdp' ? 'bg-orange-500/20' : 'bg-purple-500/20'
+   485→                }`}>
+   486→                  {activity.type === 'research' ? <BookOpen className="w-5 h-5 text-pink-400" /> :
+   487→                   activity.type === 'student' ? <GraduationCap className="w-5 h-5 text-emerald-400" /> :
+   488→                   activity.type === 'activity' ? <Calendar className="w-5 h-5 text-blue-400" /> :
+   489→                   activity.type === 'fdp' ? <Award className="w-5 h-5 text-orange-400" /> :
+   490→                   <Briefcase className="w-5 h-5 text-purple-400" />}
+   491→                </div>
+   492→                <div className="flex-1 min-w-0">
+   493→                  <p className="text-white text-sm font-medium truncate">{activity.action}</p>
+   494→                  <p className="text-white/50 text-xs">{activity.dept}</p>
+   495→                </div>
+   496→                <span className="text-white/40 text-xs whitespace-nowrap">{activity.time}</span>
+   497→              </div>
+   498→            ))}
+   499→          </CardContent>
+   500→        </Card>
+   501→
+   502→        {/* Quick Actions */}
+   503→        <Card className="backdrop-blur-xl bg-white/10 border-white/20">
+   504→          <CardHeader>
+   505→            <CardTitle className="text-white flex items-center gap-2">
+   506→              <Zap className="w-5 h-5 text-yellow-400" /> Quick Actions
+   507→            </CardTitle>
+   508→          </CardHeader>
+   509→          <CardContent>
+   510→            <div className="grid grid-cols-2 gap-3">
+   511→              {[
+   512→                { icon: UserPlus, label: 'Add Faculty', color: 'from-blue-500 to-cyan-500' },
+   513→                { icon: GraduationCap, label: 'Add Student', color: 'from-emerald-500 to-teal-500' },
+   514→                { icon: Calendar, label: 'Create Event', color: 'from-purple-500 to-pink-500' },
+   515→                { icon: BookOpen, label: 'Add Research', color: 'from-orange-500 to-red-500' },
+   516→                { icon: FileText, label: 'Generate Report', color: 'from-indigo-500 to-purple-500' },
+   517→                { icon: Download, label: 'Export Data', color: 'from-green-500 to-emerald-500' },
+   518→              ].map((action, i) => (
+   519→                <button key={i} className="p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all group">
+   520→                  <div className={`w-10 h-10 mx-auto mb-2 rounded-xl bg-gradient-to-r ${action.color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+   521→                    <action.icon className="w-5 h-5 text-white" />
+   522→                  </div>
+   523→                  <p className="text-white/80 text-sm font-medium">{action.label}</p>
+   524→                </button>
+   525→              ))}
+   526→            </div>
+   527→          </CardContent>
+   528→        </Card>
+   529→      </div>
+   530→    </div>
+   531→  )
+   532→}
+   533→
+   534→// HOD Dashboard Component
+   535→function HODDashboard({ department, stats }: { department: Department; stats: any }) {
+   536→  return (
+   537→    <div className="space-y-6">
+   538→      {/* Department Header */}
+   539→      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 p-8">
+   540→        <div className="absolute inset-0 bg-black/20" />
+   541→        <div className="absolute -right-20 -top-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+   542→        <div className="relative z-10 flex items-start gap-6">
+   543→          <div className="w-24 h-24 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-3xl shadow-xl">
+   544→            {department.code.substring(0, 2)}
+   545→          </div>
+   546→          <div className="flex-1">
+   547→            <Badge className="mb-2 bg-white/20 text-white border-0">Department Head</Badge>
+   548→            <h1 className="text-3xl font-bold text-white mb-1">{department.name}</h1>
+   549→            <p className="text-white/80">{department.mission}</p>
+   550→            <div className="flex items-center gap-4 mt-4">
+   551→              <span className="flex items-center gap-1 text-white/70 text-sm"><Calendar className="w-4 h-4" /> AY 2024-2025</span>
+   552→              <span className="flex items-center gap-1 text-white/70 text-sm"><Users className="w-4 h-4" /> Odd Semester</span>
+   553→            </div>
+   554→          </div>
+   555→        </div>
+   556→      </div>
+   557→
+   558→      {/* Stats Grid */}
+   559→      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+   560→        <StatsCard title="Faculty Count" value={stats.facultyCount || 12} icon={Users} color="bg-blue-500" />
+   561→        <StatsCard title="Student Count" value={stats.studentCount || 120} icon={GraduationCap} color="bg-emerald-500" />
+   562→        <StatsCard title="Pending Approvals" value={stats.pendingApprovals || 5} icon={Clock} color="bg-yellow-500" />
+   563→        <StatsCard title="Approved Activities" value={stats.approvedActivities || 18} icon={CheckCircle} color="bg-green-500" />
+   564→      </div>
+   565→
+   566→      {/* Main Content Grid */}
+   567→      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+   568→        {/* Faculty List */}
+   569→        <Card className="lg:col-span-2 backdrop-blur-xl bg-white/10 border-white/20">
+   570→          <CardHeader className="flex flex-row items-center justify-between">
+   571→            <CardTitle className="text-white flex items-center gap-2">
+   572→              <Users className="w-5 h-5 text-blue-400" /> Faculty Members
+   573→            </CardTitle>
+   574→            <Button size="sm" variant="ghost" className="text-white/60 hover:text-white hover:bg-white/10">
+   575→              View All
+   576→            </Button>
+   577→          </CardHeader>
+   578→          <CardContent>
+   579→            <div className="space-y-3">
+   580→              {['Dr. Ramesh Kumar', 'Dr. Priya Sharma', 'Prof. Suresh Babu', 'Dr. Lakshmi Devi'].map((name, i) => (
+   581→                <div key={i} className="flex items-center gap-4 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+   582→                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-sm">
+   583→                    {name.charAt(0)}
+   584→                  </div>
+   585→                  <div className="flex-1">
+   586→                    <p className="text-white font-medium text-sm">{name}</p>
+   587→                    <p className="text-white/50 text-xs">{['Professor', 'Associate Professor', 'Assistant Professor'][i]}</p>
+   588→                  </div>
+   589→                  <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-300">Active</Badge>
+   590→                </div>
+   591→              ))}
+   592→            </div>
+   593→          </CardContent>
+   594→        </Card>
+   595→
+   596→        {/* Pending Reviews */}
+   597→        <Card className="backdrop-blur-xl bg-white/10 border-white/20">
+   598→          <CardHeader>
+   599→            <CardTitle className="text-white flex items-center gap-2">
+   600→              <Clock className="w-5 h-5 text-yellow-400" /> Pending Reviews
+   601→            </CardTitle>
+   602→          </CardHeader>
+   603→          <CardContent className="space-y-3">
+   604→            {[
+   605→              { title: 'Internship Application', student: 'John Doe', type: 'internship' },
+   606→              { title: 'Conference Paper', student: 'Jane Smith', type: 'research' },
+   607→              { title: 'Award Upload', student: 'Bob Wilson', type: 'certificate' },
+   608→            ].map((item, i) => (
+   609→              <div key={i} className="p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+   610→                <p className="text-white text-sm font-medium">{item.title}</p>
+   611→                <p className="text-white/50 text-xs">{item.student}</p>
+   612→                <div className="flex items-center gap-2 mt-2">
+   613→                  <Button size="sm" className="h-7 text-xs bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30">
+   614→                    <CheckCircle className="w-3 h-3 mr-1" /> Approve
+   615→                  </Button>
+   616→                  <Button size="sm" variant="ghost" className="h-7 text-xs text-red-300 hover:bg-red-500/20">
+   617→                    <XCircle className="w-3 h-3 mr-1" /> Reject
+   618→                  </Button>
+   619→                </div>
+   620→              </div>
+   621→            ))}
+   622→          </CardContent>
+   623→        </Card>
+   624→      </div>
+   625→    </div>
+   626→  )
+   627→}
+   628→
+   629→// Staff Dashboard Component
+   630→function StaffDashboard({ user }: { user: any }) {
+   631→  return (
+   632→    <div className="space-y-6">
+   633→      {/* Staff Header */}
+   634→      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-8">
+   635→        <div className="absolute inset-0 bg-black/20" />
+   636→        <div className="absolute -right-20 -top-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+   637→        <div className="relative z-10">
+   638→          <h1 className="text-3xl font-bold text-white mb-2">Welcome, {user.name}</h1>
+   639→          <p className="text-white/80">Manage your activities, review student submissions, and track your contributions.</p>
+   640→        </div>
+   641→      </div>
+   642→
+   643→      {/* Stats Grid */}
+   644→      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+   645→        <StatsCard title="My Activities" value={8} icon={Calendar} color="bg-blue-500" />
+   646→        <StatsCard title="Student Submissions" value={24} icon={Upload} color="bg-purple-500" />
+   647→        <StatsCard title="Pending Reviews" value={5} icon={Clock} color="bg-yellow-500" />
+   648→        <StatsCard title="Publications" value={3} icon={BookOpen} color="bg-pink-500" />
+   649→      </div>
+   650→
+   651→      {/* Content Grid */}
+   652→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+   653→        {/* Pending Student Submissions */}
+   654→        <Card className="backdrop-blur-xl bg-white/10 border-white/20">
+   655→          <CardHeader>
+   656→            <CardTitle className="text-white flex items-center gap-2">
+   657→              <Upload className="w-5 h-5 text-purple-400" /> Pending Student Submissions
+   658→            </CardTitle>
+   659→          </CardHeader>
+   660→          <CardContent className="space-y-3">
+   661→            {[
+   662→              { student: 'Alice Johnson', item: 'Internship Report', date: 'Today' },
+   663→              { student: 'Bob Smith', item: 'Project Report', date: 'Yesterday' },
+   664→              { student: 'Carol Williams', item: 'Competition Entry', date: '2 days ago' },
+   665→              { student: 'David Brown', item: 'Award Upload', date: '3 days ago' },
+   666→            ].map((submission, i) => (
+   667→              <div key={i} className="flex items-center gap-4 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+   668→                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm">
+   669→                  {submission.student.charAt(0)}
+   670→                </div>
+   671→                <div className="flex-1 min-w-0">
+   672→                  <p className="text-white text-sm font-medium">{submission.item}</p>
+   673→                  <p className="text-white/50 text-xs">{submission.student} • {submission.date}</p>
+   674→                </div>
+   675→                <Button size="sm" variant="ghost" className="text-cyan-400 hover:bg-cyan-500/20">
+   676→                  Review
+   677→                </Button>
+   678→              </div>
+   679→            ))}
+   680→          </CardContent>
+   681→        </Card>
+   682→
+   683→        {/* My Research & Publications */}
+   684→        <Card className="backdrop-blur-xl bg-white/10 border-white/20">
+   685→          <CardHeader>
+   686→            <CardTitle className="text-white flex items-center gap-2">
+   687→              <BookOpen className="w-5 h-5 text-pink-400" /> My Publications
+   688→            </CardTitle>
+   689→          </CardHeader>
+   690→          <CardContent className="space-y-3">
+   691→            {[
+   692→              { title: 'Machine Learning in Healthcare', journal: 'IEEE Access', year: '2024', citations: 12 },
+   693→              { title: 'IoT-Based Smart Systems', journal: 'Springer', year: '2023', citations: 8 },
+   694→              { title: 'Deep Learning Applications', journal: 'Elsevier', year: '2024', citations: 5 },
+   695→            ].map((pub, i) => (
+   696→              <div key={i} className="p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+   697→                <p className="text-white text-sm font-medium">{pub.title}</p>
+   698→                <p className="text-white/50 text-xs">{pub.journal} • {pub.year}</p>
+   699→                <div className="flex items-center gap-2 mt-2">
+   700→                  <span className="text-xs text-white/40 flex items-center gap-1">
+   701→                    <Star className="w-3 h-3" /> {pub.citations} citations
+   702→                  </span>
+   703→                  <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-300 text-xs">
+   704→                    Scopus Indexed
+   705→                  </Badge>
+   706→                </div>
+   707→              </div>
+   708→            ))}
+   709→          </CardContent>
+   710→        </Card>
+   711→      </div>
+   712→    </div>
+   713→  )
+   714→}
+   715→
+   716→// Student Dashboard Component
+   717→function StudentDashboard({ user }: { user: any }) {
+   718→  return (
+   719→    <div className="space-y-6">
+   720→      {/* Student Header */}
+   721→      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-pink-600 via-rose-600 to-orange-600 p-8">
+   722→        <div className="absolute inset-0 bg-black/20" />
+   723→        <div className="absolute -right-20 -top-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+   724→        <div className="relative z-10 flex items-start gap-6">
+   725→          <div className="w-24 h-24 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-3xl shadow-xl">
+   726→            {user.name.charAt(0)}
+   727→          </div>
+   728→          <div className="flex-1">
+   729→            <Badge className="mb-2 bg-white/20 text-white border-0">Student</Badge>
+   730→            <h1 className="text-3xl font-bold text-white mb-1">{user.name}</h1>
+   731→            <p className="text-white/80">Computer Science and Engineering • Semester 5</p>
+   732→            <div className="flex items-center gap-4 mt-4">
+   733→              <span className="flex items-center gap-1 text-white/70 text-sm"><Trophy className="w-4 h-4" /> CGPA: 8.5</span>
+   734→              <span className="flex items-center gap-1 text-white/70 text-sm"><Calendar className="w-4 h-4" /> Batch: 2024-2028</span>
+   735→            </div>
+   736→          </div>
+   737→        </div>
+   738→      </div>
+   739→
+   740→      {/* Quick Stats */}
+   741→      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+   742→        <StatsCard title="Submissions" value={12} icon={Upload} color="bg-blue-500" />
+   743→        <StatsCard title="Approved" value={10} icon={CheckCircle} color="bg-emerald-500" />
+   744→        <StatsCard title="Pending" value={2} icon={Clock} color="bg-yellow-500" />
+   745→        <StatsCard title="Achievements" value={5} icon={Trophy} color="bg-pink-500" />
+   746→      </div>
+   747→
+   748→      {/* Submission Categories */}
+   749→      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+   750→        {[
+   751→          { icon: BookOpen, label: 'Journal Paper', count: 2, color: 'from-pink-500 to-rose-500' },
+   752→          { icon: Calendar, label: 'Conference', count: 1, color: 'from-purple-500 to-indigo-500' },
+   753→          { icon: Award, label: 'Patent', count: 0, color: 'from-blue-500 to-cyan-500' },
+   754→          { icon: Briefcase, label: 'Internship', count: 1, color: 'from-emerald-500 to-teal-500' },
+   755→          { icon: GraduationCap, label: 'NPTEL', count: 3, color: 'from-orange-500 to-red-500' },
+   756→          { icon: Trophy, label: 'Hackathon', count: 2, color: 'from-yellow-500 to-orange-500' },
+   757→          { icon: Dumbbell, label: 'Sports', count: 1, color: 'from-green-500 to-emerald-500' },
+   758→          { icon: Music, label: 'Cultural', count: 1, color: 'from-violet-500 to-purple-500' },
+   759→          { icon: Award, label: 'Certifications', count: 4, color: 'from-cyan-500 to-blue-500' },
+   760→        ].map((category, i) => (
+   761→          <Card key={i} className="backdrop-blur-xl bg-white/10 border-white/20 hover:bg-white/15 transition-all cursor-pointer group hover:-translate-y-1">
+   762→            <CardContent className="p-5">
+   763→              <div className="flex items-center gap-4">
+   764→                <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${category.color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+   765→                  <category.icon className="w-6 h-6 text-white" />
+   766→                </div>
+   767→                <div className="flex-1">
+   768→                  <p className="text-white font-medium">{category.label}</p>
+   769→                  <p className="text-white/50 text-sm">{category.count} submissions</p>
+   770→                </div>
+   771→                <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-white/60 transition-colors" />
+   772→              </div>
+   773→            </CardContent>
+   774→          </Card>
+   775→        ))}
+   776→      </div>
+   777→
+   778→      {/* New Submission Button */}
+   779→      <Card className="backdrop-blur-xl bg-gradient-to-r from-purple-600/20 to-cyan-600/20 border-purple-500/30">
+   780→        <CardContent className="p-6">
+   781→          <div className="flex items-center justify-between">
+   782→            <div>
+   783→              <h3 className="text-white font-semibold text-lg">Ready to submit something new?</h3>
+   784→              <p className="text-white/60 text-sm">Add your achievements, publications, certifications, and more.</p>
+   785→            </div>
+   786→            <Button className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700">
+   787→              <Plus className="w-4 h-4 mr-2" /> New Submission
+   788→            </Button>
+   789→          </div>
+   790→        </CardContent>
+   791→      </Card>
+   792→    </div>
+   793→  )
+   794→}
+   795→
+   796→// Main App Component
+   797→export default function IQACPortal() {
+   798→  const { user, isAuthenticated, isLoading, logout } = useAuthStore()
+   799→  const [activeTab, setActiveTab] = useState('dashboard')
+   800→  const [sidebarOpen, setSidebarOpen] = useState(false)
+   801→  const [departments, setDepartments] = useState<Department[]>([])
+   802→  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
+   803→
+   804→  // Fetch data on mount
+   805→  useEffect(() => {
+   806→    if (isAuthenticated) {
+   807→      fetchDepartments()
+   808→      fetchDashboardStats()
+   809→    }
+   810→  }, [isAuthenticated])
+   811→
+   812→  const fetchDepartments = useCallback(async () => {
+   813→    try {
+   814→      const res = await fetch('/api/departments')
+   815→      const data = await res.json()
+   816→      if (data.success) {
+   817→        setDepartments(data.departments)
+   818→      }
+   819→    } catch (error) {
+   820→      console.error('Error fetching departments:', error)
+   821→    }
+   822→  }, [])
+   823→
+   824→  const fetchDashboardStats = useCallback(async () => {
+   825→    try {
+   826→      const res = await fetch('/api/dashboard')
+   827→      const data = await res.json()
+   828→      if (data.success) {
+   829→        setDashboardStats(data.data.stats)
+   830→      }
+   831→    } catch (error) {
+   832→      console.error('Error fetching dashboard:', error)
+   833→    }
+   834→  }, [])
+   835→
+   836→  // Show loading state
+   837→  if (isLoading) {
+   838→    return (
+   839→      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+   840→        <div className="text-center">
+   841→          <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4" />
+   842→          <p className="text-white/60">Loading...</p>
+   843→        </div>
+   844→      </div>
+   845→    )
+   846→  }
+   847→
+   848→  // Show login if not authenticated
+   849→  if (!isAuthenticated || !user) {
+   850→    return <LoginPage />
+   851→  }
+   852→
+   853→  // Get user's department
+   854→  const userDepartment = departments.find(d => d.id === user.departmentId)
+   855→
+   856→  // Render dashboard based on role
+   857→  const renderDashboard = () => {
+   858→    switch (user.role) {
+   859→      case 'ADMIN':
+   860→        return <AdminDashboard departments={departments} stats={dashboardStats || { totalDepartments: 0, totalFaculty: 0, totalStudents: 0, totalActivities: 0, totalResearch: 0, pendingApprovals: 0 }} />
+   861→      case 'HOD':
+   862→        return <HODDashboard department={userDepartment || { name: 'My Department', code: 'DEPT', mission: '' }} stats={{}} />
+   863→      case 'STAFF':
+   864→        return <StaffDashboard user={user} />
+   865→      case 'STUDENT':
+   866→        return <StudentDashboard user={user} />
+   867→      default:
+   868→        return <AdminDashboard departments={departments} stats={dashboardStats || { totalDepartments: 0, totalFaculty: 0, totalStudents: 0, totalActivities: 0, totalResearch: 0, pendingApprovals: 0 }} />
+   869→    }
+   870→  }
+   871→
+   872→  return (
+   873→    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/50 to-slate-900">
+   874→      {/* Background Effects */}
+   875→      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+   876→        <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20" />
+   877→        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20" />
+   878→        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10" />
+   879→      </div>
+   880→
+   881→      {/* Sidebar */}
+   882→      <Sidebar
+   883→        isOpen={sidebarOpen}
+   884→        onClose={() => setSidebarOpen(false)}
+   885→        activeTab={activeTab}
+   886→        setActiveTab={setActiveTab}
+   887→        userRole={user.role}
+   888→      />
+   889→
+   890→      {/* Main Content */}
+   891→      <div className="lg:ml-72 min-h-screen">
+   892→        {/* Top Navigation */}
+   893→        <header className="sticky top-0 z-30 backdrop-blur-xl bg-slate-900/80 border-b border-white/10">
+   894→          <div className="flex items-center justify-between px-6 py-4">
+   895→            <div className="flex items-center gap-4">
+   896→              <button
+   897→                onClick={() => setSidebarOpen(true)}
+   898→                className="lg:hidden p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg"
+   899→              >
+   900→                <Menu className="w-6 h-6" />
+   901→              </button>
+   902→              <div className="hidden sm:flex items-center gap-2 text-white/50 text-sm">
+   903→                <HomeIcon className="w-4 h-4" />
+   904→                <span>/</span>
+   905→                <span className="capitalize text-white/80">{activeTab}</span>
+   906→              </div>
+   907→            </div>
+   908→
+   909→            <div className="flex items-center gap-4">
+   910→              {/* Search */}
+   911→              <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+   912→                <Search className="w-4 h-4 text-white/40" />
+   913→                <input
+   914→                  type="text"
+   915→                  placeholder="Search anything..."
+   916→                  className="bg-transparent text-white placeholder:text-white/40 text-sm outline-none w-48"
+   917→                />
+   918→              </div>
+   919→
+   920→              {/* Notifications */}
+   921→              <button className="relative p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+   922→                <Bell className="w-5 h-5" />
+   923→                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+   924→              </button>
+   925→
+   926→              {/* Profile */}
+   927→              <div className="flex items-center gap-3 pl-4 border-l border-white/10">
+   928→                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white font-bold text-sm">
+   929→                  {user.name.charAt(0)}
+   930→                </div>
+   931→                <div className="hidden sm:block">
+   932→                  <p className="text-white text-sm font-medium">{user.name}</p>
+   933→                  <p className="text-white/50 text-xs capitalize">{user.role.toLowerCase()}</p>
+   934→                </div>
+   935→                <button
+   936→                  onClick={logout}
+   937→                  className="p-2 text-white/40 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors ml-2"
+   938→                  title="Logout"
+   939→                >
+   940→                  <LogOut className="w-4 h-4" />
+   941→                </button>
+   942→              </div>
+   943→            </div>
+   944→          </div>
+   945→        </header>
+   946→
+   947→        {/* Page Content */}
+   948→        <main className="p-6 relative z-10">
+   949→          {renderDashboard()}
+   950→        </main>
+   951→
+   952→        {/* Footer */}
+   953→        <footer className="mt-auto py-6 px-6 border-t border-white/10 relative z-10">
+   954→          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-white/40 text-sm">
+   955→            <p>© 2024 NIET IQAC Enterprise Management System</p>
+   956→            <p>Nehru Institute of Engineering and Technology (Autonomous)</p>
+   957→          </div>
+   958→        </footer>
+   959→      </div>
+   960→    </div>
+   961→  )
+   962→}
+   963→
+   964→// Missing icon component
+   965→function UserPlus(props: any) {
+   966→  return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="16" x2="22" y1="11" y2="11"/></svg>
+   967→}
+   968→

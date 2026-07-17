@@ -801,14 +801,6 @@ export default function IQACPortal() {
   const [departments, setDepartments] = useState<Department[]>([])
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
 
-  // Fetch data on mount
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchDepartments()
-      fetchDashboardStats()
-    }
-  }, [isAuthenticated])
-
   const fetchDepartments = useCallback(async () => {
     try {
       const res = await fetch('/api/departments')
@@ -832,6 +824,40 @@ export default function IQACPortal() {
       console.error('Error fetching dashboard:', error)
     }
   }, [])
+
+  // Fetch data on mount when authenticated
+  useEffect(() => {
+    if (!isAuthenticated) return
+    
+    let isMounted = true
+    
+    const loadData = async () => {
+      try {
+        const [deptRes, dashRes] = await Promise.all([
+          fetch('/api/departments'),
+          fetch('/api/dashboard')
+        ])
+        
+        if (isMounted) {
+          const deptData = await deptRes.json()
+          if (deptData.success) {
+            setDepartments(deptData.departments)
+          }
+          
+          const dashData = await dashRes.json()
+          if (dashData.success) {
+            setDashboardStats(dashData.data.stats)
+          }
+        }
+      } catch (error) {
+        console.error('Error loading data:', error)
+      }
+    }
+    
+    loadData()
+    
+    return () => { isMounted = false }
+  }, [isAuthenticated])
 
   // Show loading state
   if (isLoading) {
@@ -900,7 +926,7 @@ export default function IQACPortal() {
                 <Menu className="w-6 h-6" />
               </button>
               <div className="hidden sm:flex items-center gap-2 text-white/50 text-sm">
-                <HomeIcon className="w-4 h-4" />
+                <Home className="w-4 h-4" />
                 <span>/</span>
                 <span className="capitalize text-white/80">{activeTab}</span>
               </div>

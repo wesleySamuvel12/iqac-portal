@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       { success: false, error: 'Failed to create notification' },
       { status: 500 }
     )
-  )
+  }
 }
 
 export async function PATCH(request: NextRequest) {
