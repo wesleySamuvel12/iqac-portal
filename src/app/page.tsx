@@ -378,14 +378,14 @@ function LoginPage() {
                   HOD CSE
                 </button>
                 <button
-                  onClick={() => quickLogin('staff@niet.ac.in', 'staff123')}
+                  onClick={() => quickLogin('staff_cse1@niet.ac.in', 'staff123')}
                   className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-green-500/20 text-green-200 hover:text-white text-sm font-medium transition-all border border-white/10 hover:border-green-400/30 group"
                 >
                   <BookOpen className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   Staff ECE
                 </button>
                 <button
-                  onClick={() => quickLogin('student@niet.ac.in', 'student123')}
+                  onClick={() => quickLogin('student_cse1@niet.ac.in', 'student123')}
                   className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-amber-500/20 text-amber-200 hover:text-white text-sm font-medium transition-all border border-white/10 hover:border-amber-400/30 group"
                 >
                   <GraduationCap className="w-4 h-4 group-hover:scale-110 transition-transform" />
