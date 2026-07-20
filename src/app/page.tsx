@@ -230,6 +230,36 @@ const ACHIEVEMENT_TYPES = {
 function BriefcaseIcon(props: any) { return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> }
 function CodeIcon(props: any) { return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> }
 
+// ============ DEPARTMENTS LIST FOR LOGIN ============
+const DEPARTMENTS_LIST = [
+  { code: 'CSE', name: 'Computer Science & Engineering', color: 'blue' },
+  { code: 'AI&DS', name: 'AI & Data Science', color: 'purple' },
+  { code: 'IT', name: 'Information Technology', color: 'cyan' },
+  { code: 'ECE', name: 'Electronics & Communication', color: 'pink' },
+  { code: 'EEE', name: 'Electrical & Electronics', color: 'yellow' },
+  { code: 'MECH', name: 'Mechanical Engineering', color: 'orange' },
+  { code: 'CIVIL', name: 'Civil Engineering', color: 'emerald' },
+  { code: 'MATHS', name: 'Mathematics', color: 'indigo' },
+  { code: 'PHY', name: 'Physics', color: 'teal' },
+  { code: 'CHEM', name: 'Chemistry', color: 'rose' },
+  { code: 'ENG', name: 'English', color: 'sky' },
+  { code: 'MBA', name: 'MBA', color: 'violet' },
+  { code: 'MCA', name: 'MCA', color: 'fuchsia' },
+  { code: 'BIO', name: 'Biotechnology', color: 'lime' },
+  { code: 'AGRI', name: 'Agricultural Engg.', color: 'green' },
+  { code: 'BME', name: 'Biomedical Engg.', color: 'red' },
+  { code: 'R&A', name: 'Robotics & Automation', color: 'slate' },
+  { code: 'MECHT', name: 'Mechatronics', color: 'zinc' },
+  { code: 'CYBER', name: 'Cyber Security', color: 'amber' },
+  { code: 'DS', name: 'Data Science', color: 'stone' },
+]
+
+const ROLE_COLORS: Record<string, { bg: string; border: string; text: string; icon: string }> = {
+  HOD: { bg: 'bg-purple-50 hover:bg-purple-100', border: 'border-purple-200 hover:border-purple-300', text: 'text-purple-700 hover:text-purple-800', icon: 'text-purple-500' },
+  STAFF: { bg: 'bg-green-50 hover:bg-green-100', border: 'border-green-200 hover:border-green-300', text: 'text-green-700 hover:text-green-800', icon: 'text-green-500' },
+  STUDENT: { bg: 'bg-amber-50 hover:bg-amber-100', border: 'border-amber-200 hover:border-amber-300', text: 'text-amber-700 hover:text-amber-800', icon: 'text-amber-500' },
+}
+
 // ============ LOGIN PAGE ============
 function LoginPage() {
   const [email, setEmail] = useState('')
@@ -237,6 +267,8 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [selectedDept, setSelectedDept] = useState('CSE')
+  const [showDeptDropdown, setShowDeptDropdown] = useState(false)
   const login = useAuthStore((state) => state.login)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -260,6 +292,27 @@ function LoginPage() {
     setEmail(emailVal)
     setPassword(passVal)
   }
+
+  const getDeptEmail = (deptCode: string, role: string) => {
+    const code = deptCode.toLowerCase()
+    switch(role) {
+      case 'HOD': return `hod_${code}@niet.ac.in`
+      case 'STAFF': return `staff_${code}1@niet.ac.in`
+      case 'STUDENT': return `student_${code}1@niet.ac.in`
+      default: return ''
+    }
+  }
+
+  const getPassword = (role: string) => {
+    switch(role) {
+      case 'HOD': return 'hod123'
+      case 'STAFF': return 'staff123'
+      case 'STUDENT': return 'student123'
+      default: return ''
+    }
+  }
+
+  const currentDept = DEPARTMENTS_LIST.find(d => d.code === selectedDept)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-[#0a2a5e] to-indigo-950 flex items-center justify-center p-4 relative overflow-hidden">
@@ -362,35 +415,110 @@ function LoginPage() {
             {/* Quick Login - Department Wise */}
             <div className="mt-8 pt-6 border-t border-gray-200">
               <p className="text-xs text-gray-500 text-center mb-4 uppercase tracking-wider font-semibold">Quick Demo Access</p>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => quickLogin('admin@niet.ac.in', 'admin123')}
-                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 text-sm font-semibold transition-all border border-blue-200 hover:border-blue-300 group"
-                >
-                  <Shield className="w-4 h-4 text-blue-500 group-hover:scale-110 transition-transform" />
-                  Admin
-                </button>
-                <button
-                  onClick={() => quickLogin('hod_cse@niet.ac.in', 'hod123')}
-                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 hover:text-purple-800 text-sm font-semibold transition-all border border-purple-200 hover:border-purple-300 group"
-                >
-                  <UserCheck className="w-4 h-4 text-purple-500 group-hover:scale-110 transition-transform" />
-                  HOD CSE
-                </button>
-                <button
-                  onClick={() => quickLogin('staff_cse1@niet.ac.in', 'staff123')}
-                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-green-50 hover:bg-green-100 text-green-700 hover:text-green-800 text-sm font-semibold transition-all border border-green-200 hover:border-green-300 group"
-                >
-                  <BookOpen className="w-4 h-4 text-green-500 group-hover:scale-110 transition-transform" />
-                  Staff ECE
-                </button>
-                <button
-                  onClick={() => quickLogin('student_cse1@niet.ac.in', 'student123')}
-                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800 text-sm font-semibold transition-all border border-amber-200 hover:border-amber-300 group"
-                >
-                  <GraduationCap className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
-                  Student CSE
-                </button>
+              
+              {/* Admin Button - Always Visible */}
+              <button
+                onClick={() => quickLogin('admin@niet.ac.in', 'admin123')}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-sm font-bold transition-all shadow-md shadow-blue-500/25 mb-4 group"
+              >
+                <Shield className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                System Administrator
+              </button>
+
+              {/* Department Selector */}
+              <div className="mb-4">
+                <label className="text-xs font-semibold text-gray-600 mb-2 block">Select Department</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeptDropdown(!showDeptDropdown)}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 hover:border-gray-300 text-sm font-semibold text-gray-700 transition-all"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Building2 className="w-4 h-4 text-gray-500" />
+                      {currentDept?.code} - {currentDept?.name}
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showDeptDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {showDeptDropdown && (
+                    <div className="absolute z-50 w-full mt-2 bg-white rounded-xl shadow-xl border border-gray-200 max-h-64 overflow-y-auto">
+                      {DEPARTMENTS_LIST.map((dept) => (
+                        <button
+                          key={dept.code}
+                          type="button"
+                          onClick={() => {
+                            setSelectedDept(dept.code)
+                            setShowDeptDropdown(false)
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
+                            selectedDept === dept.code ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                          }`}
+                        >
+                          <div className={`w-3 h-3 rounded-full bg-${dept.color}-500`} />
+                          <span className="font-medium text-sm">{dept.code}</span>
+                          <span className="text-xs text-gray-500 truncate">{dept.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Role Buttons for Selected Department */}
+              <div className="space-y-3">
+                <p className="text-xs font-medium text-gray-500 text-center">
+                  Login as: <span className="font-bold text-gray-700">{currentDept?.code}</span> Department
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {/* HOD Button */}
+                  <button
+                    onClick={() => quickLogin(getDeptEmail(selectedDept, 'HOD'), getPassword('HOD'))}
+                    className={`flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl ${ROLE_COLORS.HOD.bg} ${ROLE_COLORS.HOD.border} ${ROLE_COLORS.HOD.text} text-xs font-bold transition-all border group`}
+                  >
+                    <UserCheck className={`w-5 h-5 ${ROLE_COLORS.HOD.icon} group-hover:scale-110 transition-transform`} />
+                    <span>HOD</span>
+                  </button>
+                  
+                  {/* Staff Button */}
+                  <button
+                    onClick={() => quickLogin(getDeptEmail(selectedDept, 'STAFF'), getPassword('STAFF'))}
+                    className={`flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl ${ROLE_COLORS.STAFF.bg} ${ROLE_COLORS.STAFF.border} ${ROLE_COLORS.STAFF.text} text-xs font-bold transition-all border group`}
+                  >
+                    <BookOpen className={`w-5 h-5 ${ROLE_COLORS.STAFF.icon} group-hover:scale-110 transition-transform`} />
+                    <span>Staff</span>
+                  </button>
+                  
+                  {/* Student Button */}
+                  <button
+                    onClick={() => quickLogin(getDeptEmail(selectedDept, 'STUDENT'), getPassword('STUDENT'))}
+                    className={`flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl ${ROLE_COLORS.STUDENT.bg} ${ROLE_COLORS.STUDENT.border} ${ROLE_COLORS.STUDENT.text} text-xs font-bold transition-all border group`}
+                  >
+                    <GraduationCap className={`w-5 h-5 ${ROLE_COLORS.STUDENT.icon} group-hover:scale-110 transition-transform`} />
+                    <span>Student</span>
+                  </button>
+                </div>
+
+                {/* Department Pills - Quick Select */}
+                <div className="mt-4">
+                  <p className="text-xs font-medium text-gray-400 mb-2 text-center">Quick Departments:</p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {['CSE', 'ECE', 'EEE', 'MECH', 'CIVIL', 'AI&DS', 'IT', 'CYBER'].map((code) => (
+                      <button
+                        key={code}
+                        type="button"
+                        onClick={() => setSelectedDept(code)}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                          selectedDept === code 
+                            ? 'bg-blue-500 text-white shadow-md' 
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {code}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>
