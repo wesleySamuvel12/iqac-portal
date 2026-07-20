@@ -282,23 +282,23 @@ function LoginPage() {
       <div className="relative z-10 w-full max-w-md">
         {/* Logo & Header */}
         <div className="text-center mb-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-500 via-[#0a7aff] to-purple-600 shadow-2xl shadow-blue-500/30 mb-6 backdrop-blur-sm border border-white/10">
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-500 via-[#0a7aff] to-purple-600 shadow-2xl shadow-blue-500/30 mb-6 backdrop-blur-sm border border-white/20">
             <Building2 className="w-12 h-12 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">IQAC Portal</h1>
-          <p className="text-blue-200 text-lg">Nehru Institute of Engineering and Technology</p>
-          <Badge className="mt-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0 px-4 py-1 shadow-lg">
+          <h1 className="text-4xl font-bold text-white mb-2 tracking-tight drop-shadow-lg">IQAC Portal</h1>
+          <p className="text-white text-lg font-medium drop-shadow">Nehru Institute of Engineering and Technology</p>
+          <Badge className="mt-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0 px-4 py-1 shadow-lg text-sm">
             Autonomous Institution • NAAC Accredited
           </Badge>
         </div>
 
         {/* Login Card */}
-        <Card className="glass-card shadow-2xl border border-white/10 animate-slide-up">
+        <Card className="bg-white/95 backdrop-blur-xl shadow-2xl border border-white/20 animate-slide-up">
           <CardContent className="p-8">
             {/* Error Message */}
             {error && (
-              <div className="mb-6 p-4 rounded-xl bg-red-500/20 border border-red-500/30 backdrop-blur-sm animate-shake">
-                <p className="text-red-200 text-sm flex items-center gap-2">
+              <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 animate-shake">
+                <p className="text-red-600 text-sm flex items-center gap-2 font-medium">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   {error}
                 </p>
@@ -307,36 +307,36 @@ function LoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-blue-100">Email Address</label>
+                <label className="text-sm font-semibold text-gray-700">Email Address</label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-blue-300" />
+                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <Input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
-                    className="pl-12 py-6 h-auto border-white/20 bg-white/5 focus:border-blue-400 focus:ring-blue-400/20 rounded-xl text-base text-white placeholder:text-blue-300/50 glass-input"
+                    className="pl-12 py-6 h-auto border-gray-200 bg-gray-50 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl text-base text-gray-800 placeholder:text-gray-400"
                     required
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-blue-100">Password</label>
+                <label className="text-sm font-semibold text-gray-700">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-blue-300" />
+                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <Input
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="pl-12 pr-12 py-6 h-auto border-white/20 bg-white/5 focus:border-blue-400 focus:ring-blue-400/20 rounded-xl text-base text-white placeholder:text-blue-300/50 glass-input"
+                    className="pl-12 pr-12 py-6 h-auto border-gray-200 bg-gray-50 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl text-base text-gray-800 placeholder:text-gray-400"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-blue-300 hover:text-white transition-colors"
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -360,35 +360,35 @@ function LoginPage() {
             </form>
 
             {/* Quick Login - Department Wise */}
-            <div className="mt-8 pt-6 border-t border-white/10">
-              <p className="text-xs text-blue-300/70 text-center mb-4 uppercase tracking-wider font-medium">Quick Demo Access</p>
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <p className="text-xs text-gray-500 text-center mb-4 uppercase tracking-wider font-semibold">Quick Demo Access</p>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => quickLogin('admin@niet.ac.in', 'admin123')}
-                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-blue-500/20 text-blue-100 hover:text-white text-sm font-medium transition-all border border-white/10 hover:border-blue-400/30 group"
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 text-sm font-semibold transition-all border border-blue-200 hover:border-blue-300 group"
                 >
-                  <Shield className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  <Shield className="w-4 h-4 text-blue-500 group-hover:scale-110 transition-transform" />
                   Admin
                 </button>
                 <button
                   onClick={() => quickLogin('hod_cse@niet.ac.in', 'hod123')}
-                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-purple-500/20 text-purple-200 hover:text-white text-sm font-medium transition-all border border-white/10 hover:border-purple-400/30 group"
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 hover:text-purple-800 text-sm font-semibold transition-all border border-purple-200 hover:border-purple-300 group"
                 >
-                  <UserCheck className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  <UserCheck className="w-4 h-4 text-purple-500 group-hover:scale-110 transition-transform" />
                   HOD CSE
                 </button>
                 <button
                   onClick={() => quickLogin('staff_cse1@niet.ac.in', 'staff123')}
-                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-green-500/20 text-green-200 hover:text-white text-sm font-medium transition-all border border-white/10 hover:border-green-400/30 group"
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-green-50 hover:bg-green-100 text-green-700 hover:text-green-800 text-sm font-semibold transition-all border border-green-200 hover:border-green-300 group"
                 >
-                  <BookOpen className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  <BookOpen className="w-4 h-4 text-green-500 group-hover:scale-110 transition-transform" />
                   Staff ECE
                 </button>
                 <button
                   onClick={() => quickLogin('student_cse1@niet.ac.in', 'student123')}
-                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-amber-500/20 text-amber-200 hover:text-white text-sm font-medium transition-all border border-white/10 hover:border-amber-400/30 group"
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800 text-sm font-semibold transition-all border border-amber-200 hover:border-amber-300 group"
                 >
-                  <GraduationCap className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  <GraduationCap className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
                   Student CSE
                 </button>
               </div>
@@ -396,7 +396,7 @@ function LoginPage() {
           </CardContent>
         </Card>
 
-        <p className="text-center mt-6 text-blue-300/60 text-xs animate-fade-in">
+        <p className="text-center mt-6 text-gray-400 text-xs animate-fade-in font-medium">
           Secure Authentication System • Enterprise Edition v2.0
         </p>
       </div>
