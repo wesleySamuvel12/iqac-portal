@@ -22,7 +22,8 @@ import {
   ClipboardList, Flag, Mic, Presentation,
   Briefcase, Wrench, Rocket, Code, PlusCircle,
   Newspaper, Handshake, Circle,
-  DollarSign, Paperclip, Inbox, Tag, XCircle, ArrowLeft
+  DollarSign, Paperclip, Inbox, Tag, XCircle, ArrowLeft,
+  Save
 } from 'lucide-react'
 
 // ============ TYPES ============
@@ -2918,213 +2919,236 @@ function StudentFeedbackPage({ user, feedbackEnabled }: { user: User; feedbackEn
   )
 }
 
-// ============ STAFF ACHIEVEMENT TYPES (Faculty Activity & R&D Publications) ============
+// ============ STAFF ACHIEVEMENT TYPES (Achievement & Research & Publication) ============
+// Matching exact screenshot specifications
 const STAFF_ACHIEVEMENT_TYPES = {
-  // FACULTY ACTIVITY category
-  events_tracker: { 
-    label: 'Events Tracker', 
-    icon: Calendar,
-    color: 'bg-red-500',
-    category: 'faculty_activity',
+  // ==================== ACHIEVEMENT CATEGORY ====================
+  // Industry Interaction Record
+  industry_interaction: {
+    label: 'Industry Interaction',
+    icon: Handshake,
+    color: 'from-emerald-500 to-teal-600',
+    category: 'achievement',
+    headerTitle: 'Add Record',
+    headerIcon: PlusCircle,
     fields: [
-      { id: 'event_name', label: 'Event Name', type: 'text', required: true },
-      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
-      { id: 'event_type', label: 'Event Type', type: 'select', options: ['Workshop', 'Seminar', 'Conference', 'FDP', 'STTP', 'Webinar', 'Guest Lecture'], required: true },
-      { id: 'organized_by', label: 'Organized By', type: 'text', required: true },
-      { id: 'start_date', label: 'Start Date', type: 'date', required: true },
-      { id: 'end_date', label: 'End Date', type: 'date' },
-      { id: 'venue', label: 'Venue', type: 'text' },
-      { id: 'participants', label: 'No. of Participants', type: 'number' },
-      { id: 'description', label: 'Description', type: 'textarea' }
+      { id: 'faculty_name', label: 'FACULTY NAME', type: 'text', required: true, full: false },
+      { id: 'dept', label: 'DEPT', type: 'dept_select', required: true, full: false },
+      { id: 'designation', label: 'DESIGNATION', type: 'text', required: false, full: false },
+      { id: 'company_name', label: 'COMPANY NAME', type: 'text', required: true, full: true },
+      { id: 'address', label: 'ADDRESS', type: 'text', required: false, full: false },
+      { id: 'nature', label: 'NATURE', type: 'select', options: ['Consultancy', 'MOU Signed', 'Guest Lecture', 'Industrial Visit', 'Training Program', 'Internship', 'Project Guidance', 'Other'], full: false },
+      { id: 'interaction_type', label: 'INTERACTION TYPE', type: 'select', options: ['Online', 'Offline', 'Hybrid'], full: false },
+      { id: 'date', label: 'DATE', type: 'date', required: false, full: false },
+      { id: 'certificate_link', label: 'CERTIFICATE LINK', type: 'url', required: false, placeholder: 'https://...', full: true }
     ]
   },
-  resource_person: { 
-    label: 'Resource Person', 
-    icon: Mic,
-    color: 'bg-gray-500',
-    category: 'faculty_activity',
-    fields: [
-      { id: 'staff_name', label: 'Staff Name', type: 'text', required: true },
-      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
-      { id: 'session_topic', label: 'Session Topic', type: 'text', required: true },
-      { id: 'event_name', label: 'Event Name', type: 'text', required: true },
-      { id: 'organized_by', label: 'Organized By (College/Org)', type: 'text', required: true },
-      { id: 'date', label: 'Date', type: 'date', required: true },
-      { id: 'venue', label: 'Venue', type: 'text' },
-      { id: 'participants', label: 'No. of Participants', type: 'number' }
-    ]
-  },
-  nptel_mooc: { 
-    label: 'NPTEL / MOOC', 
-    icon: GraduationCap,
-    color: 'bg-yellow-600',
-    category: 'faculty_activity',
-    fields: [
-      { id: 'staff_name', label: 'Staff Name', type: 'text', required: true },
-      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
-      { id: 'course_name', label: 'Course Name', type: 'text', required: true },
-      { id: 'platform', label: 'Platform', type: 'select', options: ['NPTEL', 'SWAYAM', 'Coursera', 'edX', 'Udemy', 'Others'], required: true },
-      { id: 'certification_type', label: 'Certification Type', type: 'select', options: ['Completed', 'Elite', 'Gold', 'Silver', 'With Distinction'], required: true },
-      { id: 'duration', label: 'Duration (weeks)', type: 'number' },
-      { id: 'completion_date', label: 'Completion Date', type: 'date', required: true }
-    ]
-  },
-  seminar_conf: { 
-    label: 'Seminar / Conf.', 
-    icon: ClipboardList,
-    color: 'bg-blue-400',
-    category: 'faculty_activity',
-    fields: [
-      { id: 'staff_name', label: 'Staff Name', type: 'text', required: true },
-      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
-      { id: 'paper_title', label: 'Paper Title', type: 'text', required: true },
-      { id: 'conference_name', label: 'Conference/Seminar Name', type: 'text', required: true },
-      { id: 'organized_by', label: 'Organized By', type: 'text', required: true },
-      { id: 'presentation_type', label: 'Presentation Type', type: 'select', options: ['Oral', 'Poster', 'Virtual'], required: true },
-      { id: 'date', label: 'Date', type: 'date', required: true },
-      { id: 'venue', label: 'Venue', type: 'text' },
-      { id: 'isbn_issn', label: 'ISBN/ISSN', type: 'text' }
-    ]
-  },
-  faculty_awards: { 
-    label: 'Faculty Awards', 
+  // Award Record
+  award_record: {
+    label: 'Award Record',
     icon: Trophy,
-    color: 'bg-yellow-500',
-    category: 'faculty_activity',
+    color: 'from-yellow-500 to-amber-600',
+    category: 'achievement',
+    headerTitle: 'Add Record',
+    headerIcon: PlusCircle,
     fields: [
-      { id: 'staff_name', label: 'Staff Name', type: 'text', required: true },
-      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
-      { id: 'award_name', label: 'Award Name', type: 'text', required: true },
-      { id: 'awarded_by', label: 'Awarded By', type: 'text', required: true },
-      { id: 'award_date', label: 'Award Date', type: 'date', required: true },
-      { id: 'category', label: 'Category', type: 'select', options: ['Teaching', 'Research', 'Service', 'Innovation', 'Others'] },
-      { id: 'description', label: 'Description', type: 'textarea' }
+      { id: 'faculty_name', label: 'FACULTY NAME', type: 'text', required: true, full: false },
+      { id: 'dept', label: 'DEPT', type: 'dept_select', required: true, full: false },
+      { id: 'designation', label: 'DESIGNATION', type: 'text', required: false, full: false },
+      { id: 'award_name', label: 'AWARD NAME', type: 'text', required: true, full: true },
+      { id: 'event', label: 'EVENT', type: 'text', required: false, full: false },
+      { id: 'organizer', label: 'ORGANIZER', type: 'text', required: false, full: false },
+      { id: 'level', label: 'LEVEL', type: 'select', options: ['International', 'National', 'State', 'Regional', 'Institutional', 'Departmental'], full: false },
+      { id: 'position', label: 'POSITION', type: 'text', required: false, full: false },
+      { id: 'award_date', label: 'DATE', type: 'date', required: false, full: false }
     ]
   },
-  industrial_visit: { 
-    label: 'Industrial Visit', 
-    icon: Building2,
-    color: 'bg-red-600',
-    category: 'faculty_activity',
+  // Event Organized Record
+  event_organized: {
+    label: 'Event Organized',
+    icon: Calendar,
+    color: 'from-pink-500 to-rose-600',
+    category: 'achievement',
+    headerTitle: 'Add Record',
+    headerIcon: PlusCircle,
     fields: [
-      { id: 'staff_name', label: 'Staff Name (Coordinator)', type: 'text', required: true },
-      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
-      { id: 'industry_name', label: 'Industry/Company Name', type: 'text', required: true },
-      { id: 'location', label: 'Location', type: 'text' },
-      { id: 'visit_date', label: 'Visit Date', type: 'date', required: true },
-      { id: 'no_of_students', label: 'No. of Students', type: 'number', required: true },
-      { id: 'purpose', label: 'Purpose of Visit', type: 'textarea' },
-      { id: 'outcome', label: 'Outcome/Learning', type: 'textarea' }
+      { id: 'faculty_name', label: 'FACULTY NAME', type: 'text', required: true, full: false },
+      { id: 'dept', label: 'DEPT', type: 'dept_select', required: true, full: false },
+      { id: 'designation', label: 'DESIGNATION', type: 'text', required: false, full: false },
+      { id: 'event_title', label: 'EVENT TITLE', type: 'text', required: true, full: true },
+      { id: 'event_type', label: 'TYPE', type: 'select', options: ['Workshop', 'Seminar', 'Conference', 'FDP', 'STTP', 'Webinar', 'Guest Lecture', 'Hackathon', 'Symposium', 'Other'], full: false },
+      { id: 'organizing_institute', label: 'ORGANIZING INSTITUTE', type: 'text', required: false, full: false },
+      { id: 'state', label: 'STATE', type: 'text', required: false, full: false },
+      { id: 'from_date', label: 'FROM DATE', type: 'date', required: false, full: false },
+      { id: 'to_date', label: 'TO DATE', type: 'date', required: false, full: false },
+      { id: 'mode', label: 'MODE', type: 'select', options: ['Online', 'Offline', 'Hybrid'], full: false },
+      { id: 'certificate_link', label: 'CERTIFICATE LINK', type: 'url', required: false, placeholder: 'https://...', full: false },
+      { id: 'proceeding_link', label: 'PROCEEDING LINK', type: 'url', required: false, placeholder: 'https://...', full: false }
     ]
   },
-  
-  // R&D PUBLICATIONS category
-  journals: { 
-    label: 'Journals', 
-    icon: Newspaper,
-    color: 'bg-slate-500',
-    category: 'rd_publication',
+  // FDP / STTP Entry
+  fdp_sttp: {
+    label: 'FDP / STTP',
+    icon: GraduationCap,
+    color: 'from-green-500 to-teal-600',
+    category: 'achievement',
+    headerTitle: 'Add Entry',
+    headerIcon: PlusCircle,
     fields: [
-      { id: 'staff_name', label: 'Staff Name', type: 'text', required: true },
-      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
-      { id: 'title', label: 'Paper Title', type: 'text', required: true },
-      { id: 'journal_name', label: 'Journal Name', type: 'text', required: true },
-      { id: 'publisher', label: 'Publisher', type: 'text' },
-      { id: 'issn', label: 'ISSN No.', type: 'text', required: true },
-      { id: 'volume', label: 'Volume', type: 'text' },
-      { id: 'issue', label: 'Issue', type: 'text' },
-      { id: 'page_no', label: 'Page Numbers', type: 'text' },
-      { id: 'year_pub', label: 'Year of Publication', type: 'year_pub', required: true },
-      { id: 'doi', label: 'DOI', type: 'text' },
-      { id: 'indexing', label: 'Indexing', type: 'select', options: ['SCI', 'Scopus', 'UGC Care', 'Web of Science', 'Others', 'None'] },
-      { id: 'url', label: 'URL Link', type: 'url' }
+      { id: 'faculty_name', label: 'FACULTY NAME', type: 'text', required: true, full: false },
+      { id: 'dept', label: 'DEPT', type: 'dept_select', required: true, full: false },
+      { id: 'designation', label: 'DESIGNATION', type: 'text', required: false, full: false },
+      { id: 'platform', label: 'PLATFORM', type: 'select', options: ['NPTEL', 'SWAYAM', 'Coursera', 'edX', 'Udemy', 'ATAL', 'AICTE', 'Other'], full: false },
+      { id: 'course_name', label: 'COURSE NAME', type: 'text', required: true, full: true },
+      { id: 'domain', label: 'DOMAIN', type: 'text', required: false, full: false },
+      { id: 'duration_weeks', label: 'DURATION (WKS)', type: 'number', required: false, full: false },
+      { id: 'score', label: 'SCORE (%)', type: 'number', required: false, full: false },
+      { id: 'grade', label: 'GRADE', type: 'select', options: ['Elite + Gold', 'Elite + Silver', 'Elite', 'Successfully Completed', 'Completed', 'With Distinction'], full: false },
+      { id: 'certificate_link', label: 'CERTIFICATE LINK', type: 'url', required: false, placeholder: 'https://...', full: true }
     ]
   },
-  patents: { 
-    label: 'Patents', 
-    icon: Lightbulb,
-    color: 'bg-yellow-400',
-    category: 'rd_publication',
-    fields: [
-      { id: 'staff_name', label: 'Staff Name', type: 'text', required: true },
-      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
-      { id: 'patent_title', label: 'Patent Title', type: 'text', required: true },
-      { id: 'inventors', label: 'Inventors', type: 'text', required: true },
-      { id: 'patent_no', label: 'Patent Number', type: 'text' },
-      { id: 'filing_date', label: 'Filing Date', type: 'date' },
-      { id: 'publication_date', label: 'Publication Date', type: 'date' },
-      { id: 'status', label: 'Status', type: 'select', options: ['Filed', 'Published', 'Granted', 'Under Review'] },
-      { id: 'country', label: 'Country', type: 'text' }
-    ]
-  },
-  books: { 
-    label: 'Books', 
-    icon: BookOpen,
-    color: 'bg-red-700',
-    category: 'rd_publication',
-    fields: [
-      { id: 'staff_name', label: 'Author Name(s)', type: 'text', required: true },
-      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
-      { id: 'book_title', label: 'Book Title', type: 'text', required: true },
-      { id: 'publisher', label: 'Publisher', type: 'text', required: true },
-      { id: 'isbn', label: 'ISBN', type: 'text', required: true },
-      { id: 'edition', label: 'Edition', type: 'text' },
-      { id: 'year_pub', label: 'Year of Publication', type: 'year_pub', required: true },
-      { id: 'pages', label: 'No. of Pages', type: 'number' },
-      { id: 'type', label: 'Type', type: 'select', options: ['Textbook', 'Reference Book', 'Edited Book', 'Monograph'] }
-    ]
-  },
-  book_chapters: { 
-    label: 'Book Chapters', 
-    icon: BookOpen,
-    color: 'bg-orange-600',
-    category: 'rd_publication',
-    fields: [
-      { id: 'staff_name', label: 'Author Name(s)', type: 'text', required: true },
-      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
-      { id: 'chapter_title', label: 'Chapter Title', type: 'text', required: true },
-      { id: 'book_title', label: 'Book Title', type: 'text', required: true },
-      { id: 'publisher', label: 'Publisher', type: 'text', required: true },
-      { id: 'editors', label: 'Editor(s)', type: 'text' },
-      { id: 'isbn', label: 'ISBN', type: 'text', required: true },
-      { id: 'year_pub', label: 'Year of Publication', type: 'year_pub', required: true },
-      { id: 'page_range', label: 'Page Range', type: 'text' },
-      { id: 'edition', label: 'Edition', type: 'text' }
-    ]
-  },
-  conf_publications: { 
-    label: 'Conf. Publications', 
-    icon: Mic,
-    color: 'bg-blue-300',
-    category: 'rd_publication',
-    fields: [
-      { id: 'staff_name', label: 'Staff Name', type: 'text', required: true },
-      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
-      { id: 'title', label: 'Paper Title', type: 'text', required: true },
-      { id: 'conf_name', label: 'Conference Name', type: 'text', required: true },
-      { id: 'organized_by', label: 'Organized By', type: 'text', required: true },
-      { id: 'date', label: 'Conference Date', type: 'date', required: true },
-      { id: 'venue', label: 'Venue', type: 'text' },
-      { id: 'isbn', label: 'ISBN/ISSN/DOI', type: 'text' },
-      { id: 'page_no', label: 'Page Numbers', type: 'text' },
-      { id: 'indexing', label: 'Indexing', type: 'select', options: ['IEEE', 'Springer', 'Elsevier', 'Scopus', 'Others'] }
-    ]
-  },
-  research_grants: { 
-    label: 'Research Grants', 
+
+  // ==================== RESEARCH & PUBLICATION CATEGORY ====================
+  // Add Grant
+  grant: {
+    label: 'Grant',
     icon: DollarSign,
-    color: 'bg-yellow-500',
-    category: 'rd_publication',
+    color: 'from-blue-500 to-indigo-600',
+    category: 'research_publication',
+    headerTitle: 'Add Grant',
+    headerIcon: PlusCircle,
     fields: [
-      { id: 'pi_name', label: 'Principal Investigator', type: 'text', required: true },
-      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
-      { id: 'co_pi', label: 'Co-PI Names', type: 'text' },
-      { id: 'project_title', label: 'Project Title', type: 'text', required: true },
-      { id: 'funding_agency', label: 'Funding Agency', type: 'text', required: true },
-      { id: 'grant_amount', label: 'Grant Amount (₹)', type: 'number', required: true },
-      { id: 'sanctioned_date', label: 'Sanctioned Date', type: 'date', required: true },
-      { id: 'duration', label: 'Duration (months)', type: 'number' },
-      { id: 'status', label: 'Status', type: 'select', options: ['Ongoing', 'Completed', 'Submitted', 'Approved'] }
+      { id: 'pi_name', label: 'PI NAME', type: 'text', required: true, full: false },
+      { id: 'co_pi_name', label: 'CO-PI NAME (IF ANY)', type: 'text', required: false, placeholder: 'Co-PI faculty name', full: false },
+      { id: 'dept', label: 'DEPT', type: 'dept_select', required: true, full: false },
+      { id: 'project_title', label: 'PROJECT TITLE', type: 'text', required: true, full: true },
+      { id: 'funding_agency', label: 'FUNDING AGENCY', type: 'text', required: false, full: false },
+      { id: 'scheme', label: 'SCHEME', type: 'text', required: false, full: false },
+      { id: 'year', label: 'YEAR', type: 'year_only', required: false, defaultValue: '2025', full: false },
+      { id: 'amount', label: 'AMOUNT (₹)', type: 'number', required: false, full: false },
+      { id: 'received', label: 'RECEIVED (₹)', type: 'number', required: false, full: false },
+      { id: 'status', label: 'STATUS', type: 'select', options: ['Sanctioned', 'In Progress', 'Completed', 'Submitted', 'Approved', 'Rejected'], full: false },
+      { id: 'sanction_letter_link', label: 'SANCTION LETTER PDF LINK', type: 'url', required: false, placeholder: 'https://drive.google.com/...', full: true }
+    ]
+  },
+  // Add Publication (Conference)
+  publication: {
+    label: 'Publication',
+    icon: Mic,
+    color: 'from-purple-500 to-violet-600',
+    category: 'research_publication',
+    headerTitle: 'Add Publication',
+    headerIcon: PlusCircle,
+    fields: [
+      { id: 'faculty_name', label: 'FACULTY NAME', type: 'text', required: true, full: false },
+      { id: 'dept', label: 'DEPT', type: 'dept_select', required: true, full: false },
+      { id: 'paper_title', label: 'PAPER TITLE', type: 'text', required: true, full: true },
+      { id: 'conference_name', label: 'CONFERENCE NAME', type: 'text', required: true, full: true },
+      { id: 'pub_type', label: 'TYPE', type: 'select', options: ['International Journal', 'National Journal', 'International Conference', 'National Conference', 'Magazine', 'Other'], full: false },
+      { id: 'mode', label: 'MODE', type: 'select', options: ['Online', 'Offline', 'Hybrid'], full: false },
+      { id: 'publisher', label: 'PUBLISHER', type: 'text', required: false, full: false },
+      { id: 'month', label: 'MONTH', type: 'month_select', required: false, full: false },
+      { id: 'year', label: 'YEAR', type: 'year_only', required: false, defaultValue: '2025', full: false },
+      { id: 'indexed', label: 'INDEXED', type: 'select', options: ['SCI', 'Scopus', 'UGC Care', 'Web of Science', 'IEEE', 'Springer', 'Elsevier', 'Not Indexed', 'Other'], full: false },
+      { id: 'designation', label: 'DESIGNATION', type: 'text', required: false, placeholder: 'e.g. Professor', full: false },
+      { id: 'status', label: 'STATUS', type: 'select', options: ['Published', 'Accepted', 'Under Review', 'Presented'], full: false },
+      { id: 'certificate_link', label: 'CERTIFICATE LINK', type: 'url', required: false, placeholder: 'https://...', full: false },
+      { id: 'proceeding_link', label: 'PROCEEDING LINK', type: 'url', required: false, placeholder: 'https://...', full: true }
+    ]
+  },
+  // Add Chapter
+  chapter: {
+    label: 'Book Chapter',
+    icon: BookOpen,
+    color: 'from-cyan-500 to-blue-600',
+    category: 'research_publication',
+    headerTitle: 'Add Chapter',
+    headerIcon: PlusCircle,
+    fields: [
+      { id: 'faculty_name', label: 'FACULTY NAME', type: 'text', required: true, full: false },
+      { id: 'dept', label: 'DEPT', type: 'dept_select', required: true, full: false },
+      { id: 'chapter_title', label: 'CHAPTER TITLE', type: 'text', required: true, full: true },
+      { id: 'book_name', label: 'BOOK NAME', type: 'text', required: true, full: true },
+      { id: 'publisher', label: 'PUBLISHER', type: 'text', required: false, full: false },
+      { id: 'month', label: 'MONTH', type: 'month_select', required: false, full: false },
+      { id: 'year', label: 'YEAR', type: 'year_only', required: false, defaultValue: '2025', full: false },
+      { id: 'designation', label: 'DESIGNATION', type: 'text', required: false, placeholder: 'e.g. Professor', full: false },
+      { id: 'no_of_authors', label: 'NO. OF AUTHORS', type: 'number', required: false, full: false },
+      { id: 'author_position', label: 'AUTHOR POSITION', type: 'text', required: false, placeholder: 'e.g. First Author', full: false },
+      { id: 'indexed', label: 'INDEXED', type: 'text', required: false, full: false },
+      { id: 'pdf_link', label: 'BOOK CHAPTER PDF LINK', type: 'url', required: false, placeholder: 'https://drive.google.com/...', full: true }
+    ]
+  },
+  // Add Book
+  book: {
+    label: 'Book',
+    icon: BookOpen,
+    color: 'from-amber-500 to-orange-600',
+    category: 'research_publication',
+    headerTitle: 'Add Book',
+    headerIcon: PlusCircle,
+    fields: [
+      { id: 'faculty_name', label: 'FACULTY NAME', type: 'text', required: true, full: false },
+      { id: 'dept', label: 'DEPT', type: 'dept_select', required: true, full: false },
+      { id: 'book_title', label: 'BOOK TITLE', type: 'text', required: true, full: true },
+      { id: 'publisher', label: 'PUBLISHER', type: 'text', required: false, full: false },
+      { id: 'isbn', label: 'ISBN', type: 'text', required: false, full: false },
+      { id: 'month', label: 'MONTH', type: 'month_select', required: false, full: false },
+      { id: 'year', label: 'YEAR', type: 'year_only', required: false, defaultValue: '2025', full: false },
+      { id: 'designation', label: 'DESIGNATION', type: 'text', required: false, placeholder: 'e.g. Professor', full: false },
+      { id: 'no_of_authors', label: 'NO. OF AUTHORS', type: 'number', required: false, full: false },
+      { id: 'author_position', label: 'AUTHOR POSITION', type: 'text', required: false, placeholder: 'e.g. First Author', full: false },
+      { id: 'indexed', label: 'INDEXED', type: 'text', required: false, full: false },
+      { id: 'book_front_page_link', label: 'BOOK FRONT PAGE + AUTHOR PAGE LINK', type: 'url', required: false, placeholder: 'https://drive.google.com/...', full: true }
+    ]
+  },
+  // Add Patent
+  patent: {
+    label: 'Patent',
+    icon: Lightbulb,
+    color: 'from-red-500 to-pink-600',
+    category: 'research_publication',
+    headerTitle: 'Add Patent',
+    headerIcon: PlusCircle,
+    fields: [
+      { id: 'faculty_name', label: 'FACULTY NAME', type: 'text', required: true, full: false },
+      { id: 'dept', label: 'DEPT', type: 'dept_select', required: true, full: false },
+      { id: 'designation', label: 'DESIGNATION', type: 'text', required: false, full: false },
+      { id: 'invention_title', label: 'INVENTION TITLE', type: 'text', required: true, full: true },
+      { id: 'patent_no', label: 'PATENT NO.', type: 'text', required: false, full: false },
+      { id: 'month', label: 'MONTH', type: 'month_select', required: false, full: false },
+      { id: 'year', label: 'YEAR', type: 'year_only', required: false, defaultValue: '2025', full: false },
+      { id: 'patent_type', label: 'TYPE', type: 'select', options: ['Design', 'Product', 'Process', 'Software', 'Other'], full: false },
+      { id: 'status', label: 'STATUS', type: 'select', options: ['Filed', 'Published', 'Granted', 'Under Examination', 'Abandoned'], full: false },
+      { id: 'country', label: 'COUNTRY', type: 'text', required: false, defaultValue: 'India', full: false },
+      { id: 'google_drive_link', label: 'PATENT GOOGLE DRIVE LINK', type: 'url', required: false, placeholder: 'https://drive.google.com/...', full: true }
+    ]
+  },
+  // Journal Publication (Detailed - Screenshot 6)
+  journal_detailed: {
+    label: 'Journal Paper',
+    icon: Newspaper,
+    color: 'from-slate-500 to-gray-700',
+    category: 'research_publication',
+    headerTitle: 'Add Record',
+    headerIcon: PlusCircle,
+    fields: [
+      { id: 'faculty_name', label: 'FACULTY NAME', type: 'text', required: true, full: false },
+      { id: 'dept', label: 'DEPT', type: 'dept_select', required: true, full: false },
+      { id: 'designation', label: 'DESIGNATION', type: 'text', required: false, full: false },
+      { id: 'paper_title', label: 'PAPER TITLE', type: 'text', required: true, full: true },
+      { id: 'journal_name', label: 'JOURNAL NAME', type: 'text', required: true, full: true },
+      { id: 'publisher', label: 'PUBLISHER', type: 'text', required: false, full: false },
+      { id: 'issn', label: 'ISSN', type: 'text', required: false, full: false },
+      { id: 'month', label: 'MONTH', type: 'month_select', required: false, full: false },
+      { id: 'year', label: 'YEAR', type: 'year_only', required: false, defaultValue: '2025', full: false },
+      { id: 'no_of_authors', label: 'NO. OF AUTHORS', type: 'number', required: false, full: false },
+      { id: 'author_position', label: 'AUTHOR POSITION', type: 'text', required: false, full: false },
+      { id: 'indexed', label: 'INDEXED', type: 'select', options: ['SCI', 'Scopus', 'UGC Care', 'Web of Science', 'IEEE Xplore', 'ACM Digital Library', 'Not Indexed', 'Other'], full: false },
+      { id: 'impact_factor', label: 'IMPACT FACTOR', type: 'text', required: false, full: false },
+      { id: 'quartile', label: 'QUARTILE', type: 'select', options: ['Q1', 'Q2', 'Q3', 'Q4', 'NA'], full: false },
+      { id: 'paper_link', label: 'PAPER LINK (DRIVE)', type: 'url', required: false, placeholder: 'https://...', full: false },
+      { id: 'publisher_online_link', label: 'PUBLISHER ONLINE LINK', type: 'url', required: false, placeholder: 'https://doi.org/...', full: false }
     ]
   }
 }
@@ -3224,7 +3248,7 @@ function FileUpload({ onFileSelect, accept = '*', maxFiles = 5 }: {
 
 // ============ STAFF ACHIEVEMENT PAGE ============
 function StaffAchievementPage({ user }: { user: User }) {
-  const [selectedCategory, setSelectedCategory] = useState<'faculty_activity' | 'rd_publication'>('')
+  const [selectedCategory, setSelectedCategory] = useState<'achievement' | 'research_publication'>('')
   const [selectedType, setSelectedType] = useState<string>('')
   const [formData, setFormData] = useState<Record<string, string>>({})
   const [submittedEntries, setSubmittedEntries] = useState<any[]>([])
@@ -3243,9 +3267,16 @@ function StaffAchievementPage({ user }: { user: User }) {
   useEffect(() => {
     if (selectedType && STAFF_ACHIEVEMENT_TYPES[selectedType]) {
       const initialData: Record<string, string> = {
-        staff_name: user.name || '',
+        faculty_name: user.name || '',
         dept: user.departmentName || '',
+        designation: user.role === 'STAFF' ? 'Assistant Professor' : '',
       }
+      // Set default values for fields
+      STAFF_ACHIEVEMENT_TYPES[selectedType].fields.forEach(field => {
+        if (field.defaultValue && !initialData[field.id]) {
+          initialData[field.id] = field.defaultValue
+        }
+      })
       setFormData(initialData)
       setAttachedFiles([])
     }
@@ -3255,18 +3286,35 @@ function StaffAchievementPage({ user }: { user: User }) {
     setFormData(prev => ({ ...prev, [fieldId]: value }))
   }
 
+  const handleClearForm = () => {
+    if (selectedType && STAFF_ACHIEVEMENT_TYPES[selectedType]) {
+      const initialData: Record<string, string> = {
+        faculty_name: user.name || '',
+        dept: user.departmentName || '',
+      }
+      STAFF_ACHIEVEMENT_TYPES[selectedType].fields.forEach(field => {
+        if (field.defaultValue && !initialData[field.id]) {
+          initialData[field.id] = field.defaultValue
+        }
+      })
+      setFormData(initialData)
+    }
+    setAttachedFiles([])
+  }
+
   const handleSubmit = async () => {
     if (!selectedType) return
     setIsSubmitting(true)
     
     await new Promise(resolve => setTimeout(resolve, 1200))
     
+    const typeConfig = STAFF_ACHIEVEMENT_TYPES[selectedType]
     const newEntry = {
       id: Date.now(),
       type: selectedType,
-      typeName: STAFF_ACHIEVEMENT_TYPES[selectedType]?.label || selectedType,
-      category: STAFF_ACHIEVEMENT_TYPES[selectedType]?.category,
-      title: formData.title || formData.event_name || formData.paper_title || formData.award_name || formData.project_title || 'Untitled',
+      typeName: typeConfig?.label || selectedType,
+      category: typeConfig?.category,
+      title: formData.pi_name || formData.paper_title || formData.project_title || formData.invention_title || formData.book_title || formData.chapter_title || formData.award_name || formData.event_title || formData.company_name || formData.course_name || 'Untitled',
       dept: user.departmentName,
       data: formData,
       files: attachedFiles.map(f => f.name),
@@ -3281,35 +3329,67 @@ function StaffAchievementPage({ user }: { user: User }) {
     
     setTimeout(() => {
       setShowSuccess(false)
-      setSelectedCategory('')
       setSelectedType('')
       setFormData({})
       setAttachedFiles([])
     }, 2000)
   }
 
+  // Month options for month_select type
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
   const renderFormField = (field: any) => {
     const value = formData[field.id] || ''
     
-    if (field.locked) {
-      return (
-        <div className="flex items-center gap-2 p-3 bg-gray-100 rounded-lg">
-          <Lock className="w-4 h-4 text-gray-500" />
-          <span className="text-sm font-medium text-gray-700">{value || field.label}</span>
-        </div>
-      )
-    }
-
     switch (field.type) {
+      case 'dept_select':
+        return (
+          <select
+            value={value}
+            onChange={(e) => handleFieldChange(field.id, e.target.value)}
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm bg-white"
+            required={field.required}
+          >
+            <option value="">Select</option>
+            {DEPARTMENTS_LIST.map(dept => (
+              <option key={dept.code} value={dept.name}>{dept.name}</option>
+            ))}
+          </select>
+        )
+      case 'month_select':
+        return (
+          <select
+            value={value}
+            onChange={(e) => handleFieldChange(field.id, e.target.value)}
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm bg-white"
+            required={field.required}
+          >
+            <option value="">Select</option>
+            {months.map(m => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+        )
+      case 'year_only':
+        return (
+          <input
+            type="text"
+            value={value || (field.defaultValue || '')}
+            onChange={(e) => handleFieldChange(field.id, e.target.value)}
+            placeholder={field.defaultValue || '2025'}
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm bg-white"
+            required={field.required}
+          />
+        )
       case 'select':
         return (
           <select
             value={value}
             onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm bg-white"
             required={field.required}
           >
-            <option value="">Select {field.label}</option>
+            <option value="">Select</option>
             {field.options?.map((opt: string) => (
               <option key={opt} value={opt}>{opt}</option>
             ))}
@@ -3320,9 +3400,9 @@ function StaffAchievementPage({ user }: { user: User }) {
           <textarea
             value={value}
             onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            placeholder={field.label}
+            placeholder={field.placeholder || field.label}
             rows={3}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm resize-none bg-white"
             required={field.required}
           />
         )
@@ -3332,8 +3412,8 @@ function StaffAchievementPage({ user }: { user: User }) {
             type="number"
             value={value}
             onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            placeholder={field.label}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            placeholder={field.placeholder || field.label}
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm bg-white"
             required={field.required}
           />
         )
@@ -3343,37 +3423,9 @@ function StaffAchievementPage({ user }: { user: User }) {
             type="date"
             value={value}
             onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm bg-white"
             required={field.required}
           />
-        )
-      case 'year':
-        return (
-          <select
-            value={value}
-            onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            required={field.required}
-          >
-            <option value="">Select Year</option>
-            {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
-        )
-      case 'year_pub':
-        return (
-          <select
-            value={value}
-            onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            required={field.required}
-          >
-            <option value="">Select Year</option>
-            {Array.from({ length: 20 }, (_, i) => new Date().getFullYear() - i + 5).map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
         )
       case 'url':
         return (
@@ -3381,8 +3433,8 @@ function StaffAchievementPage({ user }: { user: User }) {
             type="url"
             value={value}
             onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            placeholder="https://..."
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            placeholder={field.placeholder || 'https://...'}
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm bg-white"
           />
         )
       default:
@@ -3391,8 +3443,8 @@ function StaffAchievementPage({ user }: { user: User }) {
             type="text"
             value={value}
             onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            placeholder={field.label}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}...`}
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm bg-white"
             required={field.required}
           />
         )
@@ -3402,12 +3454,12 @@ function StaffAchievementPage({ user }: { user: User }) {
   const currentTypeConfig = selectedType ? STAFF_ACHIEVEMENT_TYPES[selectedType] : null
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-8">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Staff Achievement Portal</h2>
-          <p className="text-gray-500 mt-1">Submit your faculty activities and research publications</p>
+          <p className="text-gray-500 mt-1">Submit your achievements and research publications</p>
         </div>
         <Badge variant="outline" className="px-4 py-2 text-sm bg-blue-50 text-blue-700 border-blue-200">
           {user.departmentName} • {user.role}
@@ -3418,57 +3470,57 @@ function StaffAchievementPage({ user }: { user: User }) {
       {showSuccess && (
         <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3 animate-pulse">
           <CheckCircle className="w-5 h-5 text-green-600" />
-          <span className="text-green-800 font-medium">Submission successful! Sent for approval.</span>
+          <span className="text-green-800 font-medium">Submission successful! Record saved.</span>
         </div>
       )}
 
-      {/* Category Selection - Two Main Options */}
+      {/* Category Selection - Two Main Options (Dropdown Style) */}
       {!selectedCategory ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-          {/* Faculty Activity Card */}
+          {/* Achievement Card */}
           <Card 
             className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 overflow-hidden border-0 shadow-lg"
-            onClick={() => setSelectedCategory('faculty_activity')}
+            onClick={() => setSelectedCategory('achievement')}
           >
-            <div className="h-2 bg-gradient-to-r from-orange-500 to-red-500"></div>
+            <div className="h-2 bg-gradient-to-r from-emerald-500 to-teal-600"></div>
             <CardContent className="p-6">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Activity className="w-7 h-7 text-white" />
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
+                <Trophy className="w-7 h-7 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">FACULTY ACTIVITY</h3>
-              <p className="text-gray-500 text-sm mb-4">Events, Workshops, NPTEL, Awards & more</p>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">ACHIEVEMENT</h3>
+              <p className="text-gray-500 text-sm mb-4">Industry Interaction, Awards, Events Organized, FDP/STTP & more</p>
               
               <div className="space-y-2">
-                {['Events Tracker', 'Resource Person', 'NPTEL / MOOC', 'Seminar / Conf.', 'Faculty Awards', 'Industrial Visit'].map(item => (
+                {['Industry Interaction', 'Award Record', 'Event Organized', 'FDP / STTP'].map(item => (
                   <div key={item} className="flex items-center gap-2 text-sm text-gray-600">
-                    <ChevronRight className="w-4 h-4 text-orange-500" />
+                    <ChevronRight className="w-4 h-4 text-emerald-500" />
                     <span>{item}</span>
                   </div>
                 ))}
               </div>
               
-              <Button className="w-full mt-4 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600">
+              <Button className="w-full mt-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700">
                 Select Category
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </CardContent>
           </Card>
 
-          {/* R&D Publications Card */}
+          {/* Research & Publication Card */}
           <Card 
             className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 overflow-hidden border-0 shadow-lg"
-            onClick={() => setSelectedCategory('rd_publication')}
+            onClick={() => setSelectedCategory('research_publication')}
           >
             <div className="h-2 bg-gradient-to-r from-slate-600 to-slate-800"></div>
             <CardContent className="p-6">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
                 <BookOpen className="w-7 h-7 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">R&D PUBLICATIONS</h3>
-              <p className="text-gray-500 text-sm mb-4">Journals, Patents, Books, Research Grants & more</p>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">RESEARCH AND PUBLICATION</h3>
+              <p className="text-gray-500 text-sm mb-4">Grants, Publications, Chapters, Books, Patents, Journals & more</p>
               
               <div className="space-y-2">
-                {['Journals', 'Patents', 'Books', 'Book Chapters', 'Conf. Publications', 'Research Grants'].map(item => (
+                {['Grant', 'Publication', 'Book Chapter', 'Book', 'Patent', 'Journal Paper'].map(item => (
                   <div key={item} className="flex items-center gap-2 text-sm text-gray-600">
                     <ChevronRight className="w-4 h-4 text-slate-600" />
                     <span>{item}</span>
@@ -3496,8 +3548,8 @@ function StaffAchievementPage({ user }: { user: User }) {
               Back to Categories
             </Button>
             
-            <h3 className="text-lg font-semibold text-gray-800 capitalize">
-              {selectedCategory === 'faculty_activity' ? '📅 Faculty Activity' : '📚 R&D Publications'}
+            <h3 className="text-lg font-semibold text-gray-800">
+              {selectedCategory === 'achievement' ? '🏆 Achievement Forms' : '📚 Research & Publication Forms'}
             </h3>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -3508,7 +3560,7 @@ function StaffAchievementPage({ user }: { user: User }) {
                   className="cursor-pointer hover:shadow-lg transition-all duration-200 group border border-gray-200 hover:border-blue-300"
                 >
                   <CardContent className="p-4 flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-xl ${color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center group-hover:scale-110 transition-transform shadow-md`}>
                       <Icon className="w-6 h-6 text-white" />
                     </div>
                     <span className="font-medium text-gray-800">{label}</span>
@@ -3518,7 +3570,7 @@ function StaffAchievementPage({ user }: { user: User }) {
             </div>
           </div>
         ) : (
-          /* Form View */
+          /* Form View - Matching Screenshot Design Exactly */
           <div className="space-y-6">
             <Button 
               variant="ghost" 
@@ -3529,39 +3581,37 @@ function StaffAchievementPage({ user }: { user: User }) {
               Back to Types
             </Button>
 
-            {/* Form Header */}
-            <Card className="overflow-hidden border-0 shadow-lg">
-              <div className={`h-2 ${currentTypeConfig?.color}`}></div>
-              <CardHeader className="pb-4">
+            {/* Form Card - Screenshot Style */}
+            <Card className="overflow-hidden border border-gray-200 shadow-sm">
+              {/* Form Header - Like screenshots show "Add Grant", "Add Publication", etc. */}
+              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50">
                 <div className="flex items-center gap-3">
                   {currentTypeConfig && (
-                    <div className={`w-10 h-10 rounded-xl ${currentTypeConfig.color} flex items-center justify-center`}>
-                      <currentTypeConfig.icon className="w-5 h-5 text-white" />
-                    </div>
+                    <>
+                      <currentTypeConfig.headerIcon className="w-5 h-5 text-gray-700" />
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {currentTypeConfig.headerTitle || `Add ${currentTypeConfig.label}`}
+                      </h3>
+                    </>
                   )}
-                  <div>
-                    <CardTitle className="text-lg">{currentTypeConfig?.label}</CardTitle>
-                    <p className="text-sm text-gray-500 capitalize">
-                      {selectedCategory === 'faculty_activity' ? 'Faculty Activity' : 'R&D Publication'}
-                    </p>
-                  </div>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {currentTypeConfig?.fields.map(field => (
-                  <div key={field.id}>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      {field.label} {field.required && <span className="text-red-500">*</span>}
-                    </label>
-                    {renderFormField(field)}
-                  </div>
-                ))}
+              </div>
+              
+              <CardContent className="p-6 space-y-5">
+                {/* Dynamic Fields Grid - 3 columns like screenshots */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {currentTypeConfig?.fields.map(field => (
+                    <div key={field.id} className={`${field.full ? 'md:col-span-2 lg:col-span-3' : ''}`}>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {field.label} {field.required && <span className="text-red-500">*</span>}
+                      </label>
+                      {renderFormField(field)}
+                    </div>
+                  ))}
+                </div>
 
-                {/* File Upload Section */}
+                {/* File Upload Section - Drag and Drop */}
                 <div className="pt-4 border-t border-gray-200">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Attach Supporting Documents
-                  </label>
                   <FileUpload 
                     onFileSelect={setAttachedFiles}
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
@@ -3569,56 +3619,61 @@ function StaffAchievementPage({ user }: { user: User }) {
                   />
                 </div>
 
-                {/* Submit Button */}
-                <Button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="w-full py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/25"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-5 h-5 mr-2" />
-                      Submit for Approval
-                    </>
-                  )}
-                </Button>
+                {/* Action Buttons - Save & Clear like screenshots */}
+                <div className="flex items-center gap-3 pt-4">
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="px-6 py-2.5 bg-[#0f172a] hover:bg-[#1e293b] text-white font-medium rounded-lg shadow-md flex items-center gap-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    {isSubmitting ? 'Saving...' : 'Save'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleClearForm}
+                    className="px-6 py-2.5 border-gray-300 text-gray-700 hover:bg-gray-50 font-medium rounded-lg flex items-center gap-2"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    Clear
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
             {/* Submitted Entries List */}
             {submittedEntries.length > 0 && (
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle className="text-lg">Your Submissions</CardTitle>
+              <Card className="mt-6 border border-gray-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <ClipboardList className="w-5 h-5 text-blue-600" />
+                    Your Submissions ({submittedEntries.length})
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3 max-h-96 overflow-y-auto">
                     {submittedEntries.slice(0, 10).map(entry => {
                       const EntryIcon = STAFF_ACHIEVEMENT_TYPES[entry.type]?.icon || FileText
                       return (
-                      <div key={entry.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-lg ${STAFF_ACHIEVEMENT_TYPES[entry.type]?.color || 'bg-gray-400'} flex items-center justify-center`}>
-                            <EntryIcon className="w-4 h-4 text-white" />
+                        <div key={entry.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${STAFF_ACHIEVEMENT_TYPES[entry.type]?.color || 'bg-gray-400'} flex items-center justify-center shadow-sm`}>
+                              <EntryIcon className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-sm text-gray-800">{entry.typeName}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">{entry.title.substring(0, 50)}...</p>
+                              <p className="text-xs text-gray-400 mt-0.5">{new Date(entry.submittedAt).toLocaleDateString()}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-sm text-gray-800">{entry.typeName}</p>
-                            <p className="text-xs text-gray-500">{new Date(entry.submittedAt).toLocaleDateString()}</p>
-                          </div>
+                          <Badge className={
+                            entry.status === 'pending_staff' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                            entry.status === 'approved' ? 'bg-green-100 text-green-700 border-green-200' :
+                            'bg-gray-100 text-gray-700 border-gray-200'
+                          }>
+                            {entry.status === 'pending_staff' ? 'Pending' : entry.status.replace('_', ' ')}
+                          </Badge>
                         </div>
-                        <Badge className={
-                          entry.status === 'pending_staff' ? 'bg-yellow-100 text-yellow-700' :
-                          entry.status === 'approved' ? 'bg-green-100 text-green-700' :
-                          'bg-gray-100 text-gray-700'
-                        }>
-                          {entry.status.replace('_', ' ')}
-                        </Badge>
-                      </div>
                       )
                     })}
                   </div>
@@ -3630,12 +3685,12 @@ function StaffAchievementPage({ user }: { user: User }) {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
-        <Card className="p-4 border-l-4 border-l-orange-500">
+        <Card className="p-4 border-l-4 border-l-emerald-500">
           <div className="flex items-center gap-3">
-            <Activity className="w-8 h-8 text-orange-500" />
+            <Trophy className="w-8 h-8 text-emerald-500" />
             <div>
-              <p className="text-2xl font-bold text-gray-900">6</p>
-              <p className="text-sm text-gray-500">Activity Types</p>
+              <p className="text-2xl font-bold text-gray-900">{getTypesForCategory('achievement').length}</p>
+              <p className="text-sm text-gray-500">Achievement Types</p>
             </div>
           </div>
         </Card>
@@ -3643,7 +3698,7 @@ function StaffAchievementPage({ user }: { user: User }) {
           <div className="flex items-center gap-3">
             <BookOpen className="w-8 h-8 text-slate-600" />
             <div>
-              <p className="text-2xl font-bold text-gray-900">6</p>
+              <p className="text-2xl font-bold text-gray-900">{getTypesForCategory('research_publication').length}</p>
               <p className="text-sm text-gray-500">Publication Types</p>
             </div>
           </div>

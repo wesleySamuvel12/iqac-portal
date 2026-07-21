@@ -1,0 +1,602 @@
+  2000→        </Card>
+  2001→        
+  2002→        <Card className="p-6 border border-gray-200">
+  2003→          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+  2004→            <PieChartIcon className="w-5 h-5 text-purple-500" /> Activity Distribution
+  2005→          </h3>
+  2006→          <div className="grid grid-cols-2 gap-4">
+  2007→            {[
+  2008→              { label: 'Workshops', value: 35, color: 'bg-blue-500' },
+  2009→              { label: 'Seminars', value: 28, color: 'bg-purple-500' },
+  2010→              { label: 'FDPs', value: 18, color: 'bg-green-500' },
+  2011→              { label: 'Events', value: 19, color: 'bg-orange-500' },
+  2012→            ].map(item => (
+  2013→              <div key={item.label} className="p-4 rounded-xl bg-gray-50">
+  2014→                <p className="text-2xl font-bold text-gray-900">{item.value}%</p>
+  2015→                <p className="text-sm text-gray-500">{item.label}</p>
+  2016→                <div className={`h-1.5 ${item.color} rounded-full mt-2`} />
+  2017→              </div>
+  2018→            ))}
+  2019→          </div>
+  2020→        </Card>
+  2021→      </div>
+  2022→
+  2023→      {/* Chart Placeholder */}
+  2024→      <Card className="p-6 border border-gray-200">
+  2025→        <h3 className="font-semibold text-gray-900 mb-4">Performance Trends</h3>
+  2026→        <div className="h-64 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center">
+  2027→          <div className="text-center">
+  2028→            <BarChart3 className="w-12 h-12 mx-auto text-gray-300 mb-2" />
+  2029→            <p className="text-gray-500">Chart.js Integration Ready</p>
+  2030→            <p className="text-xs text-gray-400">Connect to API for live data visualization</p>
+  2031→          </div>
+  2032→        </div>
+  2033→      </Card>
+  2034→    </div>
+  2035→  )
+  2036→}
+  2037→
+  2038→// Helper components
+  2039→function StatCell({ title, value, icon: Icon, color }: { title: string; value: string; icon: React.ElementType; color: string }) {
+  2040→  return (
+  2041→    <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-white/90 backdrop-blur-sm overflow-hidden">
+  2042→      <CardContent className="p-5">
+  2043→        <div className="flex items-start justify-between">
+  2044→          <div className="space-y-2">
+  2045→            <p className="text-sm font-medium text-gray-500">{title}</p>
+  2046→            <p className="text-3xl font-bold text-gray-900">{value}</p>
+  2047→          </div>
+  2048→          <div className={`p-3 rounded-xl bg-gradient-to-br ${color.includes('from') ? color : `from-${color}-500 to-${color}-600`} shadow-lg`}>
+  2049→            <Icon className="w-6 h-6 text-white" />
+  2050→          </div>
+  2051→        </div>
+  2052→      </CardContent>
+  2053→    </Card>
+  2054→  )
+  2055→}
+  2056→
+  2057→// ============ DOCUMENTS PAGE ============
+  2058→function DocumentsPage() {
+  2059→  return (
+  2060→    <div className="space-y-6">
+  2061→      <div className="flex items-center justify-between">
+  2062→        <div>
+  2063→          <h2 className="text-2xl font-bold text-gray-900">Document Management</h2>
+  2064→          <p className="text-gray-500">IQAC reports and documents</p>
+  2065→        </div>
+  2066→        <Button className="gap-2 bg-gradient-to-r from-blue-500 to-indigo-600"><Upload className="w-4 h-4" /> Upload Document</Button>
+  2067→      </div>
+  2068→      
+  2069→      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  2070→        {[
+  2071→          { name: 'AQAR 2023-24', type: 'PDF', size: '2.4 MB', date: '2024-04-15', icon: FileText },
+  2072→          { name: 'SSR Report', type: 'PDF', size: '5.8 MB', date: '2024-03-20', icon: FileText },
+  2073→          { name: 'IIQA Document', type: 'DOCX', size: '1.2 MB', date: '2024-02-10', icon: FileText },
+  2074→          { name: 'Criteria Reports', type: 'ZIP', size: '12.4 MB', date: '2024-04-01', icon: FolderOpen },
+  2075→          { name: 'NAAC Certificates', type: 'PDF', size: '3.2 MB', date: '2024-01-15', icon: Award },
+  2076→          { name: 'Annual Report', type: 'PDF', size: '8.1 MB', date: '2024-03-01', icon: FileText },
+  2077→        ].map((doc, i) => (
+  2078→          <Card key={i} className="hover:shadow-md transition-shadow cursor-pointer border border-gray-100 bg-white">
+  2079→            <CardContent className="p-5">
+  2080→              <div className="flex items-start gap-4">
+  2081→                <div className="p-3 rounded-xl bg-red-50">
+  2082→                  <doc.icon className="w-6 h-6 text-red-500" />
+  2083→                </div>
+  2084→                <div className="flex-1 min-w-0">
+  2085→                  <p className="font-medium text-gray-900 truncate">{doc.name}</p>
+  2086→                  <p className="text-sm text-gray-500">{doc.type} • {doc.size}</p>
+  2087→                  <p className="text-xs text-gray-400 mt-1">{doc.date}</p>
+  2088→                </div>
+  2089→                <Button variant="ghost" size="icon" className="text-blue-500 hover:text-blue-700">
+  2090→                  <Download className="w-4 h-4" />
+  2091→                </Button>
+  2092→              </div>
+  2093→            </CardContent>
+  2094→          </Card>
+  2095→        ))}
+  2096→      </div>
+  2097→    </div>
+  2098→  )
+  2099→}
+  2100→
+  2101→// ============ SETTINGS PAGE ============
+  2102→function SettingsPage({ user }: { user: User }) {
+  2103→  const [darkMode, setDarkMode] = useState(false)
+  2104→
+  2105→  return (
+  2106→    <div className="space-y-6 max-w-3xl">
+  2107→      <div>
+  2108→        <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
+  2109→        <p className="text-gray-500">Manage your account settings</p>
+  2110→      </div>
+  2111→      
+  2112→      <Card className="p-6 border border-gray-200">
+  2113→        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+  2114→          <Users className="w-5 h-5 text-blue-500" /> Profile Information
+  2115→        </h3>
+  2116→        <div className="space-y-4">
+  2117→          <div className="grid grid-cols-2 gap-4">
+  2118→            <div>
+  2119→              <label className="text-sm font-medium text-gray-700">Full Name</label>
+  2120→              <Input defaultValue={user.name} className="mt-1 bg-white/80" />
+  2121→            </div>
+  2122→            <div>
+  2123→              <label className="text-sm font-medium text-gray-700">Email</label>
+  2124→              <Input defaultValue={user.email} className="mt-1 bg-white/80" disabled />
+  2125→            </div>
+  2126→          </div>
+  2127→          <div className="grid grid-cols-2 gap-4">
+  2128→            <div>
+  2129→              <label className="text-sm font-medium text-gray-700">Role</label>
+  2130→              <Input defaultValue={user.role} className="mt-1 bg-white/80" disabled />
+  2131→            </div>
+  2132→            <div>
+  2133→              <label className="text-sm font-medium text-gray-700">Department</label>
+  2134→              <Input defaultValue={user.departmentName || ''} className="mt-1 bg-white/80" disabled />
+  2135→            </div>
+  2136→          </div>
+  2137→          <Button className="bg-gradient-to-r from-blue-500 to-indigo-600">Save Changes</Button>
+  2138→        </div>
+  2139→      </Card>
+  2140→      
+  2141→      <Card className="p-6 border border-gray-200">
+  2142→        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+  2143→          <Sun className="w-5 h-5 text-amber-500" /> Appearance
+  2144→        </h3>
+  2145→        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+  2146→          <div className="flex items-center gap-3">
+  2147→            {darkMode ? <Moon className="w-5 h-5 text-indigo-500" /> : <Sun className="w-5 h-5 text-amber-500" />}
+  2148→            <span className="font-medium text-gray-700">Dark Mode</span>
+  2149→          </div>
+  2150→          <button
+  2151→            onClick={() => setDarkMode(!darkMode)}
+  2152→            className={`relative w-12 h-6 rounded-full transition-colors ${darkMode ? 'bg-indigo-500' : 'bg-gray-300'}`}
+  2153→          >
+  2154→            <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${darkMode ? 'translate-x-6' : ''}`} />
+  2155→          </button>
+  2156→        </div>
+  2157→      </Card>
+  2158→      
+  2159→      <Card className="p-6 border border-gray-200">
+  2160→        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+  2161→          <Lock className="w-5 h-5 text-red-500" /> Security
+  2162→        </h3>
+  2163→        <div className="space-y-4">
+  2164→          <Button variant="outline" className="gap-2">
+  2165→            <Lock className="w-4 h-4" /> Change Password
+  2166→          </Button>
+  2167→          <Button variant="outline" className="gap-2 text-red-500 border-red-200 hover:bg-red-50">
+  2168→            <LogOut className="w-4 h-4" /> Sign Out
+  2169→          </Button>
+  2170→        </div>
+  2171→      </Card>
+  2172→    </div>
+  2173→  )
+  2174→}
+  2175→
+  2176→// ============ ICON IMPORT FIX ============
+  2177→const UserPlus = Users
+  2178→const FileCheckIcon = FileText
+  2179→
+  2180→// ============ NOTIFICATION DROPDOWN ============
+  2181→function NotificationDropdown() {
+  2182→  const [isOpen, setIsOpen] = useState(false)
+  2183→  const dropdownRef = useRef<HTMLDivElement>(null)
+  2184→  
+  2185→  const notifications = [
+  2186→    { id: 1, title: 'New approval request', time: '5 min ago', read: false },
+  2187→    { id: 2, title: 'Achievement approved', time: '1 hour ago', read: false },
+  2188→    { id: 3, title: 'System update available', time: '2 hours ago', read: true },
+  2189→  ]
+  2190→
+  2191→  useEffect(() => {
+  2192→    function handleClickOutside(event: MouseEvent) {
+  2193→      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+  2194→        setIsOpen(false)
+  2195→      }
+  2196→    }
+  2197→    document.addEventListener('mousedown', handleClickOutside)
+  2198→    return () => document.removeEventListener('mousedown', handleClickOutside)
+  2199→  }, [])
+  2200→
+  2201→  return (
+  2202→    <div className="relative" ref={dropdownRef}>
+  2203→      <button
+  2204→        onClick={() => setIsOpen(!isOpen)}
+  2205→        className="relative p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
+  2206→      >
+  2207→        <Bell className="w-5 h-5" />
+  2208→        <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white animate-pulse" />
+  2209→      </button>
+  2210→      
+  2211→      {isOpen && (
+  2212→        <div className="fixed right-4 top-16 w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[9999] overflow-hidden notification-dropdown">
+  2213→          <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+  2214→            <div className="flex items-center justify-between">
+  2215→              <h3 className="font-semibold text-gray-900">Notifications</h3>
+  2216→              <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+  2217→                {notifications.filter(n => !n.read).length} new
+  2218→              </Badge>
+  2219→            </div>
+  2220→          </div>
+  2221→          
+  2222→          <div className="max-h-80 overflow-y-auto">
+  2223→            {notifications.map(notif => (
+  2224→              <div key={notif.id} className={`p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors ${!notif.read ? 'bg-blue-50/30' : ''}`}>
+  2225→                <div className="flex items-start gap-3">
+  2226→                  <div className={`w-2 h-2 rounded-full mt-2 ${!notif.read ? 'bg-blue-500' : 'bg-gray-300'}`} />
+  2227→                  <div className="flex-1 min-w-0">
+  2228→                    <p className="text-sm font-medium text-gray-900">{notif.title}</p>
+  2229→                    <p className="text-xs text-gray-500 mt-1">{notif.time}</p>
+  2230→                  </div>
+  2231→                </div>
+  2232→              </div>
+  2233→            ))}
+  2234→          </div>
+  2235→          
+  2236→          <div className="p-3 border-t border-gray-100 bg-gray-50">
+  2237→            <button className="w-full text-center text-sm text-blue-600 font-medium hover:text-blue-700">
+  2238→              View all notifications
+  2239→            </button>
+  2240→          </div>
+  2241→        </div>
+  2242→      )}
+  2243→    </div>
+  2244→  )
+  2245→}
+  2246→
+  2247→// ============ SIDEBAR ============
+  2248→function Sidebar({ 
+  2249→  activeTab, 
+  2250→  setActiveTab, 
+  2251→  user,
+  2252→  open,
+  2253→  onToggle
+  2254→}: { 
+  2255→  activeTab: TabType; 
+  2256→  setActiveTab: (t: TabType) => void; 
+  2257→  user: User;
+  2258→  open: boolean;
+  2259→  onToggle: () => void;
+  2260→}) {
+  2261→  const [collapsed, setCollapsed] = useState(false)
+  2262→  
+  2263→  // Role-based menu items - Different menus for each role
+  2264→  const getAllMenuItems = (): { id: TabType; icon: React.ElementType; label: string; badge?: string; roles?: string[] }[] => [
+  2265→    // Common items
+  2266→    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  2267→    
+  2268→    // Student specific
+  2269→    { id: 'achievements', icon: Trophy, label: 'Achievements', roles: ['STUDENT'], badge: 'New' },
+  2270→    { id: 'feedback', icon: MessageSquare, label: 'Feedback', roles: ['STUDENT'] },
+  2271→    
+  2272→    // Staff specific - 3 buttons only
+  2273→    { id: 'staff_achievement', icon: Award, label: 'Staff Achievement', roles: ['STAFF'], badge: 'New' },
+  2274→    { id: 'feedback', icon: MessageSquare, label: 'Feedback', roles: ['STAFF'] },
+  2275→    { id: 'student_achievement_view', icon: GraduationCap, label: 'Student Achievement', roles: ['STAFF'], badge: 'Pending' },
+  2276→    
+  2277→    // Admin/HOD items
+  2278→    { id: 'achievements', icon: Trophy, label: 'Achievements', roles: ['ADMIN', 'HOD'] },
+  2279→    { id: 'feedback', icon: MessageSquare, label: 'Feedback', roles: ['ADMIN', 'HOD'] },
+  2280→    { id: 'departments', icon: Building2, label: 'Departments', roles: ['ADMIN', 'HOD'] },
+  2281→    { id: 'faculty', icon: Users, label: 'Faculty', roles: ['ADMIN', 'HOD'] },
+  2282→    { id: 'students', icon: GraduationCap, label: 'Students', roles: ['ADMIN', 'HOD'] },
+  2283→    { id: 'activities', icon: Activity, label: 'Activities', roles: ['ADMIN', 'HOD'] },
+  2284→    { id: 'research', icon: Award, label: 'Research', roles: ['ADMIN', 'HOD'] },
+  2285→    { id: 'approvals', icon: CheckCircle, label: 'Approvals', badge: '12', roles: ['ADMIN', 'HOD'] },
+  2286→    { id: 'analytics', icon: BarChart3, label: 'Analytics', roles: ['ADMIN', 'HOD'] },
+  2287→    { id: 'documents', icon: FolderOpen, label: 'Documents', roles: ['ADMIN', 'HOD'] },
+  2288→    { id: 'settings', icon: Settings, label: 'Settings', roles: ['ADMIN', 'HOD'] },
+  2289→  ]
+  2290→
+  2291→  const menuItems = getAllMenuItems().filter(item => !item.roles || item.roles.includes(user.role))
+  2292→
+  2293→  return (
+  2294→    <>
+  2295→      {/* Overlay for mobile */}
+  2296→      {open && (
+  2297→        <div 
+  2298→          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+  2299→          onClick={onToggle}
+  2300→        />
+  2301→      )}
+  2302→      <aside className={`${collapsed ? 'w-20' : 'w-64'} bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col transition-all duration-300 z-50 ${open ? 'fixed inset-y-0 left-0 shadow-2xl' : 'hidden lg:flex'} sidebar-shadow`}>
+  2303→      {/* Logo */}
+  2304→      <div className="p-4 border-b border-gray-100">
+  2305→        <div className="flex items-center gap-3">
+  2306→          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0a2a5e] via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 logo-glow">
+  2307→            <Building2 className="w-5 h-5 text-white" />
+  2308→          </div>
+  2309→          {!collapsed && (
+  2310→            <div className="overflow-hidden">
+  2311→              <span className="font-bold text-gray-900 text-sm block truncate">IQAC ERP</span>
+  2312→              <span className="text-xs text-gray-500">Enterprise Edition</span>
+  2313→            </div>
+  2314→          )}
+  2315→        </div>
+  2316→      </div>
+  2317→
+  2318→      {/* Menu Items */}
+  2319→      <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar">
+  2320→        {menuItems.map(item => (
+  2321→          <button
+  2322→            key={item.id}
+  2323→            onClick={() => setActiveTab(item.id)}
+  2324→            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all relative group ${
+  2325→              activeTab === item.id
+  2326→                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25'
+  2327→                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+  2328→            }`}
+  2329→            title={collapsed ? item.label : undefined}
+  2330→          >
+  2331→            <item.icon className={`w-5 h-5 flex-shrink-0 ${activeTab === item.id ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`} />
+  2332→            {!collapsed && (
+  2333→              <>
+  2334→                <span className="truncate">{item.label}</span>
+  2335→                {item.badge && (
+  2336→                  <span className={`ml-auto px-2 py-0.5 text-xs rounded-full ${
+  2337→                    activeTab === item.id ? 'bg-white/20 text-white' : 'bg-red-100 text-red-600'
+  2338→                  }`}>
+  2339→                    {item.badge}
+  2340→                  </span>
+  2341→                )}
+  2342→              </>
+  2343→            )}
+  2344→            {collapsed && item.badge && (
+  2345→              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+  2346→            )}
+  2347→          </button>
+  2348→        ))}
+  2349→      </nav>
+  2350→
+  2351→      {/* Collapse Toggle - Desktop only */}
+  2352→      <button
+  2353→        onClick={() => setCollapsed(!collapsed)}
+  2354→        className="m-3 p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors hidden lg:flex items-center justify-center"
+  2355→      >
+  2356→        {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+  2357→      </button>
+  2358→    </aside>
+  2359→    </>
+  2360→  )
+  2361→}
+  2362→
+  2363→// ============ MOBILE NAV ============
+  2364→// Note: Mobile navigation is now handled by the responsive Sidebar component
+  2365→// This component is kept for reference but the main sidebar toggle is in the header
+  2366→function MobileNav({ activeTab, setActiveTab, user }: { activeTab: TabType; setActiveTab: (t: TabType) => void; user: User }) {
+  2367→  const [open, setOpen] = useState(false)
+  2368→  
+  2369→  // Role-based menu items - Student and Staff only see Dashboard, Achievements, Feedback
+  2370→  const getAllMenuItems = (): { id: TabType; icon: React.ElementType; label: string; roles?: string[] }[] => [
+  2371→    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  2372→    { id: 'achievements', icon: Trophy, label: 'Achievements' },
+  2373→    { id: 'feedback', icon: MessageSquare, label: 'Feedback' },
+  2374→    { id: 'departments', icon: Building2, label: 'Departments', roles: ['ADMIN', 'HOD'] },
+  2375→    { id: 'faculty', icon: Users, label: 'Faculty', roles: ['ADMIN', 'HOD'] },
+  2376→    { id: 'students', icon: GraduationCap, label: 'Students', roles: ['ADMIN', 'HOD'] },
+  2377→    { id: 'activities', icon: Activity, label: 'Activities', roles: ['ADMIN', 'HOD'] },
+  2378→    { id: 'research', icon: Award, label: 'Research', roles: ['ADMIN', 'HOD'] },
+  2379→    { id: 'approvals', icon: CheckCircle, label: 'Approvals', roles: ['ADMIN', 'HOD'] },
+  2380→    { id: 'analytics', icon: BarChart3, label: 'Analytics', roles: ['ADMIN', 'HOD'] },
+  2381→    { id: 'documents', icon: FolderOpen, label: 'Documents', roles: ['ADMIN', 'HOD'] },
+  2382→    { id: 'settings', icon: Settings, label: 'Settings', roles: ['ADMIN', 'HOD'] },
+  2383→  ]
+  2384→
+  2385→  const menuItems = getAllMenuItems().filter(item => !item.roles || item.roles.includes(user.role))
+  2386→
+  2387→  return (
+  2388→    <>
+  2389→      <button
+  2390→        onClick={() => setOpen(true)}
+  2391→        className="lg:hidden fixed bottom-4 left-4 z-50 p-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-full shadow-lg shadow-blue-500/30"
+  2392→      >
+  2393→        <Menu className="w-6 h-6" />
+  2394→      </button>
+  2395→      
+  2396→      {open && (
+  2397→        <div className="fixed inset-0 z-50 lg:hidden">
+  2398→          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
+  2399→          <div className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-2xl mobile-nav-animate">
+  2400→            <div className="p-4 border-b flex items-center justify-between">
+  2401→              <div className="flex items-center gap-3">
+  2402→                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0a2a5e] to-blue-600 flex items-center justify-center">
+  2403→                  <Building2 className="w-5 h-5 text-white" />
+  2404→                </div>
+  2405→                <span className="font-bold text-gray-900">IQAC ERP</span>
+  2406→              </div>
+  2407→              <button onClick={() => setOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+  2408→                <X className="w-6 h-6" />
+  2409→              </button>
+  2410→            </div>
+  2411→            <nav className="p-3 space-y-1 overflow-y-auto">
+  2412→              {menuItems.map(item => (
+  2413→                <button
+  2414→                  key={item.id}
+  2415→                  onClick={() => { setActiveTab(item.id); setOpen(false) }}
+  2416→                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+  2417→                    activeTab === item.id ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'
+  2418→                  }`}
+  2419→                >
+  2420→                  <item.icon className="w-5 h-5" />
+  2421→                  <span>{item.label}</span>
+  2422→                </button>
+  2423→              ))}
+  2424→            </nav>
+  2425→          </div>
+  2426→        </div>
+  2427→      )}
+  2428→    </>
+  2429→  )
+  2430→}
+  2431→
+  2432→// ============ STUDENT ACHIEVEMENTS PAGE (Matching Screenshot Design) ============
+  2433→function StudentAchievementsPage({ user }: { user: User }) {
+  2434→  const [selectedType, setSelectedType] = useState<string>('')
+  2435→  const [formData, setFormData] = useState<Record<string, string>>({})
+  2436→  const [achievements, setAchievements] = useState<any[]>([])
+  2437→  const [searchTerm, setSearchTerm] = useState('')
+  2438→  const [filterType, setFilterType] = useState('all')
+  2439→  const [filterStatus, setFilterStatus] = useState('all')
+  2440→  const [isSubmitting, setIsSubmitting] = useState(false)
+  2441→  const [showSuccess, setShowSuccess] = useState(false)
+  2442→
+  2443→  // Initialize form with user data when type changes
+  2444→  useEffect(() => {
+  2445→    if (selectedType) {
+  2446→      const typeConfig = ACHIEVEMENT_TYPES[selectedType]
+  2447→      if (typeConfig) {
+  2448→        const initialData: Record<string, string> = {
+  2449→          name: user.name || '',
+  2450→          dept: user.departmentName || '',
+  2451→          reg: `${user.departmentName || ''}001` // Default reg no
+  2452→        }
+  2453→        setFormData(initialData)
+  2454→      }
+  2455→    }
+  2456→  }, [selectedType, user])
+  2457→
+  2458→  const handleFieldChange = (fieldId: string, value: string) => {
+  2459→    setFormData(prev => ({ ...prev, [fieldId]: value }))
+  2460→  }
+  2461→
+  2462→  const handleSubmit = async () => {
+  2463→    if (!selectedType) return
+  2464→    setIsSubmitting(true)
+  2465→    
+  2466→    // Simulate submission
+  2467→    await new Promise(resolve => setTimeout(resolve, 1000))
+  2468→    
+  2469→    const newAchievement = {
+  2470→      id: Date.now(),
+  2471→      type: selectedType,
+  2472→      typeName: ACHIEVEMENT_TYPES[selectedType]?.label || selectedType,
+  2473→      title: formData.title || formData.award_name || formData.prog_name || formData.course || formData.event_name || 'Untitled',
+  2474→      dept: user.departmentName,
+  2475→      date: new Date().toISOString().split('T')[0],
+  2476→      status: 'pending_staff',
+  2477→      data: formData
+  2478→    }
+  2479→    
+  2480→    setAchievements(prev => [newAchievement, ...prev])
+  2481→    setShowSuccess(true)
+  2482→    setIsSubmitting(false)
+  2483→    
+  2484→    setTimeout(() => {
+  2485→      setShowSuccess(false)
+  2486→      setSelectedType('')
+  2487→      setFormData({})
+  2488→    }, 2000)
+  2489→  }
+  2490→
+  2491→  const handleClear = () => {
+  2492→    setSelectedType('')
+  2493→    setFormData({})
+  2494→  }
+  2495→
+  2496→  const currentTypeConfig = selectedType ? ACHIEVEMENT_TYPES[selectedType] : null
+  2497→
+  2498→  // Filter achievements
+  2499→  const filteredAchievements = achievements.filter(a => {
+  2500→    const matchesSearch = a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  2501→                         a.typeName.toLowerCase().includes(searchTerm.toLowerCase())
+  2502→    const matchesType = filterType === 'all' || a.type === filterType
+  2503→    const matchesStatus = filterStatus === 'all' || a.status === filterStatus
+  2504→    return matchesSearch && matchesType && matchesStatus
+  2505→  })
+  2506→
+  2507→  return (
+  2508→    <div className="space-y-6">
+  2509→      {/* Add Student Achievement Card */}
+  2510→      <Card className="border border-gray-200">
+  2511→        <CardContent className="p-6">
+  2512→          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+  2513→            <PlusCircle className="w-5 h-5 text-cyan-500" /> Add Student Achievement
+  2514→          </h3>
+  2515→          
+  2516→          {/* Type Selector */}
+  2517→          <div className="space-y-4">
+  2518→            <div>
+  2519→              <label className="text-sm font-medium text-gray-700 mb-2 block">
+  2520→                Select Achievement Type <span className="text-red-500">*</span>
+  2521→              </label>
+  2522→              <select
+  2523→                value={selectedType}
+  2524→                onChange={(e) => setSelectedType(e.target.value)}
+  2525→                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+  2526→              >
+  2527→                <option value="">-- Select Type --</option>
+  2528→                {Object.entries(ACHIEVEMENT_TYPES).map(([key, type]) => (
+  2529→                  <option key={key} value={key}>{type.label}</option>
+  2530→                ))}
+  2531→              </select>
+  2532→            </div>
+  2533→
+  2534→            {!selectedType ? (
+  2535→              <p className="text-sm text-gray-500 py-4">Please select an achievement type above.</p>
+  2536→            ) : (
+  2537→              /* Dynamic Form Fields */
+  2538→              <div className="space-y-4 border-t pt-4">
+  2539→                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  2540→                  {currentTypeConfig?.fields.map((field) => (
+  2541→                    <div key={field.id} className={`space-y-1 ${field.full ? 'md:col-span-2' : ''}`}>
+  2542→                      <label className="text-sm font-medium text-gray-600">
+  2543→                        {field.label}
+  2544→                        {field.required && <span className="text-red-500 ml-1">*</span>}
+  2545→                        {field.locked && <Lock className="w-3 h-3 inline ml-1 text-gray-400" />}
+  2546→                      </label>
+  2547→                      
+  2548→                      {field.type === 'text' && (
+  2549→                        <input
+  2550→                          type="text"
+  2551→                          value={formData[field.id] || ''}
+  2552→                          onChange={(e) => handleFieldChange(field.id, e.target.value)}
+  2553→                          disabled={field.locked}
+  2554→                          placeholder={`Enter ${field.label.toLowerCase()}`}
+  2555→                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 ${
+  2556→                            field.locked ? 'bg-gray-100 cursor-not-allowed border-gray-200' : 'bg-white border-gray-200'
+  2557→                          }`}
+  2558→                        />
+  2559→                      )}
+  2560→                      
+  2561→                      {field.type === 'number' && (
+  2562→                        <input
+  2563→                          type="number"
+  2564→                          value={formData[field.id] || ''}
+  2565→                          onChange={(e) => handleFieldChange(field.id, e.target.value)}
+  2566→                          placeholder={`Enter ${field.label.toLowerCase()}`}
+  2567→                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+  2568→                        />
+  2569→                      )}
+  2570→                      
+  2571→                      {field.type === 'url' && (
+  2572→                        <input
+  2573→                          type="url"
+  2574→                          value={formData[field.id] || ''}
+  2575→                          onChange={(e) => handleFieldChange(field.id, e.target.value)}
+  2576→                          placeholder="https://..."
+  2577→                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+  2578→                        />
+  2579→                      )}
+  2580→                      
+  2581→                      {field.type === 'date' && (
+  2582→                        <input
+  2583→                          type="date"
+  2584→                          value={formData[field.id] || ''}
+  2585→                          onChange={(e) => handleFieldChange(field.id, e.target.value)}
+  2586→                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+  2587→                        />
+  2588→                      )}
+  2589→                      
+  2590→                      {field.type === 'select' && (
+  2591→                        <select
+  2592→                          value={formData[field.id] || ''}
+  2593→                          onChange={(e) => handleFieldChange(field.id, e.target.value)}
+  2594→                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+  2595→                        >
+  2596→                          <option value="">Select {field.label}</option>
+  2597→                          {field.options?.map((opt: string) => (
+  2598→                            <option key={opt} value={opt}>{opt}</option>
+  2599→                          ))}
+
+[showing lines 2000-2599 of 4451; use offset=2600 with limit to continue reading]
