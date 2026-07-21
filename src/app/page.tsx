@@ -2243,26 +2243,49 @@ function NotificationDropdown() {
 }
 
 // ============ SIDEBAR ============
-function Sidebar({ activeTab, setActiveTab, user }: { activeTab: TabType; setActiveTab: (t: TabType) => void; user: User }) {
+function Sidebar({ 
+  activeTab, 
+  setActiveTab, 
+  user,
+  open,
+  onToggle
+}: { 
+  activeTab: TabType; 
+  setActiveTab: (t: TabType) => void; 
+  user: User;
+  open: boolean;
+  onToggle: () => void;
+}) {
   const [collapsed, setCollapsed] = useState(false)
   
-  const menuItems: { id: TabType; icon: React.ElementType; label: string; badge?: string }[] = [
+  // Role-based menu items - Student and Staff only see Dashboard, Achievements, Feedback
+  const getAllMenuItems = (): { id: TabType; icon: React.ElementType; label: string; badge?: string; roles?: string[] }[] => [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'achievements', icon: Trophy, label: 'Achievements', badge: user.role === 'STUDENT' || user.role === 'STAFF' ? 'New' : undefined },
     { id: 'feedback', icon: MessageSquare, label: 'Feedback' },
-    { id: 'departments', icon: Building2, label: 'Departments' },
-    { id: 'faculty', icon: Users, label: 'Faculty' },
-    { id: 'students', icon: GraduationCap, label: 'Students' },
-    { id: 'activities', icon: Activity, label: 'Activities' },
-    { id: 'research', icon: Award, label: 'Research' },
-    { id: 'approvals', icon: CheckCircle, label: 'Approvals', badge: '12' },
-    { id: 'analytics', icon: BarChart3, label: 'Analytics' },
-    { id: 'documents', icon: FolderOpen, label: 'Documents' },
-    { id: 'settings', icon: Settings, label: 'Settings' },
+    { id: 'departments', icon: Building2, label: 'Departments', roles: ['ADMIN', 'HOD'] },
+    { id: 'faculty', icon: Users, label: 'Faculty', roles: ['ADMIN', 'HOD'] },
+    { id: 'students', icon: GraduationCap, label: 'Students', roles: ['ADMIN', 'HOD'] },
+    { id: 'activities', icon: Activity, label: 'Activities', roles: ['ADMIN', 'HOD'] },
+    { id: 'research', icon: Award, label: 'Research', roles: ['ADMIN', 'HOD'] },
+    { id: 'approvals', icon: CheckCircle, label: 'Approvals', badge: '12', roles: ['ADMIN', 'HOD'] },
+    { id: 'analytics', icon: BarChart3, label: 'Analytics', roles: ['ADMIN', 'HOD'] },
+    { id: 'documents', icon: FolderOpen, label: 'Documents', roles: ['ADMIN', 'HOD'] },
+    { id: 'settings', icon: Settings, label: 'Settings', roles: ['ADMIN', 'HOD'] },
   ]
 
+  const menuItems = getAllMenuItems().filter(item => !item.roles || item.roles.includes(user.role))
+
   return (
-    <aside className={`${collapsed ? 'w-20' : 'w-64'} bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col transition-all duration-300 hidden lg:flex sidebar-shadow`}>
+    <>
+      {/* Overlay for mobile */}
+      {open && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          onClick={onToggle}
+        />
+      )}
+      <aside className={`${collapsed ? 'w-20' : 'w-64'} bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col transition-all duration-300 z-50 ${open ? 'fixed inset-y-0 left-0 shadow-2xl' : 'hidden lg:flex'} sidebar-shadow`}>
       {/* Logo */}
       <div className="p-4 border-b border-gray-100">
         <div className="flex items-center gap-3">
@@ -2311,35 +2334,41 @@ function Sidebar({ activeTab, setActiveTab, user }: { activeTab: TabType; setAct
         ))}
       </nav>
 
-      {/* Collapse Toggle */}
+      {/* Collapse Toggle - Desktop only */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="m-3 p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+        className="m-3 p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors hidden lg:flex items-center justify-center"
       >
         {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
       </button>
     </aside>
+    </>
   )
 }
 
 // ============ MOBILE NAV ============
+// Note: Mobile navigation is now handled by the responsive Sidebar component
+// This component is kept for reference but the main sidebar toggle is in the header
 function MobileNav({ activeTab, setActiveTab, user }: { activeTab: TabType; setActiveTab: (t: TabType) => void; user: User }) {
   const [open, setOpen] = useState(false)
   
-  const menuItems: { id: TabType; icon: React.ElementType; label: string }[] = [
+  // Role-based menu items - Student and Staff only see Dashboard, Achievements, Feedback
+  const getAllMenuItems = (): { id: TabType; icon: React.ElementType; label: string; roles?: string[] }[] => [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'achievements', icon: Trophy, label: 'Achievements' },
     { id: 'feedback', icon: MessageSquare, label: 'Feedback' },
-    { id: 'departments', icon: Building2, label: 'Departments' },
-    { id: 'faculty', icon: Users, label: 'Faculty' },
-    { id: 'students', icon: GraduationCap, label: 'Students' },
-    { id: 'activities', icon: Activity, label: 'Activities' },
-    { id: 'research', icon: Award, label: 'Research' },
-    { id: 'approvals', icon: CheckCircle, label: 'Approvals' },
-    { id: 'analytics', icon: BarChart3, label: 'Analytics' },
-    { id: 'documents', icon: FolderOpen, label: 'Documents' },
-    { id: 'settings', icon: Settings, label: 'Settings' },
+    { id: 'departments', icon: Building2, label: 'Departments', roles: ['ADMIN', 'HOD'] },
+    { id: 'faculty', icon: Users, label: 'Faculty', roles: ['ADMIN', 'HOD'] },
+    { id: 'students', icon: GraduationCap, label: 'Students', roles: ['ADMIN', 'HOD'] },
+    { id: 'activities', icon: Activity, label: 'Activities', roles: ['ADMIN', 'HOD'] },
+    { id: 'research', icon: Award, label: 'Research', roles: ['ADMIN', 'HOD'] },
+    { id: 'approvals', icon: CheckCircle, label: 'Approvals', roles: ['ADMIN', 'HOD'] },
+    { id: 'analytics', icon: BarChart3, label: 'Analytics', roles: ['ADMIN', 'HOD'] },
+    { id: 'documents', icon: FolderOpen, label: 'Documents', roles: ['ADMIN', 'HOD'] },
+    { id: 'settings', icon: Settings, label: 'Settings', roles: ['ADMIN', 'HOD'] },
   ]
+
+  const menuItems = getAllMenuItems().filter(item => !item.roles || item.roles.includes(user.role))
 
   return (
     <>
@@ -2882,6 +2911,7 @@ export default function IQACPortal() {
   const [mounted, setMounted] = useState(false)
   const [feedbackEnabled, setFeedbackEnabled] = useState(true)
   const [darkMode, setDarkMode] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -2949,17 +2979,39 @@ export default function IQACPortal() {
   return (
     <div className={`min-h-screen flex ${darkMode ? 'dark-theme' : ''}`} suppressHydrationWarning>
       {/* Sidebar */}
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user} />
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        user={user} 
+        open={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+      />
       
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-h-screen main-content-wrapper">
         {/* Header */}
         <header className="bg-white/95 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-30 header-shadow">
           <div className="flex items-center justify-between px-4 lg:px-6 h-16">
-            {/* Mobile Title */}
-            <div className="lg:hidden flex items-center gap-3">
-              <Building2 className="w-6 h-6 text-blue-600" />
-              <span className="font-semibold text-gray-900">IQAC Portal</span>
+            {/* Sidebar Toggle Button - Top Left with Logo */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-2.5 rounded-xl bg-gradient-to-r from-[#0a2a5e] to-blue-600 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-200 hover:scale-105"
+                title="Toggle Menu"
+              >
+                {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+              
+              {/* Logo - Always visible */}
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0a2a5e] via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 logo-glow">
+                  <GraduationCap className="w-5 h-5 text-white" />
+                </div>
+                <div className="hidden sm:block">
+                  <span className="font-bold text-gray-900 text-sm block leading-tight">NIET IQAC</span>
+                  <span className="text-xs text-gray-500 block leading-tight">ERP Portal</span>
+                </div>
+              </div>
             </div>
 
             {/* Search */}

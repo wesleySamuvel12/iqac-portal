@@ -1,0 +1,502 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import React, { useState, useEffect, useCallback, useRef } from 'react'
+     4→     4→import { useAuthStore } from '@/lib/store/auth-store'
+     5→     5→import { Button } from '@/components/ui/button'
+     6→     6→import { Input } from '@/components/ui/input'
+     7→     7→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+     8→     8→import { Badge } from '@/components/ui/badge'
+     9→     9→import { 
+    10→    10→  Building2, Mail, Lock, Eye, EyeOff, Loader2, 
+    11→    11→  LayoutDashboard, Users, GraduationCap, FileText,
+    12→    12→  BarChart3, Settings, Bell, LogOut, Menu, X,
+    13→    13→  Home, UserCheck, BookOpen, Award, TrendingUp,
+    14→    14→  CheckCircle, Clock, AlertCircle, ChevronRight,
+    15→    15→  Shield, Star, Activity, Zap, Database,
+    16→    16→  Search, Filter, Download, Plus, Edit3, Trash2,
+    17→    17→  Calendar, MapPin, Phone, Globe, Send,
+    18→    18→  ArrowRight, RefreshCw, Upload, FolderOpen,
+    19→    19→  Target, Lightbulb, HeartHandshake, Trophy,
+    20→    20→  MessageSquare, ThumbsUp, ThumbsDown,
+    21→    21→  Sun, Moon, ChevronDown, ChevronLeft,
+    22→    22→  ClipboardList, Flag, Mic, Presentation,
+    23→    23→  Briefcase, Wrench, Rocket, Code, PlusCircle,
+    24→    24→  Newspaper, Handshake, Circle
+    25→    25→} from 'lucide-react'
+    26→    26→
+    27→    27→// ============ TYPES ============
+    28→    28→interface Department {
+    29→    29→  id: string
+    30→    30→  name: string
+    31→    31→  code: string
+    32→    32→  vision?: string
+    33→    33→  mission?: string
+    34→    34→  hod?: string
+    35→    35→  facultyCount?: number
+    36→    36→  studentCount?: number
+    37→    37→  activityCount?: number
+    38→    38→}
+    39→    39→
+    40→    40→interface DashboardStats {
+    41→    41→  totalDepartments: number
+    42→    42→  totalFaculty: number
+    43→    43→  totalStudents: number
+    44→    44→  totalActivities: number
+    45→    45→  totalResearch: number
+    46→    46→  pendingApprovals: number
+    47→    47→}
+    48→    48→
+    49→    49→interface User {
+    50→    50→  id: string
+    51→    51→  email: string
+    52→    52→  name: string
+    53→    53→  role: 'ADMIN' | 'HOD' | 'STAFF' | 'STUDENT'
+    54→    54→  departmentId?: string
+    55→    55→  departmentName?: string
+    56→    56→}
+    57→    57→
+    58→    58→type TabType = 'dashboard' | 'departments' | 'faculty' | 'students' | 'activities' | 'research' 
+    59→    59→  | 'approvals' | 'analytics' | 'documents' | 'settings' | 'achievements' | 'feedback'
+    60→    60→
+    61→    61→// ============ ACHIEVEMENT TYPES DEFINITION (13 Types - Student Focused) ============
+    62→    62→const ACHIEVEMENT_TYPES: Record<string, {
+    63→    63→  label: string
+    64→    64→  icon: React.ElementType
+    65→    65→  color: string
+    66→    66→  fields: Array<{
+    67→    67→    id: string
+    68→    68→    label: string
+    69→    69→    type: string
+    70→    70→    required?: boolean
+    71→    71→    locked?: boolean
+    72→    72→    full?: boolean
+    73→    73→    options?: string[]
+    74→    74→  }>
+    75→    75→}> = {
+    76→    76→  journal: {
+    77→    77→    label: 'Journal Publication',
+    78→    78→    icon: Newspaper,
+    79→    79→    color: 'from-blue-500 to-blue-600',
+    80→    80→    fields: [
+    81→    81→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+    82→    82→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+    83→    83→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+    84→    84→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+    85→    85→      { id: 'title', label: 'Paper Title', type: 'text', required: true, full: true },
+    86→    86→      { id: 'journal', label: 'Journal Name', type: 'text', required: true, full: true },
+    87→    87→      { id: 'indexed', label: 'Indexed', type: 'select', options: ['SCI','Scopus','UGC Care','Web of Science','Other'] },
+    88→    88→      { id: 'issn', label: 'ISSN', type: 'text' },
+    89→    89→      { id: 'publisher', label: 'Publisher', type: 'text' },
+    90→    90→      { id: 'month', label: 'Month', type: 'select', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] },
+    91→    91→      { id: 'year_pub', label: 'Year', type: 'number' },
+    92→    92→      { id: 'status_pub', label: 'Status', type: 'select', options: ['Published','Accepted','Under Review'] },
+    93→    93→      { id: 'supervisor', label: 'Supervisor', type: 'text' },
+    94→    94→      { id: 'link', label: 'Paper Link', type: 'url' },
+    95→    95→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+    96→    96→    ]
+    97→    97→  },
+    98→    98→  conference: {
+    99→    99→    label: 'Conference Publication',
+   100→   100→    icon: Mic,
+   101→   101→    color: 'from-purple-500 to-purple-600',
+   102→   102→    fields: [
+   103→   103→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   104→   104→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   105→   105→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   106→   106→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   107→   107→      { id: 'title', label: 'Paper Title', type: 'text', required: true, full: true },
+   108→   108→      { id: 'conf', label: 'Conference Name', type: 'text', required: true, full: true },
+   109→   109→      { id: 'org', label: 'Organizing Institute', type: 'text' },
+   110→   110→      { id: 'indexed', label: 'Indexed', type: 'select', options: ['IEEE','Springer','Elsevier','Scopus','Other'] },
+   111→   111→      { id: 'month', label: 'Month', type: 'select', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] },
+   112→   112→      { id: 'year_pub', label: 'Year', type: 'number' },
+   113→   113→      { id: 'status_pub', label: 'Status', type: 'select', options: ['Presented','Published','Both'] },
+   114→   114→      { id: 'supervisor', label: 'Supervisor', type: 'text' },
+   115→   115→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   116→   116→    ]
+   117→   117→  },
+   118→   118→  patent: {
+   119→   119→    label: 'Patent',
+   120→   120→    icon: Lightbulb,
+   121→   121→    color: 'from-amber-500 to-orange-500',
+   122→   122→    fields: [
+   123→   123→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   124→   124→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   125→   125→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   126→   126→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   127→   127→      { id: 'title', label: 'Invention Title', type: 'text', required: true, full: true },
+   128→   128→      { id: 'patent_no', label: 'Patent No.', type: 'text' },
+   129→   129→      { id: 'month', label: 'Month', type: 'select', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] },
+   130→   130→      { id: 'year_pub', label: 'Year', type: 'number' },
+   131→   131→      { id: 'status_pub', label: 'Status', type: 'select', options: ['Filed','Published','Granted'] },
+   132→   132→      { id: 'inventors', label: 'All Inventors', type: 'text' },
+   133→   133→      { id: 'supervisor', label: 'Supervisor', type: 'text' },
+   134→   134→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   135→   135→    ]
+   136→   136→  },
+   137→   137→  nptel: {
+   138→   138→    label: 'NPTEL / MOOC',
+   139→   139→    icon: GraduationCap,
+   140→   140→    color: 'from-green-500 to-teal-600',
+   141→   141→    fields: [
+   142→   142→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   143→   143→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   144→   144→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   145→   145→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   146→   146→      { id: 'platform', label: 'Platform', type: 'select', options: ['NPTEL','Swayam','Coursera','edX','FutureLearn','Udemy','Other'] },
+   147→   147→      { id: 'course', label: 'Course Name', type: 'text', required: true, full: true },
+   148→   148→      { id: 'domain', label: 'Domain', type: 'text' },
+   149→   149→      { id: 'mentor', label: 'Faculty Mentor', type: 'text' },
+   150→   150→      { id: 'duration', label: 'Duration (wks)', type: 'number' },
+   151→   151→      { id: 'score', label: 'Score (%)', type: 'number' },
+   152→   152→      { id: 'grade', label: 'Grade', type: 'select', options: ['Elite + Gold','Elite + Silver','Elite','Successfully Completed','Completed'] },
+   153→   153→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   154→   154→    ]
+   155→   155→  },
+   156→   156→  seminar: {
+   157→   157→    label: 'Seminar / Workshop',
+   158→   158→    icon: Presentation,
+   159→   159→    color: 'from-pink-500 to-rose-600',
+   160→   160→    fields: [
+   161→   161→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   162→   162→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   163→   163→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   164→   164→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   165→   165→      { id: 'title', label: 'Event Title', type: 'text', required: true, full: true },
+   166→   166→      { id: 'type_sem', label: 'Type', type: 'select', options: ['Seminar','Webinar','Workshop','Conference','FDP','Other'] },
+   167→   167→      { id: 'org', label: 'Organizing Institute', type: 'text' },
+   168→   168→      { id: 'state', label: 'State', type: 'text' },
+   169→   169→      { id: 'from_date', label: 'From Date', type: 'date' },
+   170→   170→      { id: 'to_date', label: 'To Date', type: 'date' },
+   171→   171→      { id: 'mode', label: 'Mode', type: 'select', options: ['Online','Offline','Hybrid'] },
+   172→   172→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   173→   173→    ]
+   174→   174→  },
+   175→   175→  internship: {
+   176→   176→    label: 'Internship',
+   177→   177→    icon: Briefcase,
+   178→   178→    color: 'from-cyan-500 to-blue-600',
+   179→   179→    fields: [
+   180→   180→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   181→   181→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   182→   182→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   183→   183→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   184→   184→      { id: 'org_name', label: 'Organization / Industry', type: 'text', required: true, full: true },
+   185→   185→      { id: 'role', label: 'Internship Role/Title', type: 'text' },
+   186→   186→      { id: 'from_date', label: 'From Date', type: 'date' },
+   187→   187→      { id: 'to_date', label: 'To Date', type: 'date' },
+   188→   188→      { id: 'paid', label: 'Paid?', type: 'select', options: ['Yes','No'] },
+   189→   189→      { id: 'stipend', label: 'Stipend (₹)', type: 'number' },
+   190→   190→      { id: 'mode', label: 'Mode', type: 'select', options: ['Online','Offline','Hybrid'] },
+   191→   191→      { id: 'industry_mentor', label: 'Industry Mentor', type: 'text' },
+   192→   192→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   193→   193→    ]
+   194→   194→  },
+   195→   195→  training: {
+   196→   196→    label: 'Training Programme',
+   197→   197→    icon: Wrench,
+   198→   198→    color: 'from-indigo-500 to-violet-600',
+   199→   199→    fields: [
+   200→   200→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   201→   201→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   202→   202→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   203→   203→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   204→   204→      { id: 'prog_name', label: 'Training Program Name', type: 'text', required: true, full: true },
+   205→   205→      { id: 'organizer', label: 'Organizer', type: 'text' },
+   206→   206→      { id: 'from_date', label: 'From Date', type: 'date' },
+   207→   207→      { id: 'to_date', label: 'To Date', type: 'date' },
+   208→   208→      { id: 'hours', label: 'Hours / Days', type: 'text' },
+   209→   209→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   210→   210→    ]
+   211→   211→  },
+   212→   212→  award: {
+   213→   213→    label: 'Awards & Recognition',
+   214→   214→    icon: Trophy,
+   215→   215→    color: 'from-yellow-500 to-amber-600',
+   216→   216→    fields: [
+   217→   217→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   218→   218→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   219→   219→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   220→   220→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   221→   221→      { id: 'award_name', label: 'Award Name', type: 'text', required: true, full: true },
+   222→   222→      { id: 'event', label: 'Event / Competition', type: 'text' },
+   223→   223→      { id: 'organizer', label: 'Organizer', type: 'text' },
+   224→   224→      { id: 'level', label: 'Level', type: 'select', options: ['International','National','State','Regional','Institutional'] },
+   225→   225→      { id: 'position', label: 'Position', type: 'text' },
+   226→   226→      { id: 'date', label: 'Date', type: 'date' },
+   227→   227→      { id: 'cash_prize', label: 'Cash / Prize', type: 'text' },
+   228→   228→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   229→   229→    ]
+   230→   230→  },
+   231→   231→  cocurricular: {
+   232→   232→    label: 'Co-Curricular Activities',
+   233→   233→    icon: Circle,
+   234→   234→    color: 'from-emerald-500 to-green-600',
+   235→   235→    fields: [
+   236→   236→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   237→   237→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   238→   238→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   239→   239→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   240→   240→      { id: 'activity_type', label: 'Activity Type', type: 'select', options: ['Sports','Cultural','Club Activity','Social Service','Leadership','Student Council','Other'] },
+   241→   241→      { id: 'event_name', label: 'Event Name', type: 'text', required: true },
+   242→   242→      { id: 'organizer', label: 'Organizer', type: 'text' },
+   243→   243→      { id: 'level', label: 'Level', type: 'select', options: ['International','National','State','Regional','Institutional'] },
+   244→   244→      { id: 'position', label: 'Position', type: 'text' },
+   245→   245→      { id: 'date', label: 'Date', type: 'date' },
+   246→   246→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   247→   247→    ]
+   248→   248→  },
+   249→   249→  placement: {
+   250→   250→    label: 'Placement',
+   251→   251→    icon: Handshake,
+   252→   252→    color: 'from-violet-500 to-purple-600',
+   253→   253→    fields: [
+   254→   254→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   255→   255→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   256→   256→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   257→   257→      { id: 'yop', label: 'Year of Passing', type: 'number' },
+   258→   258→      { id: 'company', label: 'Company Name', type: 'text', required: true, full: true },
+   259→   259→      { id: 'state', label: 'Company State', type: 'text' },
+   260→   260→      { id: 'role', label: 'Job Role', type: 'text' },
+   261→   261→      { id: 'package', label: 'Package (LPA)', type: 'number' },
+   262→   262→      { id: 'offer_date', label: 'Offer Date', type: 'date' },
+   263→   263→      { id: 'mode', label: 'Mode', type: 'select', options: ['Campus','Off-Campus','Lateral'] },
+   264→   264→      { id: 'emp_type', label: 'Employment Type', type: 'select', options: ['Full-Time','Part-Time','Contract','Internship to PPO'] },
+   265→   265→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   266→   266→    ]
+   267→   267→  },
+   268→   268→  startup: {
+   269→   269→    label: 'Startup',
+   270→   270→    icon: Rocket,
+   271→   271→    color: 'from-red-500 to-pink-600',
+   272→   272→    fields: [
+   273→   273→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   274→   274→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   275→   275→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   276→   276→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   277→   277→      { id: 'title', label: 'Startup Title / Idea', type: 'text', required: true, full: true },
+   278→   278→      { id: 'domain', label: 'Domain / Sector', type: 'text' },
+   279→   279→      { id: 'stage', label: 'Stage', type: 'select', options: ['Idea','Prototype','MVP','Launched','Scaling'] },
+   280→   280→      { id: 'registered', label: 'Is Registered?', type: 'select', options: ['Yes','No'] },
+   281→   281→      { id: 'startup_name', label: 'Startup Name', type: 'text' },
+   282→   282→      { id: 'incubation', label: 'Incubation Status', type: 'select', options: ['Incubated','Not Incubated','Applied'] },
+   283→   283→      { id: 'outcome', label: 'Outcome', type: 'text' },
+   284→   284→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   285→   285→    ]
+   286→   286→  },
+   287→   287→  hackathon: {
+   288→   288→    label: 'Hackathon / Ideathon / SIH',
+   289→   289→    icon: Code,
+   290→   290→    color: 'from-slate-500 to-gray-600',
+   291→   291→    fields: [
+   292→   292→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   293→   293→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   294→   294→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   295→   295→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   296→   296→      { id: 'category', label: 'Category', type: 'select', options: ['Hackathon','Ideathon','SIH','Innovation Challenge','Other'] },
+   297→   297→      { id: 'title', label: 'Title / Idea', type: 'text', required: true, full: true },
+   298→   298→      { id: 'event_agency', label: 'Event / Agency', type: 'text' },
+   299→   299→      { id: 'problem_domain', label: 'Problem Domain', type: 'text' },
+   300→   300→      { id: 'level', label: 'Level', type: 'select', options: ['International','National','State','Regional','Institutional'] },
+   301→   301→      { id: 'stage', label: 'Stage', type: 'select', options: ['Submitted','Shortlisted','Finalist','Winner','Runner-Up'] },
+   302→   302→      { id: 'position_prize', label: 'Position / Prize', type: 'text' },
+   303→   303→      { id: 'amount', label: 'Amount Received (₹)', type: 'number' },
+   304→   304→      { id: 'event_date', label: 'Event Date', type: 'date' },
+   305→   305→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   306→   306→    ]
+   307→   307→  },
+   308→   308→  other: {
+   309→   309→    label: 'Custom Achievement',
+   310→   310→    icon: PlusCircle,
+   311→   311→    color: 'from-gray-400 to-gray-500',
+   312→   312→    fields: [
+   313→   313→      { id: 'custom_type', label: 'Custom Achievement Type', type: 'text', required: true, full: true },
+   314→   314→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   315→   315→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   316→   316→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   317→   317→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   318→   318→      { id: 'date', label: 'Date', type: 'date' },
+   319→   319→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   320→   320→    ]
+   321→   321→  }
+   322→   322→}
+   323→   323→
+   324→   324→// ============ DEPARTMENTS LIST FOR LOGIN ============
+   325→   325→const DEPARTMENTS_LIST = [
+   326→   326→  { code: 'CSE', name: 'Computer Science & Engineering', color: 'blue' },
+   327→   327→  { code: 'AI&DS', name: 'AI & Data Science', color: 'purple' },
+   328→   328→  { code: 'IT', name: 'Information Technology', color: 'cyan' },
+   329→   329→  { code: 'ECE', name: 'Electronics & Communication', color: 'pink' },
+   330→   330→  { code: 'EEE', name: 'Electrical & Electronics', color: 'yellow' },
+   331→   331→  { code: 'MECH', name: 'Mechanical Engineering', color: 'orange' },
+   332→   332→  { code: 'CIVIL', name: 'Civil Engineering', color: 'emerald' },
+   333→   333→  { code: 'MATHS', name: 'Mathematics', color: 'indigo' },
+   334→   334→  { code: 'PHY', name: 'Physics', color: 'teal' },
+   335→   335→  { code: 'CHEM', name: 'Chemistry', color: 'rose' },
+   336→   336→  { code: 'ENG', name: 'English', color: 'sky' },
+   337→   337→  { code: 'MBA', name: 'MBA', color: 'violet' },
+   338→   338→  { code: 'MCA', name: 'MCA', color: 'fuchsia' },
+   339→   339→  { code: 'BIO', name: 'Biotechnology', color: 'lime' },
+   340→   340→  { code: 'AGRI', name: 'Agricultural Engg.', color: 'green' },
+   341→   341→  { code: 'BME', name: 'Biomedical Engg.', color: 'red' },
+   342→   342→  { code: 'R&A', name: 'Robotics & Automation', color: 'slate' },
+   343→   343→  { code: 'MECHT', name: 'Mechatronics', color: 'zinc' },
+   344→   344→  { code: 'CYBER', name: 'Cyber Security', color: 'amber' },
+   345→   345→  { code: 'DS', name: 'Data Science', color: 'stone' },
+   346→   346→]
+   347→   347→
+   348→   348→const ROLE_COLORS: Record<string, { bg: string; border: string; text: string; icon: string }> = {
+   349→   349→  HOD: { bg: 'bg-purple-50 hover:bg-purple-100', border: 'border-purple-200 hover:border-purple-300', text: 'text-purple-700 hover:text-purple-800', icon: 'text-purple-500' },
+   350→   350→  STAFF: { bg: 'bg-green-50 hover:bg-green-100', border: 'border-green-200 hover:border-green-300', text: 'text-green-700 hover:text-green-800', icon: 'text-green-500' },
+   351→   351→  STUDENT: { bg: 'bg-amber-50 hover:bg-amber-100', border: 'border-amber-200 hover:border-amber-300', text: 'text-amber-700 hover:text-amber-800', icon: 'text-amber-500' },
+   352→   352→}
+   353→   353→
+   354→   354→// ============ LOGIN PAGE ============
+   355→   355→function LoginPage() {
+   356→   356→  const [email, setEmail] = useState('')
+   357→   357→  const [password, setPassword] = useState('')
+   358→   358→  const [showPassword, setShowPassword] = useState(false)
+   359→   359→  const [isLoading, setIsLoading] = useState(false)
+   360→   360→  const [error, setError] = useState('')
+   361→   361→  const [selectedDept, setSelectedDept] = useState('CSE')
+   362→   362→  const [showDeptDropdown, setShowDeptDropdown] = useState(false)
+   363→   363→  const login = useAuthStore((state) => state.login)
+   364→   364→
+   365→   365→  const handleSubmit = async (e: React.FormEvent) => {
+   366→   366→    e.preventDefault()
+   367→   367→    setError('')
+   368→   368→    setIsLoading(true)
+   369→   369→
+   370→   370→    try {
+   371→   371→      const result = await login(email, password)
+   372→   372→      if (!result.success) {
+   373→   373→        setError(result.error || 'Invalid email or password')
+   374→   374→      }
+   375→   375→    } catch (err) {
+   376→   376→      setError('Network error. Please try again.')
+   377→   377→    } finally {
+   378→   378→      setIsLoading(false)
+   379→   379→    }
+   380→   380→  }
+   381→   381→
+   382→   382→  const quickLogin = (emailVal: string, passVal: string) => {
+   383→   383→    setEmail(emailVal)
+   384→   384→    setPassword(passVal)
+   385→   385→  }
+   386→   386→
+   387→   387→  const getDeptEmail = (deptCode: string, role: string) => {
+   388→   388→    const code = deptCode.toLowerCase()
+   389→   389→    switch(role) {
+   390→   390→      case 'HOD': return `hod_${code}@niet.ac.in`
+   391→   391→      case 'STAFF': return `staff_${code}1@niet.ac.in`
+   392→   392→      case 'STUDENT': return `student_${code}1@niet.ac.in`
+   393→   393→      default: return ''
+   394→   394→    }
+   395→   395→  }
+   396→   396→
+   397→   397→  const getPassword = (role: string) => {
+   398→   398→    switch(role) {
+   399→   399→      case 'HOD': return 'hod123'
+   400→   400→      case 'STAFF': return 'staff123'
+   401→   401→      case 'STUDENT': return 'student123'
+   402→   402→      default: return ''
+   403→   403→    }
+   404→   404→  }
+   405→   405→
+   406→   406→  const currentDept = DEPARTMENTS_LIST.find(d => d.code === selectedDept)
+   407→   407→
+   408→   408→  return (
+   409→   409→    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-[#0a2a5e] to-indigo-950 flex items-center justify-center p-4 relative overflow-hidden">
+   410→   410→      {/* Animated Background Orbs */}
+   411→   411→      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+   412→   412→        <div className="orb orb-1" />
+   413→   413→        <div className="orb orb-2" />
+   414→   414→        <div className="orb orb-3" />
+   415→   415→        
+   416→   416→        {/* Grid Pattern */}
+   417→   417→        <div 
+   418→   418→          className="absolute inset-0 opacity-10"
+   419→   419→          style={{
+   420→   420→            backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)`,
+   421→   421→            backgroundSize: '40px 40px'
+   422→   422→          }}
+   423→   423→        />
+   424→   424→      </div>
+   425→   425→
+   426→   426→      <div className="relative z-10 w-full max-w-md">
+   427→   427→        {/* Logo & Header */}
+   428→   428→        <div className="text-center mb-8 animate-fade-in">
+   429→   429→          <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-500 via-[#0a7aff] to-purple-600 shadow-2xl shadow-blue-500/30 mb-6 backdrop-blur-sm border border-white/20">
+   430→   430→            <Building2 className="w-12 h-12 text-white" />
+   431→   431→          </div>
+   432→   432→          <h1 className="text-4xl font-bold text-white mb-2 tracking-tight drop-shadow-lg">IQAC Portal</h1>
+   433→   433→          <p className="text-white text-lg font-medium drop-shadow">Nehru Institute of Engineering and Technology</p>
+   434→   434→          <Badge className="mt-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0 px-4 py-1 shadow-lg text-sm">
+   435→   435→            Autonomous Institution • NAAC Accredited
+   436→   436→          </Badge>
+   437→   437→        </div>
+   438→   438→
+   439→   439→        {/* Login Card */}
+   440→   440→        <Card className="bg-white/95 backdrop-blur-xl shadow-2xl border border-white/20 animate-slide-up">
+   441→   441→          <CardContent className="p-8">
+   442→   442→            {/* Error Message */}
+   443→   443→            {error && (
+   444→   444→              <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 animate-shake">
+   445→   445→                <p className="text-red-600 text-sm flex items-center gap-2 font-medium">
+   446→   446→                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+   447→   447→                  {error}
+   448→   448→                </p>
+   449→   449→              </div>
+   450→   450→            )}
+   451→   451→
+   452→   452→            <form onSubmit={handleSubmit} className="space-y-5">
+   453→   453→              <div className="space-y-2">
+   454→   454→                <label className="text-sm font-semibold text-gray-700">Email Address</label>
+   455→   455→                <div className="relative">
+   456→   456→                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+   457→   457→                  <Input
+   458→   458→                    type="email"
+   459→   459→                    value={email}
+   460→   460→                    onChange={(e) => setEmail(e.target.value)}
+   461→   461→                    placeholder="Enter your email"
+   462→   462→                    className="pl-12 py-6 h-auto border-gray-200 bg-gray-50 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl text-base text-gray-800 placeholder:text-gray-400"
+   463→   463→                    required
+   464→   464→                  />
+   465→   465→                </div>
+   466→   466→              </div>
+   467→   467→
+   468→   468→              <div className="space-y-2">
+   469→   469→                <label className="text-sm font-semibold text-gray-700">Password</label>
+   470→   470→                <div className="relative">
+   471→   471→                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+   472→   472→                  <Input
+   473→   473→                    type={showPassword ? "text" : "password"}
+   474→   474→                    value={password}
+   475→   475→                    onChange={(e) => setPassword(e.target.value)}
+   476→   476→                    placeholder="Enter your password"
+   477→   477→                    className="pl-12 pr-12 py-6 h-auto border-gray-200 bg-gray-50 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl text-base text-gray-800 placeholder:text-gray-400"
+   478→   478→                    required
+   479→   479→                  />
+   480→   480→                  <button
+   481→   481→                    type="button"
+   482→   482→                    onClick={() => setShowPassword(!showPassword)}
+   483→   483→                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+   484→   484→                  >
+   485→   485→                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+   486→   486→                  </button>
+   487→   487→                </div>
+   488→   488→              </div>
+   489→   489→
+   490→   490→              <Button
+   491→   491→                type="submit"
+   492→   492→                disabled={isLoading}
+   493→   493→                className="w-full py-6 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/25 transition-all duration-300 text-base btn-glow"
+   494→   494→              >
+   495→   495→                {isLoading ? (
+   496→   496→                  <span className="flex items-center gap-2">
+   497→   497→                    <Loader2 className="w-5 h-5 animate-spin" />
+   498→   498→                    Signing in...
+   499→   499→                  </span>
+   500→   500→                ) : (
+
+[showing lines 1-500 of 2002; use offset=501 with limit to continue reading]

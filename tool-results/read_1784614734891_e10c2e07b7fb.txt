@@ -1,0 +1,2002 @@
+     1→'use client'
+     2→
+     3→import React, { useState, useEffect, useCallback, useRef } from 'react'
+     4→import { useAuthStore } from '@/lib/store/auth-store'
+     5→import { Button } from '@/components/ui/button'
+     6→import { Input } from '@/components/ui/input'
+     7→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+     8→import { Badge } from '@/components/ui/badge'
+     9→import { 
+    10→  Building2, Mail, Lock, Eye, EyeOff, Loader2, 
+    11→  LayoutDashboard, Users, GraduationCap, FileText,
+    12→  BarChart3, Settings, Bell, LogOut, Menu, X,
+    13→  Home, UserCheck, BookOpen, Award, TrendingUp,
+    14→  CheckCircle, Clock, AlertCircle, ChevronRight,
+    15→  Shield, Star, Activity, Zap, Database,
+    16→  Search, Filter, Download, Plus, Edit3, Trash2,
+    17→  Calendar, MapPin, Phone, Globe, Send,
+    18→  ArrowRight, RefreshCw, Upload, FolderOpen,
+    19→  Target, Lightbulb, HeartHandshake, Trophy,
+    20→  MessageSquare, ThumbsUp, ThumbsDown,
+    21→  Sun, Moon, ChevronDown, ChevronLeft,
+    22→  ClipboardList, Flag, Mic, Presentation,
+    23→  Briefcase, Wrench, Rocket, Code, PlusCircle,
+    24→  Newspaper, Handshake, Circle
+    25→} from 'lucide-react'
+    26→
+    27→// ============ TYPES ============
+    28→interface Department {
+    29→  id: string
+    30→  name: string
+    31→  code: string
+    32→  vision?: string
+    33→  mission?: string
+    34→  hod?: string
+    35→  facultyCount?: number
+    36→  studentCount?: number
+    37→  activityCount?: number
+    38→}
+    39→
+    40→interface DashboardStats {
+    41→  totalDepartments: number
+    42→  totalFaculty: number
+    43→  totalStudents: number
+    44→  totalActivities: number
+    45→  totalResearch: number
+    46→  pendingApprovals: number
+    47→}
+    48→
+    49→interface User {
+    50→  id: string
+    51→  email: string
+    52→  name: string
+    53→  role: 'ADMIN' | 'HOD' | 'STAFF' | 'STUDENT'
+    54→  departmentId?: string
+    55→  departmentName?: string
+    56→}
+    57→
+    58→type TabType = 'dashboard' | 'departments' | 'faculty' | 'students' | 'activities' | 'research' 
+    59→  | 'approvals' | 'analytics' | 'documents' | 'settings' | 'achievements' | 'feedback'
+    60→
+    61→// ============ ACHIEVEMENT TYPES DEFINITION (13 Types - Student Focused) ============
+    62→const ACHIEVEMENT_TYPES: Record<string, {
+    63→  label: string
+    64→  icon: React.ElementType
+    65→  color: string
+    66→  fields: Array<{
+    67→    id: string
+    68→    label: string
+    69→    type: string
+    70→    required?: boolean
+    71→    locked?: boolean
+    72→    full?: boolean
+    73→    options?: string[]
+    74→  }>
+    75→}> = {
+    76→  journal: {
+    77→    label: 'Journal Publication',
+    78→    icon: Newspaper,
+    79→    color: 'from-blue-500 to-blue-600',
+    80→    fields: [
+    81→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+    82→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+    83→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+    84→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+    85→      { id: 'title', label: 'Paper Title', type: 'text', required: true, full: true },
+    86→      { id: 'journal', label: 'Journal Name', type: 'text', required: true, full: true },
+    87→      { id: 'indexed', label: 'Indexed', type: 'select', options: ['SCI','Scopus','UGC Care','Web of Science','Other'] },
+    88→      { id: 'issn', label: 'ISSN', type: 'text' },
+    89→      { id: 'publisher', label: 'Publisher', type: 'text' },
+    90→      { id: 'month', label: 'Month', type: 'select', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] },
+    91→      { id: 'year_pub', label: 'Year', type: 'number' },
+    92→      { id: 'status_pub', label: 'Status', type: 'select', options: ['Published','Accepted','Under Review'] },
+    93→      { id: 'supervisor', label: 'Supervisor', type: 'text' },
+    94→      { id: 'link', label: 'Paper Link', type: 'url' },
+    95→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+    96→    ]
+    97→  },
+    98→  conference: {
+    99→    label: 'Conference Publication',
+   100→    icon: Mic,
+   101→    color: 'from-purple-500 to-purple-600',
+   102→    fields: [
+   103→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   104→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   105→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   106→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   107→      { id: 'title', label: 'Paper Title', type: 'text', required: true, full: true },
+   108→      { id: 'conf', label: 'Conference Name', type: 'text', required: true, full: true },
+   109→      { id: 'org', label: 'Organizing Institute', type: 'text' },
+   110→      { id: 'indexed', label: 'Indexed', type: 'select', options: ['IEEE','Springer','Elsevier','Scopus','Other'] },
+   111→      { id: 'month', label: 'Month', type: 'select', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] },
+   112→      { id: 'year_pub', label: 'Year', type: 'number' },
+   113→      { id: 'status_pub', label: 'Status', type: 'select', options: ['Presented','Published','Both'] },
+   114→      { id: 'supervisor', label: 'Supervisor', type: 'text' },
+   115→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   116→    ]
+   117→  },
+   118→  patent: {
+   119→    label: 'Patent',
+   120→    icon: Lightbulb,
+   121→    color: 'from-amber-500 to-orange-500',
+   122→    fields: [
+   123→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   124→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   125→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   126→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   127→      { id: 'title', label: 'Invention Title', type: 'text', required: true, full: true },
+   128→      { id: 'patent_no', label: 'Patent No.', type: 'text' },
+   129→      { id: 'month', label: 'Month', type: 'select', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] },
+   130→      { id: 'year_pub', label: 'Year', type: 'number' },
+   131→      { id: 'status_pub', label: 'Status', type: 'select', options: ['Filed','Published','Granted'] },
+   132→      { id: 'inventors', label: 'All Inventors', type: 'text' },
+   133→      { id: 'supervisor', label: 'Supervisor', type: 'text' },
+   134→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   135→    ]
+   136→  },
+   137→  nptel: {
+   138→    label: 'NPTEL / MOOC',
+   139→    icon: GraduationCap,
+   140→    color: 'from-green-500 to-teal-600',
+   141→    fields: [
+   142→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   143→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   144→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   145→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   146→      { id: 'platform', label: 'Platform', type: 'select', options: ['NPTEL','Swayam','Coursera','edX','FutureLearn','Udemy','Other'] },
+   147→      { id: 'course', label: 'Course Name', type: 'text', required: true, full: true },
+   148→      { id: 'domain', label: 'Domain', type: 'text' },
+   149→      { id: 'mentor', label: 'Faculty Mentor', type: 'text' },
+   150→      { id: 'duration', label: 'Duration (wks)', type: 'number' },
+   151→      { id: 'score', label: 'Score (%)', type: 'number' },
+   152→      { id: 'grade', label: 'Grade', type: 'select', options: ['Elite + Gold','Elite + Silver','Elite','Successfully Completed','Completed'] },
+   153→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   154→    ]
+   155→  },
+   156→  seminar: {
+   157→    label: 'Seminar / Workshop',
+   158→    icon: Presentation,
+   159→    color: 'from-pink-500 to-rose-600',
+   160→    fields: [
+   161→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   162→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   163→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   164→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   165→      { id: 'title', label: 'Event Title', type: 'text', required: true, full: true },
+   166→      { id: 'type_sem', label: 'Type', type: 'select', options: ['Seminar','Webinar','Workshop','Conference','FDP','Other'] },
+   167→      { id: 'org', label: 'Organizing Institute', type: 'text' },
+   168→      { id: 'state', label: 'State', type: 'text' },
+   169→      { id: 'from_date', label: 'From Date', type: 'date' },
+   170→      { id: 'to_date', label: 'To Date', type: 'date' },
+   171→      { id: 'mode', label: 'Mode', type: 'select', options: ['Online','Offline','Hybrid'] },
+   172→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   173→    ]
+   174→  },
+   175→  internship: {
+   176→    label: 'Internship',
+   177→    icon: Briefcase,
+   178→    color: 'from-cyan-500 to-blue-600',
+   179→    fields: [
+   180→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   181→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   182→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   183→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   184→      { id: 'org_name', label: 'Organization / Industry', type: 'text', required: true, full: true },
+   185→      { id: 'role', label: 'Internship Role/Title', type: 'text' },
+   186→      { id: 'from_date', label: 'From Date', type: 'date' },
+   187→      { id: 'to_date', label: 'To Date', type: 'date' },
+   188→      { id: 'paid', label: 'Paid?', type: 'select', options: ['Yes','No'] },
+   189→      { id: 'stipend', label: 'Stipend (₹)', type: 'number' },
+   190→      { id: 'mode', label: 'Mode', type: 'select', options: ['Online','Offline','Hybrid'] },
+   191→      { id: 'industry_mentor', label: 'Industry Mentor', type: 'text' },
+   192→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   193→    ]
+   194→  },
+   195→  training: {
+   196→    label: 'Training Programme',
+   197→    icon: Wrench,
+   198→    color: 'from-indigo-500 to-violet-600',
+   199→    fields: [
+   200→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   201→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   202→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   203→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   204→      { id: 'prog_name', label: 'Training Program Name', type: 'text', required: true, full: true },
+   205→      { id: 'organizer', label: 'Organizer', type: 'text' },
+   206→      { id: 'from_date', label: 'From Date', type: 'date' },
+   207→      { id: 'to_date', label: 'To Date', type: 'date' },
+   208→      { id: 'hours', label: 'Hours / Days', type: 'text' },
+   209→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   210→    ]
+   211→  },
+   212→  award: {
+   213→    label: 'Awards & Recognition',
+   214→    icon: Trophy,
+   215→    color: 'from-yellow-500 to-amber-600',
+   216→    fields: [
+   217→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   218→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   219→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   220→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   221→      { id: 'award_name', label: 'Award Name', type: 'text', required: true, full: true },
+   222→      { id: 'event', label: 'Event / Competition', type: 'text' },
+   223→      { id: 'organizer', label: 'Organizer', type: 'text' },
+   224→      { id: 'level', label: 'Level', type: 'select', options: ['International','National','State','Regional','Institutional'] },
+   225→      { id: 'position', label: 'Position', type: 'text' },
+   226→      { id: 'date', label: 'Date', type: 'date' },
+   227→      { id: 'cash_prize', label: 'Cash / Prize', type: 'text' },
+   228→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   229→    ]
+   230→  },
+   231→  cocurricular: {
+   232→    label: 'Co-Curricular Activities',
+   233→    icon: Circle,
+   234→    color: 'from-emerald-500 to-green-600',
+   235→    fields: [
+   236→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   237→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   238→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   239→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   240→      { id: 'activity_type', label: 'Activity Type', type: 'select', options: ['Sports','Cultural','Club Activity','Social Service','Leadership','Student Council','Other'] },
+   241→      { id: 'event_name', label: 'Event Name', type: 'text', required: true },
+   242→      { id: 'organizer', label: 'Organizer', type: 'text' },
+   243→      { id: 'level', label: 'Level', type: 'select', options: ['International','National','State','Regional','Institutional'] },
+   244→      { id: 'position', label: 'Position', type: 'text' },
+   245→      { id: 'date', label: 'Date', type: 'date' },
+   246→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   247→    ]
+   248→  },
+   249→  placement: {
+   250→    label: 'Placement',
+   251→    icon: Handshake,
+   252→    color: 'from-violet-500 to-purple-600',
+   253→    fields: [
+   254→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   255→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   256→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   257→      { id: 'yop', label: 'Year of Passing', type: 'number' },
+   258→      { id: 'company', label: 'Company Name', type: 'text', required: true, full: true },
+   259→      { id: 'state', label: 'Company State', type: 'text' },
+   260→      { id: 'role', label: 'Job Role', type: 'text' },
+   261→      { id: 'package', label: 'Package (LPA)', type: 'number' },
+   262→      { id: 'offer_date', label: 'Offer Date', type: 'date' },
+   263→      { id: 'mode', label: 'Mode', type: 'select', options: ['Campus','Off-Campus','Lateral'] },
+   264→      { id: 'emp_type', label: 'Employment Type', type: 'select', options: ['Full-Time','Part-Time','Contract','Internship to PPO'] },
+   265→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   266→    ]
+   267→  },
+   268→  startup: {
+   269→    label: 'Startup',
+   270→    icon: Rocket,
+   271→    color: 'from-red-500 to-pink-600',
+   272→    fields: [
+   273→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   274→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   275→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   276→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   277→      { id: 'title', label: 'Startup Title / Idea', type: 'text', required: true, full: true },
+   278→      { id: 'domain', label: 'Domain / Sector', type: 'text' },
+   279→      { id: 'stage', label: 'Stage', type: 'select', options: ['Idea','Prototype','MVP','Launched','Scaling'] },
+   280→      { id: 'registered', label: 'Is Registered?', type: 'select', options: ['Yes','No'] },
+   281→      { id: 'startup_name', label: 'Startup Name', type: 'text' },
+   282→      { id: 'incubation', label: 'Incubation Status', type: 'select', options: ['Incubated','Not Incubated','Applied'] },
+   283→      { id: 'outcome', label: 'Outcome', type: 'text' },
+   284→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   285→    ]
+   286→  },
+   287→  hackathon: {
+   288→    label: 'Hackathon / Ideathon / SIH',
+   289→    icon: Code,
+   290→    color: 'from-slate-500 to-gray-600',
+   291→    fields: [
+   292→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   293→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   294→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   295→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   296→      { id: 'category', label: 'Category', type: 'select', options: ['Hackathon','Ideathon','SIH','Innovation Challenge','Other'] },
+   297→      { id: 'title', label: 'Title / Idea', type: 'text', required: true, full: true },
+   298→      { id: 'event_agency', label: 'Event / Agency', type: 'text' },
+   299→      { id: 'problem_domain', label: 'Problem Domain', type: 'text' },
+   300→      { id: 'level', label: 'Level', type: 'select', options: ['International','National','State','Regional','Institutional'] },
+   301→      { id: 'stage', label: 'Stage', type: 'select', options: ['Submitted','Shortlisted','Finalist','Winner','Runner-Up'] },
+   302→      { id: 'position_prize', label: 'Position / Prize', type: 'text' },
+   303→      { id: 'amount', label: 'Amount Received (₹)', type: 'number' },
+   304→      { id: 'event_date', label: 'Event Date', type: 'date' },
+   305→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   306→    ]
+   307→  },
+   308→  other: {
+   309→    label: 'Custom Achievement',
+   310→    icon: PlusCircle,
+   311→    color: 'from-gray-400 to-gray-500',
+   312→    fields: [
+   313→      { id: 'custom_type', label: 'Custom Achievement Type', type: 'text', required: true, full: true },
+   314→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   315→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   316→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   317→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   318→      { id: 'date', label: 'Date', type: 'date' },
+   319→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   320→    ]
+   321→  }
+   322→}
+   323→
+   324→// ============ DEPARTMENTS LIST FOR LOGIN ============
+   325→const DEPARTMENTS_LIST = [
+   326→  { code: 'CSE', name: 'Computer Science & Engineering', color: 'blue' },
+   327→  { code: 'AI&DS', name: 'AI & Data Science', color: 'purple' },
+   328→  { code: 'IT', name: 'Information Technology', color: 'cyan' },
+   329→  { code: 'ECE', name: 'Electronics & Communication', color: 'pink' },
+   330→  { code: 'EEE', name: 'Electrical & Electronics', color: 'yellow' },
+   331→  { code: 'MECH', name: 'Mechanical Engineering', color: 'orange' },
+   332→  { code: 'CIVIL', name: 'Civil Engineering', color: 'emerald' },
+   333→  { code: 'MATHS', name: 'Mathematics', color: 'indigo' },
+   334→  { code: 'PHY', name: 'Physics', color: 'teal' },
+   335→  { code: 'CHEM', name: 'Chemistry', color: 'rose' },
+   336→  { code: 'ENG', name: 'English', color: 'sky' },
+   337→  { code: 'MBA', name: 'MBA', color: 'violet' },
+   338→  { code: 'MCA', name: 'MCA', color: 'fuchsia' },
+   339→  { code: 'BIO', name: 'Biotechnology', color: 'lime' },
+   340→  { code: 'AGRI', name: 'Agricultural Engg.', color: 'green' },
+   341→  { code: 'BME', name: 'Biomedical Engg.', color: 'red' },
+   342→  { code: 'R&A', name: 'Robotics & Automation', color: 'slate' },
+   343→  { code: 'MECHT', name: 'Mechatronics', color: 'zinc' },
+   344→  { code: 'CYBER', name: 'Cyber Security', color: 'amber' },
+   345→  { code: 'DS', name: 'Data Science', color: 'stone' },
+   346→]
+   347→
+   348→const ROLE_COLORS: Record<string, { bg: string; border: string; text: string; icon: string }> = {
+   349→  HOD: { bg: 'bg-purple-50 hover:bg-purple-100', border: 'border-purple-200 hover:border-purple-300', text: 'text-purple-700 hover:text-purple-800', icon: 'text-purple-500' },
+   350→  STAFF: { bg: 'bg-green-50 hover:bg-green-100', border: 'border-green-200 hover:border-green-300', text: 'text-green-700 hover:text-green-800', icon: 'text-green-500' },
+   351→  STUDENT: { bg: 'bg-amber-50 hover:bg-amber-100', border: 'border-amber-200 hover:border-amber-300', text: 'text-amber-700 hover:text-amber-800', icon: 'text-amber-500' },
+   352→}
+   353→
+   354→// ============ LOGIN PAGE ============
+   355→function LoginPage() {
+   356→  const [email, setEmail] = useState('')
+   357→  const [password, setPassword] = useState('')
+   358→  const [showPassword, setShowPassword] = useState(false)
+   359→  const [isLoading, setIsLoading] = useState(false)
+   360→  const [error, setError] = useState('')
+   361→  const [selectedDept, setSelectedDept] = useState('CSE')
+   362→  const [showDeptDropdown, setShowDeptDropdown] = useState(false)
+   363→  const login = useAuthStore((state) => state.login)
+   364→
+   365→  const handleSubmit = async (e: React.FormEvent) => {
+   366→    e.preventDefault()
+   367→    setError('')
+   368→    setIsLoading(true)
+   369→
+   370→    try {
+   371→      const result = await login(email, password)
+   372→      if (!result.success) {
+   373→        setError(result.error || 'Invalid email or password')
+   374→      }
+   375→    } catch (err) {
+   376→      setError('Network error. Please try again.')
+   377→    } finally {
+   378→      setIsLoading(false)
+   379→    }
+   380→  }
+   381→
+   382→  const quickLogin = (emailVal: string, passVal: string) => {
+   383→    setEmail(emailVal)
+   384→    setPassword(passVal)
+   385→  }
+   386→
+   387→  const getDeptEmail = (deptCode: string, role: string) => {
+   388→    const code = deptCode.toLowerCase()
+   389→    switch(role) {
+   390→      case 'HOD': return `hod_${code}@niet.ac.in`
+   391→      case 'STAFF': return `staff_${code}1@niet.ac.in`
+   392→      case 'STUDENT': return `student_${code}1@niet.ac.in`
+   393→      default: return ''
+   394→    }
+   395→  }
+   396→
+   397→  const getPassword = (role: string) => {
+   398→    switch(role) {
+   399→      case 'HOD': return 'hod123'
+   400→      case 'STAFF': return 'staff123'
+   401→      case 'STUDENT': return 'student123'
+   402→      default: return ''
+   403→    }
+   404→  }
+   405→
+   406→  const currentDept = DEPARTMENTS_LIST.find(d => d.code === selectedDept)
+   407→
+   408→  return (
+   409→    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-[#0a2a5e] to-indigo-950 flex items-center justify-center p-4 relative overflow-hidden">
+   410→      {/* Animated Background Orbs */}
+   411→      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+   412→        <div className="orb orb-1" />
+   413→        <div className="orb orb-2" />
+   414→        <div className="orb orb-3" />
+   415→        
+   416→        {/* Grid Pattern */}
+   417→        <div 
+   418→          className="absolute inset-0 opacity-10"
+   419→          style={{
+   420→            backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)`,
+   421→            backgroundSize: '40px 40px'
+   422→          }}
+   423→        />
+   424→      </div>
+   425→
+   426→      <div className="relative z-10 w-full max-w-md">
+   427→        {/* Logo & Header */}
+   428→        <div className="text-center mb-8 animate-fade-in">
+   429→          <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-500 via-[#0a7aff] to-purple-600 shadow-2xl shadow-blue-500/30 mb-6 backdrop-blur-sm border border-white/20">
+   430→            <Building2 className="w-12 h-12 text-white" />
+   431→          </div>
+   432→          <h1 className="text-4xl font-bold text-white mb-2 tracking-tight drop-shadow-lg">IQAC Portal</h1>
+   433→          <p className="text-white text-lg font-medium drop-shadow">Nehru Institute of Engineering and Technology</p>
+   434→          <Badge className="mt-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0 px-4 py-1 shadow-lg text-sm">
+   435→            Autonomous Institution • NAAC Accredited
+   436→          </Badge>
+   437→        </div>
+   438→
+   439→        {/* Login Card */}
+   440→        <Card className="bg-white/95 backdrop-blur-xl shadow-2xl border border-white/20 animate-slide-up">
+   441→          <CardContent className="p-8">
+   442→            {/* Error Message */}
+   443→            {error && (
+   444→              <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 animate-shake">
+   445→                <p className="text-red-600 text-sm flex items-center gap-2 font-medium">
+   446→                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+   447→                  {error}
+   448→                </p>
+   449→              </div>
+   450→            )}
+   451→
+   452→            <form onSubmit={handleSubmit} className="space-y-5">
+   453→              <div className="space-y-2">
+   454→                <label className="text-sm font-semibold text-gray-700">Email Address</label>
+   455→                <div className="relative">
+   456→                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+   457→                  <Input
+   458→                    type="email"
+   459→                    value={email}
+   460→                    onChange={(e) => setEmail(e.target.value)}
+   461→                    placeholder="Enter your email"
+   462→                    className="pl-12 py-6 h-auto border-gray-200 bg-gray-50 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl text-base text-gray-800 placeholder:text-gray-400"
+   463→                    required
+   464→                  />
+   465→                </div>
+   466→              </div>
+   467→
+   468→              <div className="space-y-2">
+   469→                <label className="text-sm font-semibold text-gray-700">Password</label>
+   470→                <div className="relative">
+   471→                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+   472→                  <Input
+   473→                    type={showPassword ? "text" : "password"}
+   474→                    value={password}
+   475→                    onChange={(e) => setPassword(e.target.value)}
+   476→                    placeholder="Enter your password"
+   477→                    className="pl-12 pr-12 py-6 h-auto border-gray-200 bg-gray-50 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl text-base text-gray-800 placeholder:text-gray-400"
+   478→                    required
+   479→                  />
+   480→                  <button
+   481→                    type="button"
+   482→                    onClick={() => setShowPassword(!showPassword)}
+   483→                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+   484→                  >
+   485→                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+   486→                  </button>
+   487→                </div>
+   488→              </div>
+   489→
+   490→              <Button
+   491→                type="submit"
+   492→                disabled={isLoading}
+   493→                className="w-full py-6 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/25 transition-all duration-300 text-base btn-glow"
+   494→              >
+   495→                {isLoading ? (
+   496→                  <span className="flex items-center gap-2">
+   497→                    <Loader2 className="w-5 h-5 animate-spin" />
+   498→                    Signing in...
+   499→                  </span>
+   500→                ) : (
+   501→                  'Sign In'
+   502→                )}
+   503→              </Button>
+   504→            </form>
+   505→
+   506→            {/* Quick Login - Department Wise */}
+   507→            <div className="mt-8 pt-6 border-t border-gray-200">
+   508→              <p className="text-xs text-gray-500 text-center mb-4 uppercase tracking-wider font-semibold">Quick Demo Access</p>
+   509→              
+   510→              {/* Admin Button - Always Visible */}
+   511→              <button
+   512→                onClick={() => quickLogin('admin@niet.ac.in', 'admin123')}
+   513→                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-sm font-bold transition-all shadow-md shadow-blue-500/25 mb-4 group"
+   514→              >
+   515→                <Shield className="w-5 h-5 group-hover:scale-110 transition-transform" />
+   516→                System Administrator
+   517→              </button>
+   518→
+   519→              {/* Department Selector */}
+   520→              <div className="mb-4">
+   521→                <label className="text-xs font-semibold text-gray-600 mb-2 block">Select Department</label>
+   522→                <div className="relative">
+   523→                  <button
+   524→                    type="button"
+   525→                    onClick={() => setShowDeptDropdown(!showDeptDropdown)}
+   526→                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 hover:border-gray-300 text-sm font-semibold text-gray-700 transition-all"
+   527→                  >
+   528→                    <span className="flex items-center gap-2">
+   529→                      <Building2 className="w-4 h-4 text-gray-500" />
+   530→                      {currentDept?.code} - {currentDept?.name}
+   531→                    </span>
+   532→                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showDeptDropdown ? 'rotate-180' : ''}`} />
+   533→                  </button>
+   534→                  
+   535→                  {showDeptDropdown && (
+   536→                    <div className="absolute z-50 w-full mt-2 bg-white rounded-xl shadow-xl border border-gray-200 max-h-64 overflow-y-auto">
+   537→                      {DEPARTMENTS_LIST.map((dept) => (
+   538→                        <button
+   539→                          key={dept.code}
+   540→                          type="button"
+   541→                          onClick={() => {
+   542→                            setSelectedDept(dept.code)
+   543→                            setShowDeptDropdown(false)
+   544→                          }}
+   545→                          className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
+   546→                            selectedDept === dept.code ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+   547→                          }`}
+   548→                        >
+   549→                          <div className={`w-3 h-3 rounded-full bg-${dept.color}-500`} />
+   550→                          <span className="font-medium text-sm">{dept.code}</span>
+   551→                          <span className="text-xs text-gray-500 truncate">{dept.name}</span>
+   552→                        </button>
+   553→                      ))}
+   554→                    </div>
+   555→                  )}
+   556→                </div>
+   557→              </div>
+   558→
+   559→              {/* Role Buttons for Selected Department */}
+   560→              <div className="space-y-3">
+   561→                <p className="text-xs font-medium text-gray-500 text-center">
+   562→                  Login as: <span className="font-bold text-gray-700">{currentDept?.code}</span> Department
+   563→                </p>
+   564→                <div className="grid grid-cols-3 gap-2">
+   565→                  {/* HOD Button */}
+   566→                  <button
+   567→                    onClick={() => quickLogin(getDeptEmail(selectedDept, 'HOD'), getPassword('HOD'))}
+   568→                    className={`flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl ${ROLE_COLORS.HOD.bg} ${ROLE_COLORS.HOD.border} ${ROLE_COLORS.HOD.text} text-xs font-bold transition-all border group`}
+   569→                  >
+   570→                    <UserCheck className={`w-5 h-5 ${ROLE_COLORS.HOD.icon} group-hover:scale-110 transition-transform`} />
+   571→                    <span>HOD</span>
+   572→                  </button>
+   573→                  
+   574→                  {/* Staff Button */}
+   575→                  <button
+   576→                    onClick={() => quickLogin(getDeptEmail(selectedDept, 'STAFF'), getPassword('STAFF'))}
+   577→                    className={`flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl ${ROLE_COLORS.STAFF.bg} ${ROLE_COLORS.STAFF.border} ${ROLE_COLORS.STAFF.text} text-xs font-bold transition-all border group`}
+   578→                  >
+   579→                    <BookOpen className={`w-5 h-5 ${ROLE_COLORS.STAFF.icon} group-hover:scale-110 transition-transform`} />
+   580→                    <span>Staff</span>
+   581→                  </button>
+   582→                  
+   583→                  {/* Student Button */}
+   584→                  <button
+   585→                    onClick={() => quickLogin(getDeptEmail(selectedDept, 'STUDENT'), getPassword('STUDENT'))}
+   586→                    className={`flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl ${ROLE_COLORS.STUDENT.bg} ${ROLE_COLORS.STUDENT.border} ${ROLE_COLORS.STUDENT.text} text-xs font-bold transition-all border group`}
+   587→                  >
+   588→                    <GraduationCap className={`w-5 h-5 ${ROLE_COLORS.STUDENT.icon} group-hover:scale-110 transition-transform`} />
+   589→                    <span>Student</span>
+   590→                  </button>
+   591→                </div>
+   592→
+   593→                {/* Department Pills - Quick Select */}
+   594→                <div className="mt-4">
+   595→                  <p className="text-xs font-medium text-gray-400 mb-2 text-center">Quick Departments:</p>
+   596→                  <div className="flex flex-wrap gap-2 justify-center">
+   597→                    {['CSE', 'ECE', 'EEE', 'MECH', 'CIVIL', 'AI&DS', 'IT', 'CYBER'].map((code) => (
+   598→                      <button
+   599→                        key={code}
+   600→                        type="button"
+   601→                        onClick={() => setSelectedDept(code)}
+   602→                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+   603→                          selectedDept === code 
+   604→                            ? 'bg-blue-500 text-white shadow-md' 
+   605→                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+   606→                        }`}
+   607→                      >
+   608→                        {code}
+   609→                      </button>
+   610→                    ))}
+   611→                  </div>
+   612→                </div>
+   613→              </div>
+   614→            </div>
+   615→          </CardContent>
+   616→        </Card>
+   617→
+   618→        <p className="text-center mt-6 text-gray-400 text-xs animate-fade-in font-medium">
+   619→          Secure Authentication System • Enterprise Edition v2.0
+   620→        </p>
+   621→      </div>
+   622→
+   623→      <style jsx>{`
+   624→        .orb {
+   625→          position: absolute;
+   626→          border-radius: 50%;
+   627→          filter: blur(80px);
+   628→          opacity: 0.3;
+   629→        }
+   630→        .orb-1 {
+   631→          width: 400px;
+   632→          height: 400px;
+   633→          background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+   634→          top: -100px;
+   635→          right: -100px;
+   636→          animation: orbFloat 8s ease-in-out infinite;
+   637→        }
+   638→        .orb-2 {
+   639→          width: 350px;
+   640→          height: 350px;
+   641→          background: linear-gradient(135deg, #8b5cf6, #ec4899);
+   642→          bottom: -100px;
+   643→          left: -100px;
+   644→          animation: orbFloat 10s ease-in-out infinite reverse;
+   645→        }
+   646→        .orb-3 {
+   647→          width: 300px;
+   648→          height: 300px;
+   649→          background: linear-gradient(135deg, #06b6d4, #3b82f6);
+   650→          top: 50%;
+   651→          left: 50%;
+   652→          transform: translate(-50%, -50%);
+   653→          animation: orbFloat 12s ease-in-out infinite;
+   654→        }
+   655→        @keyframes orbFloat {
+   656→          0%, 100% { transform: translate(0, 0); }
+   657→          33% { transform: translate(30px, -30px); }
+   658→          66% { transform: translate(-20px, 20px); }
+   659→        }
+   660→        .glass-card {
+   661→          background: rgba(255, 255, 255, 0.08);
+   662→          backdrop-filter: blur(20px);
+   663→          -webkit-backdrop-filter: blur(20px);
+   664→        }
+   665→        .glass-input {
+   666→          background: rgba(255, 255, 255, 0.05);
+   667→          backdrop-filter: blur(10px);
+   668→        }
+   669→        .btn-glow:hover {
+   670→          box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+   671→        }
+   672→        @keyframes fade-in {
+   673→          from { opacity: 0; transform: translateY(20px); }
+   674→          to { opacity: 1; transform: translateY(0); }
+   675→        }
+   676→        @keyframes slide-up {
+   677→          from { opacity: 0; transform: translateY(40px); }
+   678→          to { opacity: 1; transform: translateY(0); }
+   679→        }
+   680→        @keyframes shake {
+   681→          0%, 100% { transform: translateX(0); }
+   682→          25% { transform: translateX(-10px); }
+   683→          75% { transform: translateX(10px); }
+   684→        }
+   685→        .animate-fade-in { animation: fade-in 0.6s ease-out; }
+   686→        .animate-slide-up { animation: slide-up 0.6s ease-out; }
+   687→        .animate-shake { animation: shake 0.4s ease-out; }
+   688→      `}</style>
+   689→    </div>
+   690→  )
+   691→}
+   692→
+   693→// ============ STAT CARD ============
+   694→function StatCard({ title, value, icon: Icon, trend, color = "blue", subtitle }: { 
+   695→  title: string; 
+   696→  value: string | number; 
+   697→  icon: React.ElementType; 
+   698→  trend?: string;
+   699→  color?: "blue" | "green" | "purple" | "orange" | "red" | "pink" | "cyan";
+   700→  subtitle?: string;
+   701→}) {
+   702→  const colorClasses = {
+   703→    blue: "from-blue-500 to-blue-600 shadow-blue-500/25",
+   704→    green: "from-emerald-500 to-emerald-600 shadow-emerald-500/25",
+   705→    purple: "from-violet-500 to-violet-600 shadow-violet-500/25",
+   706→    orange: "from-orange-500 to-orange-600 shadow-orange-500/25",
+   707→    red: "from-red-500 to-red-600 shadow-red-500/25",
+   708→    pink: "from-pink-500 to-pink-600 shadow-pink-500/25",
+   709→    cyan: "from-cyan-500 to-cyan-600 shadow-cyan-500/25",
+   710→  }
+   711→
+   712→  return (
+   713→    <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/90 backdrop-blur-sm overflow-hidden stat-card-hover">
+   714→      <CardContent className="p-5">
+   715→        <div className="flex items-start justify-between">
+   716→          <div className="space-y-2">
+   717→            <p className="text-sm font-medium text-gray-500">{title}</p>
+   718→            <p className="text-3xl font-bold text-gray-900">{value}</p>
+   719→            {trend && (
+   720→              <p className="text-xs text-emerald-600 flex items-center gap-1 font-medium">
+   721→                <TrendingUp className="w-3 h-3" /> {trend}
+   722→              </p>
+   723→            )}
+   724→            {subtitle && (
+   725→              <p className="text-xs text-gray-400">{subtitle}</p>
+   726→            )}
+   727→          </div>
+   728→          <div className={`p-3 rounded-xl bg-gradient-to-br ${colorClasses[color]} shadow-lg group-hover:scale-110 transition-transform`}>
+   729→            <Icon className="w-6 h-6 text-white" />
+   730→          </div>
+   731→        </div>
+   732→      </CardContent>
+   733→    </Card>
+   734→  )
+   735→}
+   736→
+   737→// ============ DEPARTMENT CARD ============
+   738→function DeptCard({ dept }: { dept: Department }) {
+   739→  return (
+   740→    <Card className="group hover:shadow-xl transition-all duration-300 border border-gray-100 bg-white overflow-hidden dept-card-hover">
+   741→      <CardContent className="p-5">
+   742→        <div className="flex items-start justify-between mb-4">
+   743→          <div className="flex items-center gap-3">
+   744→            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20">
+   745→              {dept.code?.substring(0, 2) || 'DE'}
+   746→            </div>
+   747→            <div>
+   748→              <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{dept.name}</h3>
+   749→              <p className="text-sm text-gray-500">{dept.code}</p>
+   750→            </div>
+   751→          </div>
+   752→          <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
+   753→            Active
+   754→          </Badge>
+   755→        </div>
+   756→        
+   757→        <div className="grid grid-cols-3 gap-3 mt-4">
+   758→          <div className="text-center p-2 rounded-lg bg-blue-50/50">
+   759→            <p className="text-lg font-bold text-blue-700">{dept.facultyCount || 0}</p>
+   760→            <p className="text-xs text-gray-500">Faculty</p>
+   761→          </div>
+   762→          <div className="text-center p-2 rounded-lg bg-purple-50/50">
+   763→            <p className="text-lg font-bold text-purple-700">{dept.studentCount || 0}</p>
+   764→            <p className="text-xs text-gray-500">Students</p>
+   765→          </div>
+   766→          <div className="text-center p-2 rounded-lg bg-amber-50/50">
+   767→            <p className="text-lg font-bold text-amber-700">{dept.activityCount || 0}</p>
+   768→            <p className="text-xs text-gray-500">Activities</p>
+   769→          </div>
+   770→        </div>
+   771→      </CardContent>
+   772→    </Card>
+   773→  )
+   774→}
+   775→
+   776→// ============ ACHIEVEMENT FORM HEADER ============
+   777→function AchievementFormHeader({ selectedType }: { selectedType: string | null }) {
+   778→  if (!selectedType) return null
+   779→  const typeData = (ACHIEVEMENT_TYPES as any)[selectedType]
+   780→  if (!typeData) return null
+   781→  
+   782→  const IconComponent = typeData.icon
+   783→  
+   784→  return (
+   785→    <div className="flex items-center gap-3">
+   786→      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${typeData.color} flex items-center justify-center`}>
+   787→        <IconComponent className="w-5 h-5 text-white" />
+   788→      </div>
+   789→      <div>
+   790→        <CardTitle className="text-lg">{typeData.name}</CardTitle>
+   791→        <p className="text-sm text-gray-500">Fill in all required fields marked with *</p>
+   792→      </div>
+   793→    </div>
+   794→  )
+   795→}
+   796→
+   797→// ============ DATA TABLE ============
+   798→function DataTable({ data, columns }: { data: any[]; columns: { key: string; label: string }[] }) {
+   799→  if (!data || data.length === 0) {
+   800→    return (
+   801→      <div className="rounded-xl border border-gray-200 bg-white p-12 text-center">
+   802→        <Database className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+   803→        <p className="text-gray-500">No data available</p>
+   804→      </div>
+   805→    )
+   806→  }
+   807→
+   808→  return (
+   809→    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+   810→      <div className="overflow-x-auto">
+   811→        <table className="w-full">
+   812→          <thead className="bg-gray-50 border-b border-gray-200">
+   813→            <tr>
+   814→              {columns.map(col => (
+   815→                <th key={col.key} className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+   816→                  {col.label}
+   817→                </th>
+   818→              ))}
+   819→            </tr>
+   820→          </thead>
+   821→          <tbody className="divide-y divide-gray-100">
+   822→            {data.map((row, idx) => (
+   823→              <tr key={idx} className="hover:bg-gray-50 transition-colors">
+   824→                {columns.map(col => (
+   825→                  <td key={col.key} className="px-6 py-4 text-sm text-gray-700">
+   826→                    {row[col.key] ?? '-'}
+   827→                  </td>
+   828→                ))}
+   829→              </tr>
+   830→            ))}
+   831→          </tbody>
+   832→        </table>
+   833→      </div>
+   834→    </div>
+   835→  )
+   836→}
+   837→
+   838→// ============ ACTION CARD ============
+   839→function ActionCard({ icon: Icon, title, description, color, onClick }: {
+   840→  icon: React.ElementType;
+   841→  title: string;
+   842→  description: string;
+   843→  color: string;
+   844→  onClick?: () => void;
+   845→}) {
+   846→  return (
+   847→    <Card 
+   848→      className="group cursor-pointer hover:shadow-xl transition-all duration-300 border border-gray-100 bg-white overflow-hidden action-card-hover"
+   849→      onClick={onClick}
+   850→    >
+   851→      <CardContent className="p-6">
+   852→        <div className={`w-14 h-14 rounded-2xl ${color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg`}>
+   853→          <Icon className="w-7 h-7 text-white" />
+   854→        </div>
+   855→        <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">{title}</h3>
+   856→        <p className="text-sm text-gray-500 leading-relaxed">{description}</p>
+   857→      </CardContent>
+   858→    </Card>
+   859→  )
+   860→}
+   861→
+   862→// ============ ACHIEVEMENT FORM COMPONENT ============
+   863→function AchievementForm({ user, onBack }: { user: User; onBack: () => void }) {
+   864→  const [selectedType, setSelectedType] = useState<string | null>(null)
+   865→  const [formData, setFormData] = useState<Record<string, string>>({})
+   866→  const [otherValues, setOtherValues] = useState<Record<string, string>>({})
+   867→  const [description, setDescription] = useState('')
+   868→  const [file, setFile] = useState<File | null>(null)
+   869→  const [isSubmitting, setIsSubmitting] = useState(false)
+   870→  const [submitSuccess, setSubmitSuccess] = useState(false)
+   871→  
+   872→  // Fields that should NOT have "Other" option
+   873→  const excludeOtherFields = ['year_pub', 'month', 'date_conf', 'filing_date', 'date_sem', 'start_date', 'end_date', 'date_award', 'date_event', 'offer_date', 'start_train', 'end_train', 'cert_date']
+   874→
+   875→  const handleFieldChange = (fieldId: string, value: string) => {
+   876→    setFormData(prev => ({ ...prev, [fieldId]: value }))
+   877→  }
+   878→
+   879→  const handleOtherChange = (fieldId: string, value: string) => {
+   880→    setOtherValues(prev => ({ ...prev, [fieldId]: value }))
+   881→  }
+   882→
+   883→  const handleSubmit = async (e: React.FormEvent) => {
+   884→    e.preventDefault()
+   885→    setIsSubmitting(true)
+   886→    
+   887→    // Simulate API call
+   888→    await new Promise(resolve => setTimeout(resolve, 1500))
+   889→    
+   890→    // Merge form data with other values
+   891→    const finalData = { ...formData }
+   892→    Object.keys(otherValues).forEach(key => {
+   893→      if (otherValues[key]) {
+   894→        finalData[key] = otherValues[key]
+   895→      }
+   896→    })
+   897→    
+   898→    console.log('Achievement submitted:', {
+   899→      type: selectedType,
+   900→      data: finalData,
+   901→      description,
+   902→      department: user.departmentName,
+   903→      file: file?.name
+   904→    })
+   905→    
+   906→    setSubmitSuccess(true)
+   907→    setIsSubmitting(false)
+   908→    
+   909→    setTimeout(() => {
+   910→      setSubmitSuccess(false)
+   911→      setSelectedType(null)
+   912→      setFormData({})
+   913→      setOtherValues({})
+   914→      setDescription('')
+   915→      setFile(null)
+   916→    }, 2000)
+   917→  }
+   918→
+   919→  const renderFormField = (field: any) => {
+   920→    const hasOtherOption = field.type === 'select' && !excludeOtherFields.includes(field.id)
+   921→    const isOtherSelected = formData[field.id] === 'Other'
+   922→    
+   923→    return (
+   924→      <div key={field.id} className="space-y-2">
+   925→        <label className="text-sm font-medium text-gray-700">
+   926→          {field.label} {field.required && <span className="text-red-500">*</span>}
+   927→        </label>
+   928→        
+   929→        {field.type === 'text' && (
+   930→          <Input
+   931→            value={formData[field.id] || ''}
+   932→            onChange={(e) => handleFieldChange(field.id, e.target.value)}
+   933→            placeholder={`Enter ${field.label.toLowerCase()}`}
+   934→            required={field.required}
+   935→            className="bg-white/80"
+   936→          />
+   937→        )}
+   938→        
+   939→        {field.type === 'textarea' && (
+   940→          <textarea
+   941→            value={formData[field.id] || ''}
+   942→            onChange={(e) => handleFieldChange(field.id, e.target.value)}
+   943→            placeholder={`Enter ${field.label.toLowerCase()}`}
+   944→            rows={3}
+   945→            required={field.required}
+   946→            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 resize-none bg-white/80"
+   947→          />
+   948→        )}
+   949→        
+   950→        {field.type === 'number' && (
+   951→          <Input
+   952→            type="number"
+   953→            value={formData[field.id] || ''}
+   954→            onChange={(e) => handleFieldChange(field.id, e.target.value)}
+   955→            placeholder={`Enter ${field.label.toLowerCase()}`}
+   956→            required={field.required}
+   957→            className="bg-white/80"
+   958→          />
+   959→        )}
+   960→        
+   961→        {field.type === 'date' && (
+   962→          <Input
+   963→            type="date"
+   964→            value={formData[field.id] || ''}
+   965→            onChange={(e) => handleFieldChange(field.id, e.target.value)}
+   966→            required={field.required}
+   967→            className="bg-white/80"
+   968→          />
+   969→        )}
+   970→        
+   971→        {field.type === 'select' && (
+   972→          <>
+   973→            <select
+   974→              value={formData[field.id] || ''}
+   975→              onChange={(e) => handleFieldChange(field.id, e.target.value)}
+   976→              required={field.required}
+   977→              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 bg-white/80"
+   978→            >
+   979→              <option value="">Select {field.label}</option>
+   980→              {field.options.map((opt: string) => (
+   981→                <option key={opt} value={opt}>{opt}</option>
+   982→              ))}
+   983→              {hasOtherOption && <option value="Other">Other</option>}
+   984→            </select>
+   985→            
+   986→            {/* Other option text input */}
+   987→            {hasOtherOption && isOtherSelected && (
+   988→              <Input
+   989→                value={otherValues[field.id] || ''}
+   990→                onChange={(e) => handleOtherChange(field.id, e.target.value)}
+   991→                placeholder={`Specify ${field.label.toLowerCase()}...`}
+   992→                className="mt-2 bg-amber-50 border-amber-200 focus:border-amber-400"
+   993→              />
+   994→            )}
+   995→          </>
+   996→        )}
+   997→      </div>
+   998→    )
+   999→  }
+  1000→
+  1001→  if (submitSuccess) {
+  1002→    return (
+  1003→      <div className="max-w-2xl mx-auto text-center py-12">
+  1004→        <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
+  1005→          <CheckCircle className="w-10 h-10 text-green-500" />
+  1006→        </div>
+  1007→        <h3 className="text-2xl font-bold text-gray-900 mb-2">Achievement Submitted!</h3>
+  1008→        <p className="text-gray-500">Your achievement has been submitted for review.</p>
+  1009→      </div>
+  1010→    )
+  1011→  }
+  1012→
+  1013→  return (
+  1014→    <div className="max-w-4xl mx-auto space-y-6">
+  1015→      {/* Header */}
+  1016→      <div className="flex items-center gap-4">
+  1017→        <Button variant="ghost" size="icon" onClick={onBack}>
+  1018→          <ChevronLeft className="w-5 h-5" />
+  1019→        </Button>
+  1020→        <div>
+  1021→          <h2 className="text-2xl font-bold text-gray-900">Add New Achievement</h2>
+  1022→          <p className="text-gray-500">Select an achievement type and fill in the details</p>
+  1023→        </div>
+  1024→      </div>
+  1025→
+  1026→      {!selectedType ? (
+  1027→        /* Achievement Type Selection */
+  1028→        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+  1029→          {Object.entries(ACHIEVEMENT_TYPES).map(([key, type]) => (
+  1030→            <Card
+  1031→              key={key}
+  1032→              className="group cursor-pointer hover:shadow-xl transition-all duration-300 border border-gray-100 bg-white overflow-hidden"
+  1033→              onClick={() => setSelectedType(key)}
+  1034→            >
+  1035→              <CardContent className="p-5 text-center">
+  1036→                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${type.color} flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-lg`}>
+  1037→                  <type.icon className="w-7 h-7 text-white" />
+  1038→                </div>
+  1039→                <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{type.name}</h3>
+  1040→              </CardContent>
+  1041→            </Card>
+  1042→          ))}
+  1043→        </div>
+  1044→      ) : (
+  1045→        /* Form */
+  1046→        <form onSubmit={handleSubmit}>
+  1047→          <Card className="border border-gray-200">
+  1048→            <CardHeader className="border-b border-gray-100">
+  1049→              <AchievementFormHeader selectedType={selectedType} />
+  1050→            </CardHeader>
+  1051→            
+  1052→            <CardContent className="p-6 space-y-6">
+  1053→              {/* Department Field - Locked for non-admin users */}
+  1054→              <div className="space-y-2">
+  1055→                <label className="text-sm font-medium text-gray-700">Department</label>
+  1056→                <Input
+  1057→                  value={user.departmentName || ''}
+  1058→                  disabled
+  1059→                  className="bg-gray-100 cursor-not-allowed"
+  1060→                />
+  1061→                <p className="text-xs text-gray-400">Department is auto-filled based on your profile</p>
+  1062→              </div>
+  1063→
+  1064→              {/* Dynamic Fields */}
+  1065→              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  1066→                {(ACHIEVEMENT_TYPES as any)[selectedType]?.fields.map(renderFormField)}
+  1067→              </div>
+  1068→
+  1069→              {/* Optional Description Field */}
+  1070→              <div className="space-y-2 pt-4 border-t border-gray-100">
+  1071→                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+  1072→                  <FileText className="w-4 h-4" />
+  1073→                  Description (Optional)
+  1074→                </label>
+  1075→                <textarea
+  1076→                  value={description}
+  1077→                  onChange={(e) => setDescription(e.target.value)}
+  1078→                  placeholder="Add any additional details about this achievement..."
+  1079→                  rows={3}
+  1080→                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 resize-none bg-white/80"
+  1081→                />
+  1082→              </div>
+  1083→
+  1084→              {/* File Upload */}
+  1085→              <div className="space-y-2">
+  1086→                <label className="text-sm font-medium text-gray-700">Upload Certificate/Proof (Optional)</label>
+  1087→                <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-blue-400 transition-colors">
+  1088→                  <Upload className="w-10 h-10 mx-auto text-gray-400 mb-3" />
+  1089→                  <p className="text-sm text-gray-500">
+  1090→                    {file ? file.name : 'Drag & drop or click to upload'}
+  1091→                  </p>
+  1092→                  <input
+  1093→                    type="file"
+  1094→                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+  1095→                    className="hidden"
+  1096→                    id="achievement-file"
+  1097→                  />
+  1098→                  <label htmlFor="achievement-file" className="inline-block mt-3 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm cursor-pointer transition-colors">
+  1099→                    Browse Files
+  1100→                  </label>
+  1101→                </div>
+  1102→              </div>
+  1103→
+  1104→              {/* Actions */}
+  1105→              <div className="flex gap-3 pt-4">
+  1106→                <Button
+  1107→                  type="button"
+  1108→                  variant="outline"
+  1109→                  onClick={() => setSelectedType(null)}
+  1110→                  className="flex-1"
+  1111→                >
+  1112→                  Back
+  1113→                </Button>
+  1114→                <Button
+  1115→                  type="submit"
+  1116→                  disabled={isSubmitting}
+  1117→                  className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+  1118→                >
+  1119→                  {isSubmitting ? (
+  1120→                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting...</>
+  1121→                  ) : (
+  1122→                    <><Send className="w-4 h-4 mr-2" /> Submit Achievement</>
+  1123→                  )}
+  1124→                </Button>
+  1125→              </div>
+  1126→            </CardContent>
+  1127→          </Card>
+  1128→        </form>
+  1129→      )}
+  1130→    </div>
+  1131→  )
+  1132→}
+  1133→
+  1134→// ============ FEEDBACK MODULE ============
+  1135→function FeedbackModule({ user, feedbackEnabled, setFeedbackEnabled }: { 
+  1136→  user: User; 
+  1137→  feedbackEnabled: boolean; 
+  1138→  setFeedbackEnabled: (v: boolean) => void 
+  1139→}) {
+  1140→  const [feedbacks, setFeedbacks] = useState([
+  1141→    { id: 1, category: 'Academic Quality', rating: 5, comment: 'Excellent teaching methodology', anonymous: true, date: '2024-01-15', role: 'Student' },
+  1142→    { id: 2, category: 'Infrastructure', rating: 4, comment: 'Good labs but need more equipment', anonymous: false, date: '2024-01-14', role: 'Student' },
+  1143→    { id: 3, category: 'Placement Support', rating: 3, comment: 'Need more company visits', anonymous: true, date: '2024-01-13', role: 'Staff' },
+  1144→  ])
+  1145→  const [showForm, setShowForm] = useState(false)
+  1146→  const [newFeedback, setNewFeedback] = useState({
+  1147→    category: '',
+  1148→    rating: 5,
+  1149→    comment: '',
+  1150→    anonymous: false
+  1151→  })
+  1152→
+  1153→  const categories = ['Academic Quality', 'Infrastructure', 'Faculty Support', 'Laboratory Facilities', 'Library Resources', 'Placement Support', 'Extra-curricular Activities', 'Administration', 'Overall Experience', 'Other']
+  1154→
+  1155→  const handleSubmit = (e: React.FormEvent) => {
+  1156→    e.preventDefault()
+  1157→    const feedback = {
+  1158→      id: Date.now(),
+  1159→      ...newFeedback,
+  1160→      date: new Date().toISOString().split('T')[0],
+  1161→      role: user.role
+  1162→    }
+  1163→    setFeedbacks(prev => [feedback, ...prev])
+  1164→    setShowForm(false)
+  1165→    setNewFeedback({ category: '', rating: 5, comment: '', anonymous: false })
+  1166→  }
+  1167→
+  1168→  const deleteFeedback = (id: number) => {
+  1169→    setFeedbacks(prev => prev.filter(f => f.id !== id))
+  1170→  }
+  1171→
+  1172→  return (
+  1173→    <div className="space-y-6">
+  1174→      {/* Header */}
+  1175→      <div className="flex items-center justify-between">
+  1176→        <div>
+  1177→          <h2 className="text-2xl font-bold text-gray-900">Feedback Center</h2>
+  1178→          <p className="text-gray-500">Share your thoughts and help us improve</p>
+  1179→        </div>
+  1180→        
+  1181→        {/* Admin Toggle */}
+  1182→        {user.role === 'ADMIN' && (
+  1183→          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+  1184→            <span className="text-sm font-medium text-gray-700">Enable Feedback</span>
+  1185→            <button
+  1186→              onClick={() => setFeedbackEnabled(!feedbackEnabled)}
+  1187→              className={`relative w-12 h-6 rounded-full transition-colors ${feedbackEnabled ? 'bg-green-500' : 'bg-gray-300'}`}
+  1188→            >
+  1189→              <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${feedbackEnabled ? 'translate-x-6' : ''}`} />
+  1190→            </button>
+  1191→          </div>
+  1192→        )}
+  1193→      </div>
+  1194→
+  1195→      {/* Stats */}
+  1196→      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+  1197→        <StatCard title="Total Feedback" value={feedbacks.length} icon={MessageSquare} color="blue" />
+  1198→        <StatCard title="Average Rating" value={(feedbacks.reduce((acc, f) => acc + f.rating, 0) / feedbacks.length).toFixed(1)} icon={Star} color="amber" />
+  1199→        <StatCard title="Anonymous" value={feedbacks.filter(f => f.anonymous).length} icon={Shield} color="purple" />
+  1200→        <StatCard title="This Week" value={feedbacks.filter(f => {
+  1201→          const diff = Date.now() - new Date(f.date).getTime()
+  1202→          return diff < 7 * 24 * 60 * 60 * 1000
+  1203→        }).length} icon={Calendar} color="green" />
+  1204→      </div>
+  1205→
+  1206→      {/* Submit Form - Only shown when enabled and not admin-only view */}
+  1207→      {feedbackEnabled && user.role !== 'ADMIN' && (
+  1208→        <Card className="border border-gray-200">
+  1209→          <CardHeader>
+  1210→            <div className="flex items-center justify-between">
+  1211→              <CardTitle className="text-lg">Submit Feedback</CardTitle>
+  1212→              <Button variant="ghost" size="sm" onClick={() => setShowForm(!showForm)}>
+  1213→                {showForm ? 'Cancel' : 'New Feedback'}
+  1214→              </Button>
+  1215→            </div>
+  1216→          </CardHeader>
+  1217→          
+  1218→          {showForm && (
+  1219→            <CardContent>
+  1220→              <form onSubmit={handleSubmit} className="space-y-4">
+  1221→                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  1222→                  <div className="space-y-2">
+  1223→                    <label className="text-sm font-medium text-gray-700">Category *</label>
+  1224→                    <select
+  1225→                      value={newFeedback.category}
+  1226→                      onChange={(e) => setNewFeedback(prev => ({ ...prev, category: e.target.value }))}
+  1227→                      required
+  1228→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20"
+  1229→                    >
+  1230→                      <option value="">Select Category</option>
+  1231→                      {categories.map(cat => (
+  1232→                        <option key={cat} value={cat}>{cat}</option>
+  1233→                      ))}
+  1234→                      <option value="Other">Other</option>
+  1235→                    </select>
+  1236→                  </div>
+  1237→                  
+  1238→                  <div className="space-y-2">
+  1239→                    <label className="text-sm font-medium text-gray-700">Rating *</label>
+  1240→                    <div className="flex items-center gap-2">
+  1241→                      {[1, 2, 3, 4, 5].map(star => (
+  1242→                        <button
+  1243→                          key={star}
+  1244→                          type="button"
+  1245→                          onClick={() => setNewFeedback(prev => ({ ...prev, rating: star }))}
+  1246→                          className={`p-1 rounded transition-colors ${star <= newFeedback.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+  1247→                        >
+  1248→                          <Star className="w-6 h-6 fill-current" />
+  1249→                        </button>
+  1250→                      ))}
+  1251→                      <span className="text-sm text-gray-500 ml-2">{newFeedback.rating}/5</span>
+  1252→                    </div>
+  1253→                  </div>
+  1254→                </div>
+  1255→                
+  1256→                <div className="space-y-2">
+  1257→                  <label className="text-sm font-medium text-gray-700">Comment *</label>
+  1258→                  <textarea
+  1259→                    value={newFeedback.comment}
+  1260→                    onChange={(e) => setNewFeedback(prev => ({ ...prev, comment: e.target.value }))}
+  1261→                    placeholder="Share your feedback..."
+  1262→                    rows={3}
+  1263→                    required
+  1264→                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 resize-none"
+  1265→                  />
+  1266→                </div>
+  1267→                
+  1268→                <div className="flex items-center gap-2">
+  1269→                  <input
+  1270→                    type="checkbox"
+  1271→                    id="anonymous"
+  1272→                    checked={newFeedback.anonymous}
+  1273→                    onChange={(e) => setNewFeedback(prev => ({ ...prev, anonymous: e.target.checked }))}
+  1274→                    className="rounded"
+  1275→                  />
+  1276→                  <label htmlFor="anonymous" className="text-sm text-gray-600">Submit anonymously</label>
+  1277→                </div>
+  1278→                
+  1279→                <Button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-indigo-600">
+  1280→                  <Send className="w-4 h-4 mr-2" /> Submit Feedback
+  1281→                </Button>
+  1282→              </form>
+  1283→            </CardContent>
+  1284→          )}
+  1285→        </Card>
+  1286→      )}
+  1287→
+  1288→      {/* Disabled Message */}
+  1289→      {!feedbackEnabled && user.role !== 'ADMIN' && (
+  1290→        <Card className="border border-amber-200 bg-amber-50">
+  1291→          <CardContent className="p-6 text-center">
+  1292→            <AlertCircle className="w-12 h-12 mx-auto text-amber-500 mb-3" />
+  1293→            <h3 className="font-semibold text-amber-800">Feedback Currently Disabled</h3>
+  1294→            <p className="text-amber-600 text-sm">The administrator has temporarily disabled feedback submissions.</p>
+  1295→          </CardContent>
+  1296→        </Card>
+  1297→      )}
+  1298→
+  1299→      {/* Feedback List */}
+  1300→      <Card className="border border-gray-200">
+  1301→        <CardHeader>
+  1302→          <CardTitle className="text-lg">Recent Feedback</CardTitle>
+  1303→        </CardHeader>
+  1304→        <CardContent>
+  1305→          <div className="space-y-4 max-h-96 overflow-y-auto">
+  1306→            {feedbacks.map(feedback => (
+  1307→              <div key={feedback.id} className="p-4 bg-gray-50 rounded-xl">
+  1308→                <div className="flex items-start justify-between mb-2">
+  1309→                  <div className="flex items-center gap-2">
+  1310→                    <Badge variant="secondary">{feedback.category}</Badge>
+  1311→                    <div className="flex items-center gap-1">
+  1312→                      {[...Array(5)].map((_, i) => (
+  1313→                        <Star key={i} className={`w-4 h-4 ${i < feedback.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
+  1314→                      ))}
+  1315→                    </div>
+  1316→                  </div>
+  1317→                  <div className="flex items-center gap-2">
+  1318→                    {feedback.anonymous && <Badge variant="outline"><Shield className="w-3 h-3 mr-1" /> Anonymous</Badge>}
+  1319→                    <span className="text-xs text-gray-400">{feedback.date}</span>
+  1320→                    {user.role === 'ADMIN' && (
+  1321→                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700" onClick={() => deleteFeedback(feedback.id)}>
+  1322→                        <Trash2 className="w-4 h-4" />
+  1323→                      </Button>
+  1324→                    )}
+  1325→                  </div>
+  1326→                </div>
+  1327→                <p className="text-sm text-gray-700">{feedback.comment}</p>
+  1328→                <p className="text-xs text-gray-400 mt-2">From: {feedback.role}</p>
+  1329→              </div>
+  1330→            ))}
+  1331→          </div>
+  1332→        </CardContent>
+  1333→      </Card>
+  1334→    </div>
+  1335→  )
+  1336→}
+  1337→
+  1338→// ============ DASHBOARD CONTENT ============
+  1339→function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (tab: TabType) => void }) {
+  1340→  const [stats, setStats] = useState<DashboardStats>({
+  1341→    totalDepartments: 0,
+  1342→    totalFaculty: 0,
+  1343→    totalStudents: 0,
+  1344→    totalActivities: 0,
+  1345→    totalResearch: 0,
+  1346→    pendingApprovals: 0
+  1347→  })
+  1348→  const [loading, setLoading] = useState(true)
+  1349→
+  1350→  useEffect(() => {
+  1351→    fetchDashboardData()
+  1352→  }, [])
+  1353→
+  1354→  const fetchDashboardData = async () => {
+  1355→    try {
+  1356→      const res = await fetch('/api/dashboard')
+  1357→      if (res.ok) {
+  1358→        const data = await res.json()
+  1359→        if (data.success) {
+  1360→          setStats(data.data.stats)
+  1361→        }
+  1362→      }
+  1363→    } catch (error) {
+  1364→      console.error('Failed to fetch dashboard data:', error)
+  1365→    } finally {
+  1366→      setLoading(false)
+  1367→    }
+  1368→  }
+  1369→
+  1370→  if (loading) {
+  1371→    return (
+  1372→      <div className="flex items-center justify-center min-h-[400px]">
+  1373→        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+  1374→      </div>
+  1375→    )
+  1376→  }
+  1377→
+  1378→  // Admin Dashboard
+  1379→  if (user.role === 'ADMIN') {
+  1380→    return (
+  1381→      <div className="space-y-6">
+  1382→        {/* Welcome Banner */}
+  1383→        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0a2a5e] via-blue-700 to-indigo-700 p-8 text-white banner-gradient">
+  1384→          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl" />
+  1385→          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl" />
+  1386→          
+  1387→          <div className="relative z-10">
+  1388→            <h2 className="text-2xl md:text-3xl font-bold mb-2">Welcome back, {user.name}!</h2>
+  1389→            <p className="text-blue-100 text-lg mb-6">Here's what's happening across the institution today.</p>
+  1390→            <div className="flex flex-wrap gap-4">
+  1391→              <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3 border border-white/10">
+  1392→                <p className="text-2xl font-bold">{stats.pendingApprovals}</p>
+  1393→                <p className="text-sm text-blue-100">Pending Approvals</p>
+  1394→              </div>
+  1395→              <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3 border border-white/10">
+  1396→                <p className="text-2xl font-bold">{stats.totalActivities}</p>
+  1397→                <p className="text-sm text-blue-100">Activities This Month</p>
+  1398→              </div>
+  1399→              <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3 border border-white/10">
+  1400→                <p className="text-2xl font-bold">{stats.totalStudents}</p>
+  1401→                <p className="text-sm text-blue-100">Total Students</p>
+  1402→              </div>
+  1403→            </div>
+  1404→          </div>
+  1405→        </div>
+  1406→
+  1407→        {/* Stats Grid */}
+  1408→        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+  1409→          <StatCard title="Departments" value={stats.totalDepartments} icon={Building2} color="blue" />
+  1410→          <StatCard title="Faculty" value={stats.totalFaculty} icon={Users} color="green" />
+  1411→          <StatCard title="Students" value={stats.totalStudents} icon={GraduationCap} color="purple" />
+  1412→          <StatCard title="Activities" value={stats.totalActivities} icon={Activity} color="orange" />
+  1413→          <StatCard title="Research" value={stats.totalResearch} icon={Award} color="pink" />
+  1414→          <StatCard title="Pending" value={stats.pendingApprovals} icon={Clock} color="red" trend="Needs attention" />
+  1415→        </div>
+  1416→
+  1417→        {/* Quick Actions */}
+  1418→        <div>
+  1419→          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+  1420→          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  1421→            <ActionCard 
+  1422→              icon={Users} 
+  1423→              title="Manage Faculty" 
+  1424→              description="Register and manage faculty members"
+  1425→              color="bg-gradient-to-br from-blue-500 to-blue-600"
+  1426→              onClick={() => setActiveTab('faculty')}
+  1427→            />
+  1428→            <ActionCard 
+  1429→              icon={Calendar} 
+  1430→              title="Schedule Activities" 
+  1431→              description="Plan institutional activities and events"
+  1432→              color="bg-gradient-to-br from-purple-500 to-purple-600"
+  1433→              onClick={() => setActiveTab('activities')}
+  1434→            />
+  1435→            <ActionCard 
+  1436→              icon={FileCheckIcon} 
+  1437→              title="Review Approvals" 
+  1438→              description="Process pending approval requests"
+  1439→              color="bg-gradient-to-br from-amber-500 to-orange-500"
+  1440→              onClick={() => setActiveTab('approvals')}
+  1441→            />
+  1442→            <ActionCard 
+  1443→              icon={BarChart3} 
+  1444→              title="View Analytics" 
+  1445→              description="Detailed reports and insights"
+  1446→              color="bg-gradient-to-br from-emerald-500 to-teal-600"
+  1447→              onClick={() => setActiveTab('analytics')}
+  1448→            />
+  1449→          </div>
+  1450→        </div>
+  1451→
+  1452→        {/* Recent Activity Table */}
+  1453→        <div>
+  1454→          <div className="flex items-center justify-between mb-4">
+  1455→            <h3 className="text-lg font-semibold text-gray-900">System Overview</h3>
+  1456→            <Button variant="outline" size="sm" onClick={() => setActiveTab('departments')}>
+  1457→              View All Departments <ArrowRight className="w-4 h-4 ml-2" />
+  1458→            </Button>
+  1459→          </div>
+  1460→          <DataTable 
+  1461→            data={[
+  1462→              { module: 'User Management', status: 'Active', lastUpdate: 'Today', records: stats.totalFaculty + stats.totalStudents },
+  1463→              { module: 'Academic Programs', status: 'Active', lastUpdate: 'Today', records: stats.totalDepartments },
+  1464→              { module: 'Research Activities', status: 'Active', lastUpdate: 'This Week', records: stats.totalResearch },
+  1465→              { module: 'Quality Initiatives', status: 'Active', lastUpdate: 'This Month', records: stats.totalActivities },
+  1466→            ]} 
+  1467→            columns={[{ key: 'module', label: 'Module' }, { key: 'status', label: 'Status' }, { key: 'lastUpdate', label: 'Last Update' }, { key: 'records', label: 'Records' }]} 
+  1468→          />
+  1469→        </div>
+  1470→      </div>
+  1471→    )
+  1472→  }
+  1473→
+  1474→  // HOD Dashboard
+  1475→  if (user.role === 'HOD') {
+  1476→    return (
+  1477→      <div className="space-y-6">
+  1478→        <div className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl p-8 text-white">
+  1479→          <h2 className="text-2xl font-bold mb-2">Department Dashboard</h2>
+  1480→          <p className="text-violet-100">{user.departmentName || 'Your Department'} • Head of Department</p>
+  1481→        </div>
+  1482→        
+  1483→        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  1484→          <StatCard title="Faculty Members" value="24" icon={Users} color="blue" />
+  1485→          <StatCard title="Students" value="420" icon={GraduationCap} color="green" />
+  1486→          <StatCard title="Active Projects" value="12" icon={Target} color="purple" />
+  1487→          <StatCard title="Publications" value="38" icon={Award} color="orange" />
+  1488→        </div>
+  1489→
+  1490→        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  1491→          <Card className="p-6 border border-gray-200">
+  1492→            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+  1493→              <Activity className="w-5 h-5 text-blue-500" /> Department Activities
+  1494→            </h3>
+  1495→            <DataTable data={[]} columns={[{ key: 'title', label: 'Title' }, { key: 'status', label: 'Status' }]} />
+  1496→          </Card>
+  1497→          <Card className="p-6 border border-gray-200">
+  1498→            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+  1499→              <Clock className="w-5 h-5 text-amber-500" /> Pending Approvals
+  1500→            </h3>
+  1501→            <DataTable data={[]} columns={[{ key: 'title', label: 'Request' }, { key: 'by', label: 'Requested By' }]} />
+  1502→          </Card>
+  1503→        </div>
+  1504→      </div>
+  1505→    )
+  1506→  }
+  1507→
+  1508→  // Staff Dashboard
+  1509→  if (user.role === 'STAFF') {
+  1510→    return (
+  1511→      <div className="space-y-6">
+  1512→        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-white">
+  1513→          <h2 className="text-2xl font-bold mb-2">Staff Portal</h2>
+  1514→          <p className="text-emerald-100">Welcome, {user.name} • {user.departmentName}</p>
+  1515→        </div>
+  1516→        
+  1517→        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  1518→          <StatCard title="My Activities" value="8" icon={Calendar} color="blue" />
+  1519→          <StatCard title="Research Papers" value="5" icon={FileText} color="green" />
+  1520→          <StatCard title="Attendance" value="95%" icon={CheckCircle} color="purple" />
+  1521→        </div>
+  1522→
+  1523→        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  1524→          <ActionCard 
+  1525→            icon={Plus} 
+  1526→            title="Submit New Activity" 
+  1527→            description="Report a new activity or event"
+  1528→            color="bg-gradient-to-br from-blue-500 to-indigo-600"
+  1529→            onClick={() => setActiveTab('achievements')}
+  1530→          />
+  1531→          <ActionCard 
+  1532→            icon={MessageSquare} 
+  1533→            title="Give Feedback" 
+  1534→            description="Share your thoughts and suggestions"
+  1535→            color="bg-gradient-to-br from-purple-500 to-pink-600"
+  1536→            onClick={() => setActiveTab('feedback')}
+  1537→          />
+  1538→        </div>
+  1539→      </div>
+  1540→    )
+  1541→  }
+  1542→
+  1543→  // Student Dashboard - Matching Screenshot Design
+  1544→  return (
+  1545→    <div className="space-y-6">
+  1546→      {/* Stats Cards Row - Matching Screenshot */}
+  1547→      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  1548→        {/* Total Records */}
+  1549→        <Card className="border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden">
+  1550→          <CardContent className="p-5">
+  1551→            <div className="flex items-start justify-between">
+  1552→              <div>
+  1553→                <p className="text-sm text-gray-500 font-medium">TOTAL RECORDS</p>
+  1554→                <p className="text-3xl font-bold text-gray-800 mt-1">0</p>
+  1555→              </div>
+  1556→              <div className="w-12 h-12 rounded-xl bg-cyan-50 flex items-center justify-center">
+  1557→                <Trophy className="w-6 h-6 text-cyan-600" />
+  1558→              </div>
+  1559→            </div>
+  1560→          </CardContent>
+  1561→          <div className="h-1 bg-gradient-to-r from-cyan-400 to-cyan-500" />
+  1562→        </Card>
+  1563→
+  1564→        {/* Pending Approval */}
+  1565→        <Card className="border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden">
+  1566→          <CardContent className="p-5">
+  1567→            <div className="flex items-start justify-between">
+  1568→              <div>
+  1569→                <p className="text-sm text-gray-500 font-medium">PENDING APPROVAL</p>
+  1570→                <p className="text-3xl font-bold text-gray-800 mt-1">0</p>
+  1571→              </div>
+  1572→              <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center">
+  1573→                <Clock className="w-6 h-6 text-orange-600" />
+  1574→              </div>
+  1575→            </div>
+  1576→          </CardContent>
+  1577→          <div className="h-1 bg-gradient-to-r from-orange-400 to-orange-500" />
+  1578→        </Card>
+  1579→
+  1580→        {/* Approved */}
+  1581→        <Card className="border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden">
+  1582→          <CardContent className="p-5">
+  1583→            <div className="flex items-start justify-between">
+  1584→              <div>
+  1585→                <p className="text-sm text-gray-500 font-medium">APPROVED</p>
+  1586→                <p className="text-3xl font-bold text-gray-800 mt-1">0</p>
+  1587→              </div>
+  1588→              <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
+  1589→                <CheckCircle className="w-6 h-6 text-green-600" />
+  1590→              </div>
+  1591→            </div>
+  1592→          </CardContent>
+  1593→          <div className="h-1 bg-gradient-to-r from-green-400 to-green-500" />
+  1594→        </Card>
+  1595→
+  1596→        {/* Rejected */}
+  1597→        <Card className="border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden">
+  1598→          <CardContent className="p-5">
+  1599→            <div className="flex items-start justify-between">
+  1600→              <div>
+  1601→                <p className="text-sm text-gray-500 font-medium">REJECTED</p>
+  1602→                <p className="text-3xl font-bold text-gray-800 mt-1">0</p>
+  1603→              </div>
+  1604→              <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
+  1605→                <CloseIcon className="w-6 h-6 text-red-600" />
+  1606→              </div>
+  1607→            </div>
+  1608→          </CardContent>
+  1609→          <div className="h-1 bg-gradient-to-r from-red-400 to-red-500" />
+  1610→        </Card>
+  1611→      </div>
+  1612→
+  1613→      {/* Charts Section - Activity Trend & Status Distribution */}
+  1614→      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  1615→        {/* Activity Trend Chart */}
+  1616→        <Card className="border border-gray-200 lg:col-span-2">
+  1617→          <CardHeader className="pb-2">
+  1618→            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+  1619→              <Activity className="w-5 h-5 text-cyan-500" /> Activity Trend
+  1620→            </CardTitle>
+  1621→          </CardHeader>
+  1622→          <CardContent>
+  1623→            <div className="h-64 flex items-end justify-between gap-2 px-4">
+  1624→              {['Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'].map((month, i) => (
+  1625→                <div key={month} className="flex-1 flex flex-col items-center gap-2">
+  1626→                  <div className="w-full flex items-end justify-center h-48">
+  1627→                    <div 
+  1628→                      className="w-full max-w-[40px] bg-gradient-to-t from-cyan-500 to-cyan-400 rounded-t-md min-h-[4px]"
+  1629→                      style={{ height: `${Math.max(4, Math.random() * 100)}%` }}
+  1630→                    />
+  1631→                  </div>
+  1632→                  <span className="text-xs text-gray-500">{month}</span>
+  1633→                </div>
+  1634→              ))}
+  1635→            </div>
+  1636→            <div className="flex items-center justify-center gap-8 mt-4 text-xs text-gray-500">
+  1637→              <span>1.0</span>
+  1638→              <span>0.8</span>
+  1639→              <span>0.6</span>
+  1640→              <span>0.4</span>
+  1641→              <span>0.2</span>
+  1642→              <span>0.0</span>
+  1643→              <span>-0.2</span>
+  1644→              <span>-0.4</span>
+  1645→              <span>-0.6</span>
+  1646→              <span>-0.8</span>
+  1647→              <span>-1.0</span>
+  1648→            </div>
+  1649→          </CardContent>
+  1650→        </Card>
+  1651→
+  1652→        {/* Status Distribution */}
+  1653→        <Card className="border border-gray-200">
+  1654→          <CardHeader className="pb-2">
+  1655→            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+  1656→              <PieChartIcon className="w-5 h-5 text-cyan-500" /> Status Distribution
+  1657→            </CardTitle>
+  1658→          </CardHeader>
+  1659→          <CardContent className="flex flex-col items-center justify-center">
+  1660→            <div className="w-48 h-48 rounded-full border-[20px] border-gray-300 relative">
+  1661→              <div className="absolute inset-0 flex items-center justify-center">
+  1662→                <span className="text-sm text-gray-500">No Data</span>
+  1663→              </div>
+  1664→            </div>
+  1665→            <div className="mt-4 flex items-center gap-2 text-xs text-gray-500">
+  1666→              <div className="w-3 h-3 rounded-sm bg-gray-300" />
+  1667→              <span>No Data</span>
+  1668→            </div>
+  1669→          </CardContent>
+  1670→        </Card>
+  1671→      </div>
+  1672→
+  1673→      {/* Quick Actions */}
+  1674→      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  1675→        <ActionCard 
+  1676→          icon={Trophy} 
+  1677→          title="My Achievements" 
+  1678→          description="View and add your achievements"
+  1679→          color="bg-gradient-to-br from-amber-500 to-orange-500"
+  1680→          onClick={() => setActiveTab('achievements')}
+  1681→        />
+  1682→        <ActionCard 
+  1683→          icon={MessageSquare} 
+  1684→          title="Submit Feedback" 
+  1685→          description="Help us improve your experience"
+  1686→          color="bg-gradient-to-br from-purple-500 to-pink-600"
+  1687→          onClick={() => setActiveTab('feedback')}
+  1688→        />
+  1689→        <ActionCard 
+  1690→          icon={FileText} 
+  1691→          title="Documents" 
+  1692→          description="Access certificates and reports"
+  1693→          color="bg-gradient-to-br from-emerald-500 to-teal-600"
+  1694→          onClick={() => setActiveTab('documents')}
+  1695→        />
+  1696→      </div>
+  1697→    </div>
+  1698→  )
+  1699→}
+  1700→
+  1701→// PieChart Icon Component
+  1702→function PieChartIcon({ className }: { className?: string }) {
+  1703→  return (
+  1704→    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  1705→      <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
+  1706→      <path d="M22 12A10 10 0 0 0 12 2v10z"/>
+  1707→    </svg>
+  1708→  )
+  1709→}
+  1710→
+  1711→// Close Icon for Rejected
+  1712→function CloseIcon({ className }: { className?: string }) {
+  1713→  return (
+  1714→    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  1715→      <path d="M18 6L6 18M6 6l12 12"/>
+  1716→    </svg>
+  1717→  )
+  1718→}
+  1719→
+  1720→// ============ DEPARTMENTS PAGE ============
+  1721→function DepartmentsPage() {
+  1722→  const [departments, setDepartments] = useState<Department[]>([])
+  1723→  const [loading, setLoading] = useState(true)
+  1724→
+  1725→  useEffect(() => {
+  1726→    fetch('/api/departments')
+  1727→      .then(res => res.json())
+  1728→      .then(data => {
+  1729→        if (data.success) {
+  1730→          setDepartments(data.data.map((d: any) => ({
+  1731→            id: d.id,
+  1732→            name: d.name,
+  1733→            code: d.code,
+  1734→            facultyCount: d._count?.faculty || 0,
+  1735→            studentCount: d._count?.students || 0,
+  1736→            activityCount: d._count?.activities || 0
+  1737→          })))
+  1738→        }
+  1739→      })
+  1740→      .finally(() => setLoading(false))
+  1741→  }, [])
+  1742→
+  1743→  if (loading) {
+  1744→    return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
+  1745→  }
+  1746→
+  1747→  return (
+  1748→    <div className="space-y-6">
+  1749→      <div className="flex items-center justify-between">
+  1750→        <div>
+  1751→          <h2 className="text-2xl font-bold text-gray-900">Departments</h2>
+  1752→          <p className="text-gray-500">Manage all academic departments</p>
+  1753→        </div>
+  1754→        <Button className="gap-2 bg-gradient-to-r from-blue-500 to-indigo-600">
+  1755→          <Plus className="w-4 h-4" /> Add Department
+  1756→        </Button>
+  1757→      </div>
+  1758→      
+  1759→      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+  1760→        {departments.map(dept => (
+  1761→          <DeptCard key={dept.id} dept={dept} />
+  1762→        ))}
+  1763→      </div>
+  1764→    </div>
+  1765→  )
+  1766→}
+  1767→
+  1768→// ============ FACULTY PAGE ============
+  1769→function FacultyPage() {
+  1770→  return (
+  1771→    <div className="space-y-6">
+  1772→      <div className="flex items-center justify-between">
+  1773→        <div>
+  1774→          <h2 className="text-2xl font-bold text-gray-900">Faculty Management</h2>
+  1775→          <p className="text-gray-500">View and manage faculty members</p>
+  1776→        </div>
+  1777→        <Button className="gap-2 bg-gradient-to-r from-blue-500 to-indigo-600"><Plus className="w-4 h-4" /> Add Faculty</Button>
+  1778→      </div>
+  1779→      
+  1780→      <Card className="p-6 border border-gray-200">
+  1781→        <div className="flex gap-4 mb-6">
+  1782→          <div className="flex-1 relative">
+  1783→            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+  1784→            <Input placeholder="Search faculty..." className="pl-10 bg-white/80" />
+  1785→          </div>
+  1786→          <select className="border rounded-lg px-4 bg-white">
+  1787→            <option>All Departments</option>
+  1788→          </select>
+  1789→        </div>
+  1790→        <DataTable 
+  1791→          data={[
+  1792→            { name: 'Dr. R. Kumar', email: 'rkumar@niet.ac.in', department: 'CSE', designation: 'Professor', status: 'Active' },
+  1793→            { name: 'Dr. S. Devi', email: 'sdevi@niet.ac.in', department: 'ECE', designation: 'Associate Professor', status: 'Active' },
+  1794→            { name: 'Prof. M. Rajan', email: 'mrajan@niet.ac.in', department: 'EEE', designation: 'Assistant Professor', status: 'Active' },
+  1795→            { name: 'Dr. K. Singh', email: 'ksingh@niet.ac.in', department: 'MECH', designation: 'Professor', status: 'On Leave' },
+  1796→          ]}
+  1797→          columns={[{ key: 'name', label: 'Name' }, { key: 'email', label: 'Email' }, { key: 'department', label: 'Department' }, { key: 'designation', label: 'Designation' }, { key: 'status', label: 'Status' }]}
+  1798→        />
+  1799→      </Card>
+  1800→    </div>
+  1801→  )
+  1802→}
+  1803→
+  1804→// ============ STUDENTS PAGE ============
+  1805→function StudentsPage() {
+  1806→  return (
+  1807→    <div className="space-y-6">
+  1808→      <div className="flex items-center justify-between">
+  1809→        <div>
+  1810→          <h2 className="text-2xl font-bold text-gray-900">Student Records</h2>
+  1811→          <p className="text-gray-500">Manage student information</p>
+  1812→        </div>
+  1813→        <Button className="gap-2 bg-gradient-to-r from-blue-500 to-indigo-600"><Upload className="w-4 h-4" /> Import Students</Button>
+  1814→      </div>
+  1815→      
+  1816→      <Card className="p-6 border border-gray-200">
+  1817→        <div className="flex gap-4 mb-6">
+  1818→          <div className="flex-1 relative">
+  1819→            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+  1820→            <Input placeholder="Search students..." className="pl-10 bg-white/80" />
+  1821→          </div>
+  1822→          <select className="border rounded-lg px-4 bg-white">
+  1823→            <option>All Departments</option>
+  1824→          </select>
+  1825→          <select className="border rounded-lg px-4 bg-white">
+  1826→            <option>All Years</option>
+  1827→          </select>
+  1828→        </div>
+  1829→        <DataTable 
+  1830→          data={[
+  1831→            { name: 'Arun Prakash', regNo: '2024CS001', department: 'CSE', year: 'III', cgpa: '8.9' },
+  1832→            { name: 'Bhavani S.', regNo: '2024EC002', department: 'ECE', year: 'II', cgpa: '9.1' },
+  1833→            { name: 'Chandru K.', regNo: '2024EE003', department: 'EEE', year: 'IV', cgpa: '8.7' },
+  1834→            { name: 'Divya M.', regNo: '2024ME004', department: 'MECH', year: 'I', cgpa: '9.3' },
+  1835→          ]}
+  1836→          columns={[{ key: 'name', label: 'Name' }, { key: 'regNo', label: 'Reg. No.' }, { key: 'department', label: 'Department' }, { key: 'year', label: 'Year' }, { key: 'cgpa', label: 'CGPA' }]}
+  1837→        />
+  1838→      </Card>
+  1839→    </div>
+  1840→  )
+  1841→}
+  1842→
+  1843→// ============ ACTIVITIES PAGE ============
+  1844→function ActivitiesPage() {
+  1845→  return (
+  1846→    <div className="space-y-6">
+  1847→      <div className="flex items-center justify-between">
+  1848→        <div>
+  1849→          <h2 className="text-2xl font-bold text-gray-900">Activities & Events</h2>
+  1850→          <p className="text-gray-500">Track institutional activities</p>
+  1851→        </div>
+  1852→        <Button className="gap-2 bg-gradient-to-r from-blue-500 to-indigo-600"><Plus className="w-4 h-4" /> New Activity</Button>
+  1853→      </div>
+  1854→      
+  1855→      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  1856→        {[
+  1857→          { title: 'Technical Symposium', type: 'Workshop', date: '2024-01-15', participants: 250, status: 'Completed' },
+  1858→          { title: 'Hackathon 2024', type: 'Event', date: '2024-02-20', participants: 180, status: 'Upcoming' },
+  1859→          { title: 'Guest Lecture - AI', type: 'Lecture', date: '2024-01-28', participants: 320, status: 'Completed' },
+  1860→          { title: 'Industry Connect', type: 'Seminar', date: '2024-03-05', participants: 150, status: 'Scheduled' },
+  1861→          { title: 'Cultural Fest', type: 'Event', date: '2024-03-15', participants: 500, status: 'Upcoming' },
+  1862→          { title: 'FDP on Research', type: 'Training', date: '2024-04-01', participants: 45, status: 'Scheduled' },
+  1863→        ].map((activity, i) => (
+  1864→          <Card key={i} className="group hover:shadow-xl transition-all duration-300 border border-gray-100 bg-white overflow-hidden">
+  1865→            <CardContent className="p-5">
+  1866→              <div className="flex items-start justify-between mb-3">
+  1867→                <Badge variant={activity.status === 'Completed' ? 'default' : activity.status === 'Upcoming' ? 'secondary' : 'outline'} 
+  1868→                       className={activity.status === 'Completed' ? 'bg-green-100 text-green-700' : activity.status === 'Upcoming' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}>
+  1869→                  {activity.status}
+  1870→                </Badge>
+  1871→                <span className="text-xs text-gray-500">{activity.type}</span>
+  1872→              </div>
+  1873→              <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-2">{activity.title}</h3>
+  1874→              <div className="flex items-center gap-4 text-sm text-gray-500">
+  1875→                <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {activity.date}</span>
+  1876→                <span className="flex items-center gap-1"><Users className="w-4 h-4" /> {activity.participants}</span>
+  1877→              </div>
+  1878→            </CardContent>
+  1879→          </Card>
+  1880→        ))}
+  1881→      </div>
+  1882→    </div>
+  1883→  )
+  1884→}
+  1885→
+  1886→// ============ RESEARCH PAGE ============
+  1887→function ResearchPage() {
+  1888→  return (
+  1889→    <div className="space-y-6">
+  1890→      <div className="flex items-center justify-between">
+  1891→        <div>
+  1892→          <h2 className="text-2xl font-bold text-gray-900">Research & Publications</h2>
+  1893→          <p className="text-gray-500">Track research output</p>
+  1894→        </div>
+  1895→        <Button className="gap-2 bg-gradient-to-r from-blue-500 to-indigo-600"><Plus className="w-4 h-4" /> Add Publication</Button>
+  1896→      </div>
+  1897→      
+  1898→      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+  1899→        <StatCard title="Journal Papers" value="45" icon={FileText} color="blue" />
+  1900→        <StatCard title="Conferences" value="32" icon={Globe} color="green" />
+  1901→        <StatCard title="Patents" value="8" icon={Award} color="purple" />
+  1902→        <StatCard title="Funded Projects" value="12" icon={Trophy} color="orange" />
+  1903→      </div>
+  1904→      
+  1905→      <Card className="p-6 border border-gray-200">
+  1906→        <DataTable 
+  1907→          data={[
+  1908→            { title: 'Machine Learning in Healthcare', authors: 'Dr. R. Kumar et al.', venue: 'IEEE ICML', year: '2024', citations: 15 },
+  1909→            { title: 'IoT-Based Smart Agriculture', authors: 'Prof. S. Devi', venue: 'Springer IoT Journal', year: '2023', citations: 23 },
+  1910→            { title: 'Blockchain for Supply Chain', authors: 'Dr. K. Singh et al.', venue: 'ACM Computing', year: '2024', citations: 8 },
+  1911→          ]}
+  1912→          columns={[{ key: 'title', label: 'Title' }, { key: 'authors', label: 'Authors' }, { key: 'venue', label: 'Venue' }, { key: 'year', label: 'Year' }, { key: 'citations', label: 'Citations' }]}
+  1913→        />
+  1914→      </Card>
+  1915→    </div>
+  1916→  )
+  1917→}
+  1918→
+  1919→// ============ APPROVALS PAGE ============
+  1920→function ApprovalsPage() {
+  1921→  return (
+  1922→    <div className="space-y-6">
+  1923→      <div>
+  1924→        <h2 className="text-2xl font-bold text-gray-900">Approval Requests</h2>
+  1925→        <p className="text-gray-500">Review and manage pending approvals</p>
+  1926→      </div>
+  1927→      
+  1928→      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  1929→        <Card className="p-4 border-l-4 border-l-amber-500 bg-amber-50/50">
+  1930→          <p className="text-sm text-gray-500">Pending</p>
+  1931→          <p className="text-3xl font-bold text-amber-600">12</p>
+  1932→        </Card>
+  1933→        <Card className="p-4 border-l-4 border-l-green-500 bg-green-50/50">
+  1934→          <p className="text-sm text-gray-500">Approved Today</p>
+  1935→          <p className="text-3xl font-bold text-green-600">8</p>
+  1936→        </Card>
+  1937→        <Card className="p-4 border-l-4 border-l-red-500 bg-red-50/50">
+  1938→          <p className="text-sm text-gray-500">Rejected</p>
+  1939→          <p className="text-3xl font-bold text-red-600">2</p>
+  1940→        </Card>
+  1941→      </div>
+  1942→      
+  1943→      <Card className="p-6 border border-gray-200">
+  1944→        <DataTable 
+  1945→          data={[
+  1946→            { id: 'REQ001', type: 'Achievement', requestedBy: 'Arun Prakash', department: 'CSE', date: '2024-01-15', status: 'Pending' },
+  1947→            { id: 'REQ002', type: 'Leave', requestedBy: 'Dr. R. Kumar', department: 'CSE', date: '2024-01-14', status: 'Pending' },
+  1948→            { id: 'REQ003', type: 'Reimbursement', requestedBy: 'Bhavani S.', department: 'ECE', date: '2024-01-13', status: 'Approved' },
+  1949→            { id: 'REQ004', type: 'Achievement', requestedBy: 'Chandru K.', department: 'EEE', date: '2024-01-12', status: 'Rejected' },
+  1950→          ]}
+  1951→          columns={[{ key: 'id', label: 'Request ID' }, { key: 'type', label: 'Type' }, { key: 'requestedBy', label: 'Requested By' }, { key: 'department', label: 'Department' }, { key: 'date', label: 'Date' }, { key: 'status', label: 'Status' }]}
+  1952→        />
+  1953→      </Card>
+  1954→    </div>
+  1955→  )
+  1956→}
+  1957→
+  1958→// ============ ANALYTICS PAGE ============
+  1959→function AnalyticsPage() {
+  1960→  return (
+  1961→    <div className="space-y-6">
+  1962→      <div>
+  1963→        <h2 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h2>
+  1964→        <p className="text-gray-500">Institutional performance metrics</p>
+  1965→      </div>
+  1966→      
+  1967→      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+  1968→        <StatCard title="Placement Rate" value="92%" icon={TrendingUp} color="green" trend="+5% from last year" />
+  1969→        <StatCard title="Pass Percentage" value="94%" icon={CheckCircle} color="blue" />
+  1970→        <StatCard title="Industry Connect" value="45" icon={HeartHandshake} color="purple" />
+  1971→        <StatCell title="Accreditation Score" value="A+" icon={Star} color="orange" />
+  1972→      </div>
+  1973→      
+  1974→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  1975→        <Card className="p-6 border border-gray-200">
+  1976→          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+  1977→            <BarChart3 className="w-5 h-5 text-blue-500" /> Department-wise Results
+  1978→          </h3>
+  1979→          <div className="space-y-4">
+  1980→            {[
+  1981→              { dept: 'CSE', result: 92, color: 'from-blue-500 to-blue-600' },
+  1982→              { dept: 'ECE', result: 89, color: 'from-purple-500 to-purple-600' },
+  1983→              { dept: 'EEE', result: 87, color: 'from-green-500 to-green-600' },
+  1984→              { dept: 'MECH', result: 91, color: 'from-orange-500 to-orange-600' },
+  1985→              { dept: 'CIVIL', result: 85, color: 'from-pink-500 to-pink-600' },
+  1986→            ].map(item => (
+  1987→              <div key={item.dept}>
+  1988→                <div className="flex justify-between text-sm mb-1">
+  1989→                  <span className="font-medium text-gray-700">{item.dept}</span>
+  1990→                  <span className="text-gray-500">{item.result}%</span>
+  1991→                </div>
+  1992→                <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+  1993→                  <div className={`h-full bg-gradient-to-r ${item.color} rounded-full transition-all duration-500`} style={{ width: `${item.result}%` }} />
+  1994→                </div>
+  1995→              </div>
+  1996→            ))}
+  1997→          </div>
+  1998→        </Card>
+  1999→        
+  2000→        <Card className="p-6 border border-gray-200">
+
+[showing lines 1-2000 of 3196; use offset=2001 with limit to continue reading]
