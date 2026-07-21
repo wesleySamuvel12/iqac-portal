@@ -21,7 +21,8 @@ import {
   Sun, Moon, ChevronDown, ChevronLeft,
   ClipboardList, Flag, Mic, Presentation,
   Briefcase, Wrench, Rocket, Code, PlusCircle,
-  Newspaper, Handshake, Circle
+  Newspaper, Handshake, Circle,
+  DollarSign, Paperclip, Inbox, Tag, XCircle, ArrowLeft
 } from 'lucide-react'
 
 // ============ TYPES ============
@@ -57,6 +58,7 @@ interface User {
 
 type TabType = 'dashboard' | 'departments' | 'faculty' | 'students' | 'activities' | 'research' 
   | 'approvals' | 'analytics' | 'documents' | 'settings' | 'achievements' | 'feedback'
+  | 'staff_achievement' | 'student_achievement_view'
 
 // ============ ACHIEVEMENT TYPES DEFINITION (13 Types - Student Focused) ============
 const ACHIEVEMENT_TYPES: Record<string, {
@@ -2258,11 +2260,23 @@ function Sidebar({
 }) {
   const [collapsed, setCollapsed] = useState(false)
   
-  // Role-based menu items - Student and Staff only see Dashboard, Achievements, Feedback
+  // Role-based menu items - Different menus for each role
   const getAllMenuItems = (): { id: TabType; icon: React.ElementType; label: string; badge?: string; roles?: string[] }[] => [
+    // Common items
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { id: 'achievements', icon: Trophy, label: 'Achievements', badge: user.role === 'STUDENT' || user.role === 'STAFF' ? 'New' : undefined },
-    { id: 'feedback', icon: MessageSquare, label: 'Feedback' },
+    
+    // Student specific
+    { id: 'achievements', icon: Trophy, label: 'Achievements', roles: ['STUDENT'], badge: 'New' },
+    { id: 'feedback', icon: MessageSquare, label: 'Feedback', roles: ['STUDENT'] },
+    
+    // Staff specific - 3 buttons only
+    { id: 'staff_achievement', icon: Award, label: 'Staff Achievement', roles: ['STAFF'], badge: 'New' },
+    { id: 'feedback', icon: MessageSquare, label: 'Feedback', roles: ['STAFF'] },
+    { id: 'student_achievement_view', icon: GraduationCap, label: 'Student Achievement', roles: ['STAFF'], badge: 'Pending' },
+    
+    // Admin/HOD items
+    { id: 'achievements', icon: Trophy, label: 'Achievements', roles: ['ADMIN', 'HOD'] },
+    { id: 'feedback', icon: MessageSquare, label: 'Feedback', roles: ['ADMIN', 'HOD'] },
     { id: 'departments', icon: Building2, label: 'Departments', roles: ['ADMIN', 'HOD'] },
     { id: 'faculty', icon: Users, label: 'Faculty', roles: ['ADMIN', 'HOD'] },
     { id: 'students', icon: GraduationCap, label: 'Students', roles: ['ADMIN', 'HOD'] },
@@ -2904,6 +2918,1193 @@ function StudentFeedbackPage({ user, feedbackEnabled }: { user: User; feedbackEn
   )
 }
 
+// ============ STAFF ACHIEVEMENT TYPES (Faculty Activity & R&D Publications) ============
+const STAFF_ACHIEVEMENT_TYPES = {
+  // FACULTY ACTIVITY category
+  events_tracker: { 
+    label: 'Events Tracker', 
+    icon: Calendar,
+    color: 'bg-red-500',
+    category: 'faculty_activity',
+    fields: [
+      { id: 'event_name', label: 'Event Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
+      { id: 'event_type', label: 'Event Type', type: 'select', options: ['Workshop', 'Seminar', 'Conference', 'FDP', 'STTP', 'Webinar', 'Guest Lecture'], required: true },
+      { id: 'organized_by', label: 'Organized By', type: 'text', required: true },
+      { id: 'start_date', label: 'Start Date', type: 'date', required: true },
+      { id: 'end_date', label: 'End Date', type: 'date' },
+      { id: 'venue', label: 'Venue', type: 'text' },
+      { id: 'participants', label: 'No. of Participants', type: 'number' },
+      { id: 'description', label: 'Description', type: 'textarea' }
+    ]
+  },
+  resource_person: { 
+    label: 'Resource Person', 
+    icon: Mic,
+    color: 'bg-gray-500',
+    category: 'faculty_activity',
+    fields: [
+      { id: 'staff_name', label: 'Staff Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
+      { id: 'session_topic', label: 'Session Topic', type: 'text', required: true },
+      { id: 'event_name', label: 'Event Name', type: 'text', required: true },
+      { id: 'organized_by', label: 'Organized By (College/Org)', type: 'text', required: true },
+      { id: 'date', label: 'Date', type: 'date', required: true },
+      { id: 'venue', label: 'Venue', type: 'text' },
+      { id: 'participants', label: 'No. of Participants', type: 'number' }
+    ]
+  },
+  nptel_mooc: { 
+    label: 'NPTEL / MOOC', 
+    icon: GraduationCap,
+    color: 'bg-yellow-600',
+    category: 'faculty_activity',
+    fields: [
+      { id: 'staff_name', label: 'Staff Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
+      { id: 'course_name', label: 'Course Name', type: 'text', required: true },
+      { id: 'platform', label: 'Platform', type: 'select', options: ['NPTEL', 'SWAYAM', 'Coursera', 'edX', 'Udemy', 'Others'], required: true },
+      { id: 'certification_type', label: 'Certification Type', type: 'select', options: ['Completed', 'Elite', 'Gold', 'Silver', 'With Distinction'], required: true },
+      { id: 'duration', label: 'Duration (weeks)', type: 'number' },
+      { id: 'completion_date', label: 'Completion Date', type: 'date', required: true }
+    ]
+  },
+  seminar_conf: { 
+    label: 'Seminar / Conf.', 
+    icon: ClipboardList,
+    color: 'bg-blue-400',
+    category: 'faculty_activity',
+    fields: [
+      { id: 'staff_name', label: 'Staff Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
+      { id: 'paper_title', label: 'Paper Title', type: 'text', required: true },
+      { id: 'conference_name', label: 'Conference/Seminar Name', type: 'text', required: true },
+      { id: 'organized_by', label: 'Organized By', type: 'text', required: true },
+      { id: 'presentation_type', label: 'Presentation Type', type: 'select', options: ['Oral', 'Poster', 'Virtual'], required: true },
+      { id: 'date', label: 'Date', type: 'date', required: true },
+      { id: 'venue', label: 'Venue', type: 'text' },
+      { id: 'isbn_issn', label: 'ISBN/ISSN', type: 'text' }
+    ]
+  },
+  faculty_awards: { 
+    label: 'Faculty Awards', 
+    icon: Trophy,
+    color: 'bg-yellow-500',
+    category: 'faculty_activity',
+    fields: [
+      { id: 'staff_name', label: 'Staff Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
+      { id: 'award_name', label: 'Award Name', type: 'text', required: true },
+      { id: 'awarded_by', label: 'Awarded By', type: 'text', required: true },
+      { id: 'award_date', label: 'Award Date', type: 'date', required: true },
+      { id: 'category', label: 'Category', type: 'select', options: ['Teaching', 'Research', 'Service', 'Innovation', 'Others'] },
+      { id: 'description', label: 'Description', type: 'textarea' }
+    ]
+  },
+  industrial_visit: { 
+    label: 'Industrial Visit', 
+    icon: Building2,
+    color: 'bg-red-600',
+    category: 'faculty_activity',
+    fields: [
+      { id: 'staff_name', label: 'Staff Name (Coordinator)', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
+      { id: 'industry_name', label: 'Industry/Company Name', type: 'text', required: true },
+      { id: 'location', label: 'Location', type: 'text' },
+      { id: 'visit_date', label: 'Visit Date', type: 'date', required: true },
+      { id: 'no_of_students', label: 'No. of Students', type: 'number', required: true },
+      { id: 'purpose', label: 'Purpose of Visit', type: 'textarea' },
+      { id: 'outcome', label: 'Outcome/Learning', type: 'textarea' }
+    ]
+  },
+  
+  // R&D PUBLICATIONS category
+  journals: { 
+    label: 'Journals', 
+    icon: Newspaper,
+    color: 'bg-slate-500',
+    category: 'rd_publication',
+    fields: [
+      { id: 'staff_name', label: 'Staff Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
+      { id: 'title', label: 'Paper Title', type: 'text', required: true },
+      { id: 'journal_name', label: 'Journal Name', type: 'text', required: true },
+      { id: 'publisher', label: 'Publisher', type: 'text' },
+      { id: 'issn', label: 'ISSN No.', type: 'text', required: true },
+      { id: 'volume', label: 'Volume', type: 'text' },
+      { id: 'issue', label: 'Issue', type: 'text' },
+      { id: 'page_no', label: 'Page Numbers', type: 'text' },
+      { id: 'year_pub', label: 'Year of Publication', type: 'year_pub', required: true },
+      { id: 'doi', label: 'DOI', type: 'text' },
+      { id: 'indexing', label: 'Indexing', type: 'select', options: ['SCI', 'Scopus', 'UGC Care', 'Web of Science', 'Others', 'None'] },
+      { id: 'url', label: 'URL Link', type: 'url' }
+    ]
+  },
+  patents: { 
+    label: 'Patents', 
+    icon: Lightbulb,
+    color: 'bg-yellow-400',
+    category: 'rd_publication',
+    fields: [
+      { id: 'staff_name', label: 'Staff Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
+      { id: 'patent_title', label: 'Patent Title', type: 'text', required: true },
+      { id: 'inventors', label: 'Inventors', type: 'text', required: true },
+      { id: 'patent_no', label: 'Patent Number', type: 'text' },
+      { id: 'filing_date', label: 'Filing Date', type: 'date' },
+      { id: 'publication_date', label: 'Publication Date', type: 'date' },
+      { id: 'status', label: 'Status', type: 'select', options: ['Filed', 'Published', 'Granted', 'Under Review'] },
+      { id: 'country', label: 'Country', type: 'text' }
+    ]
+  },
+  books: { 
+    label: 'Books', 
+    icon: BookOpen,
+    color: 'bg-red-700',
+    category: 'rd_publication',
+    fields: [
+      { id: 'staff_name', label: 'Author Name(s)', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
+      { id: 'book_title', label: 'Book Title', type: 'text', required: true },
+      { id: 'publisher', label: 'Publisher', type: 'text', required: true },
+      { id: 'isbn', label: 'ISBN', type: 'text', required: true },
+      { id: 'edition', label: 'Edition', type: 'text' },
+      { id: 'year_pub', label: 'Year of Publication', type: 'year_pub', required: true },
+      { id: 'pages', label: 'No. of Pages', type: 'number' },
+      { id: 'type', label: 'Type', type: 'select', options: ['Textbook', 'Reference Book', 'Edited Book', 'Monograph'] }
+    ]
+  },
+  book_chapters: { 
+    label: 'Book Chapters', 
+    icon: BookOpen,
+    color: 'bg-orange-600',
+    category: 'rd_publication',
+    fields: [
+      { id: 'staff_name', label: 'Author Name(s)', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
+      { id: 'chapter_title', label: 'Chapter Title', type: 'text', required: true },
+      { id: 'book_title', label: 'Book Title', type: 'text', required: true },
+      { id: 'publisher', label: 'Publisher', type: 'text', required: true },
+      { id: 'editors', label: 'Editor(s)', type: 'text' },
+      { id: 'isbn', label: 'ISBN', type: 'text', required: true },
+      { id: 'year_pub', label: 'Year of Publication', type: 'year_pub', required: true },
+      { id: 'page_range', label: 'Page Range', type: 'text' },
+      { id: 'edition', label: 'Edition', type: 'text' }
+    ]
+  },
+  conf_publications: { 
+    label: 'Conf. Publications', 
+    icon: Mic,
+    color: 'bg-blue-300',
+    category: 'rd_publication',
+    fields: [
+      { id: 'staff_name', label: 'Staff Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
+      { id: 'title', label: 'Paper Title', type: 'text', required: true },
+      { id: 'conf_name', label: 'Conference Name', type: 'text', required: true },
+      { id: 'organized_by', label: 'Organized By', type: 'text', required: true },
+      { id: 'date', label: 'Conference Date', type: 'date', required: true },
+      { id: 'venue', label: 'Venue', type: 'text' },
+      { id: 'isbn', label: 'ISBN/ISSN/DOI', type: 'text' },
+      { id: 'page_no', label: 'Page Numbers', type: 'text' },
+      { id: 'indexing', label: 'Indexing', type: 'select', options: ['IEEE', 'Springer', 'Elsevier', 'Scopus', 'Others'] }
+    ]
+  },
+  research_grants: { 
+    label: 'Research Grants', 
+    icon: DollarSign,
+    color: 'bg-yellow-500',
+    category: 'rd_publication',
+    fields: [
+      { id: 'pi_name', label: 'Principal Investigator', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'dept', required: true, locked: true },
+      { id: 'co_pi', label: 'Co-PI Names', type: 'text' },
+      { id: 'project_title', label: 'Project Title', type: 'text', required: true },
+      { id: 'funding_agency', label: 'Funding Agency', type: 'text', required: true },
+      { id: 'grant_amount', label: 'Grant Amount (₹)', type: 'number', required: true },
+      { id: 'sanctioned_date', label: 'Sanctioned Date', type: 'date', required: true },
+      { id: 'duration', label: 'Duration (months)', type: 'number' },
+      { id: 'status', label: 'Status', type: 'select', options: ['Ongoing', 'Completed', 'Submitted', 'Approved'] }
+    ]
+  }
+}
+
+// ============ FILE UPLOAD COMPONENT WITH DRAG & DROP ============
+function FileUpload({ onFileSelect, accept = '*', maxFiles = 5 }: {
+  onFileSelect: (files: File[]) => void;
+  accept?: string;
+  maxFiles?: number;
+}) {
+  const [isDragging, setIsDragging] = useState(false)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const files = Array.from(e.dataTransfer.files).slice(0, maxFiles)
+    setSelectedFiles(prev => [...prev, ...files])
+    onFileSelect([...selectedFiles, ...files])
+  }
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files).slice(0, maxFiles)
+      setSelectedFiles(prev => [...prev, ...files])
+      onFileSelect([...selectedFiles, ...files])
+    }
+  }
+
+  const removeFile = (index: number) => {
+    const newFiles = selectedFiles.filter((_, i) => i !== index)
+    setSelectedFiles(newFiles)
+    onFileSelect(newFiles)
+  }
+
+  return (
+    <div className="space-y-3">
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+        className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ${
+          isDragging 
+            ? 'border-blue-500 bg-blue-50 scale-[1.02]' 
+            : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+        }`}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept={accept}
+          onChange={handleFileInput}
+          className="hidden"
+        />
+        <Upload className={`w-10 h-10 mx-auto mb-3 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`} />
+        <p className="text-sm font-medium text-gray-700">
+          {isDragging ? 'Drop files here...' : 'Drag & drop files here'}
+        </p>
+        <p className="text-xs text-gray-500 mt-1">or click to browse</p>
+        <p className="text-xs text-gray-400 mt-2">Max {maxFiles} files • PDF, DOC, Images</p>
+      </div>
+      
+      {selectedFiles.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-gray-700">Selected Files:</p>
+          {selectedFiles.map((file, index) => (
+            <div key={index} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+              <FileText className="w-5 h-5 text-blue-500 flex-shrink-0" />
+              <span className="text-sm text-gray-700 truncate flex-1">{file.name}</span>
+              <span className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); removeFile(index) }}
+                className="p-1 hover:bg-red-100 rounded-full text-gray-400 hover:text-red-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ============ STAFF ACHIEVEMENT PAGE ============
+function StaffAchievementPage({ user }: { user: User }) {
+  const [selectedCategory, setSelectedCategory] = useState<'faculty_activity' | 'rd_publication'>('')
+  const [selectedType, setSelectedType] = useState<string>('')
+  const [formData, setFormData] = useState<Record<string, string>>({})
+  const [submittedEntries, setSubmittedEntries] = useState<any[]>([])
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+
+  // Get types based on selected category
+  const getTypesForCategory = (category: string) => {
+    return Object.entries(STAFF_ACHIEVEMENT_TYPES)
+      .filter(([_, config]) => config.category === category)
+      .map(([key, config]) => ({ key, ...config }))
+  }
+
+  // Initialize form when type changes
+  useEffect(() => {
+    if (selectedType && STAFF_ACHIEVEMENT_TYPES[selectedType]) {
+      const initialData: Record<string, string> = {
+        staff_name: user.name || '',
+        dept: user.departmentName || '',
+      }
+      setFormData(initialData)
+      setAttachedFiles([])
+    }
+  }, [selectedType, user])
+
+  const handleFieldChange = (fieldId: string, value: string) => {
+    setFormData(prev => ({ ...prev, [fieldId]: value }))
+  }
+
+  const handleSubmit = async () => {
+    if (!selectedType) return
+    setIsSubmitting(true)
+    
+    await new Promise(resolve => setTimeout(resolve, 1200))
+    
+    const newEntry = {
+      id: Date.now(),
+      type: selectedType,
+      typeName: STAFF_ACHIEVEMENT_TYPES[selectedType]?.label || selectedType,
+      category: STAFF_ACHIEVEMENT_TYPES[selectedType]?.category,
+      title: formData.title || formData.event_name || formData.paper_title || formData.award_name || formData.project_title || 'Untitled',
+      dept: user.departmentName,
+      data: formData,
+      files: attachedFiles.map(f => f.name),
+      status: 'pending_staff',
+      submittedAt: new Date().toISOString(),
+      submittedBy: user.name
+    }
+    
+    setSubmittedEntries(prev => [newEntry, ...prev])
+    setShowSuccess(true)
+    setIsSubmitting(false)
+    
+    setTimeout(() => {
+      setShowSuccess(false)
+      setSelectedCategory('')
+      setSelectedType('')
+      setFormData({})
+      setAttachedFiles([])
+    }, 2000)
+  }
+
+  const renderFormField = (field: any) => {
+    const value = formData[field.id] || ''
+    
+    if (field.locked) {
+      return (
+        <div className="flex items-center gap-2 p-3 bg-gray-100 rounded-lg">
+          <Lock className="w-4 h-4 text-gray-500" />
+          <span className="text-sm font-medium text-gray-700">{value || field.label}</span>
+        </div>
+      )
+    }
+
+    switch (field.type) {
+      case 'select':
+        return (
+          <select
+            value={value}
+            onChange={(e) => handleFieldChange(field.id, e.target.value)}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            required={field.required}
+          >
+            <option value="">Select {field.label}</option>
+            {field.options?.map((opt: string) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        )
+      case 'textarea':
+        return (
+          <textarea
+            value={value}
+            onChange={(e) => handleFieldChange(field.id, e.target.value)}
+            placeholder={field.label}
+            rows={3}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"
+            required={field.required}
+          />
+        )
+      case 'number':
+        return (
+          <input
+            type="number"
+            value={value}
+            onChange={(e) => handleFieldChange(field.id, e.target.value)}
+            placeholder={field.label}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            required={field.required}
+          />
+        )
+      case 'date':
+        return (
+          <input
+            type="date"
+            value={value}
+            onChange={(e) => handleFieldChange(field.id, e.target.value)}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            required={field.required}
+          />
+        )
+      case 'year':
+        return (
+          <select
+            value={value}
+            onChange={(e) => handleFieldChange(field.id, e.target.value)}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            required={field.required}
+          >
+            <option value="">Select Year</option>
+            {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map(year => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+        )
+      case 'year_pub':
+        return (
+          <select
+            value={value}
+            onChange={(e) => handleFieldChange(field.id, e.target.value)}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            required={field.required}
+          >
+            <option value="">Select Year</option>
+            {Array.from({ length: 20 }, (_, i) => new Date().getFullYear() - i + 5).map(year => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+        )
+      case 'url':
+        return (
+          <input
+            type="url"
+            value={value}
+            onChange={(e) => handleFieldChange(field.id, e.target.value)}
+            placeholder="https://..."
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+          />
+        )
+      default:
+        return (
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => handleFieldChange(field.id, e.target.value)}
+            placeholder={field.label}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            required={field.required}
+          />
+        )
+    }
+  }
+
+  const currentTypeConfig = selectedType ? STAFF_ACHIEVEMENT_TYPES[selectedType] : null
+
+  return (
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Staff Achievement Portal</h2>
+          <p className="text-gray-500 mt-1">Submit your faculty activities and research publications</p>
+        </div>
+        <Badge variant="outline" className="px-4 py-2 text-sm bg-blue-50 text-blue-700 border-blue-200">
+          {user.departmentName} • {user.role}
+        </Badge>
+      </div>
+
+      {/* Success Message */}
+      {showSuccess && (
+        <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3 animate-pulse">
+          <CheckCircle className="w-5 h-5 text-green-600" />
+          <span className="text-green-800 font-medium">Submission successful! Sent for approval.</span>
+        </div>
+      )}
+
+      {/* Category Selection - Two Main Options */}
+      {!selectedCategory ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+          {/* Faculty Activity Card */}
+          <Card 
+            className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 overflow-hidden border-0 shadow-lg"
+            onClick={() => setSelectedCategory('faculty_activity')}
+          >
+            <div className="h-2 bg-gradient-to-r from-orange-500 to-red-500"></div>
+            <CardContent className="p-6">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Activity className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">FACULTY ACTIVITY</h3>
+              <p className="text-gray-500 text-sm mb-4">Events, Workshops, NPTEL, Awards & more</p>
+              
+              <div className="space-y-2">
+                {['Events Tracker', 'Resource Person', 'NPTEL / MOOC', 'Seminar / Conf.', 'Faculty Awards', 'Industrial Visit'].map(item => (
+                  <div key={item} className="flex items-center gap-2 text-sm text-gray-600">
+                    <ChevronRight className="w-4 h-4 text-orange-500" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+              
+              <Button className="w-full mt-4 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600">
+                Select Category
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* R&D Publications Card */}
+          <Card 
+            className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 overflow-hidden border-0 shadow-lg"
+            onClick={() => setSelectedCategory('rd_publication')}
+          >
+            <div className="h-2 bg-gradient-to-r from-slate-600 to-slate-800"></div>
+            <CardContent className="p-6">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <BookOpen className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">R&D PUBLICATIONS</h3>
+              <p className="text-gray-500 text-sm mb-4">Journals, Patents, Books, Research Grants & more</p>
+              
+              <div className="space-y-2">
+                {['Journals', 'Patents', 'Books', 'Book Chapters', 'Conf. Publications', 'Research Grants'].map(item => (
+                  <div key={item} className="flex items-center gap-2 text-sm text-gray-600">
+                    <ChevronRight className="w-4 h-4 text-slate-600" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+              
+              <Button className="w-full mt-4 bg-gradient-to-r from-slate-600 to-slate-800 hover:from-slate-700 hover:to-slate-900">
+                Select Category
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        /* Type Selection within Category */
+        !selectedType ? (
+          <div className="space-y-4">
+            <Button 
+              variant="ghost" 
+              onClick={() => setSelectedCategory('')}
+              className="mb-4 text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Categories
+            </Button>
+            
+            <h3 className="text-lg font-semibold text-gray-800 capitalize">
+              {selectedCategory === 'faculty_activity' ? '📅 Faculty Activity' : '📚 R&D Publications'}
+            </h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {getTypesForCategory(selectedCategory).map(({ key, label, icon: Icon, color }) => (
+                <Card
+                  key={key}
+                  onClick={() => setSelectedType(key)}
+                  className="cursor-pointer hover:shadow-lg transition-all duration-200 group border border-gray-200 hover:border-blue-300"
+                >
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-xl ${color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                      <Icon className="w-6 h-6 text-white" />
+                    </div>
+                    <span className="font-medium text-gray-800">{label}</span>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        ) : (
+          /* Form View */
+          <div className="space-y-6">
+            <Button 
+              variant="ghost" 
+              onClick={() => setSelectedType('')}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Types
+            </Button>
+
+            {/* Form Header */}
+            <Card className="overflow-hidden border-0 shadow-lg">
+              <div className={`h-2 ${currentTypeConfig?.color}`}></div>
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  {currentTypeConfig && (
+                    <div className={`w-10 h-10 rounded-xl ${currentTypeConfig.color} flex items-center justify-center`}>
+                      <currentTypeConfig.icon className="w-5 h-5 text-white" />
+                    </div>
+                  )}
+                  <div>
+                    <CardTitle className="text-lg">{currentTypeConfig?.label}</CardTitle>
+                    <p className="text-sm text-gray-500 capitalize">
+                      {selectedCategory === 'faculty_activity' ? 'Faculty Activity' : 'R&D Publication'}
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {currentTypeConfig?.fields.map(field => (
+                  <div key={field.id}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      {field.label} {field.required && <span className="text-red-500">*</span>}
+                    </label>
+                    {renderFormField(field)}
+                  </div>
+                ))}
+
+                {/* File Upload Section */}
+                <div className="pt-4 border-t border-gray-200">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Attach Supporting Documents
+                  </label>
+                  <FileUpload 
+                    onFileSelect={setAttachedFiles}
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    maxFiles={5}
+                  />
+                </div>
+
+                {/* Submit Button */}
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="w-full py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/25"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-5 h-5 mr-2" />
+                      Submit for Approval
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Submitted Entries List */}
+            {submittedEntries.length > 0 && (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle className="text-lg">Your Submissions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {submittedEntries.slice(0, 10).map(entry => {
+                      const EntryIcon = STAFF_ACHIEVEMENT_TYPES[entry.type]?.icon || FileText
+                      return (
+                      <div key={entry.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-lg ${STAFF_ACHIEVEMENT_TYPES[entry.type]?.color || 'bg-gray-400'} flex items-center justify-center`}>
+                            <EntryIcon className="w-4 h-4 text-white" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm text-gray-800">{entry.typeName}</p>
+                            <p className="text-xs text-gray-500">{new Date(entry.submittedAt).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        <Badge className={
+                          entry.status === 'pending_staff' ? 'bg-yellow-100 text-yellow-700' :
+                          entry.status === 'approved' ? 'bg-green-100 text-green-700' :
+                          'bg-gray-100 text-gray-700'
+                        }>
+                          {entry.status.replace('_', ' ')}
+                        </Badge>
+                      </div>
+                      )
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        ))}
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
+        <Card className="p-4 border-l-4 border-l-orange-500">
+          <div className="flex items-center gap-3">
+            <Activity className="w-8 h-8 text-orange-500" />
+            <div>
+              <p className="text-2xl font-bold text-gray-900">6</p>
+              <p className="text-sm text-gray-500">Activity Types</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 border-l-4 border-l-slate-600">
+          <div className="flex items-center gap-3">
+            <BookOpen className="w-8 h-8 text-slate-600" />
+            <div>
+              <p className="text-2xl font-bold text-gray-900">6</p>
+              <p className="text-sm text-gray-500">Publication Types</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 border-l-4 border-l-blue-500">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="w-8 h-8 text-blue-500" />
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{submittedEntries.length}</p>
+              <p className="text-sm text-gray-500">Your Submissions</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ============ STUDENT ACHIEVEMENT VIEW PAGE (For Staff - Approve & Send to HOD) ============
+function StudentAchievementViewPage({ user }: { user: User }) {
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [filterType, setFilterType] = useState('all')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [studentAchievements, setStudentAchievements] = useState<any[]>([
+    // Demo data - student submissions pending approval
+    {
+      id: 1,
+      studentName: 'Bhavani S',
+      regNo: 'CSE001',
+      department: 'CSE',
+      type: 'journal',
+      typeName: 'Journal Publication',
+      title: 'Research on Machine Learning Algorithms',
+      submittedAt: '2024-01-15T10:30:00Z',
+      status: 'pending_staff',
+      data: { name: 'Bhavani S', dept: 'CSE', reg: 'CSE001', year: 'III' }
+    },
+    {
+      id: 2,
+      studentName: 'Arun Kumar',
+      regNo: 'CSE002',
+      department: 'CSE',
+      type: 'hackathon',
+      typeName: 'Hackathon Participation',
+      title: 'Smart India Hackathon 2024',
+      submittedAt: '2024-01-14T09:15:00Z',
+      status: 'pending_staff',
+      data: { name: 'Arun Kumar', dept: 'CSE', reg: 'CSE002', year: 'IV' }
+    },
+    {
+      id: 3,
+      studentName: 'Priya Devi',
+      regNo: 'ECE001',
+      department: 'ECE',
+      type: 'internship',
+      typeName: 'Internship Completion',
+      title: 'Internship at TCS',
+      submittedAt: '2024-01-13T14:20:00Z',
+      status: 'staff_approved',
+      data: { name: 'Priya Devi', dept: 'ECE', reg: 'ECE001', year: 'III' }
+    },
+    {
+      id: 4,
+      studentName: 'Rahul R',
+      regNo: 'CSE003',
+      department: 'CSE',
+      type: 'award',
+      typeName: 'Award Received',
+      title: 'Best Project Award at Symposium',
+      submittedAt: '2024-01-12T11:45:00Z',
+      status: 'hod_approved',
+      data: { name: 'Rahul R', dept: 'CSE', reg: 'CSE003', year: 'II' }
+    }
+  ])
+  const [selectedEntry, setSelectedEntry] = useState<any>(null)
+  const [processingAction, setProcessingAction] = useState<string | null>(null)
+
+  const filteredAchievements = studentAchievements.filter(a => {
+    const matchesStatus = filterStatus === 'all' || a.status === filterStatus
+    const matchesType = filterType === 'all' || a.type === filterType
+    const matchesSearch = searchTerm === '' || 
+      a.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.regNo.toLowerCase().includes(searchTerm.toLowerCase())
+    return matchesStatus && matchesType && matchesSearch
+  })
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending_staff': return 'bg-yellow-100 text-yellow-700 border-yellow-200'
+      case 'staff_approved': return 'bg-blue-100 text-blue-700 border-blue-200'
+      case 'pending_hod': return 'bg-purple-100 text-purple-700 border-purple-200'
+      case 'hod_approved': return 'bg-green-100 text-green-700 border-green-200'
+      case 'rejected': return 'bg-red-100 text-red-700 border-red-200'
+      default: return 'bg-gray-100 text-gray-700 border-gray-200'
+    }
+  }
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending_staff': return '⏳ Pending Your Review'
+      case 'staff_approved': return '✓ Approved by You'
+      case 'pending_hod': return '📤 Sent to HOD'
+      case 'hod_approved': return '✅ HOD Approved'
+      case 'rejected': return '❌ Rejected'
+      default: return status
+    }
+  }
+
+  const handleApprove = async (id: string) => {
+    setProcessingAction(id)
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    setStudentAchievements(prev => prev.map(a => 
+      a.id.toString() === id 
+        ? { ...a, status: 'pending_hod', approvedBy: user.name, approvedAt: new Date().toISOString() }
+        : a
+    ))
+    setProcessingAction(null)
+    setSelectedEntry(null)
+  }
+
+  const handleReject = async (id: string) => {
+    setProcessingAction(id)
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    setStudentAchievements(prev => prev.map(a => 
+      a.id.toString() === id 
+        ? { ...a, status: 'rejected', rejectedBy: user.name, rejectedAt: new Date().toISOString() }
+        : a
+    ))
+    setProcessingAction(null)
+    setSelectedEntry(null)
+  }
+
+  const stats = {
+    total: studentAchievements.length,
+    pending_staff: studentAchievements.filter(a => a.status === 'pending_staff').length,
+    approved: studentAchievements.filter(a => a.status === 'staff_approved' || a.status === 'pending_hod').length,
+    hod_approved: studentAchievements.filter(a => a.status === 'hod_approved').length
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Student Achievements Review</h2>
+          <p className="text-gray-500 mt-1">Review and approve student submissions before sending to HOD</p>
+        </div>
+        <Badge variant="outline" className="px-4 py-2 text-sm bg-purple-50 text-purple-700 border-purple-200">
+          {user.departmentName} • Staff Reviewer
+        </Badge>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center">
+              <FileText className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-blue-900">{stats.total}</p>
+              <p className="text-xs text-blue-600">Total Submissions</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-yellow-500 flex items-center justify-center">
+              <Clock className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-yellow-900">{stats.pending_staff}</p>
+              <p className="text-xs text-yellow-600">Pending Review</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-green-900">{stats.approved}</p>
+              <p className="text-xs text-green-600">Approved by You</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center">
+              <Shield className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-purple-900">{stats.hod_approved}</p>
+              <p className="text-xs text-purple-600">HOD Finalized</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card className="p-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by name, reg no, or title..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            />
+          </div>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm"
+          >
+            <option value="all">All Status</option>
+            <option value="pending_staff">Pending Your Review</option>
+            <option value="staff_approved">Approved by You</option>
+            <option value="pending_hod">Sent to HOD</option>
+            <option value="hod_approved">HOD Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm"
+          >
+            <option value="all">All Types</option>
+            <option value="journal">Journal</option>
+            <option value="conference">Conference</option>
+            <option value="hackathon">Hackathon</option>
+            <option value="internship">Internship</option>
+            <option value="award">Award</option>
+            <option value="placement">Placement</option>
+          </select>
+        </div>
+      </Card>
+
+      {/* Submissions List */}
+      <div className="space-y-3">
+        {filteredAchievements.length === 0 ? (
+          <Card className="p-12 text-center">
+            <Inbox className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-700">No submissions found</h3>
+            <p className="text-gray-500 mt-2">Try adjusting your filters or search terms</p>
+          </Card>
+        ) : (
+          filteredAchievements.map(entry => (
+            <Card key={entry.id} className="overflow-hidden hover:shadow-md transition-shadow">
+              <div className={`h-1 ${
+                entry.status === 'pending_staff' ? 'bg-yellow-500' :
+                entry.status === 'staff_approved' ? 'bg-blue-500' :
+                entry.status === 'pending_hod' ? 'bg-purple-500' :
+                entry.status === 'hod_approved' ? 'bg-green-500' :
+                'bg-red-500'
+              }`}></div>
+              <CardContent className="p-4">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div className="flex items-start gap-4 flex-1">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                      {entry.studentName.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-gray-900">{entry.studentName}</h3>
+                        <span className="text-sm text-gray-500">•</span>
+                        <span className="text-sm text-gray-600">{entry.regNo}</span>
+                        <span className={`px-2 py-0.5 text-xs rounded-full border ${getStatusColor(entry.status)}`}>
+                          {getStatusLabel(entry.status)}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium text-gray-800 mb-1">{entry.title}</p>
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Tag className="w-3 h-3" />{entry.typeName}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Building2 className="w-3 h-3" />{entry.department}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />{new Date(entry.submittedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 lg:flex-shrink-0">
+                    {entry.status === 'pending_staff' && (
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => setSelectedEntry(entry)}
+                          variant="outline"
+                          className="text-gray-700"
+                        >
+                          <Eye className="w-4 h-4 mr-1" />View
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleApprove(entry.id.toString())}
+                          disabled={processingAction === entry.id.toString()}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          {processingAction === entry.id.toString() ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <><CheckCircle className="w-4 h-4 mr-1" />Approve</>
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleReject(entry.id.toString())}
+                          disabled={processingAction === entry.id.toString()}
+                          variant="destructive"
+                        >
+                          <XCircle className="w-4 h-4 mr-1" />Reject
+                        </Button>
+                      </>
+                    )}
+                    {entry.status !== 'pending_staff' && (
+                      <Button
+                        size="sm"
+                        onClick={() => setSelectedEntry(entry)}
+                        variant="outline"
+                        className="text-gray-700"
+                      >
+                        <Eye className="w-4 h-4 mr-1" />View Details
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Detail Modal */}
+      {selectedEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSelectedEntry(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-in zoom-in-95 fade-in duration-200">
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
+              <h3 className="text-lg font-bold text-gray-900">Submission Details</h3>
+              <button onClick={() => setSelectedEntry(null)} className="p-2 hover:bg-gray-100 rounded-full">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+              {/* Student Info */}
+              <div className="flex items-center gap-4 pb-4 border-b">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">
+                  {selectedEntry.studentName.charAt(0)}
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900 text-lg">{selectedEntry.studentName}</h4>
+                  <p className="text-gray-600">{selectedEntry.regNo} • {selectedEntry.department}</p>
+                  <span className={`inline-block mt-1 px-3 py-1 text-xs rounded-full border ${getStatusColor(selectedEntry.status)}`}>
+                    {getStatusLabel(selectedEntry.status)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Achievement Details */}
+              <div className="space-y-3">
+                <h5 className="font-semibold text-gray-800 flex items-center gap-2">
+                  <Award className="w-5 h-5 text-blue-500" />
+                  Achievement Information
+                </h5>
+                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Type</span>
+                    <span className="font-medium text-gray-900">{selectedEntry.typeName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Title</span>
+                    <span className="font-medium text-gray-900">{selectedEntry.title}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Submitted On</span>
+                    <span className="font-medium text-gray-900">{new Date(selectedEntry.submittedAt).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Submitted Data */}
+              {selectedEntry.data && (
+                <div className="space-y-3">
+                  <h5 className="font-semibold text-gray-800 flex items-center gap-2">
+                    <ClipboardList className="w-5 h-5 text-green-500" />
+                    Submitted Data
+                  </h5>
+                  <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                    {Object.entries(selectedEntry.data).map(([key, value]) => (
+                      <div key={key} className="flex justify-between text-sm">
+                        <span className="text-gray-600 capitalize">{key.replace(/_/g, ' ')}</span>
+                        <span className="font-medium text-gray-900">{String(value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Attached Files Placeholder */}
+              <div className="space-y-3">
+                <h5 className="font-semibold text-gray-800 flex items-center gap-2">
+                  <Paperclip className="w-5 h-5 text-orange-500" />
+                  Attached Documents
+                </h5>
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
+                  <FileText className="w-10 h-10 mx-auto text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-500">Supporting documents would be displayed here</p>
+                </div>
+              </div>
+
+              {/* Action Buttons (only for pending) */}
+              {selectedEntry.status === 'pending_staff' && (
+                <div className="flex gap-3 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    onClick={() => setSelectedEntry(null)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => handleReject(selectedEntry.id.toString())}
+                    disabled={processingAction === selectedEntry.id.toString()}
+                    className="flex-1"
+                  >
+                    {processingAction === selectedEntry.id.toString() ? 'Processing...' : 'Reject Submission'}
+                  </Button>
+                  <Button
+                    onClick={() => handleApprove(selectedEntry.id.toString())}
+                    disabled={processingAction === selectedEntry.id.toString()}
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                  >
+                    {processingAction === selectedEntry.id.toString() ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
+                    ) : (
+                      <><Send className="w-4 h-4 mr-2" />Approve & Send to HOD</>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ============ MAIN APP COMPONENT ============
 export default function IQACPortal() {
   const { isAuthenticated, user, logout } = useAuthStore()
@@ -2969,6 +4170,8 @@ export default function IQACPortal() {
       case 'achievements': return user?.role === 'STUDENT' 
         ? <StudentAchievementsPage user={user} />
         : <AchievementForm user={user} onBack={() => setActiveTab('dashboard')} />
+      case 'staff_achievement': return <StaffAchievementPage user={user} />
+      case 'student_achievement_view': return <StudentAchievementViewPage user={user} />
       case 'feedback': return user?.role === 'STUDENT'
         ? <StudentFeedbackPage user={user} feedbackEnabled={feedbackEnabled} />
         : <FeedbackModule user={user} feedbackEnabled={feedbackEnabled} setFeedbackEnabled={setFeedbackEnabled} />
