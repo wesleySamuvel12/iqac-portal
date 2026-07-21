@@ -19,7 +19,9 @@ import {
   Target, Lightbulb, HeartHandshake, Trophy,
   MessageSquare, ThumbsUp, ThumbsDown,
   Sun, Moon, ChevronDown, ChevronLeft,
-  ClipboardList, Flag
+  ClipboardList, Flag, Mic, Presentation,
+  Briefcase, Wrench, Rocket, Code, PlusCircle,
+  Newspaper, Handshake, Circle
 } from 'lucide-react'
 
 // ============ TYPES ============
@@ -56,179 +58,268 @@ interface User {
 type TabType = 'dashboard' | 'departments' | 'faculty' | 'students' | 'activities' | 'research' 
   | 'approvals' | 'analytics' | 'documents' | 'settings' | 'achievements' | 'feedback'
 
-// ============ ACHIEVEMENT TYPES DEFINITION ============
-const ACHIEVEMENT_TYPES = {
+// ============ ACHIEVEMENT TYPES DEFINITION (13 Types - Student Focused) ============
+const ACHIEVEMENT_TYPES: Record<string, {
+  label: string
+  icon: React.ElementType
+  color: string
+  fields: Array<{
+    id: string
+    label: string
+    type: string
+    required?: boolean
+    locked?: boolean
+    full?: boolean
+    options?: string[]
+  }>
+}> = {
   journal: {
-    name: 'Journal Publication',
-    icon: FileText,
+    label: 'Journal Publication',
+    icon: Newspaper,
     color: 'from-blue-500 to-blue-600',
     fields: [
-      { id: 'title', label: 'Paper Title', type: 'text', required: true },
-      { id: 'journal_name', label: 'Journal Name', type: 'text', required: true },
-      { id: 'issn', label: 'ISSN Number', type: 'text', required: false },
-      { id: 'publisher', label: 'Publisher', type: 'text', required: false },
-      { id: 'year_pub', label: 'Year of Publication', type: 'select', options: ['2024','2023','2022','2021','2020'], required: true },
-      { id: 'status_pub', label: 'Status', type: 'select', options: ['Published','Accepted','Under Review','Submitted'], required: true },
-      { id: 'indexing', label: 'Indexing', type: 'select', options: ['SCI','Scopus','UGC Care','Web of Science','Other'], required: false },
-      { id: 'doi', label: 'DOI Number', type: 'text', required: false }
+      { id: 'name', label: 'Student Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+      { id: 'reg', label: 'Register No', type: 'text', required: true },
+      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+      { id: 'title', label: 'Paper Title', type: 'text', required: true, full: true },
+      { id: 'journal', label: 'Journal Name', type: 'text', required: true, full: true },
+      { id: 'indexed', label: 'Indexed', type: 'select', options: ['SCI','Scopus','UGC Care','Web of Science','Other'] },
+      { id: 'issn', label: 'ISSN', type: 'text' },
+      { id: 'publisher', label: 'Publisher', type: 'text' },
+      { id: 'month', label: 'Month', type: 'select', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] },
+      { id: 'year_pub', label: 'Year', type: 'number' },
+      { id: 'status_pub', label: 'Status', type: 'select', options: ['Published','Accepted','Under Review'] },
+      { id: 'supervisor', label: 'Supervisor', type: 'text' },
+      { id: 'link', label: 'Paper Link', type: 'url' },
+      { id: 'description', label: 'Description', type: 'textarea', full: true }
     ]
   },
   conference: {
-    name: 'Conference Paper',
-    icon: Globe,
+    label: 'Conference Publication',
+    icon: Mic,
     color: 'from-purple-500 to-purple-600',
     fields: [
-      { id: 'title', label: 'Paper Title', type: 'text', required: true },
-      { id: 'conf_name', label: 'Conference Name', type: 'text', required: true },
-      { id: 'venue', label: 'Venue/Location', type: 'text', required: false },
-      { id: 'date_conf', label: 'Date of Conference', type: 'date', required: true },
-      { id: 'level_conf', label: 'Level', type: 'select', options: ['International','National','State','Institutional'], required: true },
-      { id: 'presentation', label: 'Presentation Mode', type: 'select', options: ['Oral','Poster','Virtual'], required: false },
-      { id: 'proceedings', label: 'Proceedings Published', type: 'select', options: ['Yes','No','Pending'], required: false }
+      { id: 'name', label: 'Student Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+      { id: 'reg', label: 'Register No', type: 'text', required: true },
+      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+      { id: 'title', label: 'Paper Title', type: 'text', required: true, full: true },
+      { id: 'conf', label: 'Conference Name', type: 'text', required: true, full: true },
+      { id: 'org', label: 'Organizing Institute', type: 'text' },
+      { id: 'indexed', label: 'Indexed', type: 'select', options: ['IEEE','Springer','Elsevier','Scopus','Other'] },
+      { id: 'month', label: 'Month', type: 'select', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] },
+      { id: 'year_pub', label: 'Year', type: 'number' },
+      { id: 'status_pub', label: 'Status', type: 'select', options: ['Presented','Published','Both'] },
+      { id: 'supervisor', label: 'Supervisor', type: 'text' },
+      { id: 'description', label: 'Description', type: 'textarea', full: true }
     ]
   },
   patent: {
-    name: 'Patent Filed/Published',
-    icon: Award,
+    label: 'Patent',
+    icon: Lightbulb,
     color: 'from-amber-500 to-orange-500',
     fields: [
-      { id: 'title', label: 'Patent Title', type: 'text', required: true },
-      { id: 'patent_number', label: 'Patent Number', type: 'text', required: false },
-      { id: 'inventors', label: 'Co-Inventors', type: 'text', required: false },
-      { id: 'filing_date', label: 'Filing Date', type: 'date', required: true },
-      { id: 'status_pat', label: 'Status', type: 'select', options: ['Filed','Published','Granted','Under Examination'], required: true },
-      { id: 'type_pat', label: 'Type', type: 'select', options: ['Design','Utility','Plant','Software'], required: true }
+      { id: 'name', label: 'Student Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+      { id: 'reg', label: 'Register No', type: 'text', required: true },
+      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+      { id: 'title', label: 'Invention Title', type: 'text', required: true, full: true },
+      { id: 'patent_no', label: 'Patent No.', type: 'text' },
+      { id: 'month', label: 'Month', type: 'select', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] },
+      { id: 'year_pub', label: 'Year', type: 'number' },
+      { id: 'status_pub', label: 'Status', type: 'select', options: ['Filed','Published','Granted'] },
+      { id: 'inventors', label: 'All Inventors', type: 'text' },
+      { id: 'supervisor', label: 'Supervisor', type: 'text' },
+      { id: 'description', label: 'Description', type: 'textarea', full: true }
     ]
   },
   nptel: {
-    name: 'NPTEL Certification',
-    icon: BookOpen,
+    label: 'NPTEL / MOOC',
+    icon: GraduationCap,
     color: 'from-green-500 to-teal-600',
     fields: [
-      { id: 'course_name', label: 'Course Name', type: 'text', required: true },
-      { id: 'nptel_id', label: 'NPTEL Course ID', type: 'text', required: false },
-      { id: 'score', label: 'Score (%)', type: 'number', required: true },
-      { id: 'grade_nptel', label: 'Grade', type: 'select', options: ['Elite+ Gold','Elite Gold','Elite Silver','Successfully Completed','Completed'], required: true },
-      { id: 'semester', label: 'Semester', type: 'select', options: ['1st','2nd','3rd','4th','5th','6th','7th','8th'], required: true },
-      { id: 'cert_date', label: 'Certification Date', type: 'date', required: true }
+      { id: 'name', label: 'Student Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+      { id: 'reg', label: 'Register No', type: 'text', required: true },
+      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+      { id: 'platform', label: 'Platform', type: 'select', options: ['NPTEL','Swayam','Coursera','edX','FutureLearn','Udemy','Other'] },
+      { id: 'course', label: 'Course Name', type: 'text', required: true, full: true },
+      { id: 'domain', label: 'Domain', type: 'text' },
+      { id: 'mentor', label: 'Faculty Mentor', type: 'text' },
+      { id: 'duration', label: 'Duration (wks)', type: 'number' },
+      { id: 'score', label: 'Score (%)', type: 'number' },
+      { id: 'grade', label: 'Grade', type: 'select', options: ['Elite + Gold','Elite + Silver','Elite','Successfully Completed','Completed'] },
+      { id: 'description', label: 'Description', type: 'textarea', full: true }
     ]
   },
   seminar: {
-    name: 'Seminar/Workshop Attended',
-    icon: Lightbulb,
+    label: 'Seminar / Workshop',
+    icon: Presentation,
     color: 'from-pink-500 to-rose-600',
     fields: [
-      { id: 'title_sem', label: 'Seminar/Workshop Title', type: 'text', required: true },
-      { id: 'organizer', label: 'Organized By', type: 'text', required: true },
-      { id: 'venue_sem', label: 'Venue', type: 'text', required: false },
-      { id: 'date_sem', label: 'Date(s)', type: 'date', required: true },
-      { id: 'level_sem', label: 'Level', type: 'select', options: ['International','National','State','District','Institutional'], required: true },
-      { id: 'type_sem', label: 'Type', type: 'select', options: ['Seminar','Workshop','FDp','STTP','Webinar'], required: true },
-      { id: 'cert_issued', label: 'Certificate Issued', type: 'select', options: ['Yes','No'], required: false }
+      { id: 'name', label: 'Student Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+      { id: 'reg', label: 'Register No', type: 'text', required: true },
+      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+      { id: 'title', label: 'Event Title', type: 'text', required: true, full: true },
+      { id: 'type_sem', label: 'Type', type: 'select', options: ['Seminar','Webinar','Workshop','Conference','FDP','Other'] },
+      { id: 'org', label: 'Organizing Institute', type: 'text' },
+      { id: 'state', label: 'State', type: 'text' },
+      { id: 'from_date', label: 'From Date', type: 'date' },
+      { id: 'to_date', label: 'To Date', type: 'date' },
+      { id: 'mode', label: 'Mode', type: 'select', options: ['Online','Offline','Hybrid'] },
+      { id: 'description', label: 'Description', type: 'textarea', full: true }
     ]
   },
   internship: {
-    name: 'Internship/Industrial Visit',
-    icon: BriefcaseIcon,
+    label: 'Internship',
+    icon: Briefcase,
     color: 'from-cyan-500 to-blue-600',
     fields: [
-      { id: 'company', label: 'Company/Organization', type: 'text', required: true },
-      { id: 'location', label: 'Location', type: 'text', required: false },
-      { id: 'start_date', label: 'Start Date', type: 'date', required: true },
-      { id: 'end_date', label: 'End Date', type: 'date', required: true },
-      { id: 'duration_weeks', label: 'Duration (Weeks)', type: 'number', required: true },
-      { id: 'type_intern', label: 'Type', type: 'select', options: ['Full-time','Part-time','Virtual','On-site'], required: true },
-      { id: 'stipend', label: 'Stipend (if any)', type: 'text', required: false },
-      { id: 'offer_received', label: 'PPO Received', type: 'select', options: ['Yes','No','Pending'], required: false }
+      { id: 'name', label: 'Student Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+      { id: 'reg', label: 'Register No', type: 'text', required: true },
+      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+      { id: 'org_name', label: 'Organization / Industry', type: 'text', required: true, full: true },
+      { id: 'role', label: 'Internship Role/Title', type: 'text' },
+      { id: 'from_date', label: 'From Date', type: 'date' },
+      { id: 'to_date', label: 'To Date', type: 'date' },
+      { id: 'paid', label: 'Paid?', type: 'select', options: ['Yes','No'] },
+      { id: 'stipend', label: 'Stipend (₹)', type: 'number' },
+      { id: 'mode', label: 'Mode', type: 'select', options: ['Online','Offline','Hybrid'] },
+      { id: 'industry_mentor', label: 'Industry Mentor', type: 'text' },
+      { id: 'description', label: 'Description', type: 'textarea', full: true }
     ]
   },
   training: {
-    name: 'Technical Training Program',
-    icon: Target,
+    label: 'Training Programme',
+    icon: Wrench,
     color: 'from-indigo-500 to-violet-600',
     fields: [
-      { id: 'program_name', label: 'Program Name', type: 'text', required: true },
-      { id: 'provider', label: 'Training Provider', type: 'text', required: true },
-      { id: 'tech_stack', label: 'Technology/Skills', type: 'text', required: true },
-      { id: 'start_train', label: 'Start Date', type: 'date', required: true },
-      { id: 'end_train', label: 'End Date', type: 'date', required: true },
-      { id: 'mode_train', label: 'Mode', type: 'select', options: ['Online','Offline','Hybrid'], required: true },
-      { id: 'cert_train', label: 'Certificate', type: 'select', options: ['Yes','No','Pending'], required: false }
+      { id: 'name', label: 'Student Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+      { id: 'reg', label: 'Register No', type: 'text', required: true },
+      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+      { id: 'prog_name', label: 'Training Program Name', type: 'text', required: true, full: true },
+      { id: 'organizer', label: 'Organizer', type: 'text' },
+      { id: 'from_date', label: 'From Date', type: 'date' },
+      { id: 'to_date', label: 'To Date', type: 'date' },
+      { id: 'hours', label: 'Hours / Days', type: 'text' },
+      { id: 'description', label: 'Description', type: 'textarea', full: true }
     ]
   },
-  awards: {
-    name: 'Awards & Recognition',
+  award: {
+    label: 'Awards & Recognition',
     icon: Trophy,
     color: 'from-yellow-500 to-amber-600',
     fields: [
-      { id: 'award_name', label: 'Award Name', type: 'text', required: true },
-      { id: 'organization_award', label: 'Awarded By', type: 'text', required: true },
-      { id: 'date_award', label: 'Date Awarded', type: 'date', required: true },
-      { id: 'level_award', label: 'Level', type: 'select', options: ['International','National','State','District','Institutional'], required: true },
-      { id: 'category_award', label: 'Category', type: 'select', options: ['Academic','Sports','Cultural','Technical','Social Service','Leadership','Other'], required: true },
-      { id: 'prize', label: 'Prize/Cash Award', type: 'text', required: false }
+      { id: 'name', label: 'Student Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+      { id: 'reg', label: 'Register No', type: 'text', required: true },
+      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+      { id: 'award_name', label: 'Award Name', type: 'text', required: true, full: true },
+      { id: 'event', label: 'Event / Competition', type: 'text' },
+      { id: 'organizer', label: 'Organizer', type: 'text' },
+      { id: 'level', label: 'Level', type: 'select', options: ['International','National','State','Regional','Institutional'] },
+      { id: 'position', label: 'Position', type: 'text' },
+      { id: 'date', label: 'Date', type: 'date' },
+      { id: 'cash_prize', label: 'Cash / Prize', type: 'text' },
+      { id: 'description', label: 'Description', type: 'textarea', full: true }
     ]
   },
   cocurricular: {
-    name: 'Co-Curricular Activity',
-    icon: HeartHandshake,
+    label: 'Co-Curricular Activities',
+    icon: Circle,
     color: 'from-emerald-500 to-green-600',
     fields: [
+      { id: 'name', label: 'Student Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+      { id: 'reg', label: 'Register No', type: 'text', required: true },
+      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+      { id: 'activity_type', label: 'Activity Type', type: 'select', options: ['Sports','Cultural','Club Activity','Social Service','Leadership','Student Council','Other'] },
       { id: 'event_name', label: 'Event Name', type: 'text', required: true },
-      { id: 'event_type', label: 'Event Type', type: 'select', options: ['Hackathon','Coding Contest','Quiz','Debate','Paper Presentation','Project Expo','Sports','Cultural','NSS/NCC','Club Activity','Other'], required: true },
-      { id: 'role_event', label: 'Your Role', type: 'select', options: ['Participant','Volunteer','Organizer','Coordinator','Winner','Runner-up'], required: true },
-      { id: 'date_event', label: 'Date', type: 'date', required: true },
-      { id: 'venue_event', label: 'Venue', type: 'text', required: false },
-      { id: 'achievement_event', label: 'Achievement (if any)', type: 'text', required: false }
+      { id: 'organizer', label: 'Organizer', type: 'text' },
+      { id: 'level', label: 'Level', type: 'select', options: ['International','National','State','Regional','Institutional'] },
+      { id: 'position', label: 'Position', type: 'text' },
+      { id: 'date', label: 'Date', type: 'date' },
+      { id: 'description', label: 'Description', type: 'textarea', full: true }
     ]
   },
   placement: {
-    name: 'Placement / Job Offer',
-    icon: TrendingUp,
+    label: 'Placement',
+    icon: Handshake,
     color: 'from-violet-500 to-purple-600',
     fields: [
-      { id: 'company_place', label: 'Company Name', type: 'text', required: true },
-      { id: 'package_lpa', label: 'Package (LPA)', type: 'text', required: true },
-      { id: 'role_place', label: 'Role/Position', type: 'text', required: true },
-      { id: 'offer_date', label: 'Offer Date', type: 'date', required: true },
-      { id: 'type_place', label: 'Type', type: 'select', options: ['Full-time','Internship + PPO','Contract','Freelance'], required: true },
-      { id: 'status_place', label: 'Status', type: 'select', options: ['Accepted','Joined','Declined','Pending','Multiple Offers'], required: true }
+      { id: 'name', label: 'Student Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+      { id: 'reg', label: 'Register No', type: 'text', required: true },
+      { id: 'yop', label: 'Year of Passing', type: 'number' },
+      { id: 'company', label: 'Company Name', type: 'text', required: true, full: true },
+      { id: 'state', label: 'Company State', type: 'text' },
+      { id: 'role', label: 'Job Role', type: 'text' },
+      { id: 'package', label: 'Package (LPA)', type: 'number' },
+      { id: 'offer_date', label: 'Offer Date', type: 'date' },
+      { id: 'mode', label: 'Mode', type: 'select', options: ['Campus','Off-Campus','Lateral'] },
+      { id: 'emp_type', label: 'Employment Type', type: 'select', options: ['Full-Time','Part-Time','Contract','Internship to PPO'] },
+      { id: 'description', label: 'Description', type: 'textarea', full: true }
     ]
   },
   startup: {
-    name: 'Startup / Entrepreneurship',
-    icon: Zap,
+    label: 'Startup',
+    icon: Rocket,
     color: 'from-red-500 to-pink-600',
     fields: [
-      { id: 'startup_name', label: 'Startup Name', type: 'text', required: true },
-      { id: 'description_startup', label: 'Brief Description', type: 'textarea', required: true },
-      { id: 'domain', label: 'Domain/Industry', type: 'select', options: ['EdTech','FinTech','HealthTech','AgriTech','E-commerce','SaaS','AI/ML','IoT','Green Tech','Other'], required: true },
-      { id: 'stage_startup', label: 'Stage', type: 'select', options: ['Idea','MVP','Prototype','Revenue','Funded','Growth'], required: true },
-      { id: 'team_size', label: 'Team Size', type: 'number', required: false },
-      { id: 'funding', label: 'Funding Status', type: 'select', options: ['Bootstrapped','Incubated','Seed Funded','Series A','Series B+','Grant Received'], required: false },
-      { id: 'incubator', label: 'Incubator (if any)', type: 'text', required: false }
+      { id: 'name', label: 'Student Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+      { id: 'reg', label: 'Register No', type: 'text', required: true },
+      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+      { id: 'title', label: 'Startup Title / Idea', type: 'text', required: true, full: true },
+      { id: 'domain', label: 'Domain / Sector', type: 'text' },
+      { id: 'stage', label: 'Stage', type: 'select', options: ['Idea','Prototype','MVP','Launched','Scaling'] },
+      { id: 'registered', label: 'Is Registered?', type: 'select', options: ['Yes','No'] },
+      { id: 'startup_name', label: 'Startup Name', type: 'text' },
+      { id: 'incubation', label: 'Incubation Status', type: 'select', options: ['Incubated','Not Incubated','Applied'] },
+      { id: 'outcome', label: 'Outcome', type: 'text' },
+      { id: 'description', label: 'Description', type: 'textarea', full: true }
     ]
   },
   hackathon: {
-    name: 'Hackathon Participation',
-    icon: CodeIcon,
-    color: 'from-slate-600 to-gray-700',
+    label: 'Hackathon / Ideathon / SIH',
+    icon: Code,
+    color: 'from-slate-500 to-gray-600',
     fields: [
-      { id: 'hackathon_name', label: 'Hackathon Name', type: 'text', required: true },
-      { id: 'organizer_hack', label: 'Organized By', type: 'text', required: true },
-      { id: 'mode_hack', label: 'Mode', type: 'select', options: ['Online','Offline','Hybrid'], required: true },
-      { id: 'level_hack', label: 'Level', type: 'select', options: ['International','National','Regional','State','Institutional'], required: true },
-      { id: 'team_size_hack', label: 'Team Size', type: 'number', required: true },
-      { id: 'project_title', label: 'Project Title', type: 'text', required: true },
-      { id: 'tech_used', label: 'Technologies Used', type: 'text', required: false },
-      { id: 'result_hack', label: 'Result/Achievement', type: 'select', options: ['Winner','1st Runner-up','2nd Runner-up','Finalist','Participation Certificate','Shortlisted','Other'], required: true }
+      { id: 'name', label: 'Student Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+      { id: 'reg', label: 'Register No', type: 'text', required: true },
+      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+      { id: 'category', label: 'Category', type: 'select', options: ['Hackathon','Ideathon','SIH','Innovation Challenge','Other'] },
+      { id: 'title', label: 'Title / Idea', type: 'text', required: true, full: true },
+      { id: 'event_agency', label: 'Event / Agency', type: 'text' },
+      { id: 'problem_domain', label: 'Problem Domain', type: 'text' },
+      { id: 'level', label: 'Level', type: 'select', options: ['International','National','State','Regional','Institutional'] },
+      { id: 'stage', label: 'Stage', type: 'select', options: ['Submitted','Shortlisted','Finalist','Winner','Runner-Up'] },
+      { id: 'position_prize', label: 'Position / Prize', type: 'text' },
+      { id: 'amount', label: 'Amount Received (₹)', type: 'number' },
+      { id: 'event_date', label: 'Event Date', type: 'date' },
+      { id: 'description', label: 'Description', type: 'textarea', full: true }
+    ]
+  },
+  other: {
+    label: 'Custom Achievement',
+    icon: PlusCircle,
+    color: 'from-gray-400 to-gray-500',
+    fields: [
+      { id: 'custom_type', label: 'Custom Achievement Type', type: 'text', required: true, full: true },
+      { id: 'name', label: 'Student Name', type: 'text', required: true },
+      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+      { id: 'reg', label: 'Register No', type: 'text', required: true },
+      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+      { id: 'date', label: 'Date', type: 'date' },
+      { id: 'description', label: 'Description', type: 'textarea', full: true }
     ]
   }
 }
-
-// Icon components for achievement types
-function BriefcaseIcon(props: any) { return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> }
-function CodeIcon(props: any) { return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> }
 
 // ============ DEPARTMENTS LIST FOR LOGIN ============
 const DEPARTMENTS_LIST = [
@@ -1449,50 +1540,137 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
     )
   }
 
-  // Student Dashboard
+  // Student Dashboard - Matching Screenshot Design
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-8 text-white">
-        <h2 className="text-2xl font-bold mb-2">Student Portal</h2>
-        <p className="text-amber-100">Welcome, {user.name} • {user.departmentName}</p>
-      </div>
-      
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Attendance" value="87%" icon={CheckCircle} color="green" />
-        <StatCard title="CGPA" value="8.5" icon={Star} color="purple" />
-        <StatCard title="Credits" value="120" icon={BookOpen} color="blue" />
+      {/* Stats Cards Row - Matching Screenshot */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Records */}
+        <Card className="border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden">
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm text-gray-500 font-medium">TOTAL RECORDS</p>
+                <p className="text-3xl font-bold text-gray-800 mt-1">0</p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-cyan-50 flex items-center justify-center">
+                <Trophy className="w-6 h-6 text-cyan-600" />
+              </div>
+            </div>
+          </CardContent>
+          <div className="h-1 bg-gradient-to-r from-cyan-400 to-cyan-500" />
+        </Card>
+
+        {/* Pending Approval */}
+        <Card className="border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden">
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm text-gray-500 font-medium">PENDING APPROVAL</p>
+                <p className="text-3xl font-bold text-gray-800 mt-1">0</p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center">
+                <Clock className="w-6 h-6 text-orange-600" />
+              </div>
+            </div>
+          </CardContent>
+          <div className="h-1 bg-gradient-to-r from-orange-400 to-orange-500" />
+        </Card>
+
+        {/* Approved */}
+        <Card className="border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden">
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm text-gray-500 font-medium">APPROVED</p>
+                <p className="text-3xl font-bold text-gray-800 mt-1">0</p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+          <div className="h-1 bg-gradient-to-r from-green-400 to-green-500" />
+        </Card>
+
+        {/* Rejected */}
+        <Card className="border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden">
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm text-gray-500 font-medium">REJECTED</p>
+                <p className="text-3xl font-bold text-gray-800 mt-1">0</p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
+                <CloseIcon className="w-6 h-6 text-red-600" />
+              </div>
+            </div>
+          </CardContent>
+          <div className="h-1 bg-gradient-to-r from-red-400 to-red-500" />
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-6 border border-gray-200">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-blue-500" /> Upcoming Events
-          </h3>
-          <div className="space-y-3">
-            {['Technical Symposium', 'Workshop on AI', 'Cultural Fest'].map((event, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
-                <Calendar className="w-5 h-5 text-blue-500" />
-                <span className="text-sm text-gray-700">{event}</span>
-              </div>
-            ))}
-          </div>
+      {/* Charts Section - Activity Trend & Status Distribution */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Activity Trend Chart */}
+        <Card className="border border-gray-200 lg:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+              <Activity className="w-5 h-5 text-cyan-500" /> Activity Trend
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64 flex items-end justify-between gap-2 px-4">
+              {['Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'].map((month, i) => (
+                <div key={month} className="flex-1 flex flex-col items-center gap-2">
+                  <div className="w-full flex items-end justify-center h-48">
+                    <div 
+                      className="w-full max-w-[40px] bg-gradient-to-t from-cyan-500 to-cyan-400 rounded-t-md min-h-[4px]"
+                      style={{ height: `${Math.max(4, Math.random() * 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-500">{month}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-center gap-8 mt-4 text-xs text-gray-500">
+              <span>1.0</span>
+              <span>0.8</span>
+              <span>0.6</span>
+              <span>0.4</span>
+              <span>0.2</span>
+              <span>0.0</span>
+              <span>-0.2</span>
+              <span>-0.4</span>
+              <span>-0.6</span>
+              <span>-0.8</span>
+              <span>-1.0</span>
+            </div>
+          </CardContent>
         </Card>
-        <Card className="p-6 border border-gray-200">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Bell className="w-5 h-5 text-amber-500" /> Recent Announcements
-          </h3>
-          <div className="space-y-3">
-            {['Exam Schedule Released', 'Holiday Notice', 'Placement Drive'].map((item, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
-                <Bell className="w-5 h-5 text-amber-500" />
-                <span className="text-sm text-gray-700">{item}</span>
+
+        {/* Status Distribution */}
+        <Card className="border border-gray-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+              <PieChartIcon className="w-5 h-5 text-cyan-500" /> Status Distribution
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center">
+            <div className="w-48 h-48 rounded-full border-[20px] border-gray-300 relative">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-sm text-gray-500">No Data</span>
               </div>
-            ))}
-          </div>
+            </div>
+            <div className="mt-4 flex items-center gap-2 text-xs text-gray-500">
+              <div className="w-3 h-3 rounded-sm bg-gray-300" />
+              <span>No Data</span>
+            </div>
+          </CardContent>
         </Card>
       </div>
 
-      {/* Student Quick Actions */}
+      {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <ActionCard 
           icon={Trophy} 
@@ -1517,6 +1695,25 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
         />
       </div>
     </div>
+  )
+}
+
+// PieChart Icon Component
+function PieChartIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
+      <path d="M22 12A10 10 0 0 0 12 2v10z"/>
+    </svg>
+  )
+}
+
+// Close Icon for Rejected
+function CloseIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 6L6 18M6 6l12 12"/>
+    </svg>
   )
 }
 
@@ -1855,10 +2052,6 @@ function StatCell({ title, value, icon: Icon, color }: { title: string; value: s
   )
 }
 
-function PieChartIcon(props: any) {
-  return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
-}
-
 // ============ DOCUMENTS PAGE ============
 function DocumentsPage() {
   return (
@@ -2193,6 +2386,495 @@ function MobileNav({ activeTab, setActiveTab, user }: { activeTab: TabType; setA
   )
 }
 
+// ============ STUDENT ACHIEVEMENTS PAGE (Matching Screenshot Design) ============
+function StudentAchievementsPage({ user }: { user: User }) {
+  const [selectedType, setSelectedType] = useState<string>('')
+  const [formData, setFormData] = useState<Record<string, string>>({})
+  const [achievements, setAchievements] = useState<any[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterType, setFilterType] = useState('all')
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+
+  // Initialize form with user data when type changes
+  useEffect(() => {
+    if (selectedType) {
+      const typeConfig = ACHIEVEMENT_TYPES[selectedType]
+      if (typeConfig) {
+        const initialData: Record<string, string> = {
+          name: user.name || '',
+          dept: user.departmentName || '',
+          reg: `${user.departmentName || ''}001` // Default reg no
+        }
+        setFormData(initialData)
+      }
+    }
+  }, [selectedType, user])
+
+  const handleFieldChange = (fieldId: string, value: string) => {
+    setFormData(prev => ({ ...prev, [fieldId]: value }))
+  }
+
+  const handleSubmit = async () => {
+    if (!selectedType) return
+    setIsSubmitting(true)
+    
+    // Simulate submission
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    const newAchievement = {
+      id: Date.now(),
+      type: selectedType,
+      typeName: ACHIEVEMENT_TYPES[selectedType]?.label || selectedType,
+      title: formData.title || formData.award_name || formData.prog_name || formData.course || formData.event_name || 'Untitled',
+      dept: user.departmentName,
+      date: new Date().toISOString().split('T')[0],
+      status: 'pending_staff',
+      data: formData
+    }
+    
+    setAchievements(prev => [newAchievement, ...prev])
+    setShowSuccess(true)
+    setIsSubmitting(false)
+    
+    setTimeout(() => {
+      setShowSuccess(false)
+      setSelectedType('')
+      setFormData({})
+    }, 2000)
+  }
+
+  const handleClear = () => {
+    setSelectedType('')
+    setFormData({})
+  }
+
+  const currentTypeConfig = selectedType ? ACHIEVEMENT_TYPES[selectedType] : null
+
+  // Filter achievements
+  const filteredAchievements = achievements.filter(a => {
+    const matchesSearch = a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         a.typeName.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesType = filterType === 'all' || a.type === filterType
+    const matchesStatus = filterStatus === 'all' || a.status === filterStatus
+    return matchesSearch && matchesType && matchesStatus
+  })
+
+  return (
+    <div className="space-y-6">
+      {/* Add Student Achievement Card */}
+      <Card className="border border-gray-200">
+        <CardContent className="p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <PlusCircle className="w-5 h-5 text-cyan-500" /> Add Student Achievement
+          </h3>
+          
+          {/* Type Selector */}
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Select Achievement Type <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+              >
+                <option value="">-- Select Type --</option>
+                {Object.entries(ACHIEVEMENT_TYPES).map(([key, type]) => (
+                  <option key={key} value={key}>{type.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {!selectedType ? (
+              <p className="text-sm text-gray-500 py-4">Please select an achievement type above.</p>
+            ) : (
+              /* Dynamic Form Fields */
+              <div className="space-y-4 border-t pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {currentTypeConfig?.fields.map((field) => (
+                    <div key={field.id} className={`space-y-1 ${field.full ? 'md:col-span-2' : ''}`}>
+                      <label className="text-sm font-medium text-gray-600">
+                        {field.label}
+                        {field.required && <span className="text-red-500 ml-1">*</span>}
+                        {field.locked && <Lock className="w-3 h-3 inline ml-1 text-gray-400" />}
+                      </label>
+                      
+                      {field.type === 'text' && (
+                        <input
+                          type="text"
+                          value={formData[field.id] || ''}
+                          onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                          disabled={field.locked}
+                          placeholder={`Enter ${field.label.toLowerCase()}`}
+                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 ${
+                            field.locked ? 'bg-gray-100 cursor-not-allowed border-gray-200' : 'bg-white border-gray-200'
+                          }`}
+                        />
+                      )}
+                      
+                      {field.type === 'number' && (
+                        <input
+                          type="number"
+                          value={formData[field.id] || ''}
+                          onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                          placeholder={`Enter ${field.label.toLowerCase()}`}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+                        />
+                      )}
+                      
+                      {field.type === 'url' && (
+                        <input
+                          type="url"
+                          value={formData[field.id] || ''}
+                          onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                          placeholder="https://..."
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+                        />
+                      )}
+                      
+                      {field.type === 'date' && (
+                        <input
+                          type="date"
+                          value={formData[field.id] || ''}
+                          onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+                        />
+                      )}
+                      
+                      {field.type === 'select' && (
+                        <select
+                          value={formData[field.id] || ''}
+                          onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+                        >
+                          <option value="">Select {field.label}</option>
+                          {field.options?.map((opt: string) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      )}
+                      
+                      {field.type === 'textarea' && (
+                        <textarea
+                          value={formData[field.id] || ''}
+                          onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                          placeholder={`Enter ${field.label.toLowerCase()}`}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 resize-none bg-white"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-semibold rounded-lg shadow-md transition-all disabled:opacity-50"
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                    Submit for Approval
+                  </button>
+                  <button
+                    onClick={handleClear}
+                    className="px-6 py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Clear
+                  </button>
+                  
+                  {showSuccess && (
+                    <span className="flex items-center gap-1 text-green-600 font-medium ml-4">
+                      <CheckCircle className="w-4 h-4" /> Submitted successfully!
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* My Achievements Table */}
+      <Card className="border border-gray-200">
+        <CardContent className="p-6">
+          {/* Table Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <List className="w-5 h-5 text-cyan-500" /> My Achievements
+            </h3>
+            <div className="flex flex-wrap gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search..."
+                  className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 w-40"
+                />
+              </div>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400"
+              >
+                <option value="all">All Types</option>
+                {Object.entries(ACHIEVEMENT_TYPES).map(([key, type]) => (
+                  <option key={key} value={key}>{type.label}</option>
+                ))}
+              </select>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400"
+              >
+                <option value="all">All Status</option>
+                <option value="pending_staff">Pending Staff</option>
+                <option value="staff_approved">Staff Approved</option>
+                <option value="pending_hod">Pending HOD</option>
+                <option value="hod_approved">HOD Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">#</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">TYPE</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">TITLE</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">DEPT</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">DATE</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">STATUS</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredAchievements.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-12 text-gray-500">
+                      No achievements yet
+                    </td>
+                  </tr>
+                ) : (
+                  filteredAchievements.map((achievement, index) => (
+                    <tr key={achievement.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 px-4 text-sm text-gray-600">{index + 1}</td>
+                      <td className="py-3 px-4">
+                        <Badge variant="secondary" className="font-medium">{achievement.typeName}</Badge>
+                      </td>
+                      <td className="py-3 px-4 text-sm font-medium text-gray-800">{achievement.title}</td>
+                      <td className="py-3 px-4 text-sm text-gray-600">{achievement.dept}</td>
+                      <td className="py-3 px-4 text-sm text-gray-600">{achievement.date}</td>
+                      <td className="py-3 px-4">
+                        <Badge 
+                          className={
+                            achievement.status === 'hod_approved' ? 'bg-green-100 text-green-700' :
+                            achievement.status === 'staff_approved' ? 'bg-blue-100 text-blue-700' :
+                            achievement.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                            'bg-amber-100 text-amber-700'
+                          }
+                        >
+                          {achievement.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex gap-2">
+                          <button className="p-1.5 hover:bg-gray-100 rounded text-gray-500 hover:text-blue-600">
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button className="p-1.5 hover:bg-gray-100 rounded text-gray-500 hover:text-amber-600">
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button className="p-1.5 hover:bg-gray-100 rounded text-gray-500 hover:text-red-600">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// List Icon Component
+function List({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+      <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+      <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+    </svg>
+  )
+}
+
+// ============ STUDENT FEEDBACK PAGE (With Staff/HOD/Admin Selection) ============
+function StudentFeedbackPage({ user, feedbackEnabled }: { user: User; feedbackEnabled: boolean }) {
+  const [recipient, setRecipient] = useState<'staff' | 'hod' | 'admin'>('staff')
+  const [subject, setSubject] = useState('')
+  const [message, setMessage] = useState('')
+  const [rating, setRating] = useState(0)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+
+  if (!feedbackEnabled) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+          <MessageSquare className="w-10 h-10 text-gray-400" />
+        </div>
+        <h3 className="text-xl font-semibold text-gray-800 mb-2">Feedback Portal Disabled</h3>
+        <p className="text-gray-500 max-w-md">The feedback portal has been disabled by the administrator. Please try again later.</p>
+      </div>
+    )
+  }
+
+  const handleSubmit = async () => {
+    if (!message.trim()) return
+    setIsSubmitting(true)
+    
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    setShowSuccess(true)
+    setIsSubmitting(false)
+    
+    setTimeout(() => {
+      setShowSuccess(false)
+      setSubject('')
+      setMessage('')
+      setRating(0)
+    }, 2500)
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      <Card className="border border-gray-200">
+        <CardContent className="p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
+            <Star className="w-5 h-5 text-amber-500" /> Submit Feedback
+          </h3>
+
+          <div className="space-y-5">
+            {/* Recipient Selection */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-3 block">Send Feedback To</label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { value: 'staff', label: 'Staff Member', icon: UserCheck, color: 'green' },
+                  { value: 'hod', label: 'HOD', icon: Shield, color: 'purple' },
+                  { value: 'admin', label: 'Administrator', icon: Building2, color: 'blue' },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setRecipient(option.value as any)}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                      recipient === option.value 
+                        ? `border-${option.color}-500 bg-${option.color}-50` 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <option.icon className={`w-6 h-6 ${recipient === option.value ? `text-${option.color}-600` : 'text-gray-400'}`} />
+                    <span className={`text-sm font-medium ${recipient === option.value ? `text-${option.color}-700` : 'text-gray-600'}`}>
+                      {option.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Subject */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Subject</label>
+              <input
+                type="text"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="Enter subject for your feedback"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400"
+              />
+            </div>
+
+            {/* Rating */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Rating</label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setRating(star)}
+                    className="p-1"
+                  >
+                    <Star 
+                      className={`w-8 h-8 transition-colors ${
+                        star <= rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'
+                      }`} 
+                    />
+                  </button>
+                ))}
+                {rating > 0 && (
+                  <span className="ml-2 text-sm text-gray-500 self-center">{rating}/5</span>
+                )}
+              </div>
+            </div>
+
+            {/* Message */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Your Feedback</label>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Share your thoughts, suggestions, or concerns..."
+                rows={5}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 resize-none"
+              />
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex gap-3">
+              <button
+                onClick={handleSubmit}
+                disabled={isSubmitting || !message.trim()}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-md transition-all disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+                Submit Feedback
+              </button>
+              
+              {showSuccess && (
+                <span className="flex items-center gap-1 text-green-600 font-medium">
+                  <CheckCircle className="w-4 h-4" /> Feedback submitted successfully!
+                </span>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 // ============ MAIN APP COMPONENT ============
 export default function IQACPortal() {
   const { isAuthenticated, user, logout } = useAuthStore()
@@ -2254,8 +2936,12 @@ export default function IQACPortal() {
       case 'analytics': return <AnalyticsPage />
       case 'documents': return <DocumentsPage />
       case 'settings': return <SettingsPage user={user} />
-      case 'achievements': return <AchievementForm user={user} onBack={() => setActiveTab('dashboard')} />
-      case 'feedback': return <FeedbackModule user={user} feedbackEnabled={feedbackEnabled} setFeedbackEnabled={setFeedbackEnabled} />
+      case 'achievements': return user?.role === 'STUDENT' 
+        ? <StudentAchievementsPage user={user} />
+        : <AchievementForm user={user} onBack={() => setActiveTab('dashboard')} />
+      case 'feedback': return user?.role === 'STUDENT'
+        ? <StudentFeedbackPage user={user} feedbackEnabled={feedbackEnabled} />
+        : <FeedbackModule user={user} feedbackEnabled={feedbackEnabled} setFeedbackEnabled={setFeedbackEnabled} />
       default: return <DashboardContent user={user} setActiveTab={setActiveTab} />
     }
   }
