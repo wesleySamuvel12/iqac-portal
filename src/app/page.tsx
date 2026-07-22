@@ -2682,8 +2682,7 @@ function Sidebar({
     { id: 'feedback', icon: MessageSquare, label: 'Feedback', roles: ['STAFF'] },
     { id: 'student_achievement_view', icon: GraduationCap, label: 'Student Achievement', roles: ['STAFF'], badge: 'Pending' },
     
-    // HOD specific - 4 buttons only
-    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['HOD'] },
+    // HOD specific - 3 additional buttons (Dashboard is common)
     { id: 'my_achievement', icon: Trophy, label: 'My Achievement', roles: ['HOD'], badge: 'New' },
     { id: 'hod_student_approval', icon: GraduationCap, label: 'Student Achievement Approval', roles: ['HOD'], badge: 'Pending' },
     { id: 'hod_staff_approval', icon: BookOpen, label: 'Staff Achievement Approval', roles: ['HOD'], badge: 'Pending' },
