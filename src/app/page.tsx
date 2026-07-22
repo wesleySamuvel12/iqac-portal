@@ -4330,9 +4330,6 @@ export default function IQACPortal() {
         </footer>
       </div>
 
-      {/* Mobile Navigation */}
-      <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} user={user} />
-
       {/* Global Styles */}
       <style jsx global>{`
         /* Glassmorphism Utilities */
