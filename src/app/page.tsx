@@ -60,6 +60,7 @@ interface User {
 type TabType = 'dashboard' | 'departments' | 'faculty' | 'students' | 'activities' | 'research' 
   | 'approvals' | 'analytics' | 'documents' | 'settings' | 'achievements' | 'feedback'
   | 'staff_achievement' | 'student_achievement_view'
+  | 'hod_student_approval' | 'hod_staff_approval' | 'my_achievement'
 
 // ============ ACHIEVEMENT TYPES DEFINITION (13 Types - Student Focused) ============
 const ACHIEVEMENT_TYPES: Record<string, {
@@ -354,7 +355,7 @@ const ROLE_COLORS: Record<string, { bg: string; border: string; text: string; ic
   STUDENT: { bg: 'bg-amber-50 hover:bg-amber-100', border: 'border-amber-200 hover:border-amber-300', text: 'text-amber-700 hover:text-amber-800', icon: 'text-amber-500' },
 }
 
-// ============ LOGIN PAGE ============
+// ============ LOGIN PAGE - LIQUID GLASS DESIGN ============
 function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -363,6 +364,7 @@ function LoginPage() {
   const [error, setError] = useState('')
   const [selectedDept, setSelectedDept] = useState('CSE')
   const [showDeptDropdown, setShowDeptDropdown] = useState(false)
+  const [isFocused, setIsFocused] = useState<string | null>(null)
   const login = useAuthStore((state) => state.login)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -409,134 +411,231 @@ function LoginPage() {
   const currentDept = DEPARTMENTS_LIST.find(d => d.code === selectedDept)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-[#0a2a5e] to-indigo-950 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated Background Orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="orb orb-1" />
-        <div className="orb orb-2" />
-        <div className="orb orb-3" />
+    <div className="min-h-screen relative overflow-hidden bg-[#0a0a1a] flex items-center justify-center p-4">
+      {/* Animated Gradient Background */}
+      <div className="absolute inset-0">
+        {/* Base gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a2e] via-[#1a1040] to-[#0a1628]" />
         
-        {/* Grid Pattern */}
+        {/* Liquid Glass Orbs */}
+        <div className="liquid-orb liquid-orb-1" />
+        <div className="liquid-orb liquid-orb-2" />
+        <div className="liquid-orb liquid-orb-3" />
+        <div className="liquid-orb liquid-orb-4" />
+        
+        {/* Animated Mesh Grid */}
         <div 
-          className="absolute inset-0 opacity-10"
+          className="absolute inset-0 opacity-[0.03]"
           style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)`,
-            backgroundSize: '40px 40px'
+            backgroundImage: `
+              linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px',
           }}
         />
+
+        {/* Floating Particles */}
+        <div className="particles-container">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="particle"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 8}s`,
+                animationDuration: `${6 + Math.random() * 10}s`,
+                width: `${2 + Math.random() * 4}px`,
+                height: `${2 + Math.random() * 4}px`,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Aurora Effect */}
+        <div className="aurora aurora-1" />
+        <div className="aurora aurora-2" />
       </div>
 
       <div className="relative z-10 w-full max-w-md">
-        {/* Logo & Header */}
-        <div className="text-center mb-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-500 via-[#0a7aff] to-purple-600 shadow-2xl shadow-blue-500/30 mb-6 backdrop-blur-sm border border-white/20">
-            <Building2 className="w-12 h-12 text-white" />
+        {/* Logo & Header with Liquid Animation */}
+        <div className="text-center mb-8 header-animate">
+          {/* Glowing Logo Container */}
+          <div className="relative inline-block mb-6">
+            {/* Outer Glow Ring */}
+            <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 blur-xl opacity-60 animate-pulse-slow logo-glow-ring" />
+            
+            {/* Rotating Border */}
+            <div className="absolute inset-0 rounded-3xl overflow-hidden">
+              <div className="rotating-border" />
+            </div>
+            
+            {/* Main Logo */}
+            <div className="relative w-28 h-28 rounded-3xl bg-gradient-to-br from-[#0a1a3e]/90 to-[#1a0a3e]/90 backdrop-blur-2xl border border-white/20 flex items-center justify-center shadow-2xl shadow-blue-900/50">
+              <Building2 className="w-14 h-14 text-white drop-shadow-lg" />
+              
+              {/* Inner Shine */}
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-white/10 via-transparent to-transparent" />
+            </div>
+            
+            {/* Floating Dots */}
+            <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-cyan-400 animate-bounce-slow shadow-lg shadow-cyan-400/50" />
+            <div className="absolute -bottom-1 -left-1 w-3 h-3 rounded-full bg-purple-400 animate-bounce-slow-delayed shadow-lg shadow-purple-400/50" />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2 tracking-tight drop-shadow-lg">IQAC Portal</h1>
-          <p className="text-white text-lg font-medium drop-shadow">Nehru Institute of Engineering and Technology</p>
-          <Badge className="mt-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0 px-4 py-1 shadow-lg text-sm">
-            Autonomous Institution • NAAC Accredited
-          </Badge>
+          
+          <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-white mb-2 tracking-tight drop-shadow-2xl title-glow">
+            IQAC Portal
+          </h1>
+          <p className="text-blue-200/80 text-lg font-medium mb-3">Nehru Institute of Engineering and Technology</p>
+          
+          {/* Status Badge */}
+          <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 backdrop-blur-sm border border-amber-400/30 shadow-lg shadow-amber-500/10">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-amber-200 text-sm font-semibold">Autonomous • NAAC Accredited</span>
+          </div>
         </div>
 
-        {/* Login Card */}
-        <Card className="bg-white/95 backdrop-blur-xl shadow-2xl border border-white/20 animate-slide-up">
-          <CardContent className="p-8">
+        {/* Liquid Glass Login Card */}
+        <div className="glass-card-login card-enter">
+          {/* Card Top Glow */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-cyan-400/80 to-transparent" />
+          
+          {/* Card Content */}
+          <div className="p-8">
             {/* Error Message */}
             {error && (
-              <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 animate-shake">
-                <p className="text-red-600 text-sm flex items-center gap-2 font-medium">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <div className="mb-6 p-4 rounded-2xl bg-red-500/10 backdrop-blur-sm border border-red-500/30 error-shake">
+                <p className="text-red-300 text-sm flex items-center gap-2 font-medium">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
                   {error}
                 </p>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-700">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Email Input */}
+              <div className="space-y-2 input-wrapper">
+                <label className={`text-sm font-semibold transition-colors duration-300 ${isFocused === 'email' ? 'text-cyan-400' : 'text-gray-300'}`}>
+                  Email Address
+                </label>
+                <div className={`relative group ${isFocused === 'email' ? 'input-focused' : ''}`}>
+                  <Mail className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-all duration-300 ${isFocused === 'email' ? 'text-cyan-400 scale-110' : 'text-gray-500'}`} />
                   <Input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    onFocus={() => setIsFocused('email')}
+                    onBlur={() => setIsFocused(null)}
                     placeholder="Enter your email"
-                    className="pl-12 py-6 h-auto border-gray-200 bg-gray-50 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl text-base text-gray-800 placeholder:text-gray-400"
+                    className="glass-input pl-12 py-6 h-auto border-white/10 bg-white/5 focus:border-cyan-400/50 focus:bg-white/10 rounded-2xl text-base text-white placeholder:text-gray-500 transition-all duration-300"
                     required
                   />
+                  <div className="input-glow-effect" />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-700">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              {/* Password Input */}
+              <div className="space-y-2 input-wrapper">
+                <label className={`text-sm font-semibold transition-colors duration-300 ${isFocused === 'password' ? 'text-cyan-400' : 'text-gray-300'}`}>
+                  Password
+                </label>
+                <div className={`relative group ${isFocused === 'password' ? 'input-focused' : ''}`}>
+                  <Lock className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-all duration-300 ${isFocused === 'password' ? 'text-cyan-400 scale-110' : 'text-gray-500'}`} />
                   <Input
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onFocus={() => setIsFocused('password')}
+                    onBlur={() => setIsFocused(null)}
                     placeholder="Enter your password"
-                    className="pl-12 pr-12 py-6 h-auto border-gray-200 bg-gray-50 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl text-base text-gray-800 placeholder:text-gray-400"
+                    className="glass-input pl-12 pr-12 py-6 h-auto border-white/10 bg-white/5 focus:border-cyan-400/50 focus:bg-white/10 rounded-2xl text-base text-white placeholder:text-gray-500 transition-all duration-300"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-cyan-400 transition-all duration-300 hover:scale-110"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
+                  <div className="input-glow-effect" />
                 </div>
               </div>
 
+              {/* Submit Button */}
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-6 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/25 transition-all duration-300 text-base btn-glow"
+                className="w-full py-7 relative overflow-hidden rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 hover:from-cyan-400 hover:via-blue-400 hover:to-purple-500 text-white font-bold text-lg shadow-2xl shadow-blue-500/30 transition-all duration-500 group btn-liquid"
               >
-                {isLoading ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Signing in...
-                  </span>
-                ) : (
-                  'Sign In'
-                )}
+                {/* Button Background Animation */}
+                <div className="btn-bg-animation" />
+                
+                {/* Button Content */}
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                      Authenticating...
+                    </>
+                  ) : (
+                    <>
+                      Sign In
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                    </>
+                  )}
+                </span>
+                
+                {/* Button Glow */}
+                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-400/20 via-transparent to-purple-400/20 blur-xl" />
+                </div>
               </Button>
             </form>
 
-            {/* Quick Login - Department Wise */}
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <p className="text-xs text-gray-500 text-center mb-4 uppercase tracking-wider font-semibold">Quick Demo Access</p>
-              
-              {/* Admin Button - Always Visible */}
+            {/* Divider */}
+            <div className="flex items-center gap-4 my-8">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+              <span className="text-xs text-gray-500 uppercase tracking-widest font-medium">Quick Access</span>
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+            </div>
+
+            {/* Quick Login Section */}
+            <div className="space-y-5">
+              {/* Admin Button */}
               <button
                 onClick={() => quickLogin('admin@niet.ac.in', 'admin123')}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-sm font-bold transition-all shadow-md shadow-blue-500/25 mb-4 group"
+                className="w-full relative overflow-hidden p-[1px] rounded-2xl group admin-btn"
               >
-                <Shield className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                System Administrator
+                <div className="absolute inset-0 bg-gradient-to-r from-violet-600 via-fuchsia-500 to-orange-500 opacity-75 group-hover:opacity-100 transition-opacity duration-500 blur-sm" />
+                <div className="relative w-full flex items-center justify-center gap-3 px-4 py-4 rounded-2xl bg-[#0d0d25]/90 backdrop-blur-sm text-white font-bold transition-transform duration-300 group-hover:scale-[1.02]">
+                  <Shield className="w-6 h-6 text-violet-300 group-hover:rotate-12 transition-transform duration-300" />
+                  System Administrator
+                  <ChevronRight className="w-5 h-5 ml-auto opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all duration-300" />
+                </div>
               </button>
 
               {/* Department Selector */}
-              <div className="mb-4">
-                <label className="text-xs font-semibold text-gray-600 mb-2 block">Select Department</label>
+              <div>
+                <label className="text-xs font-semibold text-gray-400 mb-2 block uppercase tracking-wider">Select Department</label>
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => setShowDeptDropdown(!showDeptDropdown)}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 hover:border-gray-300 text-sm font-semibold text-gray-700 transition-all"
+                    className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-cyan-400/40 text-sm font-semibold text-gray-200 transition-all duration-300 hover:bg-white/10"
                   >
-                    <span className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-gray-500" />
-                      {currentDept?.code} - {currentDept?.name}
+                    <span className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center border border-white/10">
+                        <Building2 className="w-4 h-4 text-cyan-400" />
+                      </div>
+                      <span>{currentDept?.code} - {currentDept?.name}</span>
                     </span>
-                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showDeptDropdown ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${showDeptDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   
                   {showDeptDropdown && (
-                    <div className="absolute z-50 w-full mt-2 bg-white rounded-xl shadow-xl border border-gray-200 max-h-64 overflow-y-auto">
+                    <div className="absolute z-50 w-full mt-2 bg-[#12122a]/95 backdrop-blur-2xl rounded-2xl shadow-2xl shadow-black/50 border border-white/10 max-h-64 overflow-y-auto dropdown-enter">
                       {DEPARTMENTS_LIST.map((dept) => (
                         <button
                           key={dept.code}
@@ -545,12 +644,21 @@ function LoginPage() {
                             setSelectedDept(dept.code)
                             setShowDeptDropdown(false)
                           }}
-                          className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
-                            selectedDept === dept.code ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                          className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/10 transition-all duration-200 ${
+                            selectedDept === dept.code ? 'bg-cyan-500/15 text-cyan-300' : 'text-gray-300'
                           }`}
                         >
-                          <div className={`w-3 h-3 rounded-full bg-${dept.color}-500`} />
-                          <span className="font-medium text-sm">{dept.code}</span>
+                          <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${
+                            dept.color === 'blue' ? 'from-blue-400 to-blue-600' :
+                            dept.color === 'green' ? 'from-emerald-400 to-emerald-600' :
+                            dept.color === 'purple' ? 'from-purple-400 to-purple-600' :
+                            dept.color === 'orange' ? 'from-orange-400 to-orange-600' :
+                            dept.color === 'pink' ? 'from-pink-400 to-pink-600' :
+                            dept.color === 'cyan' ? 'from-cyan-400 to-cyan-600' :
+                            dept.color === 'red' ? 'from-red-400 to-red-600' :
+                            'from-indigo-400 to-indigo-600'
+                          }`} />
+                          <span className="font-medium">{dept.code}</span>
                           <span className="text-xs text-gray-500 truncate">{dept.name}</span>
                         </button>
                       ))}
@@ -559,53 +667,53 @@ function LoginPage() {
                 </div>
               </div>
 
-              {/* Role Buttons for Selected Department */}
+              {/* Role Buttons */}
               <div className="space-y-3">
-                <p className="text-xs font-medium text-gray-500 text-center">
-                  Login as: <span className="font-bold text-gray-700">{currentDept?.code}</span> Department
+                <p className="text-xs text-gray-500 text-center">
+                  Login as: <span className="font-bold text-cyan-400">{currentDept?.code}</span> Department
                 </p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-3">
                   {/* HOD Button */}
                   <button
                     onClick={() => quickLogin(getDeptEmail(selectedDept, 'HOD'), getPassword('HOD'))}
-                    className={`flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl ${ROLE_COLORS.HOD.bg} ${ROLE_COLORS.HOD.border} ${ROLE_COLORS.HOD.text} text-xs font-bold transition-all border group`}
+                    className="role-btn role-btn-hod group"
                   >
-                    <UserCheck className={`w-5 h-5 ${ROLE_COLORS.HOD.icon} group-hover:scale-110 transition-transform`} />
-                    <span>HOD</span>
+                    <UserCheck className="w-6 h-6 mb-1 group-hover:scale-110 transition-transform duration-300" />
+                    <span className="text-xs font-bold">HOD</span>
                   </button>
                   
                   {/* Staff Button */}
                   <button
                     onClick={() => quickLogin(getDeptEmail(selectedDept, 'STAFF'), getPassword('STAFF'))}
-                    className={`flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl ${ROLE_COLORS.STAFF.bg} ${ROLE_COLORS.STAFF.border} ${ROLE_COLORS.STAFF.text} text-xs font-bold transition-all border group`}
+                    className="role-btn role-btn-staff group"
                   >
-                    <BookOpen className={`w-5 h-5 ${ROLE_COLORS.STAFF.icon} group-hover:scale-110 transition-transform`} />
-                    <span>Staff</span>
+                    <BookOpen className="w-6 h-6 mb-1 group-hover:scale-110 transition-transform duration-300" />
+                    <span className="text-xs font-bold">Staff</span>
                   </button>
                   
                   {/* Student Button */}
                   <button
                     onClick={() => quickLogin(getDeptEmail(selectedDept, 'STUDENT'), getPassword('STUDENT'))}
-                    className={`flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl ${ROLE_COLORS.STUDENT.bg} ${ROLE_COLORS.STUDENT.border} ${ROLE_COLORS.STUDENT.text} text-xs font-bold transition-all border group`}
+                    className="role-btn role-btn-student group"
                   >
-                    <GraduationCap className={`w-5 h-5 ${ROLE_COLORS.STUDENT.icon} group-hover:scale-110 transition-transform`} />
-                    <span>Student</span>
+                    <GraduationCap className="w-6 h-6 mb-1 group-hover:scale-110 transition-transform duration-300" />
+                    <span className="text-xs font-bold">Student</span>
                   </button>
                 </div>
 
-                {/* Department Pills - Quick Select */}
-                <div className="mt-4">
-                  <p className="text-xs font-medium text-gray-400 mb-2 text-center">Quick Departments:</p>
+                {/* Quick Department Pills */}
+                <div className="pt-2">
+                  <p className="text-xs text-gray-600 mb-2 text-center">Quick Select:</p>
                   <div className="flex flex-wrap gap-2 justify-center">
-                    {['CSE', 'ECE', 'EEE', 'MECH', 'CIVIL', 'AI&DS', 'IT', 'CYBER'].map((code) => (
+                    {['CSE', 'ECE', 'EEE', 'MECH', 'AI&DS', 'IT'].map((code) => (
                       <button
                         key={code}
                         type="button"
                         onClick={() => setSelectedDept(code)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                        className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 ${
                           selectedDept === code 
-                            ? 'bg-blue-500 text-white shadow-md' 
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/30 scale-105' 
+                            : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-gray-200 border border-white/10'
                         }`}
                       >
                         {code}
@@ -615,79 +723,378 @@ function LoginPage() {
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          
+          {/* Card Bottom Glow */}
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-purple-400/60 to-transparent" />
+        </div>
 
-        <p className="text-center mt-6 text-gray-400 text-xs animate-fade-in font-medium">
-          Secure Authentication System • Enterprise Edition v2.0
+        {/* Footer */}
+        <p className="text-center mt-8 text-gray-600 text-xs font-medium footer-fade-in">
+          🔒 Secure Authentication • NIET IQAC Enterprise v3.0
         </p>
       </div>
 
+      {/* Liquid Glass Styles */}
       <style jsx>{`
-        .orb {
+        /* Liquid Orbs */
+        .liquid-orb {
           position: absolute;
           border-radius: 50%;
-          filter: blur(80px);
-          opacity: 0.3;
+          filter: blur(100px);
+          opacity: 0.4;
+          will-change: transform;
         }
-        .orb-1 {
-          width: 400px;
-          height: 400px;
-          background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-          top: -100px;
-          right: -100px;
-          animation: orbFloat 8s ease-in-out infinite;
+        .liquid-orb-1 {
+          width: 500px;
+          height: 500px;
+          background: linear-gradient(135deg, #06b6d4, #3b82f6);
+          top: -150px;
+          right: -150px;
+          animation: liquidFloat1 15s ease-in-out infinite;
         }
-        .orb-2 {
+        .liquid-orb-2 {
+          width: 450px;
+          height: 450px;
+          background: linear-gradient(135deg, #8b5cf6, #ec4899);
+          bottom: -120px;
+          left: -120px;
+          animation: liquidFloat2 18s ease-in-out infinite reverse;
+        }
+        .liquid-orb-3 {
           width: 350px;
           height: 350px;
-          background: linear-gradient(135deg, #8b5cf6, #ec4899);
-          bottom: -100px;
-          left: -100px;
-          animation: orbFloat 10s ease-in-out infinite reverse;
+          background: linear-gradient(135deg, #10b981, #06b6d4);
+          top: 40%;
+          left: 10%;
+          animation: liquidFloat3 20s ease-in-out infinite;
         }
-        .orb-3 {
-          width: 300px;
-          height: 300px;
-          background: linear-gradient(135deg, #06b6d4, #3b82f6);
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          animation: orbFloat 12s ease-in-out infinite;
+        .liquid-orb-4 {
+          width: 250px;
+          height: 250px;
+          background: linear-gradient(135deg, #f59e0b, #ef4444);
+          bottom: 20%;
+          right: 5%;
+          animation: liquidFloat4 16s ease-in-out infinite;
         }
-        @keyframes orbFloat {
+
+        @keyframes liquidFloat1 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(-40px, 30px) scale(1.05); }
+          66% { transform: translate(30px, -20px) scale(0.95); }
+        }
+        @keyframes liquidFloat2 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(35px, -25px) scale(1.08); }
+          66% { transform: translate(-30px, 35px) scale(0.92); }
+        }
+        @keyframes liquidFloat3 {
+          0%, 100% { transform: translate(0, 0) rotate(0deg); }
+          50% { transform: translate(50px, 40px) rotate(180deg); }
+        }
+        @keyframes liquidFloat4 {
           0%, 100% { transform: translate(0, 0); }
-          33% { transform: translate(30px, -30px); }
-          66% { transform: translate(-20px, 20px); }
+          50% { transform: translate(-40px, -30px); }
         }
-        .glass-card {
-          background: rgba(255, 255, 255, 0.08);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
+
+        /* Aurora Effect */
+        .aurora {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          opacity: 0.15;
+          mix-blend-mode: screen;
+          filter: blur(80px);
         }
-        .glass-input {
-          background: rgba(255, 255, 255, 0.05);
-          backdrop-filter: blur(10px);
+        .aurora-1 {
+          background: linear-gradient(45deg, transparent, #06b6d4, transparent, #8b5cf6);
+          animation: auroraMove 20s linear infinite;
         }
-        .btn-glow:hover {
-          box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+        .aurora-2 {
+          background: linear-gradient(-45deg, transparent, #ec4899, transparent, #10b981);
+          animation: auroraMove 25s linear infinite reverse;
         }
-        @keyframes fade-in {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
+
+        @keyframes auroraMove {
+          0% { transform: translateX(-100%) translateY(-100%); }
+          100% { transform: translateX(100%) translateY(100%); }
         }
-        @keyframes slide-up {
-          from { opacity: 0; transform: translateY(40px); }
-          to { opacity: 1; transform: translateY(0); }
+
+        /* Particles */
+        .particles-container {
+          position: absolute;
+          inset: 0;
+          overflow: hidden;
         }
-        @keyframes shake {
+        .particle {
+          position: absolute;
+          background: rgba(255, 255, 255, 0.6);
+          border-radius: 50%;
+          animation: particleFloat linear infinite;
+        }
+        @keyframes particleFloat {
+          0%, 100% { 
+            transform: translateY(0) translateX(0) scale(1);
+            opacity: 0;
+          }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { 
+            transform: translateY(-100vh) translateX(50px) scale(0);
+            opacity: 0;
+          }
+        }
+
+        /* Glass Card */
+        .glass-card-login {
+          position: relative;
+          background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
+          backdrop-filter: blur(40px);
+          -webkit-backdrop-filter: blur(40px);
+          border-radius: 32px;
+          border: 1px solid rgba(255,255,255,0.15);
+          box-shadow: 
+            0 32px 64px rgba(0,0,0,0.4),
+            0 0 0 1px rgba(255,255,255,0.05) inset,
+            0 0 80px rgba(6,182,212,0.1);
+          overflow: hidden;
+        }
+        
+        .glass-card-login::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255,255,255,0.1),
+            transparent
+          );
+          animation: shimmer 8s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+          0%, 100% { left: -100%; }
+          50% { left: 100%; }
+        }
+
+        /* Card Enter Animation */
+        .card-enter {
+          animation: cardEnter 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes cardEnter {
+          0% { 
+            opacity: 0; 
+            transform: translateY(60px) scale(0.9);
+            backdrop-filter: blur(0px);
+          }
+          100% { 
+            opacity: 1; 
+            transform: translateY(0) scale(1);
+            backdrop-filter: blur(40px);
+          }
+        }
+
+        /* Header Animation */
+        .header-animate {
+          animation: headerFadeIn 1s ease-out 0.2s both;
+        }
+        @keyframes headerFadeIn {
+          0% { 
+            opacity: 0; 
+            transform: translateY(-30px);
+          }
+          100% { 
+            opacity: 1; 
+            transform: translateY(0);
+          }
+        }
+
+        /* Title Glow */
+        .title-glow {
+          text-shadow: 0 0 40px rgba(59,130,246,0.5), 0 0 80px rgba(139,92,246,0.3);
+        }
+
+        /* Logo Glow Ring */
+        .logo-glow-ring {
+          animation: pulseGlow 3s ease-in-out infinite;
+        }
+        @keyframes pulseGlow {
+          0%, 100% { opacity: 0.4; transform: scale(1); }
+          50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        /* Rotating Border */
+        .rotating-border {
+          position: absolute;
+          inset: -2px;
+          background: conic-gradient(from 0deg, transparent, #06b6d4, #3b82f6, #8b5cf6, transparent);
+          animation: rotateBorder 4s linear infinite;
+          filter: blur(2px);
+        }
+        @keyframes rotateBorder {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        /* Bounce Animations */
+        .animate-bounce-slow {
+          animation: bounceSlow 2s ease-in-out infinite;
+        }
+        .animate-bounce-slow-delayed {
+          animation: bounceSlow 2s ease-in-out infinite 0.5s;
+        }
+        @keyframes bounceSlow {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+
+        /* Input Styles */
+        .input-wrapper {
+          position: relative;
+        }
+        .input-focused .input-glow-effect {
+          opacity: 1;
+        }
+        .input-glow-effect {
+          position: absolute;
+          inset: -2px;
+          border-radius: 18px;
+          background: linear-gradient(135deg, #06b6d4, #3b82f6, #8b5cf6);
+          opacity: 0;
+          z-index: -1;
+          filter: blur(8px);
+          transition: opacity 0.3s ease;
+        }
+
+        /* Button Liquid Effect */
+        .btn-liquid {
+          position: relative;
+          overflow: hidden;
+        }
+        .btn-bg-animation {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+          transform: translateX(-100%);
+          animation: none;
+        }
+        .btn-liquid:hover .btn-bg-animation {
+          animation: btnShimmer 1.5s ease-in-out infinite;
+        }
+        @keyframes btnShimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+
+        /* Role Buttons */
+        .role-btn {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 1rem 0.5rem;
+          border-radius: 16px;
+          font-size: 0.75rem;
+          transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+          border: 1px solid rgba(255,255,255,0.1);
+          background: rgba(255,255,255,0.03);
+          color: #9ca3af;
+        }
+        .role-btn:hover {
+          transform: translateY(-4px) scale(1.05);
+          box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .role-btn-hod:hover {
+          background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.2));
+          border-color: rgba(139,92,246,0.4);
+          color: #c4b5fd;
+        }
+        .role-btn-staff:hover {
+          background: linear-gradient(135deg, rgba(6,182,212,0.2), rgba(59,130,246,0.2));
+          border-color: rgba(6,182,212,0.4);
+          color: #67e8f9;
+        }
+        .role-btn-student:hover {
+          background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(6,182,212,0.2));
+          border-color: rgba(16,185,129,0.4);
+          color: #6ee7b7;
+        }
+
+        /* Admin Button */
+        .admin-btn {
+          transition: all 0.3s ease;
+        }
+        .admin-btn:hover {
+          box-shadow: 0 0 40px rgba(139,92,246,0.4);
+        }
+
+        /* Dropdown Animation */
+        .dropdown-enter {
+          animation: dropdownSlide 0.3s ease-out;
+        }
+        @keyframes dropdownSlide {
+          0% { 
+            opacity: 0; 
+            transform: translateY(-10px) scale(0.98);
+          }
+          100% { 
+            opacity: 1; 
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        /* Error Shake */
+        .error-shake {
+          animation: errorShake 0.5s ease-out;
+        }
+        @keyframes errorShake {
           0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-10px); }
-          75% { transform: translateX(10px); }
+          20% { transform: translateX(-15px); }
+          40% { transform: translateX(15px); }
+          60% { transform: translateX(-10px); }
+          80% { transform: translateX(5px); }
         }
-        .animate-fade-in { animation: fade-in 0.6s ease-out; }
-        .animate-slide-up { animation: slide-up 0.6s ease-out; }
-        .animate-shake { animation: shake 0.4s ease-out; }
+
+        /* Footer Fade In */
+        .footer-fade-in {
+          animation: fadeInUp 0.8s ease-out 0.6s both;
+        }
+        @keyframes fadeInUp {
+          0% { 
+            opacity: 0; 
+            transform: translateY(10px);
+          }
+          100% { 
+            opacity: 1; 
+            transform: translateY(0);
+          }
+        }
+
+        /* Pulse Slow */
+        .animate-pulse-slow {
+          animation: pulseSlow 3s ease-in-out infinite;
+        }
+        @keyframes pulseSlow {
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
+        }
+
+        /* Glass Input Override */
+        .glass-input {
+          background: rgba(255, 255, 255, 0.05) !important;
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+        }
+        .glass-input:focus {
+          background: rgba(255, 255, 255, 0.1) !important;
+        }
+        .glass-input::placeholder {
+          color: #6b7280 !important;
+        }
       `}</style>
     </div>
   )
@@ -2275,18 +2682,24 @@ function Sidebar({
     { id: 'feedback', icon: MessageSquare, label: 'Feedback', roles: ['STAFF'] },
     { id: 'student_achievement_view', icon: GraduationCap, label: 'Student Achievement', roles: ['STAFF'], badge: 'Pending' },
     
-    // Admin/HOD items
-    { id: 'achievements', icon: Trophy, label: 'Achievements', roles: ['ADMIN', 'HOD'] },
-    { id: 'feedback', icon: MessageSquare, label: 'Feedback', roles: ['ADMIN', 'HOD'] },
-    { id: 'departments', icon: Building2, label: 'Departments', roles: ['ADMIN', 'HOD'] },
-    { id: 'faculty', icon: Users, label: 'Faculty', roles: ['ADMIN', 'HOD'] },
-    { id: 'students', icon: GraduationCap, label: 'Students', roles: ['ADMIN', 'HOD'] },
-    { id: 'activities', icon: Activity, label: 'Activities', roles: ['ADMIN', 'HOD'] },
-    { id: 'research', icon: Award, label: 'Research', roles: ['ADMIN', 'HOD'] },
-    { id: 'approvals', icon: CheckCircle, label: 'Approvals', badge: '12', roles: ['ADMIN', 'HOD'] },
-    { id: 'analytics', icon: BarChart3, label: 'Analytics', roles: ['ADMIN', 'HOD'] },
-    { id: 'documents', icon: FolderOpen, label: 'Documents', roles: ['ADMIN', 'HOD'] },
-    { id: 'settings', icon: Settings, label: 'Settings', roles: ['ADMIN', 'HOD'] },
+    // HOD specific - 4 buttons only
+    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['HOD'] },
+    { id: 'my_achievement', icon: Trophy, label: 'My Achievement', roles: ['HOD'], badge: 'New' },
+    { id: 'hod_student_approval', icon: GraduationCap, label: 'Student Achievement Approval', roles: ['HOD'], badge: 'Pending' },
+    { id: 'hod_staff_approval', icon: BookOpen, label: 'Staff Achievement Approval', roles: ['HOD'], badge: 'Pending' },
+    
+    // Admin items
+    { id: 'departments', icon: Building2, label: 'Departments', roles: ['ADMIN'] },
+    { id: 'faculty', icon: Users, label: 'Faculty', roles: ['ADMIN'] },
+    { id: 'students', icon: GraduationCap, label: 'Students', roles: ['ADMIN'] },
+    { id: 'activities', icon: Activity, label: 'Activities', roles: ['ADMIN'] },
+    { id: 'research', icon: Award, label: 'Research', roles: ['ADMIN'] },
+    { id: 'approvals', icon: CheckCircle, label: 'Approvals', badge: '12', roles: ['ADMIN'] },
+    { id: 'analytics', icon: BarChart3, label: 'Analytics', roles: ['ADMIN'] },
+    { id: 'documents', icon: FolderOpen, label: 'Documents', roles: ['ADMIN'] },
+    { id: 'settings', icon: Settings, label: 'Settings', roles: ['ADMIN'] },
+    { id: 'achievements', icon: Trophy, label: 'Achievements', roles: ['ADMIN'] },
+    { id: 'feedback', icon: MessageSquare, label: 'Feedback', roles: ['ADMIN'] },
   ]
 
   const menuItems = getAllMenuItems().filter(item => !item.roles || item.roles.includes(user.role))
@@ -4160,6 +4573,1176 @@ function StudentAchievementViewPage({ user }: { user: User }) {
   )
 }
 
+// ============ MY ACHIEVEMENT PAGE (For HOD) ============
+function MyAchievementPage({ user }: { user: User }) {
+  const [selectedType, setSelectedType] = useState<string>('')
+  const [formData, setFormData] = useState<Record<string, string>>({})
+  const [achievements, setAchievements] = useState<any[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+
+  useEffect(() => {
+    if (selectedType) {
+      const typeConfig = ACHIEVEMENT_TYPES[selectedType]
+      if (typeConfig) {
+        const initialData: Record<string, string> = { name: user.name || '', dept: user.departmentName || '' }
+        typeConfig.fields.forEach(field => {
+          if (!initialData[field.id]) {
+            initialData[field.id] = ''
+          }
+        })
+        setFormData(initialData)
+      }
+    }
+  }, [selectedType, user.name, user.departmentName])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    const newAchievement = {
+      id: Date.now(),
+      ...formData,
+      type: selectedType,
+      typeName: ACHIEVEMENT_TYPES[selectedType]?.label,
+      submittedBy: user.name,
+      role: user.role,
+      department: user.departmentName,
+      status: 'hod_approved',
+      createdAt: new Date().toISOString()
+    }
+    
+    setAchievements(prev => [newAchievement, ...prev])
+    setShowSuccess(true)
+    setIsSubmitting(false)
+    setSelectedType('')
+    setFormData({})
+    
+    setTimeout(() => setShowSuccess(false), 3000)
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">My Achievements</h2>
+          <p className="text-gray-500 mt-1">Submit and track your achievements as HOD</p>
+        </div>
+        <Badge variant="outline" className="px-4 py-2 text-sm bg-emerald-50 text-emerald-700 border-emerald-200">
+          {user.departmentName} • Head of Department
+        </Badge>
+      </div>
+
+      {showSuccess && (
+        <div className="p-4 rounded-xl bg-green-50 border border-green-200 animate-slide-up">
+          <p className="text-green-700 font-medium flex items-center gap-2">
+            <CheckCircle className="w-5 h-5" /> Achievement submitted successfully!
+          </p>
+        </div>
+      )}
+
+      {!selectedType ? (
+        <>
+          <Card className="overflow-hidden">
+            <CardContent className="p-6">
+              <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <PlusCircle className="w-5 h-5 text-blue-500" /> Submit New Achievement
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {Object.entries(ACHIEVEMENT_TYPES).map(([key, config]) => {
+                  const Icon = config.icon
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setSelectedType(key)}
+                      className="p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all group"
+                    >
+                      <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${config.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                        <Icon className="w-5 h-5 text-white" />
+                      </div>
+                      <span className="text-sm font-medium text-gray-700">{config.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {achievements.length > 0 && (
+            <Card className="overflow-hidden">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg">Your Submissions ({achievements.length})</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 pt-0 space-y-3 max-h-96 overflow-y-auto">
+                {achievements.map(ach => (
+                  <div key={ach.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      <div>
+                        <p className="font-medium text-gray-900">{ach.title || ach.typeName}</p>
+                        <p className="text-xs text-gray-500">{ach.typeName} • {new Date(ach.createdAt).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <Badge className="bg-green-100 text-green-700 border-green-200">Approved</Badge>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          <Card className="overflow-hidden">
+            <div className={`h-1.5 bg-gradient-to-r ${ACHIEVEMENT_TYPES[selectedType]?.color}`} />
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">{ACHIEVEMENT_TYPES[selectedType]?.label}</CardTitle>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedType('')}>
+                  <ArrowLeft className="w-4 h-4 mr-1" /> Back
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {ACHIEVEMENT_TYPES[selectedType]?.fields.map(field => (
+                <div key={field.id} className={`${field.full ? 'col-span-full' : ''}`}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {field.label} {field.required && <span className="text-red-500">*</span>}
+                  </label>
+                  {field.type === 'select' ? (
+                    <select
+                      value={formData[field.id] || ''}
+                      onChange={(e) => setFormData(prev => ({...prev, [field.id]: e.target.value}))}
+                      required={field.required}
+                      disabled={field.locked}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                    >
+                      <option value="">Select...</option>
+                      {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  ) : field.type === 'textarea' ? (
+                    <textarea
+                      value={formData[field.id] || ''}
+                      onChange={(e) => setFormData(prev => ({...prev, [field.id]: e.target.value}))}
+                      required={field.required}
+                      rows={4}
+                      placeholder={`Enter ${field.label.toLowerCase()}`}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    />
+                  ) : (
+                    <input
+                      type={field.type === 'url' ? 'url' : field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                      value={formData[field.id] || ''}
+                      onChange={(e) => setFormData(prev => ({...prev, [field.id]: e.target.value}))}
+                      required={field.required}
+                      readOnly={field.locked}
+                      placeholder={`Enter ${field.label.toLowerCase()}`}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                    />
+                  )}
+                </div>
+              ))}
+              
+              {/* File Upload Area */}
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
+                <Upload className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                <p className="text-gray-600 font-medium">Drag & Drop files here or click to upload</p>
+                <p className="text-xs text-gray-400 mt-1">PDF, Images, Documents (Max 10MB)</p>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button type="button" variant="outline" onClick={() => setSelectedType('')} className="flex-1">Cancel</Button>
+                <Button type="submit" disabled={isSubmitting} className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700">
+                  {isSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Submitting...</> : <><Save className="w-4 h-4 mr-2" />Submit Achievement</>}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </form>
+      )}
+    </div>
+  )
+}
+
+// ============ HOD STUDENT APPROVAL PAGE ============
+function HODStudentApprovalPage({ user }: { user: User }) {
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [filterType, setFilterType] = useState('all')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [studentAchievements, setStudentAchievements] = useState<any[]>([
+    {
+      id: 1,
+      studentName: 'Bhavani S',
+      regNo: 'CSE001',
+      department: 'CSE',
+      type: 'journal',
+      typeName: 'Journal Publication',
+      title: 'Research on Machine Learning Algorithms',
+      submittedAt: '2024-01-15T10:30:00Z',
+      status: 'pending_hod',
+      data: { name: 'Bhavani S', dept: 'CSE', reg: 'CSE001', year: 'III', title: 'Research on ML Algorithms', journal: 'IEEE Transactions' },
+      staffApprovedBy: 'Dr. Kumar'
+    },
+    {
+      id: 2,
+      studentName: 'Arun Kumar',
+      regNo: 'CSE002',
+      department: 'CSE',
+      type: 'hackathon',
+      typeName: 'Hackathon Participation',
+      title: 'Smart India Hackathon 2024',
+      submittedAt: '2024-01-14T09:15:00Z',
+      status: 'pending_hod',
+      data: { name: 'Arun Kumar', dept: 'CSE', reg: 'CSE002', year: 'IV', title: 'Smart India Hackathon' },
+      staffApprovedBy: 'Prof. Ramesh'
+    },
+    {
+      id: 3,
+      studentName: 'Priya Devi',
+      regNo: 'ECE001',
+      department: 'ECE',
+      type: 'internship',
+      typeName: 'Internship Completion',
+      title: 'Internship at TCS',
+      submittedAt: '2024-01-13T14:20:00Z',
+      status: 'hod_approved',
+      data: { name: 'Priya Devi', dept: 'ECE', reg: 'ECE001', year: 'III' },
+      approvedAt: '2024-01-16T11:00:00Z'
+    },
+    {
+      id: 4,
+      studentName: 'Rahul R',
+      regNo: 'CSE003',
+      department: 'CSE',
+      type: 'award',
+      typeName: 'Award Received',
+      title: 'Best Project Award at Symposium',
+      submittedAt: '2024-01-12T11:45:00Z',
+      status: 'rejected',
+      rejectionReason: 'Documentation incomplete - missing certificate proof',
+      rejectedAt: '2024-01-15T14:30:00Z',
+      data: { name: 'Rahul R', dept: 'CSE', reg: 'CSE003', year: 'II' }
+    },
+    {
+      id: 5,
+      studentName: 'Sneha M',
+      regNo: 'AI001',
+      department: 'AI&DS',
+      type: 'nptel',
+      typeName: 'NPTEL Certification',
+      title: 'NPTEL Data Structures Course',
+      submittedAt: '2024-01-16T08:00:00Z',
+      status: 'pending_hod',
+      data: { name: 'Sneha M', dept: 'AI&DS', reg: 'AI001', year: 'III', course: 'Data Structures', score: '85%' },
+      staffApprovedBy: 'Dr. Sharma'
+    }
+  ])
+  const [selectedEntry, setSelectedEntry] = useState<any>(null)
+  const [processingAction, setProcessingAction] = useState<string | null>(null)
+  const [rejectReason, setRejectReason] = useState('')
+  const [showRejectModal, setShowRejectModal] = useState(false)
+  const [rejectingId, setRejectingId] = useState<string | null>(null)
+
+  const filteredAchievements = studentAchievements.filter(a => {
+    const matchesStatus = filterStatus === 'all' || a.status === filterStatus
+    const matchesType = filterType === 'all' || a.type === filterType
+    const matchesSearch = searchTerm === '' || 
+      a.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.regNo.toLowerCase().includes(searchTerm.toLowerCase())
+    return matchesStatus && matchesType && matchesSearch
+  })
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending_staff': return 'bg-yellow-100 text-yellow-700 border-yellow-200'
+      case 'staff_approved': return 'bg-blue-100 text-blue-700 border-blue-200'
+      case 'pending_hod': return 'bg-purple-100 text-purple-700 border-purple-200'
+      case 'hod_approved': return 'bg-green-100 text-green-700 border-green-200'
+      case 'rejected': return 'bg-red-100 text-red-700 border-red-200'
+      default: return 'bg-gray-100 text-gray-700 border-gray-200'
+    }
+  }
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending_staff': return '⏳ Pending Staff Review'
+      case 'staff_approved': return '✓ Staff Approved'
+      case 'pending_hod': return '📋 Pending Your Approval'
+      case 'hod_approved': return '✅ Approved by You'
+      case 'rejected': return '❌ Rejected'
+      default: return status
+    }
+  }
+
+  const handleApprove = async (id: string) => {
+    setProcessingAction(id)
+    await new Promise(resolve => setTimeout(resolve, 1200))
+    
+    setStudentAchievements(prev => prev.map(a => 
+      a.id.toString() === id 
+        ? { ...a, status: 'hod_approved', hodApprovedBy: user.name, approvedAt: new Date().toISOString() }
+        : a
+    ))
+    setProcessingAction(null)
+    setSelectedEntry(null)
+  }
+
+  const handleRejectWithReason = async () => {
+    if (!rejectingId || !rejectReason.trim()) return
+    
+    setProcessingAction(rejectingId)
+    await new Promise(resolve => setTimeout(resolve, 1200))
+    
+    setStudentAchievements(prev => prev.map(a => 
+      a.id.toString() === rejectingId 
+        ? { ...a, status: 'rejected', rejectionReason: rejectReason, rejectedBy: user.name, rejectedAt: new Date().toISOString() }
+        : a
+    ))
+    setProcessingAction(null)
+    setShowRejectModal(false)
+    setRejectReason('')
+    setRejectingId(null)
+    setSelectedEntry(null)
+  }
+
+  const openRejectModal = (id: string) => {
+    setRejectingId(id)
+    setRejectReason('')
+    setShowRejectModal(true)
+  }
+
+  const stats = {
+    total: studentAchievements.length,
+    pending_hod: studentAchievements.filter(a => a.status === 'pending_hod').length,
+    approved: studentAchievements.filter(a => a.status === 'hod_approved').length,
+    rejected: studentAchievements.filter(a => a.status === 'rejected').length
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Student Achievement Approval</h2>
+          <p className="text-gray-500 mt-1">Review and approve student achievements sent by staff members</p>
+        </div>
+        <Badge variant="outline" className="px-4 py-2 text-sm bg-purple-50 text-purple-700 border-purple-200">
+          {user.departmentName} • HOD Reviewer
+        </Badge>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 border-slate-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-slate-600 flex items-center justify-center">
+              <FileText className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+              <p className="text-xs text-slate-600">Total Submissions</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center">
+              <Clock className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-purple-900">{stats.pending_hod}</p>
+              <p className="text-xs text-purple-600">Pending Your Approval</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-green-900">{stats.approved}</p>
+              <p className="text-xs text-green-600">Approved by You</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center">
+              <XCircle className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-red-900">{stats.rejected}</p>
+              <p className="text-xs text-red-600">Rejected</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card className="p-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by name, reg no, or title..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+            />
+          </div>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm"
+          >
+            <option value="all">All Status</option>
+            <option value="pending_hod">Pending Your Approval</option>
+            <option value="hod_approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm"
+          >
+            <option value="all">All Types</option>
+            <option value="journal">Journal</option>
+            <option value="conference">Conference</option>
+            <option value="hackathon">Hackathon</option>
+            <option value="internship">Internship</option>
+            <option value="nptel">NPTEL/MOOC</option>
+            <option value="award">Award</option>
+          </select>
+        </div>
+      </Card>
+
+      {/* Submissions List */}
+      <div className="space-y-3">
+        {filteredAchievements.length === 0 ? (
+          <Card className="p-12 text-center">
+            <Inbox className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-700">No submissions found</h3>
+            <p className="text-gray-500 mt-2">Try adjusting your filters or search terms</p>
+          </Card>
+        ) : (
+          filteredAchievements.map(entry => (
+            <Card key={entry.id} className="overflow-hidden hover:shadow-md transition-all duration-200">
+              <div className={`h-1 ${
+                entry.status === 'pending_hod' ? 'bg-purple-500' :
+                entry.status === 'hod_approved' ? 'bg-green-500' :
+                entry.status === 'rejected' ? 'bg-red-500' :
+                'bg-yellow-500'
+              }`}></div>
+              <CardContent className="p-4">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div className="flex items-start gap-4 flex-1">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                      {entry.studentName.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-gray-900">{entry.studentName}</h3>
+                        <span className="text-sm text-gray-500">•</span>
+                        <span className="text-sm text-gray-600">{entry.regNo}</span>
+                        <span className={`px-2 py-0.5 text-xs rounded-full border ${getStatusColor(entry.status)}`}>
+                          {getStatusLabel(entry.status)}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium text-gray-800 mb-1">{entry.title}</p>
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Tag className="w-3 h-3" />{entry.typeName}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Building2 className="w-3 h-3" />{entry.department}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />{new Date(entry.submittedAt).toLocaleDateString()}
+                        </span>
+                        {entry.staffApprovedBy && (
+                          <span className="flex items-center gap-1 text-blue-600">
+                            <UserCheck className="w-3 h-3" />Staff: {entry.staffApprovedBy}
+                          </span>
+                        )}
+                      </div>
+                      {entry.status === 'rejected' && entry.rejectionReason && (
+                        <div className="mt-2 p-2 bg-red-50 rounded-lg border border-red-200">
+                          <p className="text-xs text-red-600"><strong>Rejection Reason:</strong> {entry.rejectionReason}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 lg:flex-shrink-0">
+                    {entry.status === 'pending_hod' && (
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => setSelectedEntry(entry)}
+                          variant="outline"
+                          className="text-gray-700"
+                        >
+                          <Eye className="w-4 h-4 mr-1" />View
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleApprove(entry.id.toString())}
+                          disabled={processingAction === entry.id.toString()}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          {processingAction === entry.id.toString() ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <><CheckCircle className="w-4 h-4 mr-1" />Approve</>
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => openRejectModal(entry.id.toString())}
+                          disabled={processingAction === entry.id.toString()}
+                          variant="destructive"
+                        >
+                          <XCircle className="w-4 h-4 mr-1" />Reject
+                        </Button>
+                      </>
+                    )}
+                    {entry.status !== 'pending_hod' && (
+                      <Button
+                        size="sm"
+                        onClick={() => setSelectedEntry(entry)}
+                        variant="outline"
+                        className="text-gray-700"
+                      >
+                        <Eye className="w-4 h-4 mr-1" />View Details
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Detail Modal */}
+      {selectedEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSelectedEntry(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-in zoom-in-95 fade-in duration-200">
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
+              <h3 className="text-lg font-bold text-gray-900">Submission Details</h3>
+              <button onClick={() => setSelectedEntry(null)} className="p-2 hover:bg-gray-100 rounded-full">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+              {/* Student Info */}
+              <div className="flex items-center gap-4 pb-4 border-b">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xl">
+                  {selectedEntry.studentName.charAt(0)}
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900 text-lg">{selectedEntry.studentName}</h4>
+                  <p className="text-gray-600">{selectedEntry.regNo} • {selectedEntry.department}</p>
+                  <span className={`inline-block mt-1 px-3 py-1 text-xs rounded-full border ${getStatusColor(selectedEntry.status)}`}>
+                    {getStatusLabel(selectedEntry.status)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Achievement Details */}
+              <div className="space-y-3">
+                <h5 className="font-semibold text-gray-800 flex items-center gap-2">
+                  <Award className="w-5 h-5 text-purple-500" />
+                  Achievement Information
+                </h5>
+                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Type</span>
+                    <span className="font-medium text-gray-900">{selectedEntry.typeName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Title</span>
+                    <span className="font-medium text-gray-900">{selectedEntry.title}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Submitted On</span>
+                    <span className="font-medium text-gray-900">{new Date(selectedEntry.submittedAt).toLocaleString()}</span>
+                  </div>
+                  {selectedEntry.staffApprovedBy && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Staff Approved By</span>
+                      <span className="font-medium text-blue-600">{selectedEntry.staffApprovedBy}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Submitted Data */}
+              {selectedEntry.data && (
+                <div className="space-y-3">
+                  <h5 className="font-semibold text-gray-800 flex items-center gap-2">
+                    <ClipboardList className="w-5 h-5 text-green-500" />
+                    Submitted Data
+                  </h5>
+                  <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                    {Object.entries(selectedEntry.data).map(([key, value]) => (
+                      <div key={key} className="flex justify-between text-sm">
+                        <span className="text-gray-600 capitalize">{key.replace(/_/g, ' ')}</span>
+                        <span className="font-medium text-gray-900">{String(value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              {selectedEntry.status === 'pending_hod' && (
+                <div className="flex gap-3 pt-4 border-t">
+                  <Button variant="outline" onClick={() => setSelectedEntry(null)} className="flex-1">Cancel</Button>
+                  <Button variant="destructive" onClick={() => {setSelectedEntry(null); openRejectModal(selectedEntry.id.toString())}} className="flex-1">
+                    <XCircle className="w-4 h-4 mr-2" />Reject with Reason
+                  </Button>
+                  <Button onClick={() => handleApprove(selectedEntry.id.toString())} disabled={processingAction === selectedEntry.id.toString()} className="flex-1 bg-green-600 hover:bg-green-700">
+                    {processingAction === selectedEntry.id.toString() ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
+                    ) : (
+                      <><CheckCircle className="w-4 h-4 mr-2" />Approve</>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Modal with Reason */}
+      {showRejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowRejectModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in zoom-in-95 fade-in duration-200">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Reject Submission</h3>
+                  <p className="text-sm text-gray-500">Please provide a reason for rejection</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Rejection Reason *</label>
+                  <textarea
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    rows={4}
+                    placeholder="Enter the reason for rejecting this submission..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                    autoFocus
+                  />
+                </div>
+                
+                <div className="flex gap-3">
+                  <Button variant="outline" onClick={() => setShowRejectModal(false)} className="flex-1">Cancel</Button>
+                  <Button 
+                    onClick={handleRejectWithReason} 
+                    disabled={!rejectReason.trim() || processingAction === rejectingId}
+                    variant="destructive"
+                    className="flex-1"
+                  >
+                    {processingAction === rejectingId ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
+                    ) : (
+                      <><XCircle className="w-4 h-4 mr-2" />Confirm Reject</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ============ HOD STAFF APPROVAL PAGE ============
+function HODStaffApprovalPage({ user }: { user: User }) {
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [staffAchievements, setStaffAchievements] = useState<any[]>([
+    {
+      id: 1,
+      staffName: 'Dr. Ramesh Kumar',
+      department: 'CSE',
+      category: 'research',
+      typeName: 'Research Publication',
+      title: 'Deep Learning Approaches for Image Classification - SCI Journal',
+      submittedAt: '2024-01-15T10:30:00Z',
+      status: 'pending_hod',
+      data: { journal: 'IEEE Transactions on Neural Networks', issn: '2162-237X', indexed: 'SCI', coAuthors: 'Dr. Sharma, Prof. Singh' },
+      staffNote: 'Published in Q1 journal'
+    },
+    {
+      id: 2,
+      staffName: 'Prof. Lakshmi Priya',
+      department: 'CSE',
+      category: 'achievement',
+      typeName: 'Workshop Conducted',
+      title: 'One Week FDP on Cloud Computing Technologies',
+      submittedAt: '2024-01-14T09:15:00Z',
+      status: 'pending_hod',
+      data: { participants: '45', venue: 'Seminar Hall A', dates: 'Jan 8-13, 2024', sponsor: 'AICTE' },
+      staffNote: 'Successfully completed with good feedback'
+    },
+    {
+      id: 3,
+      staffName: 'Dr. Venkat Raman',
+      department: 'ECE',
+      category: 'research',
+      typeName: 'Conference Paper',
+      title: 'IoT-Based Smart Agriculture System - IEEE International Conference',
+      submittedAt: '2024-01-13T14:20:00Z',
+      status: 'hod_approved',
+      data: { conference: 'IEEE ICIT 2024', location: 'Kerala', indexed: 'IEEE Xplore' },
+      approvedAt: '2024-01-16T10:00:00Z'
+    },
+    {
+      id: 4,
+      staffName: 'Ms. Divya S',
+      department: 'AI&DS',
+      category: 'achievement',
+      typeName: 'Certification Completed',
+      title: 'AWS Solutions Architect Professional Certification',
+      submittedAt: '2024-01-12T11:45:00Z',
+      status: 'rejected',
+      rejectionReason: 'Please provide valid certificate copy and payment receipt',
+      rejectedAt: '2024-01-15T16:00:00Z',
+      data: { provider: 'Amazon Web Services', validity: '3 Years' }
+    },
+    {
+      id: 5,
+      staffName: 'Prof. Arun Prakash',
+      department: 'MECH',
+      category: 'research',
+      typeName: 'Patent Filed',
+      title: 'Novel Design for Heat Exchanger in Automobile Applications',
+      submittedAt: '2024-01-16T08:00:00Z',
+      status: 'pending_hod',
+      data: { patentNo: '2024410XXXXXX', inventors: 'Prof. Arun Prakash, Dr. Krishnan', status_pub: 'Filed' },
+      staffNote: 'Innovation under industry collaboration'
+    }
+  ])
+  const [selectedEntry, setSelectedEntry] = useState<any>(null)
+  const [processingAction, setProcessingAction] = useState<string | null>(null)
+  const [rejectReason, setRejectReason] = useState('')
+  const [showRejectModal, setShowRejectModal] = useState(false)
+  const [rejectingId, setRejectingId] = useState<string | null>(null)
+
+  const filteredAchievements = staffAchievements.filter(a => {
+    const matchesStatus = filterStatus === 'all' || a.status === filterStatus
+    const matchesSearch = searchTerm === '' || 
+      a.staffName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.title.toLowerCase().includes(searchTerm.toLowerCase())
+    return matchesStatus && matchesSearch
+  })
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending_hod': return 'bg-purple-100 text-purple-700 border-purple-200'
+      case 'hod_approved': return 'bg-green-100 text-green-700 border-green-200'
+      case 'rejected': return 'bg-red-100 text-red-700 border-red-200'
+      default: return 'bg-gray-100 text-gray-700 border-gray-200'
+    }
+  }
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending_hod': return '📋 Pending Your Approval'
+      case 'hod_approved': return '✅ Approved by You'
+      case 'rejected': return '❌ Rejected'
+      default: return status
+    }
+  }
+
+  const handleApprove = async (id: string) => {
+    setProcessingAction(id)
+    await new Promise(resolve => setTimeout(resolve, 1200))
+    
+    setStaffAchievements(prev => prev.map(a => 
+      a.id.toString() === id 
+        ? { ...a, status: 'hod_approved', hodApprovedBy: user.name, approvedAt: new Date().toISOString() }
+        : a
+    ))
+    setProcessingAction(null)
+    setSelectedEntry(null)
+  }
+
+  const handleRejectWithReason = async () => {
+    if (!rejectingId || !rejectReason.trim()) return
+    
+    setProcessingAction(rejectingId)
+    await new Promise(resolve => setTimeout(resolve, 1200))
+    
+    setStaffAchievements(prev => prev.map(a => 
+      a.id.toString() === rejectingId 
+        ? { ...a, status: 'rejected', rejectionReason: rejectReason, rejectedBy: user.name, rejectedAt: new Date().toISOString() }
+        : a
+    ))
+    setProcessingAction(null)
+    setShowRejectModal(false)
+    setRejectReason('')
+    setRejectingId(null)
+    setSelectedEntry(null)
+  }
+
+  const openRejectModal = (id: string) => {
+    setRejectingId(id)
+    setRejectReason('')
+    setShowRejectModal(true)
+  }
+
+  const stats = {
+    total: staffAchievements.length,
+    pending_hod: staffAchievements.filter(a => a.status === 'pending_hod').length,
+    approved: staffAchievements.filter(a => a.status === 'hod_approved').length,
+    rejected: staffAchievements.filter(a => a.status === 'rejected').length
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Staff Achievement Approval</h2>
+          <p className="text-gray-500 mt-1">Review and approve staff research and achievement submissions</p>
+        </div>
+        <Badge variant="outline" className="px-4 py-2 text-sm bg-indigo-50 text-indigo-700 border-indigo-200">
+          {user.departmentName} • HOD Reviewer
+        </Badge>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 border-slate-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-slate-600 flex items-center justify-center">
+              <FileText className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+              <p className="text-xs text-slate-600">Total Submissions</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center">
+              <Clock className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-purple-900">{stats.pending_hod}</p>
+              <p className="text-xs text-purple-600">Pending Your Approval</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-green-900">{stats.approved}</p>
+              <p className="text-xs text-green-600">Approved by You</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center">
+              <XCircle className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-red-900">{stats.rejected}</p>
+              <p className="text-xs text-red-600">Rejected</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card className="p-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by staff name or title..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+            />
+          </div>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
+          >
+            <option value="all">All Status</option>
+            <option value="pending_hod">Pending Your Approval</option>
+            <option value="hod_approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+      </Card>
+
+      {/* Submissions List */}
+      <div className="space-y-3">
+        {filteredAchievements.length === 0 ? (
+          <Card className="p-12 text-center">
+            <Inbox className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-700">No submissions found</h3>
+            <p className="text-gray-500 mt-2">Try adjusting your filters or search terms</p>
+          </Card>
+        ) : (
+          filteredAchievements.map(entry => (
+            <Card key={entry.id} className="overflow-hidden hover:shadow-md transition-all duration-200">
+              <div className={`h-1 ${
+                entry.status === 'pending_hod' ? 'bg-purple-500' :
+                entry.status === 'hod_approved' ? 'bg-green-500' :
+                'bg-red-500'
+              }`}></div>
+              <CardContent className="p-4">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div className="flex items-start gap-4 flex-1">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                      {entry.staffName.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-gray-900">{entry.staffName}</h3>
+                        <span className={`px-2 py-0.5 text-xs rounded-full border ${getStatusColor(entry.status)}`}>
+                          {getStatusLabel(entry.status)}
+                        </span>
+                        <span className={`px-2 py-0.5 text-xs rounded-full ${
+                          entry.category === 'research' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {entry.category === 'research' ? '📄 Research' : '🏆 Achievement'}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium text-gray-800 mb-1">{entry.title}</p>
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Tag className="w-3 h-3" />{entry.typeName}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Building2 className="w-3 h-3" />{entry.department}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />{new Date(entry.submittedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {entry.staffNote && (
+                        <p className="mt-2 text-xs italic text-gray-500 bg-gray-50 p-2 rounded-lg">📝 {entry.staffNote}</p>
+                      )}
+                      {entry.status === 'rejected' && entry.rejectionReason && (
+                        <div className="mt-2 p-2 bg-red-50 rounded-lg border border-red-200">
+                          <p className="text-xs text-red-600"><strong>Rejection Reason:</strong> {entry.rejectionReason}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 lg:flex-shrink-0">
+                    {entry.status === 'pending_hod' && (
+                      <>
+                        <Button size="sm" onClick={() => setSelectedEntry(entry)} variant="outline" className="text-gray-700">
+                          <Eye className="w-4 h-4 mr-1" />View
+                        </Button>
+                        <Button size="sm" onClick={() => handleApprove(entry.id.toString())} disabled={processingAction === entry.id.toString()} className="bg-green-600 hover:bg-green-700">
+                          {processingAction === entry.id.toString() ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle className="w-4 h-4 mr-1" />Approve</>}
+                        </Button>
+                        <Button size="sm" onClick={() => openRejectModal(entry.id.toString())} disabled={processingAction === entry.id.toString()} variant="destructive">
+                          <XCircle className="w-4 h-4 mr-1" />Reject
+                        </Button>
+                      </>
+                    )}
+                    {entry.status !== 'pending_hod' && (
+                      <Button size="sm" onClick={() => setSelectedEntry(entry)} variant="outline" className="text-gray-700">
+                        <Eye className="w-4 h-4 mr-1" />View Details
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Detail Modal */}
+      {selectedEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSelectedEntry(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-in zoom-in-95 fade-in duration-200">
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
+              <h3 className="text-lg font-bold text-gray-900">Staff Submission Details</h3>
+              <button onClick={() => setSelectedEntry(null)} className="p-2 hover:bg-gray-100 rounded-full">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+              {/* Staff Info */}
+              <div className="flex items-center gap-4 pb-4 border-b">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold text-xl">
+                  {selectedEntry.staffName.charAt(0)}
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900 text-lg">{selectedEntry.staffName}</h4>
+                  <p className="text-gray-600">{selectedEntry.department} Department</p>
+                  <span className={`inline-block mt-1 px-3 py-1 text-xs rounded-full border ${getStatusColor(selectedEntry.status)}`}>
+                    {getStatusLabel(selectedEntry.status)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Achievement Details */}
+              <div className="space-y-3">
+                <h5 className="font-semibold text-gray-800 flex items-center gap-2">
+                  <Award className="w-5 h-5 text-indigo-500" />
+                  Submission Information
+                </h5>
+                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Category</span>
+                    <span className="font-medium text-gray-900">{selectedEntry.typeName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Title</span>
+                    <span className="font-medium text-gray-900">{selectedEntry.title}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Submitted On</span>
+                    <span className="font-medium text-gray-900">{new Date(selectedEntry.submittedAt).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Data */}
+              {selectedEntry.data && (
+                <div className="space-y-3">
+                  <h5 className="font-semibold text-gray-800 flex items-center gap-2">
+                    <ClipboardList className="w-5 h-5 text-green-500" />
+                    Details
+                  </h5>
+                  <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                    {Object.entries(selectedEntry.data).map(([key, value]) => (
+                      <div key={key} className="flex justify-between text-sm">
+                        <span className="text-gray-600 capitalize">{key.replace(/_/g, ' ')}</span>
+                        <span className="font-medium text-gray-900">{String(value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Staff Note */}
+              {selectedEntry.staffNote && (
+                <div className="space-y-3">
+                  <h5 className="font-semibold text-gray-800 flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-orange-500" />
+                    Staff Note
+                  </h5>
+                  <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
+                    <p className="text-sm text-gray-700 italic">{selectedEntry.staffNote}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              {selectedEntry.status === 'pending_hod' && (
+                <div className="flex gap-3 pt-4 border-t">
+                  <Button variant="outline" onClick={() => setSelectedEntry(null)} className="flex-1">Cancel</Button>
+                  <Button variant="destructive" onClick={() => {setSelectedEntry(null); openRejectModal(selectedEntry.id.toString())}} className="flex-1">
+                    <XCircle className="w-4 h-4 mr-2" />Reject with Reason
+                  </Button>
+                  <Button onClick={() => handleApprove(selectedEntry.id.toString())} disabled={processingAction === selectedEntry.id.toString()} className="flex-1 bg-green-600 hover:bg-green-700">
+                    {processingAction === selectedEntry.id.toString() ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
+                    ) : (
+                      <><CheckCircle className="w-4 h-4 mr-2" />Approve</>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Modal with Reason */}
+      {showRejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowRejectModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in zoom-in-95 fade-in duration-200">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Reject Staff Submission</h3>
+                  <p className="text-sm text-gray-500">Please provide a reason for rejection</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Rejection Reason *</label>
+                  <textarea
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    rows={4}
+                    placeholder="Enter the reason for rejecting this submission..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                    autoFocus
+                  />
+                </div>
+                
+                <div className="flex gap-3">
+                  <Button variant="outline" onClick={() => setShowRejectModal(false)} className="flex-1">Cancel</Button>
+                  <Button 
+                    onClick={handleRejectWithReason} 
+                    disabled={!rejectReason.trim() || processingAction === rejectingId}
+                    variant="destructive"
+                    className="flex-1"
+                  >
+                    {processingAction === rejectingId ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
+                    ) : (
+                      <><XCircle className="w-4 h-4 mr-2" />Confirm Reject</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ============ MAIN APP COMPONENT ============
 export default function IQACPortal() {
   const { isAuthenticated, user, logout } = useAuthStore()
@@ -4227,6 +5810,9 @@ export default function IQACPortal() {
         : <AchievementForm user={user} onBack={() => setActiveTab('dashboard')} />
       case 'staff_achievement': return <StaffAchievementPage user={user} />
       case 'student_achievement_view': return <StudentAchievementViewPage user={user} />
+      case 'my_achievement': return <MyAchievementPage user={user} />
+      case 'hod_student_approval': return <HODStudentApprovalPage user={user} />
+      case 'hod_staff_approval': return <HODStaffApprovalPage user={user} />
       case 'feedback': return user?.role === 'STUDENT'
         ? <StudentFeedbackPage user={user} feedbackEnabled={feedbackEnabled} />
         : <FeedbackModule user={user} feedbackEnabled={feedbackEnabled} setFeedbackEnabled={setFeedbackEnabled} />
