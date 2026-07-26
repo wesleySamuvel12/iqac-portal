@@ -3862,7 +3862,85 @@ function NotificationDropdown() {
   )
 }
 
-// ============ SIDEBAR ============
+// ============ ROLE-BASED SIDEBAR CONFIG ============
+interface MenuItem {
+  id: TabType;
+  icon: React.ElementType;
+  label: string;
+  badge?: string;
+  description?: string;
+}
+
+// Role-specific configurations
+const ROLE_SIDEBAR_CONFIG = {
+  STUDENT: {
+    brandColor: 'from-emerald-500 via-teal-500 to-cyan-500',
+    bgColor: 'bg-emerald-50',
+    textColor: 'text-emerald-700',
+    accentColor: 'emerald',
+    roleLabel: 'Student Portal',
+    roleIcon: GraduationCap,
+    menuItems: [
+      { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'Overview & Stats' },
+      { id: 'achievements', icon: Trophy, label: 'My Achievements', badge: 'New', description: 'View your achievements' },
+      { id: 'student_achievement_view', icon: FolderOpen, label: 'Submit New', badge: '+', description: 'Add new achievement' },
+      { id: 'feedback', icon: MessageSquare, label: 'Feedback', description: 'Send feedback' },
+    ] as MenuItem[],
+  },
+  STAFF: {
+    brandColor: 'from-blue-500 via-indigo-500 to-violet-500',
+    bgColor: 'bg-blue-50',
+    textColor: 'text-blue-700',
+    accentColor: 'blue',
+    roleLabel: 'Staff Portal',
+    roleIcon: BookOpen,
+    menuItems: [
+      { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'Overview & Stats' },
+      { id: 'staff_achievement', icon: Award, label: 'Staff Achievements', badge: 'New', description: 'Your achievements' },
+      { id: 'student_achievement_view', icon: GraduationCap, label: 'Student Achievements', badge: 'View', description: 'View student data' },
+      { id: 'feedback', icon: MessageSquare, label: 'Feedback', description: 'Send feedback' },
+    ] as MenuItem[],
+  },
+  HOD: {
+    brandColor: 'from-purple-500 via-fuchsia-500 to-pink-500',
+    bgColor: 'bg-purple-50',
+    textColor: 'text-purple-700',
+    accentColor: 'purple',
+    roleLabel: 'HOD Portal',
+    roleIcon: UserCheck,
+    menuItems: [
+      { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'Department Overview' },
+      { id: 'hod_student_approval', icon: GraduationCap, label: 'Student Approvals', badge: 'Pending', description: 'Review student submissions' },
+      { id: 'hod_staff_approval', icon: BookOpen, label: 'Staff Approvals', badge: 'Pending', description: 'Review staff submissions' },
+      { id: 'my_achievement', icon: Trophy, label: 'My Achievements', description: 'Personal achievements' },
+      { id: 'analytics', icon: BarChart3, label: 'Department Analytics', description: 'Stats & Reports' },
+      { id: 'settings', icon: Settings, label: 'Settings', description: 'Preferences' },
+    ] as MenuItem[],
+  },
+  ADMIN: {
+    brandColor: 'from-amber-500 via-orange-500 to-red-500',
+    bgColor: 'bg-amber-50',
+    textColor: 'text-amber-700',
+    accentColor: 'amber',
+    roleLabel: 'Admin Portal',
+    roleIcon: Shield,
+    menuItems: [
+      { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'System Overview' },
+      { id: 'departments', icon: Building2, label: 'Departments', description: 'Manage departments' },
+      { id: 'faculty', icon: Users, label: 'Faculty', description: 'Faculty management' },
+      { id: 'students', icon: GraduationCap, label: 'Students', description: 'Student records' },
+      { id: 'activities', icon: Activity, label: 'Activities', description: 'Events & Programs' },
+      { id: 'research', icon: Award, label: 'Research', description: 'Research papers' },
+      { id: 'achievements', icon: Trophy, label: 'Achievements', badge: 'All', description: 'All achievements' },
+      { id: 'approvals', icon: CheckCircle, label: 'Approvals', badge: '12', description: 'Pending approvals' },
+      { id: 'analytics', icon: BarChart3, label: 'Analytics', description: 'Reports & Insights' },
+      { id: 'documents', icon: FolderOpen, label: 'Documents', description: 'File management' },
+      { id: 'feedback', icon: MessageSquare, label: 'Feedback', description: 'User feedback' },
+      { id: 'settings', icon: Settings, label: 'Settings', description: 'System settings' },
+    ] as MenuItem[],
+  }
+}
+
 function Sidebar({ 
   activeTab, 
   setActiveTab, 
@@ -3878,40 +3956,29 @@ function Sidebar({
 }) {
   const [collapsed, setCollapsed] = useState(false)
   
-  // Role-based menu items - Different menus for each role
-  const getAllMenuItems = (): { id: TabType; icon: React.ElementType; label: string; badge?: string; roles?: string[] }[] => [
-    // Common items
-    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    
-    // Student specific
-    { id: 'achievements', icon: Trophy, label: 'Achievements', roles: ['STUDENT'], badge: 'New' },
-    { id: 'feedback', icon: MessageSquare, label: 'Feedback', roles: ['STUDENT'] },
-    
-    // Staff specific - 3 buttons only
-    { id: 'staff_achievement', icon: Award, label: 'Staff Achievement', roles: ['STAFF'], badge: 'New' },
-    { id: 'feedback', icon: MessageSquare, label: 'Feedback', roles: ['STAFF'] },
-    { id: 'student_achievement_view', icon: GraduationCap, label: 'Student Achievement', roles: ['STAFF'], badge: 'Pending' },
-    
-    // HOD specific - 3 additional buttons (Dashboard is common)
-    { id: 'my_achievement', icon: Trophy, label: 'My Achievement', roles: ['HOD'], badge: 'New' },
-    { id: 'hod_student_approval', icon: GraduationCap, label: 'Student Achievement Approval', roles: ['HOD'], badge: 'Pending' },
-    { id: 'hod_staff_approval', icon: BookOpen, label: 'Staff Achievement Approval', roles: ['HOD'], badge: 'Pending' },
-    
-    // Admin items
-    { id: 'departments', icon: Building2, label: 'Departments', roles: ['ADMIN'] },
-    { id: 'faculty', icon: Users, label: 'Faculty', roles: ['ADMIN'] },
-    { id: 'students', icon: GraduationCap, label: 'Students', roles: ['ADMIN'] },
-    { id: 'activities', icon: Activity, label: 'Activities', roles: ['ADMIN'] },
-    { id: 'research', icon: Award, label: 'Research', roles: ['ADMIN'] },
-    { id: 'approvals', icon: CheckCircle, label: 'Approvals', badge: '12', roles: ['ADMIN'] },
-    { id: 'analytics', icon: BarChart3, label: 'Analytics', roles: ['ADMIN'] },
-    { id: 'documents', icon: FolderOpen, label: 'Documents', roles: ['ADMIN'] },
-    { id: 'settings', icon: Settings, label: 'Settings', roles: ['ADMIN'] },
-    { id: 'achievements', icon: Trophy, label: 'Achievements', roles: ['ADMIN'] },
-    { id: 'feedback', icon: MessageSquare, label: 'Feedback', roles: ['ADMIN'] },
-  ]
+  // Get role-specific configuration
+  const roleConfig = ROLE_SIDEBAR_CONFIG[user.role as keyof typeof ROLE_SIDEBAR_CONFIG] || ROLE_SIDEBAR_CONFIG.STUDENT
+  const menuItems = roleConfig.menuItems
 
-  const menuItems = getAllMenuItems().filter(item => !item.roles || item.roles.includes(user.role))
+  // Dynamic color classes based on role
+  const getActiveClasses = (isActive: boolean) => {
+    if (isActive) {
+      return `bg-${roleConfig.accentColor}-50 text-${roleConfig.accentColor}-700 shadow-sm border border-${roleConfig.accentColor}-200`
+    }
+    return 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+  }
+
+  const getIconClass = (isActive: boolean) => {
+    if (isActive) return `text-${roleConfig.accentColor}-600`
+    return 'text-gray-500 group-hover:text-gray-700'
+  }
+
+  const getBadgeClass = (isActive: boolean) => {
+    if (isActive) return `bg-${roleConfig.accentColor}-100 text-${roleConfig.accentColor}-700`
+    return 'bg-red-50 text-red-600'
+  }
+
+  const RoleIcon = roleConfig.roleIcon
 
   return (
     <>
@@ -3922,66 +3989,153 @@ function Sidebar({
           onClick={onToggle}
         />
       )}
-      <aside className={`${collapsed ? 'w-20' : 'w-64'} bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col transition-all duration-300 z-50 ${open ? 'fixed inset-y-0 left-0 shadow-2xl' : 'hidden lg:flex'} sidebar-shadow`}>
-      {/* Logo */}
-      <div className="p-4 border-b border-gray-100">
+      <aside className={`${collapsed ? 'w-20' : 'w-72'} bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col transition-all duration-300 z-50 ${open ? 'fixed inset-y-0 left-0 shadow-2xl' : 'hidden lg:flex'} sidebar-shadow`}>
+      
+      {/* ====== ROLE-BASED HEADER ====== */}
+      <div className={`p-4 border-b border-gray-100 bg-gradient-to-r ${roleConfig.brandColor} bg-opacity-5`}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0a2a5e] via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 logo-glow">
-            <Building2 className="w-5 h-5 text-white" />
+          {/* Role-Specific Logo */}
+          <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${roleConfig.brandColor} flex items-center justify-center shadow-lg logo-glow relative overflow-hidden`}>
+            <RoleIcon className="w-6 h-6 text-white" />
+            <div className="absolute inset-0 bg-white/20 rounded-xl" />
           </div>
           {!collapsed && (
-            <div className="overflow-hidden">
-              <span className="font-bold text-gray-900 text-sm block truncate">IQAC ERP</span>
-              <span className="text-xs text-gray-500">Enterprise Edition</span>
+            <div className="overflow-hidden flex-1">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-gray-900 text-sm block truncate">NIET IQAC</span>
+                <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full ${roleConfig.bgColor} ${roleConfig.textColor}`}>
+                  {user.role}
+                </span>
+              </div>
+              <span className={`text-xs ${roleConfig.textColor} font-medium flex items-center gap-1 mt-0.5`}>
+                <RoleIcon className="w-3 h-3" />
+                {roleConfig.roleLabel}
+              </span>
             </div>
           )}
         </div>
+        
+        {/* User Info (when not collapsed) */}
+        {!collapsed && (
+          <div className="mt-3 pt-3 border-t border-white/20">
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-lg ${roleConfig.bgColor} flex items-center justify-center`}>
+                <span className={`text-sm font-bold ${roleConfig.textColor}`}>{user.name?.charAt(0) || 'U'}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">{user.name || 'User'}</p>
+                <p className="text-xs text-gray-500 truncate">{user.departmentName || 'Department'}</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Menu Items */}
+      {/* ====== MENU SECTION LABEL ====== */}
+      {!collapsed && (
+        <div className="px-4 pt-4 pb-2">
+          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Main Menu</span>
+        </div>
+      )}
+
+      {/* ====== MENU ITEMS ====== */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar">
-        {menuItems.map(item => (
-          <button
-            key={item.id}
-            onClick={() => setActiveTab(item.id)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all relative group ${
-              activeTab === item.id
-                ? 'bg-indigo-50 text-indigo-700 shadow-sm border border-indigo-200'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-            }`}
-            title={collapsed ? item.label : undefined}
-          >
-            <item.icon className={`w-5 h-5 flex-shrink-0 transition-colors ${activeTab === item.id ? 'text-indigo-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
-            {!collapsed && (
-              <>
-                <span className={`truncate ${activeTab === item.id ? 'font-semibold' : ''}`}>{item.label}</span>
-                {item.badge && (
-                  <span className={`ml-auto px-2 py-0.5 text-xs rounded-full font-medium ${
-                    activeTab === item.id ? 'bg-indigo-100 text-indigo-700' : 'bg-red-50 text-red-600'
-                  }`}>
-                    {item.badge}
-                  </span>
-                )}
-              </>
-            )}
-            {collapsed && item.badge && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-            )}
-          </button>
-        ))}
+        {menuItems.map((item, index) => {
+          const Icon = item.icon
+          const isActive = activeTab === item.id
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative group ${
+                isActive 
+                  ? `${roleConfig.bgColor} ${roleConfig.textColor} shadow-sm border border-${roleConfig.accentColor}-200`
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+              title={collapsed ? item.label : undefined}
+              style={{ animationDelay: `${index * 30}ms` }}
+            >
+              {/* Icon Container */}
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
+                isActive 
+                  ? `bg-gradient-to-br ${roleConfig.brandColor} shadow-md`
+                  : 'bg-gray-100 group-hover:bg-gray-200'
+              }`}>
+                <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`} />
+              </div>
+              
+              {!collapsed && (
+                <div className="flex-1 text-left min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className={`truncate ${isActive ? 'font-bold' : ''}`}>{item.label}</span>
+                    {item.badge && (
+                      <span className={`ml-auto px-2 py-0.5 text-[10px] rounded-full font-bold shrink-0 ${
+                        isActive ? `bg-white/30 text-current` : 'bg-red-50 text-red-600'
+                      }`}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
+                  {!isActive && item.description && (
+                    <span className="text-[10px] text-gray-400 truncate block mt-0.5">{item.description}</span>
+                  )}
+                </div>
+              )}
+              
+              {/* Active Indicator Bar (collapsed mode) */}
+              {collapsed && isActive && (
+                <span className={`absolute right-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-${roleConfig.accentColor}-500`} />
+              )}
+              
+              {/* Active Left Border */}
+              {isActive && !collapsed && (
+                <span className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-gradient-to-b ${roleConfig.brandColor}`} />
+              )}
+            </button>
+          )
+        })}
       </nav>
 
-      {/* Collapse Toggle - Desktop only */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="m-3 p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors hidden lg:flex items-center justify-center"
-      >
-        {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-      </button>
+      {/* ====== BOTTOM SECTION ====== */}
+      <div className="p-3 border-t border-gray-100 space-y-2">
+        {/* Quick Stats Card (when not collapsed) */}
+        {!collapsed && (
+          <div className={`p-3 rounded-xl bg-gradient-to-br ${roleConfig.brandColor} bg-opacity-5 border border-${roleConfig.accentColor}-100`}>
+            <div className="flex items-center gap-2 mb-2">
+              <Zap className={`w-4 h-4 ${roleConfig.textColor}`} />
+              <span className={`text-xs font-bold ${roleConfig.textColor}`}>Quick Info</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="text-center p-2 bg-white/60 rounded-lg">
+                <span className="text-lg font-bold text-gray-900">{user.role === 'ADMIN' ? '20' : user.role === 'HOD' ? '1' : 'CSE'}</span>
+                <p className="text-[9px] text-gray-500">{user.role === 'ADMIN' ? 'Depts' : user.role === 'HOD' ? 'Dept' : 'Code'}</p>
+              </div>
+              <div className="text-center p-2 bg-white/60 rounded-lg">
+                <span className="text-lg font-bold text-gray-900">{user.role === 'STUDENT' ? '13' : user.role === 'STAFF' ? '13' : user.role === 'HOD' ? '50+' : '150+'}</span>
+                <p className="text-[9px] text-gray-500">{user.role === 'ADMIN' ? 'Users' : user.role === 'HOD' ? 'Faculty' : 'Types'}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Collapse Toggle - Desktop only */}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors hidden lg:flex items-center justify-center gap-2 group"
+        >
+          {collapsed ? (
+            <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
+          ) : (
+            <>
+              <ChevronLeft className="w-5 h-5" />
+              <span className="text-xs font-medium">Collapse</span>
+            </>
+          )}
+        </button>
+      </div>
     </aside>
     </>
   )
-}
 
 // ============ MOBILE NAV ============
 // Note: Mobile navigation is now handled by the responsive Sidebar component
