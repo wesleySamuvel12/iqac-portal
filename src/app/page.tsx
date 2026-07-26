@@ -2736,18 +2736,18 @@ function Sidebar({
             onClick={() => setActiveTab(item.id)}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all relative group ${
               activeTab === item.id
-                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                ? 'bg-indigo-50 text-indigo-700 shadow-sm border border-indigo-200'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
             }`}
             title={collapsed ? item.label : undefined}
           >
-            <item.icon className={`w-5 h-5 flex-shrink-0 ${activeTab === item.id ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`} />
+            <item.icon className={`w-5 h-5 flex-shrink-0 transition-colors ${activeTab === item.id ? 'text-indigo-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
             {!collapsed && (
               <>
-                <span className="truncate">{item.label}</span>
+                <span className={`truncate ${activeTab === item.id ? 'font-semibold' : ''}`}>{item.label}</span>
                 {item.badge && (
-                  <span className={`ml-auto px-2 py-0.5 text-xs rounded-full ${
-                    activeTab === item.id ? 'bg-white/20 text-white' : 'bg-red-100 text-red-600'
+                  <span className={`ml-auto px-2 py-0.5 text-xs rounded-full font-medium ${
+                    activeTab === item.id ? 'bg-indigo-100 text-indigo-700' : 'bg-red-50 text-red-600'
                   }`}>
                     {item.badge}
                   </span>
@@ -5019,111 +5019,126 @@ function HODStudentApprovalPage({ user }: { user: User }) {
         </div>
       </Card>
 
-      {/* Submissions List */}
-      <div className="space-y-3">
+      {/* Submissions List - High Contrast Data Table */}
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+        {/* Table Header */}
+        <div className="bg-gray-50/80 px-6 py-4 border-b border-gray-200">
+          <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <div className="col-span-3">Student</div>
+            <div className="col-span-3">Achievement</div>
+            <div className="col-span-2">Type / Date</div>
+            <div className="col-span-2">Status</div>
+            <div className="col-span-2 text-right">Actions</div>
+          </div>
+        </div>
+
+        {/* Table Body */}
         {filteredAchievements.length === 0 ? (
-          <Card className="p-12 text-center">
+          <div className="p-12 text-center">
             <Inbox className="w-16 h-16 mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-semibold text-gray-700">No submissions found</h3>
             <p className="text-gray-500 mt-2">Try adjusting your filters or search terms</p>
-          </Card>
+          </div>
         ) : (
-          filteredAchievements.map(entry => (
-            <Card key={entry.id} className="overflow-hidden hover:shadow-md transition-all duration-200">
-              <div className={`h-1 ${
-                entry.status === 'pending_hod' ? 'bg-purple-500' :
-                entry.status === 'hod_approved' ? 'bg-green-500' :
-                entry.status === 'rejected' ? 'bg-red-500' :
-                'bg-yellow-500'
-              }`}></div>
-              <CardContent className="p-4">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+          <div className="divide-y divide-gray-100">
+            {filteredAchievements.map(entry => (
+              <div 
+                key={entry.id} 
+                className={`px-6 py-4 transition-colors duration-150 hover:bg-[#F8FAFC] group ${
+                  entry.status === 'pending_hod' ? 'bg-white' : ''
+                }`}
+              >
+                <div className="grid grid-cols-12 gap-4 items-center">
+                  {/* Student Info */}
+                  <div className="col-span-3 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm">
                       {entry.studentName.charAt(0)}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-gray-900">{entry.studentName}</h3>
-                        <span className="text-sm text-gray-500">•</span>
-                        <span className="text-sm text-gray-600">{entry.regNo}</span>
-                        <span className={`px-2 py-0.5 text-xs rounded-full border ${getStatusColor(entry.status)}`}>
-                          {getStatusLabel(entry.status)}
-                        </span>
-                      </div>
-                      <p className="text-sm font-medium text-gray-800 mb-1">{entry.title}</p>
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Tag className="w-3 h-3" />{entry.typeName}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Building2 className="w-3 h-3" />{entry.department}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />{new Date(entry.submittedAt).toLocaleDateString()}
-                        </span>
-                        {entry.staffApprovedBy && (
-                          <span className="flex items-center gap-1 text-blue-600">
-                            <UserCheck className="w-3 h-3" />Staff: {entry.staffApprovedBy}
-                          </span>
-                        )}
-                      </div>
-                      {entry.status === 'rejected' && entry.rejectionReason && (
-                        <div className="mt-2 p-2 bg-red-50 rounded-lg border border-red-200">
-                          <p className="text-xs text-red-600"><strong>Rejection Reason:</strong> {entry.rejectionReason}</p>
-                        </div>
-                      )}
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">{entry.studentName}</p>
+                      <p className="text-xs text-gray-500">{entry.regNo}</p>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-2 lg:flex-shrink-0">
-                    {entry.status === 'pending_hod' && (
+
+                  {/* Achievement */}
+                  <div className="col-span-3 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">{entry.title}</p>
+                    {entry.staffApprovedBy && (
+                      <p className="text-xs text-indigo-600 mt-0.5">
+                        <UserCheck className="w-3 h-3 inline mr-1" />
+                        {entry.staffApprovedBy}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Type & Date */}
+                  <div className="col-span-2">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gray-100 text-xs font-medium text-gray-700">
+                      <Tag className="w-3 h-3" />{entry.typeName}
+                    </span>
+                    <p className="text-xs text-gray-400 mt-1">{new Date(entry.submittedAt).toLocaleDateString()}</p>
+                  </div>
+
+                  {/* Status Badge */}
+                  <div className="col-span-2">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(entry.status)}`}>
+                      {getStatusLabel(entry.status)}
+                    </span>
+                    {entry.status === 'rejected' && entry.rejectionReason && (
+                      <p className="text-xs text-red-500 mt-1 truncate" title={entry.rejectionReason}>
+                        {entry.rejectionReason}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="col-span-2 flex items-center justify-end gap-2">
+                    {entry.status === 'pending_hod' ? (
                       <>
-                        <Button
-                          size="sm"
+                        <button
                           onClick={() => setSelectedEntry(entry)}
-                          variant="outline"
-                          className="text-gray-700"
+                          className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all"
+                          title="View details"
                         >
-                          <Eye className="w-4 h-4 mr-1" />View
-                        </Button>
-                        <Button
-                          size="sm"
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => handleApprove(entry.id.toString())}
                           disabled={processingAction === entry.id.toString()}
-                          className="bg-green-600 hover:bg-green-700"
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-all shadow-sm hover:shadow-md disabled:opacity-50"
                         >
                           {processingAction === entry.id.toString() ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           ) : (
-                            <><CheckCircle className="w-4 h-4 mr-1" />Approve</>
+                            <>
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              Approve
+                            </>
                           )}
-                        </Button>
-                        <Button
-                          size="sm"
+                        </button>
+                        <button
                           onClick={() => openRejectModal(entry.id.toString())}
                           disabled={processingAction === entry.id.toString()}
-                          variant="destructive"
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white hover:bg-red-50 text-red-600 border border-red-200 text-xs font-semibold transition-all disabled:opacity-50"
                         >
-                          <XCircle className="w-4 h-4 mr-1" />Reject
-                        </Button>
+                          <XCircle className="w-3.5 h-3.5" />
+                          Reject
+                        </button>
                       </>
-                    )}
-                    {entry.status !== 'pending_hod' && (
-                      <Button
-                        size="sm"
+                    ) : (
+                      <button
                         onClick={() => setSelectedEntry(entry)}
-                        variant="outline"
-                        className="text-gray-700"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium transition-all"
                       >
-                        <Eye className="w-4 h-4 mr-1" />View Details
-                      </Button>
+                        <Eye className="w-3.5 h-3.5" />
+                        View
+                      </button>
                     )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
@@ -5221,50 +5236,72 @@ function HODStudentApprovalPage({ user }: { user: User }) {
         </div>
       )}
 
-      {/* Reject Modal with Reason */}
+      {/* Reject Modal with Reason - Clean White on Dark Backdrop */}
       {showRejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowRejectModal(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in zoom-in-95 fade-in duration-200">
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                  <AlertCircle className="w-6 h-6 text-red-600" />
+          {/* Dark Backdrop with Blur */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-md" 
+            onClick={() => setShowRejectModal(false)}
+          />
+          
+          {/* Clean White Modal */}
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 fade-in duration-200">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-red-50 to-orange-50 px-6 py-5 border-b border-red-100">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0 border border-red-200">
+                  <AlertCircle className="w-6 h-6 text-red-500" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">Reject Submission</h3>
-                  <p className="text-sm text-gray-500">Please provide a reason for rejection</p>
+                  <p className="text-sm text-gray-600 mt-0.5">Please provide constructive feedback for rejection</p>
                 </div>
               </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Rejection Reason <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  rows={4}
+                  placeholder="Explain why this submission is being rejected. This feedback will be visible to the submitter..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 resize-none text-sm text-gray-800 placeholder:text-gray-400 transition-all"
+                  autoFocus
+                />
+                <p className="text-xs text-gray-400 mt-1.5">Be specific and helpful to help improve future submissions</p>
+              </div>
               
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Rejection Reason *</label>
-                  <textarea
-                    value={rejectReason}
-                    onChange={(e) => setRejectReason(e.target.value)}
-                    rows={4}
-                    placeholder="Enter the reason for rejecting this submission..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
-                    autoFocus
-                  />
-                </div>
-                
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setShowRejectModal(false)} className="flex-1">Cancel</Button>
-                  <Button 
-                    onClick={handleRejectWithReason} 
-                    disabled={!rejectReason.trim() || processingAction === rejectingId}
-                    variant="destructive"
-                    className="flex-1"
-                  >
-                    {processingAction === rejectingId ? (
-                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
-                    ) : (
-                      <><XCircle className="w-4 h-4 mr-2" />Confirm Reject</>
-                    )}
-                  </Button>
-                </div>
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowRejectModal(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleRejectWithReason} 
+                  disabled={!rejectReason.trim() || processingAction === rejectingId}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold text-sm shadow-lg shadow-red-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {processingAction === rejectingId ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="w-4 h-4" />
+                      Confirm Reject
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -5504,87 +5541,130 @@ function HODStaffApprovalPage({ user }: { user: User }) {
         </div>
       </Card>
 
-      {/* Submissions List */}
-      <div className="space-y-3">
+      {/* Submissions List - High Contrast Data Table */}
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+        {/* Table Header */}
+        <div className="bg-gray-50/80 px-6 py-4 border-b border-gray-200">
+          <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <div className="col-span-3">Staff Member</div>
+            <div className="col-span-3">Submission</div>
+            <div className="col-span-2">Category</div>
+            <div className="col-span-2">Status</div>
+            <div className="col-span-2 text-right">Actions</div>
+          </div>
+        </div>
+
+        {/* Table Body */}
         {filteredAchievements.length === 0 ? (
-          <Card className="p-12 text-center">
+          <div className="p-12 text-center">
             <Inbox className="w-16 h-16 mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-semibold text-gray-700">No submissions found</h3>
             <p className="text-gray-500 mt-2">Try adjusting your filters or search terms</p>
-          </Card>
+          </div>
         ) : (
-          filteredAchievements.map(entry => (
-            <Card key={entry.id} className="overflow-hidden hover:shadow-md transition-all duration-200">
-              <div className={`h-1 ${
-                entry.status === 'pending_hod' ? 'bg-purple-500' :
-                entry.status === 'hod_approved' ? 'bg-green-500' :
-                'bg-red-500'
-              }`}></div>
-              <CardContent className="p-4">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+          <div className="divide-y divide-gray-100">
+            {filteredAchievements.map(entry => (
+              <div 
+                key={entry.id} 
+                className={`px-6 py-4 transition-colors duration-150 hover:bg-[#F8FAFC] group ${
+                  entry.status === 'pending_hod' ? 'bg-white' : ''
+                }`}
+              >
+                <div className="grid grid-cols-12 gap-4 items-center">
+                  {/* Staff Info */}
+                  <div className="col-span-3 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm">
                       {entry.staffName.charAt(0)}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-gray-900">{entry.staffName}</h3>
-                        <span className={`px-2 py-0.5 text-xs rounded-full border ${getStatusColor(entry.status)}`}>
-                          {getStatusLabel(entry.status)}
-                        </span>
-                        <span className={`px-2 py-0.5 text-xs rounded-full ${
-                          entry.category === 'research' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
-                        }`}>
-                          {entry.category === 'research' ? '📄 Research' : '🏆 Achievement'}
-                        </span>
-                      </div>
-                      <p className="text-sm font-medium text-gray-800 mb-1">{entry.title}</p>
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Tag className="w-3 h-3" />{entry.typeName}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Building2 className="w-3 h-3" />{entry.department}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />{new Date(entry.submittedAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                      {entry.staffNote && (
-                        <p className="mt-2 text-xs italic text-gray-500 bg-gray-50 p-2 rounded-lg">📝 {entry.staffNote}</p>
-                      )}
-                      {entry.status === 'rejected' && entry.rejectionReason && (
-                        <div className="mt-2 p-2 bg-red-50 rounded-lg border border-red-200">
-                          <p className="text-xs text-red-600"><strong>Rejection Reason:</strong> {entry.rejectionReason}</p>
-                        </div>
-                      )}
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">{entry.staffName}</p>
+                      <p className="text-xs text-gray-500">{entry.department}</p>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-2 lg:flex-shrink-0">
-                    {entry.status === 'pending_hod' && (
-                      <>
-                        <Button size="sm" onClick={() => setSelectedEntry(entry)} variant="outline" className="text-gray-700">
-                          <Eye className="w-4 h-4 mr-1" />View
-                        </Button>
-                        <Button size="sm" onClick={() => handleApprove(entry.id.toString())} disabled={processingAction === entry.id.toString()} className="bg-green-600 hover:bg-green-700">
-                          {processingAction === entry.id.toString() ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle className="w-4 h-4 mr-1" />Approve</>}
-                        </Button>
-                        <Button size="sm" onClick={() => openRejectModal(entry.id.toString())} disabled={processingAction === entry.id.toString()} variant="destructive">
-                          <XCircle className="w-4 h-4 mr-1" />Reject
-                        </Button>
-                      </>
+
+                  {/* Submission */}
+                  <div className="col-span-3 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">{entry.title}</p>
+                    {entry.staffNote && (
+                      <p className="text-xs text-orange-600 mt-0.5 truncate" title={entry.staffNote}>
+                        📝 {entry.staffNote}
+                      </p>
                     )}
-                    {entry.status !== 'pending_hod' && (
-                      <Button size="sm" onClick={() => setSelectedEntry(entry)} variant="outline" className="text-gray-700">
-                        <Eye className="w-4 h-4 mr-1" />View Details
-                      </Button>
+                  </div>
+
+                  {/* Category */}
+                  <div className="col-span-2">
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${
+                      entry.category === 'research' 
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {entry.category === 'research' ? '📄' : '🏆'}
+                      {entry.typeName}
+                    </span>
+                    <p className="text-xs text-gray-400 mt-1">{new Date(entry.submittedAt).toLocaleDateString()}</p>
+                  </div>
+
+                  {/* Status Badge */}
+                  <div className="col-span-2">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(entry.status)}`}>
+                      {getStatusLabel(entry.status)}
+                    </span>
+                    {entry.status === 'rejected' && entry.rejectionReason && (
+                      <p className="text-xs text-red-500 mt-1 truncate" title={entry.rejectionReason}>
+                        {entry.rejectionReason}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="col-span-2 flex items-center justify-end gap-2">
+                    {entry.status === 'pending_hod' ? (
+                      <>
+                        <button
+                          onClick={() => setSelectedEntry(entry)}
+                          className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all"
+                          title="View details"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleApprove(entry.id.toString())}
+                          disabled={processingAction === entry.id.toString()}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-all shadow-sm hover:shadow-md disabled:opacity-50"
+                        >
+                          {processingAction === entry.id.toString() ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <>
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              Approve
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => openRejectModal(entry.id.toString())}
+                          disabled={processingAction === entry.id.toString()}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white hover:bg-red-50 text-red-600 border border-red-200 text-xs font-semibold transition-all disabled:opacity-50"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                          Reject
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setSelectedEntry(entry)}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium transition-all"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        View
+                      </button>
                     )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
@@ -5689,50 +5769,72 @@ function HODStaffApprovalPage({ user }: { user: User }) {
         </div>
       )}
 
-      {/* Reject Modal with Reason */}
+      {/* Reject Modal with Reason - Clean White on Dark Backdrop */}
       {showRejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowRejectModal(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in zoom-in-95 fade-in duration-200">
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                  <AlertCircle className="w-6 h-6 text-red-600" />
+          {/* Dark Backdrop with Blur */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-md" 
+            onClick={() => setShowRejectModal(false)}
+          />
+          
+          {/* Clean White Modal */}
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 fade-in duration-200">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-red-50 to-orange-50 px-6 py-5 border-b border-red-100">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0 border border-red-200">
+                  <AlertCircle className="w-6 h-6 text-red-500" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">Reject Staff Submission</h3>
-                  <p className="text-sm text-gray-500">Please provide a reason for rejection</p>
+                  <p className="text-sm text-gray-600 mt-0.5">Please provide constructive feedback for rejection</p>
                 </div>
               </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Rejection Reason <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  rows={4}
+                  placeholder="Explain why this submission is being rejected. This feedback will be visible to the staff member..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 resize-none text-sm text-gray-800 placeholder:text-gray-400 transition-all"
+                  autoFocus
+                />
+                <p className="text-xs text-gray-400 mt-1.5">Be specific and helpful to help improve future submissions</p>
+              </div>
               
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Rejection Reason *</label>
-                  <textarea
-                    value={rejectReason}
-                    onChange={(e) => setRejectReason(e.target.value)}
-                    rows={4}
-                    placeholder="Enter the reason for rejecting this submission..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
-                    autoFocus
-                  />
-                </div>
-                
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setShowRejectModal(false)} className="flex-1">Cancel</Button>
-                  <Button 
-                    onClick={handleRejectWithReason} 
-                    disabled={!rejectReason.trim() || processingAction === rejectingId}
-                    variant="destructive"
-                    className="flex-1"
-                  >
-                    {processingAction === rejectingId ? (
-                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
-                    ) : (
-                      <><XCircle className="w-4 h-4 mr-2" />Confirm Reject</>
-                    )}
-                  </Button>
-                </div>
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowRejectModal(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleRejectWithReason} 
+                  disabled={!rejectReason.trim() || processingAction === rejectingId}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold text-sm shadow-lg shadow-red-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {processingAction === rejectingId ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="w-4 h-4" />
+                      Confirm Reject
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
