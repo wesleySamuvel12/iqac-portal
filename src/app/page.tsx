@@ -623,7 +623,61 @@ function LoginPage() {
             {/* Main Card Content */}
             <div className="premium-card-content">
               
-
+              {/* ====== ROLE TABS SECTION ====== */}
+              <div className="role-section">
+                <div className="role-label">
+                  <div className="role-label-icon">
+                    <UserCheck className="w-3.5 h-3.5" />
+                  </div>
+                  Select Your Role
+                  <div className="role-label-line" />
+                </div>
+                
+                <div className="role-tabs-grid">
+                  {roleTabs.map((tab, index) => {
+                    const Icon = tab.icon
+                    const isActive = selectedRole === tab.id
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setSelectedRole(tab.id)}
+                        className={`role-tab-button ${isActive ? `role-tab-active-${tab.color}` : ''}`}
+                        style={{ animationDelay: `${index * 0.05}s` }}
+                      >
+                        {/* Active State Glow */}
+                        {isActive && (
+                          <>
+                            <div className="active-glow" style={{ background: tab.glowColor }} />
+                            <div className="active-border-gradient" style={{ background: `linear-gradient(135deg, ${tab.glowColor}, transparent)` }} />
+                          </>
+                        )}
+                        
+                        {/* Icon Container */}
+                        <div className={`role-icon-wrap ${isActive ? 'role-icon-active' : ''}`}>
+                          {isActive ? (
+                            <div className="icon-gradient-bg" style={{ background: `linear-gradient(135deg, ${tab.gradient})` }}>
+                              <Icon className="role-icon-active-svg" />
+                            </div>
+                          ) : (
+                            <Icon className="role-icon-inactive" />
+                          )}
+                        </div>
+                        
+                        {/* Label */}
+                        <span className={`role-label-text ${isActive ? `role-label-active-${tab.color}` : ''}`}>
+                          {tab.label.split(' ')[0]}
+                        </span>
+                        
+                        {/* Bottom Indicator */}
+                        {isActive && (
+                          <div className="active-indicator-bar" style={{ background: `linear-gradient(90deg, ${tab.glowColor}, transparent)` }} />
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
 
               {/* Error Message with Slide Animation */}
               {error && (
@@ -813,7 +867,32 @@ function LoginPage() {
                   </div>
                 )}
 
-
+                {/* Role Quick Login Grid */}
+                {selectedRole !== 'ADMIN' && (
+                  <div className="quick-role-grid">
+                    {[
+                      { id: 'STUDENT', icon: GraduationCap, label: 'Student', color: 'emerald' },
+                      { id: 'STAFF', icon: BookOpen, label: 'Staff', color: 'blue' },
+                      { id: 'HOD', icon: UserCheck, label: 'HOD', color: 'purple' },
+                    ].map((role) => {
+                      const Icon = role.icon
+                      const isActive = selectedRole === role.id
+                      return (
+                        <button
+                          key={role.id}
+                          onClick={() => quickLogin(getDeptEmail(selectedDept, role.id), getPassword(role.id))}
+                          className={`quick-role-btn ${isActive ? `quick-role-active-${role.color}` : ''}`}
+                        >
+                          <Icon className={`quick-role-icon ${isActive ? `quick-role-icon-active-${role.color}` : ''}`} />
+                          <span className={`quick-role-label ${isActive ? `quick-role-label-active-${role.color}` : ''}`}>
+                            {role.label}
+                          </span>
+                          {isActive && <div className={`quick-role-indicator indicator-${role.color}`} />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
 
                 {/* Department Pills */}
                 {selectedRole !== 'ADMIN' && (
