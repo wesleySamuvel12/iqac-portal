@@ -3989,7 +3989,7 @@ function Sidebar({
           onClick={onToggle}
         />
       )}
-      <aside className={`${collapsed ? 'w-20' : 'w-72'} bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col transition-all duration-300 z-50 ${open ? 'fixed inset-y-0 left-0 shadow-2xl' : 'hidden lg:flex'} sidebar-shadow`}>
+      <aside className={`${collapsed ? 'w-20' : 'w-72'} bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col transition-all duration-300 z-50 ${open ? 'fixed inset-y-0 left-0 shadow-2xl lg:relative' : 'hidden lg:flex'} sidebar-shadow`}>
       
       {/* ====== ROLE-BASED HEADER ====== */}
       <div className={`p-4 border-b border-gray-100 bg-gradient-to-r ${roleConfig.brandColor} bg-opacity-5`}>
@@ -7543,10 +7543,18 @@ export default function IQACPortal() {
           }
         }
         
-        /* Main Content Wrapper */
+        /* Main Content Wrapper - Ensure content doesn't hide behind sidebar */
         .main-content-wrapper {
           background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
           min-height: 100vh;
+          margin-left: 0;
+        }
+        
+        @media (min-width: 1024px) {
+          .main-content-wrapper {
+            margin-left: 0;
+            width: calc(100% - 288px);
+          }
         }
         
         .dark-theme .main-content-wrapper {
