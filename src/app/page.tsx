@@ -23,7 +23,7 @@ import {
   Briefcase, Wrench, Rocket, Code, PlusCircle,
   Newspaper, Handshake, Circle,
   DollarSign, Paperclip, Inbox, Tag, XCircle, ArrowLeft,
-  Save
+  Save, Sparkles
 } from 'lucide-react'
 
 // ============ TYPES ============
@@ -355,7 +355,7 @@ const ROLE_COLORS: Record<string, { bg: string; border: string; text: string; ic
   STUDENT: { bg: 'bg-amber-50 hover:bg-amber-100', border: 'border-amber-200 hover:border-amber-300', text: 'text-amber-700 hover:text-amber-800', icon: 'text-amber-500' },
 }
 
-// ============ LOGIN PAGE - LIQUID GLASS DESIGN ============
+// ============ LOGIN PAGE - PREMIUM IMPRESSIVE DESIGN ============
 function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -365,7 +365,18 @@ function LoginPage() {
   const [selectedRole, setSelectedRole] = useState<'STUDENT' | 'STAFF' | 'HOD' | 'ADMIN'>('STUDENT')
   const [selectedDept, setSelectedDept] = useState('CSE')
   const [showDeptDropdown, setShowDeptDropdown] = useState(false)
+  const [isFocused, setIsFocused] = useState<string | null>(null)
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const login = useAuthStore((state) => state.login)
+
+  // Track mouse position for spotlight effect
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX, y: e.clientY })
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    return () => window.removeEventListener('mousemove', handleMouseMove)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -411,12 +422,12 @@ function LoginPage() {
 
   const currentDept = DEPARTMENTS_LIST.find(d => d.code === selectedDept)
 
-  // Role configuration for tabs
+  // Premium Role Configuration
   const roleTabs = [
-    { id: 'STUDENT' as const, label: 'Student', icon: GraduationCap, color: 'emerald', gradient: 'from-emerald-500 to-teal-600', bgColor: 'bg-emerald-50', textColor: 'text-emerald-700', borderColor: 'border-emerald-200' },
-    { id: 'STAFF' as const, label: 'Staff / Faculty', icon: BookOpen, color: 'blue', gradient: 'from-blue-500 to-indigo-600', bgColor: 'bg-blue-50', textColor: 'text-blue-700', borderColor: 'border-blue-200' },
-    { id: 'HOD' as const, label: 'HOD', icon: UserCheck, color: 'purple', gradient: 'from-purple-500 to-violet-600', bgColor: 'bg-purple-50', textColor: 'text-purple-700', borderColor: 'border-purple-200' },
-    { id: 'ADMIN' as const, label: 'IQAC Admin', icon: Shield, color: 'amber', gradient: 'from-amber-500 to-orange-600', bgColor: 'bg-amber-50', textColor: 'text-amber-700', borderColor: 'border-amber-200' },
+    { id: 'STUDENT' as const, label: 'Student', icon: GraduationCap, color: 'emerald', gradient: 'from-emerald-400 via-teal-500 to-cyan-500', glowColor: 'rgba(16, 185, 129, 0.4)', bgColor: 'bg-emerald-50', textColor: 'text-emerald-700', borderColor: 'border-emerald-300', shadowColor: 'shadow-emerald-200' },
+    { id: 'STAFF' as const, label: 'Staff / Faculty', icon: BookOpen, color: 'blue', gradient: 'from-blue-400 via-indigo-500 to-violet-500', glowColor: 'rgba(59, 130, 246, 0.4)', bgColor: 'bg-blue-50', textColor: 'text-blue-700', borderColor: 'border-blue-300', shadowColor: 'shadow-blue-200' },
+    { id: 'HOD' as const, label: 'HOD', icon: UserCheck, color: 'purple', gradient: 'from-purple-400 via-fuchsia-500 to-pink-500', glowColor: 'rgba(168, 85, 247, 0.4)', bgColor: 'bg-purple-50', textColor: 'text-purple-700', borderColor: 'border-purple-300', shadowColor: 'shadow-purple-200' },
+    { id: 'ADMIN' as const, label: 'IQAC Admin', icon: Shield, color: 'amber', gradient: 'from-amber-400 via-orange-500 to-red-500', glowColor: 'rgba(245, 158, 11, 0.4)', bgColor: 'bg-amber-50', textColor: 'text-amber-700', borderColor: 'border-amber-300', shadowColor: 'shadow-amber-200' },
   ]
 
   const getPlaceholderForRole = () => {
@@ -429,539 +440,1870 @@ function LoginPage() {
     }
   }
 
-  return (
-    <div className="min-h-screen relative overflow-hidden bg-slate-50 flex flex-col">
-      {/* Ambient Background with Soft Gradients */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Main Background Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40" />
-        
-        {/* Soft Floating Orbs - Light Theme */}
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-indigo-200/40 to-blue-200/30 rounded-full blur-3xl animate-float-orb-1" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-sky-200/40 to-cyan-200/30 rounded-full blur-3xl animate-float-orb-2" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-violet-100/20 to-pink-100/20 rounded-full blur-3xl animate-float-orb-3" />
-        
-        {/* Subtle Grid Pattern */}
-        <div 
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: `
-              linear-gradient(rgba(99,102,241,0.5) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(99,102,241,0.5) 1px, transparent 1px)
-            `,
-            backgroundSize: '40px 40px',
-          }}
-        />
+  // Generate particles for ambient effect
+  const particles = Array.from({ length: 30 }, (_, i) => ({
+    id: i,
+    size: Math.random() * 4 + 2,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    delay: Math.random() * 10,
+    duration: 15 + Math.random() * 20,
+    opacity: 0.1 + Math.random() * 0.4
+  }))
 
-        {/* Decorative Shapes */}
-        <div className="absolute top-20 left-20 w-2 h-2 bg-indigo-300/60 rounded-full animate-pulse-slow-light" />
-        <div className="absolute top-40 right-32 w-3 h-3 bg-blue-300/50 rounded-full animate-pulse-slow-light-delayed" />
-        <div className="absolute bottom-32 left-40 w-2 h-2 bg-cyan-300/60 rounded-full animate-pulse-slow-light" />
-        <div className="absolute bottom-20 right-20 w-2.5 h-2.5 bg-violet-300/50 rounded-full animate-pulse-slow-light-delayed" />
+  return (
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 flex flex-col">
+      {/* ====== PREMIUM AMBIENT BACKGROUND ====== */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Multi-layer Gradient Mesh */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.15),transparent)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_100%_50%,rgba(99,102,241,0.1),transparent)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_0%_100%,rgba(6,182,212,0.1),transparent)]" />
+        
+        {/* Animated Floating Orbs - Premium Version */}
+        <div className="premium-orb orb-1" />
+        <div className="premium-orb orb-2" />
+        <div className="premium-orb orb-3" />
+        <div className="premium-orb orb-4" />
+        <div className="premium-orb orb-5" />
+        
+        {/* Aurora Borealis Effect */}
+        <div className="aurora-layer aurora-1-premium" />
+        <div className="aurora-layer aurora-2-premium" />
+
+        {/* Animated Particle System */}
+        <div className="particle-container-premium">
+          {particles.map((p) => (
+            <div
+              key={p.id}
+              className="floating-particle"
+              style={{
+                width: `${p.size}px`,
+                height: `${p.size}px`,
+                left: `${p.x}%`,
+                top: `${p.y}%`,
+                animationDelay: `${p.delay}s`,
+                animationDuration: `${p.duration}s`,
+                opacity: p.opacity,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Subtle Grid Pattern */}
+        <div className="grid-pattern-premium" />
+
+        {/* Floating Geometric Shapes */}
+        <div className="geo-shape geo-shape-1" />
+        <div className="geo-shape geo-shape-2" />
+        <div className="geo-shape geo-shape-3" />
+        <div className="geo-shape geo-shape-4" />
+        
+        {/* Radial Gradient Overlay for Depth */}
+        <div className="absolute inset-0 bg-gradient-radial-depth" />
       </div>
 
-      {/* Institutional Verification Badge - Top Status Bar */}
-      <header className="relative z-20 w-full bg-white/70 backdrop-blur-md border-b border-slate-200/60 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-12">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-full border border-emerald-200">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span className="text-xs font-semibold text-emerald-700">NAAC Accredited</span>
+      {/* ====== INSTITUTIONAL STATUS BAR ====== */}
+      <header className="relative z-20 w-full">
+        <div className="premium-status-bar">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-11">
+              <div className="flex items-center gap-3">
+                {/* NAAC Badge with Pulse */}
+                <div className="premium-badge naac-badge">
+                  <span className="badge-pulse-ring" />
+                  <span className="badge-dot" />
+                  <svg className="w-3 h-3 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span className="badge-text">NAAC Accredited</span>
+                </div>
+                
+                {/* NIRF Badge */}
+                <div className="premium-badge nirf-badge hidden sm:flex">
+                  <Award className="w-3.5 h-3.5 text-blue-500" />
+                  <span className="badge-text-blue">NIRF Ranked</span>
+                </div>
+
+                {/* AICTE Badge */}
+                <div className="premium-badge aicte-badge hidden md:flex">
+                  <Building2 className="w-3.5 h-3.5 text-violet-500" />
+                  <span className="badge-text-violet">AICTE Approved</span>
+                </div>
               </div>
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-full border border-blue-200">
-                <Award className="w-3.5 h-3.5 text-blue-600" />
-                <span className="text-xs font-semibold text-blue-700">NIRF Participant</span>
+              
+              <div className="flex items-center gap-4">
+                <a href="#" className="support-link">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  IT Support
+                </a>
+                <div className="version-badge">
+                  v3.0 Enterprise
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <a href="#" className="text-xs font-medium text-slate-500 hover:text-indigo-600 transition-colors flex items-center gap-1">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                IT Support
-              </a>
-              <span className="text-slate-300">|</span>
-              <span className="text-xs text-slate-400">NIET Campus Portal v3.0</span>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* ====== MAIN CONTENT AREA ====== */}
       <main className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
-        <div className="w-full max-w-[480px]">
-          {/* Logo & Header Section */}
-          <div className="text-center mb-8 light-header-animate">
-            {/* Logo with Light Glass Effect */}
-            <div className="relative inline-block mb-5">
-              {/* Soft Shadow/Glow */}
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-200/50 to-blue-200/50 blur-xl opacity-70" />
+        <div className="w-full max-w-[520px]">
+          
+          {/* ====== PREMIUM LOGO & HEADER ====== */}
+          <div className="text-center mb-10 premium-header-animate">
+            {/* 3D Floating Logo Container */}
+            <div className="logo-container-premium">
+              {/* Outer Glow Rings */}
+              <div className="logo-glow-outer" />
+              <div className="logo-glow-middle" />
               
-              {/* Main Logo Container - White Glass */}
-              <div className="relative w-24 h-24 rounded-2xl bg-white/90 backdrop-blur-xl border border-slate-200/80 shadow-xl shadow-slate-200/50 flex items-center justify-center">
-                <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-500 flex items-center justify-center shadow-inner">
-                  <Building2 className="w-10 h-10 text-white drop-shadow" />
+              {/* Rotating Gradient Border */}
+              <div className="logo-border-rotating" />
+              
+              {/* Main Logo Card */}
+              <div className="logo-main-card">
+                <div className="logo-inner-gradient">
+                  <Building2 className="logo-icon" />
                 </div>
                 
-                {/* Subtle Shine Overlay */}
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-transparent via-white/40 to-transparent" />
+                {/* Glass Reflection */}
+                <div className="logo-reflection" />
               </div>
-
-              {/* Small Decorative Elements */}
-              <div className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 shadow-lg shadow-emerald-300/50 flex items-center justify-center">
-                <CheckCircle className="w-2.5 h-2.5 text-white" />
+              
+              {/* Verification Badge */}
+              <div className="logo-verify-badge">
+                <CheckCircle className="w-3 h-3" />
               </div>
+              
+              {/* Orbiting Dots */}
+              <div className="orbit-dot orbit-dot-1" />
+              <div className="orbit-dot orbit-dot-2" />
+              <div className="orbit-dot orbit-dot-3" />
             </div>
             
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-1.5 tracking-tight">
-              IQAC Portal
+            {/* Title with Gradient Text */}
+            <h1 className="premium-title">
+              <span className="title-text-gradient">IQAC Portal</span>
             </h1>
-            <p className="text-slate-500 text-sm sm:text-base font-medium">
+            
+            {/* Subtitle with Typing Effect Style */}
+            <p className="premium-subtitle">
+              <span className="subtitle-icon-wrapper">
+                <GraduationCap className="w-4 h-4" />
+              </span>
               Nehru Institute of Engineering and Technology
             </p>
+
+            {/* Tagline */}
+            <div className="tagline-container">
+              <div className="tagline-line" />
+              <span className="tagline-text">Excellence in Quality Assurance</span>
+              <div className="tagline-line" />
+            </div>
           </div>
 
-          {/* Light Glass Login Card */}
-          <div className="light-glass-card light-card-enter">
-            {/* Role-Based Tabbed Selection */}
-            <div className="mb-6">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 block px-1">
-                Select Your Role
-              </label>
-              <div className="grid grid-cols-4 gap-2">
-                {roleTabs.map((tab) => {
-                  const Icon = tab.icon
-                  const isActive = selectedRole === tab.id
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setSelectedRole(tab.id)}
-                      className={`relative flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-300 group ${
-                        isActive 
-                          ? `${tab.bgColor} ${tab.borderColor} shadow-sm` 
-                          : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                        isActive 
-                          ? `bg-gradient-to-br ${tab.gradient} shadow-md` 
-                          : 'bg-slate-100 group-hover:bg-slate-200'
-                      }`}>
-                        <Icon className={`w-4.5 h-4.5 transition-all duration-300 ${
-                          isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-700'
-                        }`} />
-                      </div>
-                      <span className={`text-[10px] sm:text-xs font-semibold leading-tight text-center transition-colors duration-300 ${
-                        isActive ? tab.textColor : 'text-slate-500'
-                      }`}>
-                        {tab.label.split(' ')[0]}
-                      </span>
-                      {isActive && (
-                        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-5 h-1 rounded-full bg-gradient-to-r tab.gradient opacity-60" 
-                             style={{background: `linear-gradient(to right, var(--tw-gradient-stops))`}} />
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="mb-5 p-3.5 rounded-xl bg-red-50 border border-red-200 light-error-shake">
-                <p className="text-red-600 text-sm flex items-center gap-2 font-medium">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  {error}
-                </p>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Email Input */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                  <Mail className="w-4 h-4 text-slate-400" />
-                  Email Address
-                </label>
-                <div className="relative group">
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder={getPlaceholderForRole()}
-                    className="light-input pl-11 pr-4 py-3.5 h-auto border-slate-200 bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 transition-all duration-200"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Password Input */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                  <Lock className="w-4 h-4 text-slate-400" />
-                  Password
-                </label>
-                <div className="relative group">
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    className="light-input pl-11 pr-11 py-3.5 h-auto border-slate-200 bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 transition-all duration-200"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 transform -translate-y-1/2 p-1 text-slate-400 hover:text-indigo-600 transition-all duration-200 hover:scale-110 rounded-md hover:bg-indigo-50"
-                  >
-                    {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Primary Indigo Action Button */}
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-4 relative overflow-hidden rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-semibold text-base shadow-lg shadow-indigo-200 transition-all duration-300 group light-submit-btn"
-              >
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Authenticating...
-                    </>
-                  ) : (
-                    <>
-                      Sign In to Portal
-                      <ArrowRight className="w-4.5 h-4.5 group-hover:translate-x-1 transition-transform duration-300" />
-                    </>
-                  )}
-                </span>
-              </Button>
-            </form>
-
-            {/* Divider */}
-            <div className="flex items-center gap-4 my-6">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-              <span className="text-xs text-slate-400 uppercase tracking-wider font-medium">Quick Access</span>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-            </div>
-
-            {/* Quick Login Section */}
-            <div className="space-y-4">
-              {/* Admin Quick Access - Only show if not already on admin tab */}
-              {selectedRole !== 'ADMIN' && (
-                <button
-                  onClick={() => quickLogin('admin@niet.ac.in', 'admin123')}
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 hover:border-amber-300 hover:shadow-md hover:shadow-amber-100 transition-all duration-300 group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-sm">
-                      <Shield className="w-4.5 h-4.5 text-white" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-semibold text-amber-800">System Administrator</p>
-                      <p className="text-xs text-amber-600">Full access to all modules</p>
-                    </div>
+          {/* ====== PREMIUM GLASS CARD ====== */}
+          <div className="premium-card-container" onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect()
+            const x = ((e.clientX - rect.left) / rect.width) * 100
+            const y = ((e.clientY - rect.top) / rect.height) * 100
+            e.currentTarget.style.setProperty('--mouse-x', `${x}%`)
+            e.currentTarget.style.setProperty('--mouse-y', `${y}%`)
+          }}>
+            
+            {/* Animated Border Gradient */}
+            <div className="card-animated-border" />
+            
+            {/* Spotlight Effect Following Mouse */}
+            <div className="card-spotlight" />
+            
+            {/* Main Card Content */}
+            <div className="premium-card-content">
+              
+              {/* ====== ROLE TABS SECTION ====== */}
+              <div className="role-section">
+                <div className="role-label">
+                  <div className="role-label-icon">
+                    <UserCheck className="w-3.5 h-3.5" />
                   </div>
-                  <ChevronRight className="w-5 h-5 text-amber-400 group-hover:translate-x-1 transition-transform duration-300" />
-                </button>
-              )}
-
-              {/* Department Selector */}
-              {selectedRole !== 'ADMIN' && (
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 mb-2 block uppercase tracking-wider">Select Department</label>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setShowDeptDropdown(!showDeptDropdown)}
-                      className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-sm text-sm font-medium text-slate-700 transition-all duration-200"
-                    >
-                      <span className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-50 to-blue-50 flex items-center justify-center border border-slate-200">
-                          <Building2 className="w-4 h-4 text-indigo-500" />
+                  Select Your Role
+                  <div className="role-label-line" />
+                </div>
+                
+                <div className="role-tabs-grid">
+                  {roleTabs.map((tab, index) => {
+                    const Icon = tab.icon
+                    const isActive = selectedRole === tab.id
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setSelectedRole(tab.id)}
+                        className={`role-tab-button ${isActive ? `role-tab-active-${tab.color}` : ''}`}
+                        style={{ animationDelay: `${index * 0.05}s` }}
+                      >
+                        {/* Active State Glow */}
+                        {isActive && (
+                          <>
+                            <div className="active-glow" style={{ background: tab.glowColor }} />
+                            <div className="active-border-gradient" style={{ background: `linear-gradient(135deg, ${tab.glowColor}, transparent)` }} />
+                          </>
+                        )}
+                        
+                        {/* Icon Container */}
+                        <div className={`role-icon-wrap ${isActive ? 'role-icon-active' : ''}`}>
+                          {isActive ? (
+                            <div className="icon-gradient-bg" style={{ background: `linear-gradient(135deg, ${tab.gradient})` }}>
+                              <Icon className="role-icon-active-svg" />
+                            </div>
+                          ) : (
+                            <Icon className="role-icon-inactive" />
+                          )}
                         </div>
-                        <span>{currentDept?.code} - {currentDept?.name}</span>
-                      </span>
-                      <ChevronDown className={`w-4.5 h-4.5 text-slate-400 transition-transform duration-200 ${showDeptDropdown ? 'rotate-180' : ''}`} />
-                    </button>
-                    
-                    {showDeptDropdown && (
-                      <div className="absolute z-50 w-full mt-2 bg-white/95 backdrop-blur-xl rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 max-h-56 overflow-y-auto light-dropdown-enter">
-                        {DEPARTMENTS_LIST.map((dept) => (
-                          <button
-                            key={dept.code}
-                            type="button"
-                            onClick={() => {
-                              setSelectedDept(dept.code)
-                              setShowDeptDropdown(false)
-                            }}
-                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-slate-50 transition-all duration-150 first:rounded-t-xl last:rounded-b-xl ${
-                              selectedDept === dept.code ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600'
-                            }`}
-                          >
-                            <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                              dept.color === 'blue' ? 'bg-blue-500' :
-                              dept.color === 'green' ? 'bg-emerald-500' :
-                              dept.color === 'purple' ? 'bg-purple-500' :
-                              dept.color === 'orange' ? 'bg-orange-500' :
-                              dept.color === 'pink' ? 'bg-pink-500' :
-                              dept.color === 'cyan' ? 'bg-cyan-500' :
-                              dept.color === 'red' ? 'bg-red-500' :
-                              'bg-indigo-500'
-                            }`} />
-                            <span className="font-medium text-sm">{dept.code}</span>
-                            <span className="text-xs text-slate-400 truncate">{dept.name}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                        
+                        {/* Label */}
+                        <span className={`role-label-text ${isActive ? `role-label-active-${tab.color}` : ''}`}>
+                          {tab.label.split(' ')[0]}
+                        </span>
+                        
+                        {/* Bottom Indicator */}
+                        {isActive && (
+                          <div className="active-indicator-bar" style={{ background: `linear-gradient(90deg, ${tab.glowColor}, transparent)` }} />
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Error Message with Slide Animation */}
+              {error && (
+                <div className="error-container-premium">
+                  <div className="error-content">
+                    <div className="error-icon-wrap">
+                      <AlertCircle className="error-icon" />
+                    </div>
+                    <p className="error-text">{error}</p>
+                  </div>
+                  <button onClick={() => setError('')} className="error-close">
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* ====== FORM SECTION ====== */}
+              <form onSubmit={handleSubmit} className="form-space-premium">
+                
+                {/* Email Input Field */}
+                <div className="input-group-premium">
+                  <label className={`input-label-premium ${isFocused === 'email' ? 'input-label-focused' : ''}`}>
+                    <Mail className="input-label-icon" />
+                    Email Address
+                    <span className="input-required-mark">*</span>
+                  </label>
+                  <div className={`input-wrapper-premium ${isFocused === 'email' ? 'input-wrapper-focused' : ''}`}>
+                    <div className="input-prefix">
+                      <Mail className={`input-prefix-icon ${isFocused === 'email' ? 'prefix-icon-focused' : ''}`} />
+                    </div>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      onFocus={() => setIsFocused('email')}
+                      onBlur={() => setIsFocused(null)}
+                      placeholder={getPlaceholderForRole()}
+                      className="premium-input-field"
+                      required
+                    />
+                    <div className="input-focus-line" />
+                    {isFocused === 'email' && <div className="input-glow-effect" />}
                   </div>
                 </div>
-              )}
 
-              {/* Role Quick Login Buttons */}
-              {selectedRole !== 'ADMIN' && (
-                <div className="grid grid-cols-3 gap-2 pt-1">
-                  <button
-                    onClick={() => quickLogin(getDeptEmail(selectedDept, 'STUDENT'), getPassword('STUDENT'))}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-200 hover:shadow-md ${
-                      selectedRole === 'STUDENT' 
-                        ? 'bg-emerald-50 border-emerald-300 shadow-sm' 
-                        : 'bg-white border-slate-200 hover:border-emerald-200 hover:bg-emerald-50/50'
-                    }`}
-                  >
-                    <GraduationCap className={`w-5 h-5 ${selectedRole === 'STUDENT' ? 'text-emerald-600' : 'text-slate-500'}`} />
-                    <span className={`text-xs font-semibold ${selectedRole === 'STUDENT' ? 'text-emerald-700' : 'text-slate-600'}`}>Student</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => quickLogin(getDeptEmail(selectedDept, 'STAFF'), getPassword('STAFF'))}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-200 hover:shadow-md ${
-                      selectedRole === 'STAFF' 
-                        ? 'bg-blue-50 border-blue-300 shadow-sm' 
-                        : 'bg-white border-slate-200 hover:border-blue-200 hover:bg-blue-50/50'
-                    }`}
-                  >
-                    <BookOpen className={`w-5 h-5 ${selectedRole === 'STAFF' ? 'text-blue-600' : 'text-slate-500'}`} />
-                    <span className={`text-xs font-semibold ${selectedRole === 'STAFF' ? 'text-blue-700' : 'text-slate-600'}`}>Staff</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => quickLogin(getDeptEmail(selectedDept, 'HOD'), getPassword('HOD'))}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-200 hover:shadow-md ${
-                      selectedRole === 'HOD' 
-                        ? 'bg-purple-50 border-purple-300 shadow-sm' 
-                        : 'bg-white border-slate-200 hover:border-purple-200 hover:bg-purple-50/50'
-                    }`}
-                  >
-                    <UserCheck className={`w-5 h-5 ${selectedRole === 'HOD' ? 'text-purple-600' : 'text-slate-500'}`} />
-                    <span className={`text-xs font-semibold ${selectedRole === 'HOD' ? 'text-purple-700' : 'text-slate-600'}`}>HOD</span>
-                  </button>
+                {/* Password Input Field */}
+                <div className="input-group-premium">
+                  <label className={`input-label-premium ${isFocused === 'password' ? 'input-label-focused' : ''}`}>
+                    <Lock className="input-label-icon" />
+                    Password
+                    <span className="input-required-mark">*</span>
+                  </label>
+                  <div className={`input-wrapper-premium ${isFocused === 'password' ? 'input-wrapper-focused' : ''}`}>
+                    <div className="input-prefix">
+                      <Lock className={`input-prefix-icon ${isFocused === 'password' ? 'prefix-icon-focused' : ''}`} />
+                    </div>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onFocus={() => setIsFocused('password')}
+                      onBlur={() => setIsFocused(null)}
+                      placeholder="Enter your password"
+                      className="premium-input-field pr-12"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="password-toggle-btn"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                    <div className="input-focus-line" />
+                    {isFocused === 'password' && <div className="input-glow-effect" />}
+                  </div>
                 </div>
-              )}
 
-              {/* Quick Department Pills */}
-              {selectedRole !== 'ADMIN' && (
-                <div className="pt-2">
-                  <div className="flex flex-wrap gap-1.5 justify-center">
-                    {['CSE', 'ECE', 'EEE', 'MECH', 'AI&DS', 'IT'].map((code) => (
+                {/* ====== SUBMIT BUTTON ====== */}
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="premium-submit-btn"
+                >
+                  {/* Button Background Layers */}
+                  <div className="btn-bg-base" />
+                  <div className="btn-bg-gradient" />
+                  <div className="btn-shimmer" />
+                  
+                  {/* Loading Spinner or Content */}
+                  <span className="btn-content">
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="btn-spinner" />
+                        <span>Authenticating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="btn-text">Sign In to Portal</span>
+                        <ArrowRight className="btn-arrow" />
+                      </>
+                    )}
+                  </span>
+                  
+                  {/* Hover Glow */}
+                  <div className="btn-hover-glow" />
+                </button>
+              </form>
+
+              {/* ====== DIVIDER ====== */}
+              <div className="divider-premium">
+                <div className="divider-line" />
+                <span className="divider-text">
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  Quick Access
+                  <Sparkles className="w-3 h-3 ml-1" />
+                </span>
+                <div className="divider-line" />
+              </div>
+
+              {/* ====== QUICK ACCESS SECTION ====== */}
+              <div className="quick-access-section">
+                
+                {/* Admin Quick Access */}
+                {selectedRole !== 'ADMIN' && (
+                  <button
+                    onClick={() => quickLogin('admin@niet.ac.in', 'admin123')}
+                    className="admin-quick-btn"
+                  >
+                    <div className="admin-btn-left">
+                      <div className="admin-btn-icon-wrap">
+                        <Shield className="admin-btn-icon" />
+                      </div>
+                      <div className="admin-btn-text">
+                        <span className="admin-btn-title">System Administrator</span>
+                        <span className="admin-btn-desc">Full access to all modules</span>
+                      </div>
+                    </div>
+                    <ChevronRight className="admin-btn-arrow" />
+                    <div className="admin-btn-glow" />
+                  </button>
+                )}
+
+                {/* Department Selector */}
+                {selectedRole !== 'ADMIN' && (
+                  <div className="dept-selector-section">
+                    <label className="dept-label">
+                      <Building2 className="w-3 h-3 mr-1.5" />
+                      Select Department
+                    </label>
+                    <div className="dept-dropdown-container">
+                      <button
+                        type="button"
+                        onClick={() => setShowDeptDropdown(!showDeptDropdown)}
+                        className="dept-dropdown-trigger"
+                      >
+                        <div className="dept-selected">
+                          <div className="dept-icon-box">
+                            <Building2 className="w-4 h-4 text-indigo-500" />
+                          </div>
+                          <span>{currentDept?.code} - {currentDept?.name}</span>
+                        </div>
+                        <ChevronDown className={`dept-chevron ${showDeptDropdown ? 'chevron-open' : ''}`} />
+                      </button>
+                      
+                      {showDeptDropdown && (
+                        <div className="dept-dropdown-menu">
+                          {DEPARTMENTS_LIST.map((dept) => (
+                            <button
+                              key={dept.code}
+                              type="button"
+                              onClick={() => {
+                                setSelectedDept(dept.code)
+                                setShowDeptDropdown(false)
+                              }}
+                              className={`dept-option ${selectedDept === dept.code ? 'dept-option-active' : ''}`}
+                            >
+                              <div className={`dept-option-dot ${`dot-${dept.color || 'gray'}`}`} />
+                              <span className="dept-option-code">{dept.code}</span>
+                              <span className="dept-option-name">{dept.name}</span>
+                              {selectedDept === dept.code && <CheckCircle className="dept-option-check" />}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Role Quick Login Grid */}
+                {selectedRole !== 'ADMIN' && (
+                  <div className="quick-role-grid">
+                    {[
+                      { id: 'STUDENT', icon: GraduationCap, label: 'Student', color: 'emerald' },
+                      { id: 'STAFF', icon: BookOpen, label: 'Staff', color: 'blue' },
+                      { id: 'HOD', icon: UserCheck, label: 'HOD', color: 'purple' },
+                    ].map((role) => {
+                      const Icon = role.icon
+                      const isActive = selectedRole === role.id
+                      return (
+                        <button
+                          key={role.id}
+                          onClick={() => quickLogin(getDeptEmail(selectedDept, role.id), getPassword(role.id))}
+                          className={`quick-role-btn ${isActive ? `quick-role-active-${role.color}` : ''}`}
+                        >
+                          <Icon className={`quick-role-icon ${isActive ? `quick-role-icon-active-${role.color}` : ''}`} />
+                          <span className={`quick-role-label ${isActive ? `quick-role-label-active-${role.color}` : ''}`}>
+                            {role.label}
+                          </span>
+                          {isActive && <div className={`quick-role-indicator indicator-${role.color}`} />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Department Pills */}
+                {selectedRole !== 'ADMIN' && (
+                  <div className="dept-pills-container">
+                    {['CSE', 'ECE', 'EEE', 'MECH', 'AI&DS', 'IT', 'AIDS', 'CIVIL'].map((code) => (
                       <button
                         key={code}
                         type="button"
                         onClick={() => setSelectedDept(code)}
-                        className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
-                          selectedDept === code 
-                            ? 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white shadow-md shadow-indigo-200' 
-                            : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 border border-slate-200'
-                        }`}
+                        className={`dept-pill ${selectedDept === code ? 'dept-pill-active' : ''}`}
                       >
-                        {code}
+                        {selectedDept === code && <span className="pill-glow" />}
+                        <span className="pill-text">{code}</span>
                       </button>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
+            
+            {/* Card Bottom Accent Line */}
+            <div className="card-bottom-accent" />
           </div>
 
-          {/* Footer */}
-          <p className="text-center mt-6 text-slate-400 text-xs font-medium light-footer-fade-in flex items-center justify-center gap-1.5">
-            <Lock className="w-3 h-3" />
-            Secure Authentication • NIET IQAC Enterprise
-          </p>
+          {/* ====== FOOTER ====== */}
+          <footer className="premium-footer">
+            <div className="footer-content">
+              <Lock className="footer-lock-icon" />
+              <span className="footer-text">Secure Authentication • NIET IQAC Enterprise System</span>
+              <div className="footer-dots">
+                <span className="footer-dot" />
+                <span className="footer-dot footer-dot-delay" />
+                <span className="footer-dot footer-dot-delay-2" />
+              </div>
+            </div>
+          </footer>
         </div>
       </main>
 
-      {/* Light Theme Styles */}
+      {/* ====== PREMIUM CSS STYLES ====== */}
       <style jsx>{`
-        /* Floating Orb Animations */
-        .animate-float-orb-1 {
-          animation: floatOrb1 20s ease-in-out infinite;
+        /* ========== FLOATING ORBS ========== */
+        .premium-orb {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(80px);
+          opacity: 0.5;
+          will-change: transform;
         }
-        .animate-float-orb-2 {
-          animation: floatOrb2 25s ease-in-out infinite reverse;
+        .orb-1 {
+          width: 500px;
+          height: 500px;
+          background: linear-gradient(135deg, #818cf8, #6366f1);
+          top: -200px;
+          right: -150px;
+          animation: premiumFloat1 25s ease-in-out infinite;
         }
-        .animate-float-orb-3 {
-          animation: floatOrb3 30s ease-in-out infinite;
+        .orb-2 {
+          width: 450px;
+          height: 450px;
+          background: linear-gradient(135deg, #22d3ee, #06b6d4);
+          bottom: -180px;
+          left: -120px;
+          animation: premiumFloat2 28s ease-in-out infinite reverse;
         }
-        
-        @keyframes floatOrb1 {
+        .orb-3 {
+          width: 350px;
+          height: 350px;
+          background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+          top: 35%;
+          left: 5%;
+          animation: premiumFloat3 32s ease-in-out infinite;
+        }
+        .orb-4 {
+          width: 280px;
+          height: 280px;
+          background: linear-gradient(135deg, #34d399, #10b981);
+          top: 15%;
+          right: 10%;
+          animation: premiumFloat4 22s ease-in-out infinite;
+        }
+        .orb-5 {
+          width: 200px;
+          height: 200px;
+          background: linear-gradient(135deg, #fbbf24, #f59e0b);
+          bottom: 25%;
+          right: 20%;
+          animation: premiumFloat5 26s ease-in-out infinite;
+        }
+
+        @keyframes premiumFloat1 {
+          0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+          33% { transform: translate(-50px, 40px) rotate(120deg) scale(1.08); }
+          66% { transform: translate(30px, -30px) rotate(240deg) scale(0.94); }
+        }
+        @keyframes premiumFloat2 {
+          0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+          33% { transform: translate(45px, -35px) rotate(-120deg) scale(1.1); }
+          66% { transform: translate(-35px, 40px) rotate(-240deg) scale(0.92); }
+        }
+        @keyframes premiumFloat3 {
           0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(-30px, 25px) scale(1.05); }
-          66% { transform: translate(25px, -15px) scale(0.95); }
+          50% { transform: translate(60px, 45px) scale(1.12); }
         }
-        @keyframes floatOrb2 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(25px, -20px) scale(1.08); }
-          66% { transform: translate(-25px, 25px) scale(0.92); }
+        @keyframes premiumFloat4 {
+          0%, 100% { transform: translate(0, 0); }
+          50% { transform: translate(-45px, -35px) scale(1.08); }
         }
-        @keyframes floatOrb3 {
+        @keyframes premiumFloat5 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
-          50% { transform: translate(40px, 30px) rotate(180deg); }
+          50% { transform: translate(35px, -25px) rotate(180deg); }
         }
 
-        /* Pulse Animations for Light Theme */
-        .animate-pulse-slow-light {
-          animation: pulseLight 3s ease-in-out infinite;
+        /* ========== AURORA EFFECT ========== */
+        .aurora-layer {
+          position: absolute;
+          width: 150%;
+          height: 150%;
+          top: -25%;
+          left: -25%;
+          opacity: 0.12;
+          mix-blend-mode: screen;
+          filter: blur(100px);
         }
-        .animate-pulse-slow-light-delayed {
-          animation: pulseLight 3s ease-in-out infinite 0.7s;
+        .aurora-1-premium {
+          background: conic-gradient(from 0deg at 50% 50%, transparent, #818cf8, transparent, #22d3ee, transparent, #a78bfa, transparent);
+          animation: auroraRotate1 40s linear infinite;
         }
-        @keyframes pulseLight {
-          0%, 100% { opacity: 0.5; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.2); }
+        .aurora-2-premium {
+          background: conic-gradient(from 180deg at 50% 50%, transparent, #34d399, transparent, #fbbf24, transparent, #f472b6, transparent);
+          animation: auroraRotate2 50s linear infinite reverse;
         }
 
-        /* Light Glass Card */
-        .light-glass-card {
-          position: relative;
-          background: rgba(255, 255, 255, 0.85);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border-radius: 24px;
-          border: 1px solid rgba(226, 232, 240, 0.8);
-          box-shadow: 
-            0 4px 6px -1px rgba(0, 0, 0, 0.05),
-            0 10px 15px -3px rgba(0, 0, 0, 0.08),
-            0 20px 25px -5px rgba(0, 0, 0, 0.05),
-            0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+        @keyframes auroraRotate1 {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes auroraRotate2 {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(-360deg); }
+        }
+
+        /* ========== PARTICLES ========== */
+        .particle-container-premium {
+          position: absolute;
+          inset: 0;
           overflow: hidden;
         }
-        
-        .light-glass-card::before {
+        .floating-particle {
+          position: absolute;
+          background: linear-gradient(135deg, #818cf8, #22d3ee);
+          border-radius: 50%;
+          animation: particleDrift linear infinite;
+          pointer-events: none;
+        }
+        @keyframes particleDrift {
+          0%, 100% { 
+            transform: translateY(0) translateX(0) scale(1) rotate(0deg);
+            opacity: 0;
+          }
+          10% { opacity: var(--tw-opacity); }
+          90% { opacity: var(--tw-opacity); }
+          50% { transform: translateY(-100vh) translateX(50px) scale(1.5) rotate(180deg); }
+          100% { 
+            transform: translateY(-120vh) translateX(-30px) scale(0.5) rotate(360deg);
+            opacity: 0;
+          }
+        }
+
+        /* ========== GRID PATTERN ========== */
+        .grid-pattern-premium {
+          position: absolute;
+          inset: 0;
+          opacity: 0.03;
+          background-image: 
+            linear-gradient(rgba(99,102,241,0.5) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(99,102,241,0.5) 1px, transparent 1px);
+          background-size: 50px 50px;
+          mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black, transparent);
+        }
+
+        /* ========== GEOMETRIC SHAPES ========== */
+        .geo-shape {
+          position: absolute;
+          border: 1px solid rgba(99,102,241,0.15);
+          opacity: 0.6;
+        }
+        .geo-shape-1 {
+          width: 80px;
+          height: 80px;
+          top: 15%;
+          left: 8%;
+          border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+          animation: geoMorph1 20s ease-in-out infinite;
+        }
+        .geo-shape-2 {
+          width: 60px;
+          height: 60px;
+          top: 25%;
+          right: 12%;
+          border-radius: 50%;
+          animation: geoMorph2 18s ease-in-out infinite;
+        }
+        .geo-shape-3 {
+          width: 100px;
+          height: 100px;
+          bottom: 20%;
+          left: 15%;
+          border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+          animation: geoMorph3 25s ease-in-out infinite reverse;
+        }
+        .geo-shape-4 {
+          width: 40px;
+          height: 40px;
+          bottom: 30%;
+          right: 18%;
+          transform: rotate(45deg);
+          animation: geoMorph4 15s ease-in-out infinite;
+        }
+
+        @keyframes geoMorph1 {
+          0%, 100% { transform: rotate(0deg) scale(1); border-color: rgba(129,140,248,0.15); }
+          50% { transform: rotate(180deg) scale(1.1); border-color: rgba(34,211,238,0.2); }
+        }
+        @keyframes geoMorph2 {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          50% { transform: scale(1.2) rotate(90deg); }
+        }
+        @keyframes geoMorph3 {
+          0%, 100% { transform: rotate(0deg) scale(1); }
+          50% { transform: rotate(-120deg) scale(1.15); }
+        }
+        @keyframes geoMorph4 {
+          0%, 100% { transform: rotate(45deg) scale(1); opacity: 0.6; }
+          50% { transform: rotate(225deg) scale(1.3); opacity: 0.3; }
+        }
+
+        /* ========== RADIAL GRADIENT DEPTH ========== */
+        .bg-gradient-radial-depth {
+          background: radial-gradient(ellipse at center, transparent 0%, rgba(248,250,252,0.4) 100%);
+        }
+
+        /* ========== STATUS BAR ========== */
+        .premium-status-bar {
+          background: rgba(255,255,255,0.72);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-bottom: 1px solid rgba(226,232,240,0.6);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .premium-badge {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 5px 12px;
+          border-radius: 9999px;
+          font-size: 11px;
+          font-weight: 600;
+          transition: all 0.3s ease;
+        }
+        .naac-badge {
+          background: linear-gradient(135deg, rgba(209,250,229,0.8), rgba(167,243,208,0.6));
+          border: 1px solid rgba(16,185,129,0.25);
+          color: #047857;
+        }
+        .nirf-badge {
+          background: linear-gradient(135deg, rgba(219,234,254,0.8), rgba(191,219,254,0.6));
+          border: 1px solid rgba(59,130,246,0.25);
+          color: #1d4ed8;
+        }
+        .aicte-badge {
+          background: linear-gradient(135deg, rgba(233,213,255,0.8), rgba(216,180,254,0.6));
+          border: 1px solid rgba(139,92,246,0.25);
+          color: #7c3aed;
+        }
+        .badge-pulse-ring {
+          position: absolute;
+          inset: -2px;
+          border-radius: inherit;
+          background: inherit;
+          opacity: 0.4;
+          animation: badgePulse 2s ease-out infinite;
+        }
+        @keyframes badgePulse {
+          0% { transform: scale(1); opacity: 0.4; }
+          100% { transform: scale(1.4); opacity: 0; }
+        }
+        .badge-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: currentColor;
+          animation: badgeDotPulse 2s ease-in-out infinite;
+        }
+        @keyframes badgeDotPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        .badge-text, .badge-text-blue, .badge-text-violet {
+          letter-spacing: 0.02em;
+        }
+        .support-link {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 11px;
+          font-weight: 500;
+          color: #64748b;
+          transition: all 0.2s ease;
+        }
+        .support-link:hover {
+          color: #6366f1;
+        }
+        .version-badge {
+          padding: 4px 10px;
+          border-radius: 6px;
+          background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+          font-size: 10px;
+          font-weight: 600;
+          color: #475569;
+          letter-spacing: 0.05em;
+        }
+
+        /* ========== HEADER ANIMATIONS ========== */
+        .premium-header-animate {
+          animation: headerReveal 1s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+        }
+        @keyframes headerReveal {
+          0% { 
+            opacity: 0; 
+            transform: translateY(-30px) scale(0.95);
+            filter: blur(10px);
+          }
+          100% { 
+            opacity: 1; 
+            transform: translateY(0) scale(1);
+            filter: blur(0);
+          }
+        }
+
+        /* ========== LOGO CONTAINER ========== */
+        .logo-container-premium {
+          position: relative;
+          display: inline-block;
+          margin-bottom: 24px;
+          animation: logoFloat 6s ease-in-out infinite;
+        }
+        @keyframes logoFloat {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+        .logo-glow-outer {
+          position: absolute;
+          inset: -20px;
+          border-radius: 28px;
+          background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(34,211,238,0.3));
+          filter: blur(30px);
+          opacity: 0.7;
+          animation: glowPulse 4s ease-in-out infinite;
+        }
+        .logo-glow-middle {
+          position: absolute;
+          inset: -10px;
+          border-radius: 22px;
+          background: linear-gradient(135deg, rgba(129,140,248,0.4), rgba(56,189,248,0.4));
+          filter: blur(20px);
+          opacity: 0.5;
+          animation: glowPulse 4s ease-in-out infinite 1s;
+        }
+        @keyframes glowPulse {
+          0%, 100% { opacity: 0.5; transform: scale(1); }
+          50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        .logo-border-rotating {
+          position: absolute;
+          inset: -3px;
+          border-radius: 22px;
+          background: conic-gradient(from 0deg, #818cf8, #22d3ee, #a78bfa, #34d399, #fbbf24, #818cf8);
+          animation: borderRotate 6s linear infinite;
+          z-index: -1;
+        }
+        @keyframes borderRotate {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .logo-main-card {
+          position: relative;
+          width: 96px;
+          height: 96px;
+          border-radius: 18px;
+          background: rgba(255,255,255,0.9);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(226,232,240,0.8);
+          box-shadow: 
+            0 20px 40px -10px rgba(0,0,0,0.1),
+            0 0 0 1px rgba(255,255,255,0.8) inset;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .logo-inner-gradient {
+          width: 76px;
+          height: 76px;
+          border-radius: 14px;
+          background: linear-gradient(135deg, #6366f1, #3b82f6, #06b6d4);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 
+            0 4px 15px -3px rgba(99,102,241,0.4),
+            inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .logo-icon {
+          width: 38px;
+          height: 38px;
+          color: white;
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
+        .logo-reflection {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%);
+          pointer-events: none;
+        }
+        .logo-verify-badge {
+          position: absolute;
+          top: -6px;
+          right: -6px;
+          width: 26px;
+          height: 26px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #10b981, #059669);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 12px rgba(16,185,129,0.4);
+          color: white;
+          animation: verifyBounce 2s ease-in-out infinite;
+        }
+        @keyframes verifyBounce {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+        }
+        .orbit-dot {
+          position: absolute;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          z-index: -1;
+        }
+        .orbit-dot-1 {
+          top: -4px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: linear-gradient(135deg, #f472b6, #ec4899);
+          animation: orbitPulse1 2s ease-in-out infinite;
+        }
+        .orbit-dot-2 {
+          bottom: 10px;
+          left: -4px;
+          background: linear-gradient(135deg, #34d399, #10b981);
+          animation: orbitPulse2 2s ease-in-out infinite 0.5s;
+        }
+        .orbit-dot-3 {
+          bottom: 10px;
+          right: -4px;
+          background: linear-gradient(135deg, #fbbf24, #f59e0b);
+          animation: orbitPulse3 2s ease-in-out infinite 1s;
+        }
+        @keyframes orbitPulse1, @keyframes orbitPulse2, @keyframes orbitPulse3 {
+          0%, 100% { transform: scale(1); opacity: 0.7; }
+          50% { transform: scale(1.3); opacity: 1; }
+        }
+
+        /* ========== TITLE & SUBTITLE ========== */
+        .premium-title {
+          margin-bottom: 8px;
+        }
+        .title-text-gradient {
+          font-size: 2.5rem;
+          font-weight: 800;
+          background: linear-gradient(135deg, #1e293b 0%, #4f46e5 50%, #06b6d4 100%);
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: titleShine 5s linear infinite;
+          letter-spacing: -0.02em;
+        }
+        @keyframes titleShine {
+          to { background-position: 200% center; }
+        }
+        .premium-subtitle {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          font-size: 0.95rem;
+          color: #64748b;
+          font-weight: 500;
+        }
+        .subtitle-icon-wrapper {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
+          border-radius: 6px;
+          background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+          color: #6366f1;
+        }
+        .tagline-container {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          margin-top: 12px;
+        }
+        .tagline-line {
+          width: 30px;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, #cbd5e1);
+        }
+        .tagline-line:last-child {
+          background: linear-gradient(90deg, #cbd5e1, transparent);
+        }
+        .tagline-text {
+          font-size: 11px;
+          font-weight: 600;
+          color: #94a3b8;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+        }
+
+        /* ========== PREMIUM CARD ========== */
+        .premium-card-container {
+          position: relative;
+          animation: cardEntrance 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+        }
+        @keyframes cardEntrance {
+          0% { 
+            opacity: 0; 
+            transform: translateY(40px) scale(0.96);
+            filter: blur(10px);
+          }
+          100% { 
+            opacity: 1; 
+            transform: translateY(0) scale(1);
+            filter: blur(0);
+          }
+        }
+        .card-animated-border {
+          position: absolute;
+          inset: 0;
+          border-radius: 28px;
+          padding: 1.5px;
+          background: linear-gradient(
+            var(--mouse-x, 50%) var(--mouse-y, 50%),
+            #818cf8 0%,
+            #22d3ee 25%,
+            #a78bfa 50%,
+            #34d399 75%,
+            #818cf8 100%
+          );
+          background-size: 300% 300%;
+          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+          opacity: 0.8;
+          transition: background-position 0.5s ease;
+          pointer-events: none;
+        }
+        .card-spotlight {
+          position: absolute;
+          inset: 0;
+          border-radius: 28px;
+          background: radial-gradient(
+            600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+            rgba(99,102,241,0.06),
+            transparent 40%
+          );
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+        .premium-card-container:hover .card-spotlight {
+          opacity: 1;
+        }
+        .premium-card-content {
+          position: relative;
+          background: rgba(255,255,255,0.88);
+          backdrop-filter: blur(30px);
+          -webkit-backdrop-filter: blur(30px);
+          border-radius: 28px;
+          border: 1px solid rgba(226,232,240,0.7);
+          box-shadow: 
+            0 4px 6px -1px rgba(0,0,0,0.05),
+            0 20px 50px -12px rgba(0,0,0,0.1),
+            0 0 0 1px rgba(255,255,255,0.8) inset;
+          overflow: hidden;
+        }
+        .premium-card-content::before {
           content: '';
           position: absolute;
           top: 0;
           left: 0;
           right: 0;
           height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+        }
+        .card-bottom-accent {
+          position: absolute;
+          bottom: 0;
+          left: 20%;
+          right: 20%;
+          height: 2px;
+          background: linear-gradient(90deg, transparent, #818cf8, #22d3ee, transparent);
+          opacity: 0.5;
         }
 
-        /* Card Enter Animation */
-        .light-card-enter {
-          animation: lightCardEnter 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        /* ========== ROLE TABS ========== */
+        .role-section {
+          padding: 24px 24px 0;
         }
-        @keyframes lightCardEnter {
-          0% { 
-            opacity: 0; 
-            transform: translateY(30px) scale(0.95);
-          }
-          100% { 
-            opacity: 1; 
-            transform: translateY(0) scale(1);
-          }
+        .role-label {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 11px;
+          font-weight: 700;
+          color: #64748b;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          margin-bottom: 14px;
+        }
+        .role-label-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 20px;
+          height: 20px;
+          border-radius: 6px;
+          background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+          color: #6366f1;
+        }
+        .role-label-line {
+          flex: 1;
+          height: 1px;
+          background: linear-gradient(90deg, #e2e8f0, transparent);
+          margin-left: 8px;
+        }
+        .role-tabs-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 10px;
+        }
+        .role-tab-button {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          padding: 14px 8px 12px;
+          border-radius: 16px;
+          border: 1.5px solid #e2e8f0;
+          background: white;
+          cursor: pointer;
+          transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+          overflow: hidden;
+        }
+        .role-tab-button:hover {
+          border-color: #cbd5e1;
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px -8px rgba(0,0,0,0.1);
+        }
+        .role-tab-button[class*="active"] {
+          border-color: transparent;
+          transform: translateY(-3px);
+          box-shadow: 0 12px 28px -10px var(--glow-color, rgba(99,102,241,0.25));
+        }
+        .active-glow {
+          position: absolute;
+          inset: 0;
+          opacity: 0.15;
+          transition: opacity 0.3s ease;
+        }
+        .active-border-gradient {
+          position: absolute;
+          inset: 0;
+          opacity: 0.5;
+        }
+        .role-icon-wrap {
+          width: 42px;
+          height: 42px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #f1f5f9;
+          transition: all 0.3s ease;
+        }
+        .role-tab-button:hover .role-icon-wrap {
+          background: #e2e8f0;
+        }
+        .role-icon-active {
+          background: transparent !important;
+        }
+        .icon-gradient-bg {
+          width: 100%;
+          height: 100%;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 12px -2px rgba(0,0,0,0.15);
+        }
+        .role-icon-active-svg {
+          width: 20px;
+          height: 20px;
+          color: white;
+          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+        }
+        .role-icon-inactive {
+          width: 20px;
+          height: 20px;
+          color: #94a3b8;
+          transition: color 0.3s ease;
+        }
+        .role-tab-button:hover .role-icon-inactive {
+          color: #64748b;
+        }
+        .role-label-text {
+          font-size: 11px;
+          font-weight: 600;
+          color: #64748b;
+          transition: color 0.3s ease;
+        }
+        .role-label-active-emerald { color: #059669; }
+        .role-label-active-blue { color: #2563eb; }
+        .role-label-active-purple { color: #9333ea; }
+        .role-label-active-amber { color: #d97706; }
+        .active-indicator-bar {
+          position: absolute;
+          bottom: 0;
+          left: 20%;
+          right: 20%;
+          height: 3px;
+          border-radius: 3px 3px 0 0;
         }
 
-        /* Header Animation */
-        .light-header-animate {
-          animation: lightHeaderFadeIn 0.7s ease-out 0.15s both;
+        /* ========== ERROR MESSAGE ========== */
+        .error-container-premium {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin: 16px 24px;
+          padding: 14px 16px;
+          border-radius: 14px;
+          background: linear-gradient(135deg, #fef2f2, #fee2e2);
+          border: 1px solid #fecaca;
+          animation: errorSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1), errorShake 0.5s ease-out 0.4s;
         }
-        @keyframes lightHeaderFadeIn {
-          0% { 
-            opacity: 0; 
-            transform: translateY(-20px);
-          }
-          100% { 
-            opacity: 1; 
-            transform: translateY(0);
-          }
+        @keyframes errorSlideIn {
+          from { opacity: 0; transform: translateX(-20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes errorShake {
+          0%, 100% { transform: translateX(0); }
+          20% { transform: translateX(-10px); }
+          40% { transform: translateX(10px); }
+          60% { transform: translateX(-6px); }
+          80% { transform: translateX(4px); }
+        }
+        .error-content {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .error-icon-wrap {
+          width: 28px;
+          height: 28px;
+          border-radius: 8px;
+          background: linear-gradient(135deg, #fecaca, #fca5a5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .error-icon {
+          width: 16px;
+          height: 16px;
+          color: #dc2626;
+        }
+        .error-text {
+          font-size: 13px;
+          font-weight: 600;
+          color: #991b1b;
+        }
+        .error-close {
+          padding: 4px;
+          color: #dc2626;
+          opacity: 0.6;
+          transition: opacity 0.2s ease;
+        }
+        .error-close:hover {
+          opacity: 1;
         }
 
-        /* Light Input Styles */
-        .light-input {
+        /* ========== FORM INPUTS ========== */
+        .form-space-premium {
+          padding: 20px 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+        .input-group-premium {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .input-label-premium {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #475569;
+          transition: color 0.3s ease;
+        }
+        .input-label-focused {
+          color: #6366f1;
+        }
+        .input-label-icon {
+          width: 16px;
+          height: 16px;
+          color: #94a3b8;
+          transition: color 0.3s ease;
+        }
+        .input-label-focused .input-label-icon {
+          color: #6366f1;
+        }
+        .input-required-mark {
+          color: #ef4444;
+          margin-left: 2px;
+        }
+        .input-wrapper-premium {
+          position: relative;
+          display: flex;
+          align-items: center;
+          border-radius: 14px;
+          border: 1.5px solid #e2e8f0;
+          background: white;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          overflow: hidden;
+        }
+        .input-wrapper-focused {
+          border-color: #818cf8;
+          box-shadow: 
+            0 0 0 4px rgba(99,102,241,0.08),
+            0 4px 12px -4px rgba(99,102,241,0.15);
+        }
+        .input-prefix {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 46px;
+          height: 100%;
+          flex-shrink: 0;
+        }
+        .input-prefix-icon {
+          width: 18px;
+          height: 18px;
+          color: #94a3b8;
+          transition: all 0.3s ease;
+        }
+        .prefix-icon-focused {
+          color: #6366f1;
+          transform: scale(1.1);
+        }
+        .premium-input-field {
+          flex: 1;
+          height: 52px;
+          padding: 0 16px;
+          font-size: 14px;
+          font-weight: 500;
+          color: #1e293b;
+          background: transparent;
+          border: none;
+          outline: none;
+        }
+        .premium-input-field::placeholder {
+          color: #94a3b8;
+          font-weight: 400;
+        }
+        .input-focus-line {
+          position: absolute;
+          bottom: 0;
+          left: 50%;
+          width: 0;
+          height: 2px;
+          background: linear-gradient(90deg, #818cf8, #22d3ee);
+          transition: all 0.3s ease;
+          transform: translateX(-50%);
+        }
+        .input-wrapper-focused .input-focus-line {
+          width: 100%;
+        }
+        .input-glow-effect {
+          position: absolute;
+          inset: 0;
+          border-radius: 14px;
+          background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(34,211,238,0.08));
+          opacity: 0;
+          transition: opacity 0.3s ease;
+          pointer-events: none;
+        }
+        .input-wrapper-focused .input-glow-effect {
+          opacity: 1;
+        }
+        .password-toggle-btn {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          padding: 6px;
+          color: #94a3b8;
+          border-radius: 8px;
           transition: all 0.2s ease;
         }
-        .light-input:focus {
-          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        .password-toggle-btn:hover {
+          color: #6366f1;
+          background: rgba(99,102,241,0.08);
         }
 
-        /* Submit Button Hover Effect */
-        .light-submit-btn {
+        /* ========== SUBMIT BUTTON ========== */
+        .premium-submit-btn {
+          position: relative;
+          width: 100%;
+          height: 54px;
+          border: none;
+          border-radius: 14px;
+          cursor: pointer;
+          overflow: hidden;
+          transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .premium-submit-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 
+            0 8px 25px -8px rgba(99,102,241,0.5),
+            0 4px 10px -4px rgba(0,0,0,0.1);
+        }
+        .premium-submit-btn:active {
+          transform: translateY(0) scale(0.98);
+        }
+        .btn-bg-base {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, #6366f1, #4f46e5);
+        }
+        .btn-bg-gradient {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, #818cf8, #6366f1, #3b82f6, #06b6d4);
+          background-size: 300% 300%;
+          opacity: 0;
+          transition: opacity 0.4s ease;
+        }
+        .premium-submit-btn:hover .btn-bg-gradient {
+          opacity: 1;
+          animation: btnGradientShift 3s ease infinite;
+        }
+        @keyframes btnGradientShift {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        .btn-shimmer {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+          transform: translateX(-100%);
+          transition: transform 0.6s ease;
+        }
+        .premium-submit-btn:hover .btn-shimmer {
+          transform: translateX(100%);
+        }
+        .btn-content {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          font-size: 15px;
+          font-weight: 700;
+          color: white;
+          letter-spacing: 0.01em;
+        }
+        .btn-spinner {
+          width: 20px;
+          height: 20px;
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .btn-arrow {
+          width: 18px;
+          height: 18px;
+          transition: transform 0.3s ease;
+        }
+        .premium-submit-btn:hover .btn-arrow {
+          transform: translateX(4px);
+        }
+        .btn-hover-glow {
+          position: absolute;
+          inset: -2px;
+          border-radius: 16px;
+          background: linear-gradient(135deg, #818cf8, #22d3ee);
+          opacity: 0;
+          filter: blur(15px);
+          z-index: -1;
+          transition: opacity 0.4s ease;
+        }
+        .premium-submit-btn:hover .btn-hover-glow {
+          opacity: 0.4;
+        }
+
+        /* ========== DIVIDER ========== */
+        .divider-premium {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          margin: 20px 24px;
+        }
+        .divider-line {
+          flex: 1;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+        }
+        .divider-text {
+          display: flex;
+          align-items: center;
+          font-size: 10px;
+          font-weight: 700;
+          color: #94a3b8;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          white-space: nowrap;
+        }
+
+        /* ========== QUICK ACCESS ========== */
+        .quick-access-section {
+          padding: 0 24px 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .admin-quick-btn {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 14px 16px;
+          border-radius: 14px;
+          border: 1.5px solid #fde68a;
+          background: linear-gradient(135deg, #fffbeb, #fef3c7);
+          cursor: pointer;
+          overflow: hidden;
+          transition: all 0.3s ease;
+        }
+        .admin-quick-btn:hover {
+          border-color: #fcd34d;
+          box-shadow: 0 8px 20px -8px rgba(245,158,11,0.3);
+          transform: translateY(-1px);
+        }
+        .admin-btn-left {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .admin-btn-icon-wrap {
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          background: linear-gradient(135deg, #fbbf24, #f59e0b);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 10px -2px rgba(245,158,11,0.4);
+        }
+        .admin-btn-icon {
+          width: 20px;
+          height: 20px;
+          color: white;
+        }
+        .admin-btn-title {
+          display: block;
+          font-size: 13px;
+          font-weight: 700;
+          color: #92400e;
+        }
+        .admin-btn-desc {
+          display: block;
+          font-size: 11px;
+          color: #b45309;
+        }
+        .admin-btn-arrow {
+          width: 18px;
+          height: 18px;
+          color: #d97706;
+          transition: transform 0.3s ease;
+        }
+        .admin-quick-btn:hover .admin-btn-arrow {
+          transform: translateX(4px);
+        }
+        .admin-btn-glow {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, rgba(251,191,36,0.2), transparent);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+        .admin-quick-btn:hover .admin-btn-glow {
+          opacity: 1;
+        }
+
+        /* ========== DEPARTMENT SELECTOR ========== */
+        .dept-selector-section {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .dept-label {
+          display: flex;
+          align-items: center;
+          font-size: 11px;
+          font-weight: 700;
+          color: #64748b;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+        .dept-dropdown-container {
+          position: relative;
+        }
+        .dept-dropdown-trigger {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px 14px;
+          border-radius: 12px;
+          border: 1.5px solid #e2e8f0;
+          background: white;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        .dept-dropdown-trigger:hover {
+          border-color: #cbd5e1;
+          box-shadow: 0 4px 12px -4px rgba(0,0,0,0.08);
+        }
+        .dept-selected {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 13px;
+          font-weight: 500;
+          color: #374151;
+        }
+        .dept-icon-box {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid #c7d2fe;
+        }
+        .dept-chevron {
+          width: 16px;
+          height: 16px;
+          color: #94a3b8;
+          transition: transform 0.3s ease;
+        }
+        .chevron-open {
+          transform: rotate(180deg);
+        }
+        .dept-dropdown-menu {
+          position: absolute;
+          z-index: 50;
+          top: calc(100% + 8px);
+          left: 0;
+          right: 0;
+          background: rgba(255,255,255,0.98);
+          backdrop-filter: blur(20px);
+          border-radius: 14px;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 20px 40px -12px rgba(0,0,0,0.15);
+          max-height: 220px;
+          overflow-y: auto;
+          animation: dropdownOpen 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes dropdownOpen {
+          from { opacity: 0; transform: translateY(-10px) scale(0.96); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .dept-option {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 14px;
+          font-size: 13px;
+          color: #475569;
+          transition: all 0.2s ease;
+          cursor: pointer;
+        }
+        .dept-option:first-child {
+          border-radius: 14px 14px 0 0;
+        }
+        .dept-option:last-child {
+          border-radius: 0 0 14px 14px;
+        }
+        .dept-option:hover {
+          background: #f8fafc;
+        }
+        .dept-option-active {
+          background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+          color: #4f46e5;
+        }
+        .dept-option-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+        .dot-blue { background: #3b82f6; }
+        .dot-green { background: #10b981; }
+        .dot-purple { background: #8b5cf6; }
+        .dot-orange { background: #f97316; }
+        .dot-pink { background: #ec4899; }
+        .dot-cyan { background: #06b6d4; }
+        .dot-red { background: #ef4444; }
+        .dot-gray { background: #6b7280; }
+        .dept-option-code {
+          font-weight: 600;
+        }
+        .dept-option-name {
+          color: #94a3b8;
+          font-size: 12px;
+        }
+        .dept-option-check {
+          width: 16px;
+          height: 16px;
+          color: #4f46e5;
+          margin-left: auto;
+        }
+
+        /* ========== QUICK ROLE GRID ========== */
+        .quick-role-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 10px;
+        }
+        .quick-role-btn {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+          padding: 14px 8px;
+          border-radius: 14px;
+          border: 1.5px solid #e2e8f0;
+          background: white;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
           position: relative;
           overflow: hidden;
         }
-        .light-submit-btn::before {
-          content: '';
+        .quick-role-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 16px -6px rgba(0,0,0,0.1);
+        }
+        .quick-role-active-emerald {
+          background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+          border-color: #6ee7b7;
+        }
+        .quick-role-active-blue {
+          background: linear-gradient(135deg, #eff6ff, #dbeafe);
+          border-color: #93c5fd;
+        }
+        .quick-role-active-purple {
+          background: linear-gradient(135deg, #faf5ff, #ede9fe);
+          border-color: #c4b5fd;
+        }
+        .quick-role-icon {
+          width: 22px;
+          height: 22px;
+          color: #94a3b8;
+          transition: all 0.3s ease;
+        }
+        .quick-role-icon-active-emerald { color: #059669; }
+        .quick-role-icon-active-blue { color: #2563eb; }
+        .quick-role-icon-active-purple { color: #9333ea; }
+        .quick-role-label {
+          font-size: 12px;
+          font-weight: 600;
+          color: #64748b;
+          transition: color 0.3s ease;
+        }
+        .quick-role-label-active-emerald { color: #047857; }
+        .quick-role-label-active-blue { color: #1d4ed8; }
+        .quick-role-label-active-purple { color: #7c3aed; }
+        .quick-role-indicator {
           position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
-          transition: left 0.5s ease;
+          bottom: 0;
+          left: 20%;
+          right: 20%;
+          height: 3px;
+          border-radius: 3px 3px 0 0;
         }
-        .light-submit-btn:hover::before {
-          left: 100%;
+        .indicator-emerald { background: linear-gradient(90deg, #10b981, #34d399); }
+        .indicator-blue { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+        .indicator-purple { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+
+        /* ========== DEPARTMENT PILLS ========== */
+        .dept-pills-container {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          justify-content: center;
+        }
+        .dept-pill {
+          position: relative;
+          padding: 8px 14px;
+          border-radius: 9999px;
+          border: 1.5px solid #e2e8f0;
+          background: white;
+          font-size: 12px;
+          font-weight: 600;
+          color: #64748b;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          overflow: hidden;
+        }
+        .dept-pill:hover {
+          border-color: #cbd5e1;
+          color: #475569;
+        }
+        .dept-pill-active {
+          background: linear-gradient(135deg, #6366f1, #4f46e5);
+          border-color: transparent;
+          color: white;
+          box-shadow: 0 4px 12px -4px rgba(99,102,241,0.5);
+        }
+        .pill-glow {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+        }
+        .pill-text {
+          position: relative;
+          z-index: 1;
         }
 
-        /* Dropdown Animation */
-        .light-dropdown-enter {
-          animation: lightDropdownSlide 0.25s ease-out;
+        /* ========== FOOTER ========== */
+        .premium-footer {
+          margin-top: 24px;
+          animation: footerFadeIn 0.6s ease-out 0.5s both;
         }
-        @keyframes lightDropdownSlide {
-          0% { 
-            opacity: 0; 
-            transform: translateY(-8px) scale(0.97);
-          }
-          100% { 
-            opacity: 1; 
-            transform: translateY(0) scale(1);
-          }
+        @keyframes footerFadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-
-        /* Error Shake */
-        .light-error-shake {
-          animation: lightErrorShake 0.5s ease-out;
+        .footer-content {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
         }
-        @keyframes lightErrorShake {
-          0%, 100% { transform: translateX(0); }
-          20% { transform: translateX(-8px); }
-          40% { transform: translateX(8px); }
-          60% { transform: translateX(-5px); }
-          80% { transform: translateX(3px); }
+        .footer-lock-icon {
+          width: 14px;
+          height: 14px;
+          color: #94a3b8;
         }
-
-        /* Footer Fade In */
-        .light-footer-fade-in {
-          animation: lightFadeInUp 0.6s ease-out 0.4s both;
+        .footer-text {
+          font-size: 11px;
+          font-weight: 500;
+          color: #94a3b8;
         }
-        @keyframes lightFadeInUp {
-          0% { 
-            opacity: 0; 
-            transform: translateY(8px);
-          }
-          100% { 
-            opacity: 1; 
-            transform: translateY(0);
-          }
+        .footer-dots {
+          display: flex;
+          gap: 4px;
+          margin-left: 8px;
+        }
+        .footer-dot {
+          width: 4px;
+          height: 4px;
+          border-radius: 50%;
+          background: #cbd5e1;
+        }
+        .footer-dot-delay {
+          animation: dotPulse 1.5s ease-in-out infinite 0.2s;
+        }
+        .footer-dot-delay-2 {
+          animation: dotPulse 1.5s ease-in-out infinite 0.4s;
+        }
+        @keyframes dotPulse {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 1; }
         }
       `}</style>
     </div>
