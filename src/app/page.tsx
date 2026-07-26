@@ -3989,7 +3989,7 @@ function Sidebar({
           onClick={onToggle}
         />
       )}
-      <aside className={`${collapsed ? 'w-20' : 'w-72'} bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col transition-all duration-300 z-50 ${open ? 'fixed inset-y-0 left-0 shadow-2xl lg:relative' : 'hidden lg:flex'} sidebar-shadow`}>
+      <aside className={`${collapsed ? 'w-20' : 'w-72'} bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col transition-all duration-300 z-50 ${open ? 'fixed inset-y-0 left-0 shadow-2xl' : ''} lg:flex sidebar-shadow`}>
       
       {/* ====== ROLE-BASED HEADER ====== */}
       <div className={`p-4 border-b border-gray-100 bg-gradient-to-r ${roleConfig.brandColor} bg-opacity-5`}>
