@@ -3962,18 +3962,18 @@ function Sidebar({
 
   return (
     <>
-      {/* Overlay for mobile */}
+      {/* Overlay - works for both mobile and desktop when open */}
       {open && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
           onClick={onToggle}
         />
       )}
-      <aside className={`w-72 bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col z-50 transition-all duration-300 ${open ? 'fixed inset-y-0 left-0 shadow-2xl' : 'hidden'} lg:flex lg:relative lg:shadow-none sidebar-shadow`}>
+      <aside className={`w-72 bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col z-50 transition-all duration-300 ${open ? 'translate-x-0' : '-translate-x-full lg:-translate-x-full'} fixed inset-y-0 left-0 shadow-2xl sidebar-shadow`}>
       
       {/* ====== ROLE-BASED HEADER ====== */}
       <div className={`p-4 border-b border-gray-100 bg-gradient-to-r ${roleConfig.brandColor} bg-opacity-5 relative`}>
-        {/* Close Button - Desktop & Mobile */}
+        {/* Close Button */}
         <button
           onClick={onToggle}
           className="absolute top-3 right-3 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100/80 transition-colors z-10"
@@ -7179,7 +7179,7 @@ export default function IQACPortal() {
   const [mounted, setMounted] = useState(false)
   const [feedbackEnabled, setFeedbackEnabled] = useState(true)
   const [darkMode, setDarkMode] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true) // Sidebar open by default
 
   useEffect(() => {
     setMounted(true)
@@ -7260,8 +7260,8 @@ export default function IQACPortal() {
         onToggle={() => setSidebarOpen(!sidebarOpen)}
       />
       
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-screen main-content-wrapper">
+      {/* Main Content Area - shifts when sidebar is open */}
+      <div className={`flex-1 flex flex-col min-h-screen main-content-wrapper transition-all duration-300 ${sidebarOpen ? 'lg:ml-72' : 'lg:ml-0'}`}>
         {/* Header */}
         <header className="bg-white/95 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-30 header-shadow">
           <div className="flex items-center justify-between px-4 lg:px-6 h-16">
@@ -7502,18 +7502,11 @@ export default function IQACPortal() {
           }
         }
         
-        /* Main Content Wrapper - Ensure content doesn't hide behind sidebar */
+        /* Main Content Wrapper */
         .main-content-wrapper {
           background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
           min-height: 100vh;
-          margin-left: 0;
-        }
-        
-        @media (min-width: 1024px) {
-          .main-content-wrapper {
-            margin-left: 0;
-            width: calc(100% - 288px);
-          }
+          width: 100%;
         }
         
         .dark-theme .main-content-wrapper {
