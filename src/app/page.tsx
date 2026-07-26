@@ -3969,11 +3969,20 @@ function Sidebar({
           onClick={onToggle}
         />
       )}
-      <aside className="w-72 bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col z-50 fixed inset-y-0 left-0 shadow-2xl lg:relative lg:shadow-none sidebar-shadow">
+      <aside className={`w-72 bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col z-50 transition-all duration-300 ${open ? 'fixed inset-y-0 left-0 shadow-2xl' : 'hidden'} lg:flex lg:relative lg:shadow-none sidebar-shadow`}>
       
       {/* ====== ROLE-BASED HEADER ====== */}
-      <div className={`p-4 border-b border-gray-100 bg-gradient-to-r ${roleConfig.brandColor} bg-opacity-5`}>
-        <div className="flex items-center gap-3">
+      <div className={`p-4 border-b border-gray-100 bg-gradient-to-r ${roleConfig.brandColor} bg-opacity-5 relative`}>
+        {/* Close Button - Desktop & Mobile */}
+        <button
+          onClick={onToggle}
+          className="absolute top-3 right-3 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100/80 transition-colors z-10"
+          title="Close Sidebar"
+        >
+          <X className="w-4 h-4" />
+        </button>
+        
+        <div className="flex items-center gap-3 pr-8">
           {/* Role-Specific Logo */}
           <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${roleConfig.brandColor} flex items-center justify-center shadow-lg logo-glow relative overflow-hidden`}>
             <RoleIcon className="w-6 h-6 text-white" />
