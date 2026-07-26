@@ -1,0 +1,2002 @@
+     1→'use client'
+     2→
+     3→import React, { useState, useEffect, useCallback, useRef } from 'react'
+     4→import { useAuthStore } from '@/lib/store/auth-store'
+     5→import { Button } from '@/components/ui/button'
+     6→import { Input } from '@/components/ui/input'
+     7→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+     8→import { Badge } from '@/components/ui/badge'
+     9→import { 
+    10→  Building2, Mail, Lock, Eye, EyeOff, Loader2, 
+    11→  LayoutDashboard, Users, GraduationCap, FileText,
+    12→  BarChart3, Settings, Bell, LogOut, Menu, X,
+    13→  Home, UserCheck, BookOpen, Award, TrendingUp,
+    14→  CheckCircle, Clock, AlertCircle, ChevronRight,
+    15→  Shield, Star, Activity, Zap, Database,
+    16→  Search, Filter, Download, Plus, Edit3, Trash2,
+    17→  Calendar, MapPin, Phone, Globe, Send,
+    18→  ArrowRight, RefreshCw, Upload, FolderOpen,
+    19→  Target, Lightbulb, HeartHandshake, Trophy,
+    20→  MessageSquare, ThumbsUp, ThumbsDown,
+    21→  Sun, Moon, ChevronDown, ChevronLeft,
+    22→  ClipboardList, Flag, Mic, Presentation,
+    23→  Briefcase, Wrench, Rocket, Code, PlusCircle,
+    24→  Newspaper, Handshake, Circle,
+    25→  DollarSign, Paperclip, Inbox, Tag, XCircle, ArrowLeft,
+    26→  Save, Sparkles
+    27→} from 'lucide-react'
+    28→
+    29→// ============ TYPES ============
+    30→interface Department {
+    31→  id: string
+    32→  name: string
+    33→  code: string
+    34→  vision?: string
+    35→  mission?: string
+    36→  hod?: string
+    37→  facultyCount?: number
+    38→  studentCount?: number
+    39→  activityCount?: number
+    40→}
+    41→
+    42→interface DashboardStats {
+    43→  totalDepartments: number
+    44→  totalFaculty: number
+    45→  totalStudents: number
+    46→  totalActivities: number
+    47→  totalResearch: number
+    48→  pendingApprovals: number
+    49→}
+    50→
+    51→interface User {
+    52→  id: string
+    53→  email: string
+    54→  name: string
+    55→  role: 'ADMIN' | 'HOD' | 'STAFF' | 'STUDENT'
+    56→  departmentId?: string
+    57→  departmentName?: string
+    58→}
+    59→
+    60→type TabType = 'dashboard' | 'departments' | 'faculty' | 'students' | 'activities' | 'research' 
+    61→  | 'approvals' | 'analytics' | 'documents' | 'settings' | 'achievements' | 'feedback'
+    62→  | 'staff_achievement' | 'student_achievement_view'
+    63→  | 'hod_student_approval' | 'hod_staff_approval' | 'my_achievement'
+    64→
+    65→// ============ ACHIEVEMENT TYPES DEFINITION (13 Types - Student Focused) ============
+    66→const ACHIEVEMENT_TYPES: Record<string, {
+    67→  label: string
+    68→  icon: React.ElementType
+    69→  color: string
+    70→  fields: Array<{
+    71→    id: string
+    72→    label: string
+    73→    type: string
+    74→    required?: boolean
+    75→    locked?: boolean
+    76→    full?: boolean
+    77→    options?: string[]
+    78→  }>
+    79→}> = {
+    80→  journal: {
+    81→    label: 'Journal Publication',
+    82→    icon: Newspaper,
+    83→    color: 'from-blue-500 to-blue-600',
+    84→    fields: [
+    85→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+    86→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+    87→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+    88→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+    89→      { id: 'title', label: 'Paper Title', type: 'text', required: true, full: true },
+    90→      { id: 'journal', label: 'Journal Name', type: 'text', required: true, full: true },
+    91→      { id: 'indexed', label: 'Indexed', type: 'select', options: ['SCI','Scopus','UGC Care','Web of Science','Other'] },
+    92→      { id: 'issn', label: 'ISSN', type: 'text' },
+    93→      { id: 'publisher', label: 'Publisher', type: 'text' },
+    94→      { id: 'month', label: 'Month', type: 'select', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] },
+    95→      { id: 'year_pub', label: 'Year', type: 'number' },
+    96→      { id: 'status_pub', label: 'Status', type: 'select', options: ['Published','Accepted','Under Review'] },
+    97→      { id: 'supervisor', label: 'Supervisor', type: 'text' },
+    98→      { id: 'link', label: 'Paper Link', type: 'url' },
+    99→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   100→    ]
+   101→  },
+   102→  conference: {
+   103→    label: 'Conference Publication',
+   104→    icon: Mic,
+   105→    color: 'from-purple-500 to-purple-600',
+   106→    fields: [
+   107→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   108→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   109→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   110→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   111→      { id: 'title', label: 'Paper Title', type: 'text', required: true, full: true },
+   112→      { id: 'conf', label: 'Conference Name', type: 'text', required: true, full: true },
+   113→      { id: 'org', label: 'Organizing Institute', type: 'text' },
+   114→      { id: 'indexed', label: 'Indexed', type: 'select', options: ['IEEE','Springer','Elsevier','Scopus','Other'] },
+   115→      { id: 'month', label: 'Month', type: 'select', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] },
+   116→      { id: 'year_pub', label: 'Year', type: 'number' },
+   117→      { id: 'status_pub', label: 'Status', type: 'select', options: ['Presented','Published','Both'] },
+   118→      { id: 'supervisor', label: 'Supervisor', type: 'text' },
+   119→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   120→    ]
+   121→  },
+   122→  patent: {
+   123→    label: 'Patent',
+   124→    icon: Lightbulb,
+   125→    color: 'from-amber-500 to-orange-500',
+   126→    fields: [
+   127→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   128→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   129→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   130→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   131→      { id: 'title', label: 'Invention Title', type: 'text', required: true, full: true },
+   132→      { id: 'patent_no', label: 'Patent No.', type: 'text' },
+   133→      { id: 'month', label: 'Month', type: 'select', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] },
+   134→      { id: 'year_pub', label: 'Year', type: 'number' },
+   135→      { id: 'status_pub', label: 'Status', type: 'select', options: ['Filed','Published','Granted'] },
+   136→      { id: 'inventors', label: 'All Inventors', type: 'text' },
+   137→      { id: 'supervisor', label: 'Supervisor', type: 'text' },
+   138→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   139→    ]
+   140→  },
+   141→  nptel: {
+   142→    label: 'NPTEL / MOOC',
+   143→    icon: GraduationCap,
+   144→    color: 'from-green-500 to-teal-600',
+   145→    fields: [
+   146→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   147→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   148→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   149→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   150→      { id: 'platform', label: 'Platform', type: 'select', options: ['NPTEL','Swayam','Coursera','edX','FutureLearn','Udemy','Other'] },
+   151→      { id: 'course', label: 'Course Name', type: 'text', required: true, full: true },
+   152→      { id: 'domain', label: 'Domain', type: 'text' },
+   153→      { id: 'mentor', label: 'Faculty Mentor', type: 'text' },
+   154→      { id: 'duration', label: 'Duration (wks)', type: 'number' },
+   155→      { id: 'score', label: 'Score (%)', type: 'number' },
+   156→      { id: 'grade', label: 'Grade', type: 'select', options: ['Elite + Gold','Elite + Silver','Elite','Successfully Completed','Completed'] },
+   157→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   158→    ]
+   159→  },
+   160→  seminar: {
+   161→    label: 'Seminar / Workshop',
+   162→    icon: Presentation,
+   163→    color: 'from-pink-500 to-rose-600',
+   164→    fields: [
+   165→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   166→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   167→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   168→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   169→      { id: 'title', label: 'Event Title', type: 'text', required: true, full: true },
+   170→      { id: 'type_sem', label: 'Type', type: 'select', options: ['Seminar','Webinar','Workshop','Conference','FDP','Other'] },
+   171→      { id: 'org', label: 'Organizing Institute', type: 'text' },
+   172→      { id: 'state', label: 'State', type: 'text' },
+   173→      { id: 'from_date', label: 'From Date', type: 'date' },
+   174→      { id: 'to_date', label: 'To Date', type: 'date' },
+   175→      { id: 'mode', label: 'Mode', type: 'select', options: ['Online','Offline','Hybrid'] },
+   176→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   177→    ]
+   178→  },
+   179→  internship: {
+   180→    label: 'Internship',
+   181→    icon: Briefcase,
+   182→    color: 'from-cyan-500 to-blue-600',
+   183→    fields: [
+   184→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   185→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   186→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   187→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   188→      { id: 'org_name', label: 'Organization / Industry', type: 'text', required: true, full: true },
+   189→      { id: 'role', label: 'Internship Role/Title', type: 'text' },
+   190→      { id: 'from_date', label: 'From Date', type: 'date' },
+   191→      { id: 'to_date', label: 'To Date', type: 'date' },
+   192→      { id: 'paid', label: 'Paid?', type: 'select', options: ['Yes','No'] },
+   193→      { id: 'stipend', label: 'Stipend (₹)', type: 'number' },
+   194→      { id: 'mode', label: 'Mode', type: 'select', options: ['Online','Offline','Hybrid'] },
+   195→      { id: 'industry_mentor', label: 'Industry Mentor', type: 'text' },
+   196→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   197→    ]
+   198→  },
+   199→  training: {
+   200→    label: 'Training Programme',
+   201→    icon: Wrench,
+   202→    color: 'from-indigo-500 to-violet-600',
+   203→    fields: [
+   204→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   205→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   206→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   207→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   208→      { id: 'prog_name', label: 'Training Program Name', type: 'text', required: true, full: true },
+   209→      { id: 'organizer', label: 'Organizer', type: 'text' },
+   210→      { id: 'from_date', label: 'From Date', type: 'date' },
+   211→      { id: 'to_date', label: 'To Date', type: 'date' },
+   212→      { id: 'hours', label: 'Hours / Days', type: 'text' },
+   213→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   214→    ]
+   215→  },
+   216→  award: {
+   217→    label: 'Awards & Recognition',
+   218→    icon: Trophy,
+   219→    color: 'from-yellow-500 to-amber-600',
+   220→    fields: [
+   221→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   222→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   223→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   224→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   225→      { id: 'award_name', label: 'Award Name', type: 'text', required: true, full: true },
+   226→      { id: 'event', label: 'Event / Competition', type: 'text' },
+   227→      { id: 'organizer', label: 'Organizer', type: 'text' },
+   228→      { id: 'level', label: 'Level', type: 'select', options: ['International','National','State','Regional','Institutional'] },
+   229→      { id: 'position', label: 'Position', type: 'text' },
+   230→      { id: 'date', label: 'Date', type: 'date' },
+   231→      { id: 'cash_prize', label: 'Cash / Prize', type: 'text' },
+   232→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   233→    ]
+   234→  },
+   235→  cocurricular: {
+   236→    label: 'Co-Curricular Activities',
+   237→    icon: Circle,
+   238→    color: 'from-emerald-500 to-green-600',
+   239→    fields: [
+   240→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   241→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   242→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   243→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   244→      { id: 'activity_type', label: 'Activity Type', type: 'select', options: ['Sports','Cultural','Club Activity','Social Service','Leadership','Student Council','Other'] },
+   245→      { id: 'event_name', label: 'Event Name', type: 'text', required: true },
+   246→      { id: 'organizer', label: 'Organizer', type: 'text' },
+   247→      { id: 'level', label: 'Level', type: 'select', options: ['International','National','State','Regional','Institutional'] },
+   248→      { id: 'position', label: 'Position', type: 'text' },
+   249→      { id: 'date', label: 'Date', type: 'date' },
+   250→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   251→    ]
+   252→  },
+   253→  placement: {
+   254→    label: 'Placement',
+   255→    icon: Handshake,
+   256→    color: 'from-violet-500 to-purple-600',
+   257→    fields: [
+   258→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   259→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   260→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   261→      { id: 'yop', label: 'Year of Passing', type: 'number' },
+   262→      { id: 'company', label: 'Company Name', type: 'text', required: true, full: true },
+   263→      { id: 'state', label: 'Company State', type: 'text' },
+   264→      { id: 'role', label: 'Job Role', type: 'text' },
+   265→      { id: 'package', label: 'Package (LPA)', type: 'number' },
+   266→      { id: 'offer_date', label: 'Offer Date', type: 'date' },
+   267→      { id: 'mode', label: 'Mode', type: 'select', options: ['Campus','Off-Campus','Lateral'] },
+   268→      { id: 'emp_type', label: 'Employment Type', type: 'select', options: ['Full-Time','Part-Time','Contract','Internship to PPO'] },
+   269→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   270→    ]
+   271→  },
+   272→  startup: {
+   273→    label: 'Startup',
+   274→    icon: Rocket,
+   275→    color: 'from-red-500 to-pink-600',
+   276→    fields: [
+   277→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   278→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   279→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   280→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   281→      { id: 'title', label: 'Startup Title / Idea', type: 'text', required: true, full: true },
+   282→      { id: 'domain', label: 'Domain / Sector', type: 'text' },
+   283→      { id: 'stage', label: 'Stage', type: 'select', options: ['Idea','Prototype','MVP','Launched','Scaling'] },
+   284→      { id: 'registered', label: 'Is Registered?', type: 'select', options: ['Yes','No'] },
+   285→      { id: 'startup_name', label: 'Startup Name', type: 'text' },
+   286→      { id: 'incubation', label: 'Incubation Status', type: 'select', options: ['Incubated','Not Incubated','Applied'] },
+   287→      { id: 'outcome', label: 'Outcome', type: 'text' },
+   288→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   289→    ]
+   290→  },
+   291→  hackathon: {
+   292→    label: 'Hackathon / Ideathon / SIH',
+   293→    icon: Code,
+   294→    color: 'from-slate-500 to-gray-600',
+   295→    fields: [
+   296→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   297→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   298→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   299→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   300→      { id: 'category', label: 'Category', type: 'select', options: ['Hackathon','Ideathon','SIH','Innovation Challenge','Other'] },
+   301→      { id: 'title', label: 'Title / Idea', type: 'text', required: true, full: true },
+   302→      { id: 'event_agency', label: 'Event / Agency', type: 'text' },
+   303→      { id: 'problem_domain', label: 'Problem Domain', type: 'text' },
+   304→      { id: 'level', label: 'Level', type: 'select', options: ['International','National','State','Regional','Institutional'] },
+   305→      { id: 'stage', label: 'Stage', type: 'select', options: ['Submitted','Shortlisted','Finalist','Winner','Runner-Up'] },
+   306→      { id: 'position_prize', label: 'Position / Prize', type: 'text' },
+   307→      { id: 'amount', label: 'Amount Received (₹)', type: 'number' },
+   308→      { id: 'event_date', label: 'Event Date', type: 'date' },
+   309→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   310→    ]
+   311→  },
+   312→  other: {
+   313→    label: 'Custom Achievement',
+   314→    icon: PlusCircle,
+   315→    color: 'from-gray-400 to-gray-500',
+   316→    fields: [
+   317→      { id: 'custom_type', label: 'Custom Achievement Type', type: 'text', required: true, full: true },
+   318→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   319→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   320→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   321→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   322→      { id: 'date', label: 'Date', type: 'date' },
+   323→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   324→    ]
+   325→  }
+   326→}
+   327→
+   328→// ============ DEPARTMENTS LIST FOR LOGIN ============
+   329→const DEPARTMENTS_LIST = [
+   330→  { code: 'CSE', name: 'Computer Science & Engineering', color: 'blue' },
+   331→  { code: 'AI&DS', name: 'AI & Data Science', color: 'purple' },
+   332→  { code: 'IT', name: 'Information Technology', color: 'cyan' },
+   333→  { code: 'ECE', name: 'Electronics & Communication', color: 'pink' },
+   334→  { code: 'EEE', name: 'Electrical & Electronics', color: 'yellow' },
+   335→  { code: 'MECH', name: 'Mechanical Engineering', color: 'orange' },
+   336→  { code: 'CIVIL', name: 'Civil Engineering', color: 'emerald' },
+   337→  { code: 'MATHS', name: 'Mathematics', color: 'indigo' },
+   338→  { code: 'PHY', name: 'Physics', color: 'teal' },
+   339→  { code: 'CHEM', name: 'Chemistry', color: 'rose' },
+   340→  { code: 'ENG', name: 'English', color: 'sky' },
+   341→  { code: 'MBA', name: 'MBA', color: 'violet' },
+   342→  { code: 'MCA', name: 'MCA', color: 'fuchsia' },
+   343→  { code: 'BIO', name: 'Biotechnology', color: 'lime' },
+   344→  { code: 'AGRI', name: 'Agricultural Engg.', color: 'green' },
+   345→  { code: 'BME', name: 'Biomedical Engg.', color: 'red' },
+   346→  { code: 'R&A', name: 'Robotics & Automation', color: 'slate' },
+   347→  { code: 'MECHT', name: 'Mechatronics', color: 'zinc' },
+   348→  { code: 'CYBER', name: 'Cyber Security', color: 'amber' },
+   349→  { code: 'DS', name: 'Data Science', color: 'stone' },
+   350→]
+   351→
+   352→const ROLE_COLORS: Record<string, { bg: string; border: string; text: string; icon: string }> = {
+   353→  HOD: { bg: 'bg-purple-50 hover:bg-purple-100', border: 'border-purple-200 hover:border-purple-300', text: 'text-purple-700 hover:text-purple-800', icon: 'text-purple-500' },
+   354→  STAFF: { bg: 'bg-green-50 hover:bg-green-100', border: 'border-green-200 hover:border-green-300', text: 'text-green-700 hover:text-green-800', icon: 'text-green-500' },
+   355→  STUDENT: { bg: 'bg-amber-50 hover:bg-amber-100', border: 'border-amber-200 hover:border-amber-300', text: 'text-amber-700 hover:text-amber-800', icon: 'text-amber-500' },
+   356→}
+   357→
+   358→// ============ LOGIN PAGE - PREMIUM IMPRESSIVE DESIGN ============
+   359→function LoginPage() {
+   360→  const [email, setEmail] = useState('')
+   361→  const [password, setPassword] = useState('')
+   362→  const [showPassword, setShowPassword] = useState(false)
+   363→  const [isLoading, setIsLoading] = useState(false)
+   364→  const [error, setError] = useState('')
+   365→  const [selectedRole, setSelectedRole] = useState<'STUDENT' | 'STAFF' | 'HOD' | 'ADMIN'>('STUDENT')
+   366→  const [selectedDept, setSelectedDept] = useState('CSE')
+   367→  const [showDeptDropdown, setShowDeptDropdown] = useState(false)
+   368→  const [isFocused, setIsFocused] = useState<string | null>(null)
+   369→  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+   370→  const login = useAuthStore((state) => state.login)
+   371→
+   372→  // Track mouse position for spotlight effect
+   373→  useEffect(() => {
+   374→    const handleMouseMove = (e: MouseEvent) => {
+   375→      setMousePos({ x: e.clientX, y: e.clientY })
+   376→    }
+   377→    window.addEventListener('mousemove', handleMouseMove)
+   378→    return () => window.removeEventListener('mousemove', handleMouseMove)
+   379→  }, [])
+   380→
+   381→  const handleSubmit = async (e: React.FormEvent) => {
+   382→    e.preventDefault()
+   383→    setError('')
+   384→    setIsLoading(true)
+   385→
+   386→    try {
+   387→      const result = await login(email, password)
+   388→      if (!result.success) {
+   389→        setError(result.error || 'Invalid email or password')
+   390→      }
+   391→    } catch (err) {
+   392→      setError('Network error. Please try again.')
+   393→    } finally {
+   394→      setIsLoading(false)
+   395→    }
+   396→  }
+   397→
+   398→  const quickLogin = (emailVal: string, passVal: string) => {
+   399→    setEmail(emailVal)
+   400→    setPassword(passVal)
+   401→  }
+   402→
+   403→  const getDeptEmail = (deptCode: string, role: string) => {
+   404→    const code = deptCode.toLowerCase()
+   405→    switch(role) {
+   406→      case 'HOD': return `hod_${code}@niet.ac.in`
+   407→      case 'STAFF': return `staff_${code}1@niet.ac.in`
+   408→      case 'STUDENT': return `student_${code}1@niet.ac.in`
+   409→      default: return ''
+   410→    }
+   411→  }
+   412→
+   413→  const getPassword = (role: string) => {
+   414→    switch(role) {
+   415→      case 'ADMIN': return 'admin123'
+   416→      case 'HOD': return 'hod123'
+   417→      case 'STAFF': return 'staff123'
+   418→      case 'STUDENT': return 'student123'
+   419→      default: return ''
+   420→    }
+   421→  }
+   422→
+   423→  const currentDept = DEPARTMENTS_LIST.find(d => d.code === selectedDept)
+   424→
+   425→  // Premium Role Configuration
+   426→  const roleTabs = [
+   427→    { id: 'STUDENT' as const, label: 'Student', icon: GraduationCap, color: 'emerald', gradient: 'from-emerald-400 via-teal-500 to-cyan-500', glowColor: 'rgba(16, 185, 129, 0.4)', bgColor: 'bg-emerald-50', textColor: 'text-emerald-700', borderColor: 'border-emerald-300', shadowColor: 'shadow-emerald-200' },
+   428→    { id: 'STAFF' as const, label: 'Staff / Faculty', icon: BookOpen, color: 'blue', gradient: 'from-blue-400 via-indigo-500 to-violet-500', glowColor: 'rgba(59, 130, 246, 0.4)', bgColor: 'bg-blue-50', textColor: 'text-blue-700', borderColor: 'border-blue-300', shadowColor: 'shadow-blue-200' },
+   429→    { id: 'HOD' as const, label: 'HOD', icon: UserCheck, color: 'purple', gradient: 'from-purple-400 via-fuchsia-500 to-pink-500', glowColor: 'rgba(168, 85, 247, 0.4)', bgColor: 'bg-purple-50', textColor: 'text-purple-700', borderColor: 'border-purple-300', shadowColor: 'shadow-purple-200' },
+   430→    { id: 'ADMIN' as const, label: 'IQAC Admin', icon: Shield, color: 'amber', gradient: 'from-amber-400 via-orange-500 to-red-500', glowColor: 'rgba(245, 158, 11, 0.4)', bgColor: 'bg-amber-50', textColor: 'text-amber-700', borderColor: 'border-amber-300', shadowColor: 'shadow-amber-200' },
+   431→  ]
+   432→
+   433→  const getPlaceholderForRole = () => {
+   434→    switch(selectedRole) {
+   435→      case 'STUDENT': return 'student_cse1@niet.ac.in'
+   436→      case 'STAFF': return 'staff_cse1@niet.ac.in'
+   437→      case 'HOD': return 'hod_cse@niet.ac.in'
+   438→      case 'ADMIN': return 'admin@niet.ac.in'
+   439→      default: return 'Enter your email'
+   440→    }
+   441→  }
+   442→
+   443→  // Generate particles for ambient effect
+   444→  const particles = Array.from({ length: 30 }, (_, i) => ({
+   445→    id: i,
+   446→    size: Math.random() * 4 + 2,
+   447→    x: Math.random() * 100,
+   448→    y: Math.random() * 100,
+   449→    delay: Math.random() * 10,
+   450→    duration: 15 + Math.random() * 20,
+   451→    opacity: 0.1 + Math.random() * 0.4
+   452→  }))
+   453→
+   454→  return (
+   455→    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 flex flex-col">
+   456→      {/* ====== PREMIUM AMBIENT BACKGROUND ====== */}
+   457→      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+   458→        {/* Multi-layer Gradient Mesh */}
+   459→        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.15),transparent)]" />
+   460→        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_100%_50%,rgba(99,102,241,0.1),transparent)]" />
+   461→        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_0%_100%,rgba(6,182,212,0.1),transparent)]" />
+   462→        
+   463→        {/* Animated Floating Orbs - Premium Version */}
+   464→        <div className="premium-orb orb-1" />
+   465→        <div className="premium-orb orb-2" />
+   466→        <div className="premium-orb orb-3" />
+   467→        <div className="premium-orb orb-4" />
+   468→        <div className="premium-orb orb-5" />
+   469→        
+   470→        {/* Aurora Borealis Effect */}
+   471→        <div className="aurora-layer aurora-1-premium" />
+   472→        <div className="aurora-layer aurora-2-premium" />
+   473→
+   474→        {/* Animated Particle System */}
+   475→        <div className="particle-container-premium">
+   476→          {particles.map((p) => (
+   477→            <div
+   478→              key={p.id}
+   479→              className="floating-particle"
+   480→              style={{
+   481→                width: `${p.size}px`,
+   482→                height: `${p.size}px`,
+   483→                left: `${p.x}%`,
+   484→                top: `${p.y}%`,
+   485→                animationDelay: `${p.delay}s`,
+   486→                animationDuration: `${p.duration}s`,
+   487→                opacity: p.opacity,
+   488→              }}
+   489→            />
+   490→          ))}
+   491→        </div>
+   492→
+   493→        {/* Subtle Grid Pattern */}
+   494→        <div className="grid-pattern-premium" />
+   495→
+   496→        {/* Floating Geometric Shapes */}
+   497→        <div className="geo-shape geo-shape-1" />
+   498→        <div className="geo-shape geo-shape-2" />
+   499→        <div className="geo-shape geo-shape-3" />
+   500→        <div className="geo-shape geo-shape-4" />
+   501→        
+   502→        {/* Radial Gradient Overlay for Depth */}
+   503→        <div className="absolute inset-0 bg-gradient-radial-depth" />
+   504→      </div>
+   505→
+   506→      {/* ====== INSTITUTIONAL STATUS BAR ====== */}
+   507→      <header className="relative z-20 w-full">
+   508→        <div className="premium-status-bar">
+   509→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   510→            <div className="flex items-center justify-between h-11">
+   511→              <div className="flex items-center gap-3">
+   512→                {/* NAAC Badge with Pulse */}
+   513→                <div className="premium-badge naac-badge">
+   514→                  <span className="badge-pulse-ring" />
+   515→                  <span className="badge-dot" />
+   516→                  <svg className="w-3 h-3 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+   517→                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+   518→                  </svg>
+   519→                  <span className="badge-text">NAAC Accredited</span>
+   520→                </div>
+   521→                
+   522→                {/* NIRF Badge */}
+   523→                <div className="premium-badge nirf-badge hidden sm:flex">
+   524→                  <Award className="w-3.5 h-3.5 text-blue-500" />
+   525→                  <span className="badge-text-blue">NIRF Ranked</span>
+   526→                </div>
+   527→
+   528→                {/* AICTE Badge */}
+   529→                <div className="premium-badge aicte-badge hidden md:flex">
+   530→                  <Building2 className="w-3.5 h-3.5 text-violet-500" />
+   531→                  <span className="badge-text-violet">AICTE Approved</span>
+   532→                </div>
+   533→              </div>
+   534→              
+   535→              <div className="flex items-center gap-4">
+   536→                <a href="#" className="support-link">
+   537→                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+   538→                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+   539→                  </svg>
+   540→                  IT Support
+   541→                </a>
+   542→                <div className="version-badge">
+   543→                  v3.0 Enterprise
+   544→                </div>
+   545→              </div>
+   546→            </div>
+   547→          </div>
+   548→        </div>
+   549→      </header>
+   550→
+   551→      {/* ====== MAIN CONTENT AREA ====== */}
+   552→      <main className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+   553→        <div className="w-full max-w-[520px]">
+   554→          
+   555→          {/* ====== PREMIUM LOGO & HEADER ====== */}
+   556→          <div className="text-center mb-10 premium-header-animate">
+   557→            {/* 3D Floating Logo Container */}
+   558→            <div className="logo-container-premium">
+   559→              {/* Outer Glow Rings */}
+   560→              <div className="logo-glow-outer" />
+   561→              <div className="logo-glow-middle" />
+   562→              
+   563→              {/* Rotating Gradient Border */}
+   564→              <div className="logo-border-rotating" />
+   565→              
+   566→              {/* Main Logo Card */}
+   567→              <div className="logo-main-card">
+   568→                <div className="logo-inner-gradient">
+   569→                  <Building2 className="logo-icon" />
+   570→                </div>
+   571→                
+   572→                {/* Glass Reflection */}
+   573→                <div className="logo-reflection" />
+   574→              </div>
+   575→              
+   576→              {/* Verification Badge */}
+   577→              <div className="logo-verify-badge">
+   578→                <CheckCircle className="w-3 h-3" />
+   579→              </div>
+   580→              
+   581→              {/* Orbiting Dots */}
+   582→              <div className="orbit-dot orbit-dot-1" />
+   583→              <div className="orbit-dot orbit-dot-2" />
+   584→              <div className="orbit-dot orbit-dot-3" />
+   585→            </div>
+   586→            
+   587→            {/* Title with Gradient Text */}
+   588→            <h1 className="premium-title">
+   589→              <span className="title-text-gradient">IQAC Portal</span>
+   590→            </h1>
+   591→            
+   592→            {/* Subtitle with Typing Effect Style */}
+   593→            <p className="premium-subtitle">
+   594→              <span className="subtitle-icon-wrapper">
+   595→                <GraduationCap className="w-4 h-4" />
+   596→              </span>
+   597→              Nehru Institute of Engineering and Technology
+   598→            </p>
+   599→
+   600→            {/* Tagline */}
+   601→            <div className="tagline-container">
+   602→              <div className="tagline-line" />
+   603→              <span className="tagline-text">Excellence in Quality Assurance</span>
+   604→              <div className="tagline-line" />
+   605→            </div>
+   606→          </div>
+   607→
+   608→          {/* ====== PREMIUM GLASS CARD ====== */}
+   609→          <div className="premium-card-container" onMouseMove={(e) => {
+   610→            const rect = e.currentTarget.getBoundingClientRect()
+   611→            const x = ((e.clientX - rect.left) / rect.width) * 100
+   612→            const y = ((e.clientY - rect.top) / rect.height) * 100
+   613→            e.currentTarget.style.setProperty('--mouse-x', `${x}%`)
+   614→            e.currentTarget.style.setProperty('--mouse-y', `${y}%`)
+   615→          }}>
+   616→            
+   617→            {/* Animated Border Gradient */}
+   618→            <div className="card-animated-border" />
+   619→            
+   620→            {/* Spotlight Effect Following Mouse */}
+   621→            <div className="card-spotlight" />
+   622→            
+   623→            {/* Main Card Content */}
+   624→            <div className="premium-card-content">
+   625→              
+   626→              {/* ====== ROLE TABS SECTION ====== */}
+   627→              <div className="role-section">
+   628→                <div className="role-label">
+   629→                  <div className="role-label-icon">
+   630→                    <UserCheck className="w-3.5 h-3.5" />
+   631→                  </div>
+   632→                  Select Your Role
+   633→                  <div className="role-label-line" />
+   634→                </div>
+   635→                
+   636→                <div className="role-tabs-grid">
+   637→                  {roleTabs.map((tab, index) => {
+   638→                    const Icon = tab.icon
+   639→                    const isActive = selectedRole === tab.id
+   640→                    return (
+   641→                      <button
+   642→                        key={tab.id}
+   643→                        type="button"
+   644→                        onClick={() => setSelectedRole(tab.id)}
+   645→                        className={`role-tab-button ${isActive ? `role-tab-active-${tab.color}` : ''}`}
+   646→                        style={{ animationDelay: `${index * 0.05}s` }}
+   647→                      >
+   648→                        {/* Active State Glow */}
+   649→                        {isActive && (
+   650→                          <>
+   651→                            <div className="active-glow" style={{ background: tab.glowColor }} />
+   652→                            <div className="active-border-gradient" style={{ background: `linear-gradient(135deg, ${tab.glowColor}, transparent)` }} />
+   653→                          </>
+   654→                        )}
+   655→                        
+   656→                        {/* Icon Container */}
+   657→                        <div className={`role-icon-wrap ${isActive ? 'role-icon-active' : ''}`}>
+   658→                          {isActive ? (
+   659→                            <div className="icon-gradient-bg" style={{ background: `linear-gradient(135deg, ${tab.gradient})` }}>
+   660→                              <Icon className="role-icon-active-svg" />
+   661→                            </div>
+   662→                          ) : (
+   663→                            <Icon className="role-icon-inactive" />
+   664→                          )}
+   665→                        </div>
+   666→                        
+   667→                        {/* Label */}
+   668→                        <span className={`role-label-text ${isActive ? `role-label-active-${tab.color}` : ''}`}>
+   669→                          {tab.label.split(' ')[0]}
+   670→                        </span>
+   671→                        
+   672→                        {/* Bottom Indicator */}
+   673→                        {isActive && (
+   674→                          <div className="active-indicator-bar" style={{ background: `linear-gradient(90deg, ${tab.glowColor}, transparent)` }} />
+   675→                        )}
+   676→                      </button>
+   677→                    )
+   678→                  })}
+   679→                </div>
+   680→              </div>
+   681→
+   682→              {/* Error Message with Slide Animation */}
+   683→              {error && (
+   684→                <div className="error-container-premium">
+   685→                  <div className="error-content">
+   686→                    <div className="error-icon-wrap">
+   687→                      <AlertCircle className="error-icon" />
+   688→                    </div>
+   689→                    <p className="error-text">{error}</p>
+   690→                  </div>
+   691→                  <button onClick={() => setError('')} className="error-close">
+   692→                    <XCircle className="w-4 h-4" />
+   693→                  </button>
+   694→                </div>
+   695→              )}
+   696→
+   697→              {/* ====== FORM SECTION ====== */}
+   698→              <form onSubmit={handleSubmit} className="form-space-premium">
+   699→                
+   700→                {/* Email Input Field */}
+   701→                <div className="input-group-premium">
+   702→                  <label className={`input-label-premium ${isFocused === 'email' ? 'input-label-focused' : ''}`}>
+   703→                    <Mail className="input-label-icon" />
+   704→                    Email Address
+   705→                    <span className="input-required-mark">*</span>
+   706→                  </label>
+   707→                  <div className={`input-wrapper-premium ${isFocused === 'email' ? 'input-wrapper-focused' : ''}`}>
+   708→                    <div className="input-prefix">
+   709→                      <Mail className={`input-prefix-icon ${isFocused === 'email' ? 'prefix-icon-focused' : ''}`} />
+   710→                    </div>
+   711→                    <input
+   712→                      type="email"
+   713→                      value={email}
+   714→                      onChange={(e) => setEmail(e.target.value)}
+   715→                      onFocus={() => setIsFocused('email')}
+   716→                      onBlur={() => setIsFocused(null)}
+   717→                      placeholder={getPlaceholderForRole()}
+   718→                      className="premium-input-field"
+   719→                      required
+   720→                    />
+   721→                    <div className="input-focus-line" />
+   722→                    {isFocused === 'email' && <div className="input-glow-effect" />}
+   723→                  </div>
+   724→                </div>
+   725→
+   726→                {/* Password Input Field */}
+   727→                <div className="input-group-premium">
+   728→                  <label className={`input-label-premium ${isFocused === 'password' ? 'input-label-focused' : ''}`}>
+   729→                    <Lock className="input-label-icon" />
+   730→                    Password
+   731→                    <span className="input-required-mark">*</span>
+   732→                  </label>
+   733→                  <div className={`input-wrapper-premium ${isFocused === 'password' ? 'input-wrapper-focused' : ''}`}>
+   734→                    <div className="input-prefix">
+   735→                      <Lock className={`input-prefix-icon ${isFocused === 'password' ? 'prefix-icon-focused' : ''}`} />
+   736→                    </div>
+   737→                    <input
+   738→                      type={showPassword ? "text" : "password"}
+   739→                      value={password}
+   740→                      onChange={(e) => setPassword(e.target.value)}
+   741→                      onFocus={() => setIsFocused('password')}
+   742→                      onBlur={() => setIsFocused(null)}
+   743→                      placeholder="Enter your password"
+   744→                      className="premium-input-field pr-12"
+   745→                      required
+   746→                    />
+   747→                    <button
+   748→                      type="button"
+   749→                      onClick={() => setShowPassword(!showPassword)}
+   750→                      className="password-toggle-btn"
+   751→                    >
+   752→                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+   753→                    </button>
+   754→                    <div className="input-focus-line" />
+   755→                    {isFocused === 'password' && <div className="input-glow-effect" />}
+   756→                  </div>
+   757→                </div>
+   758→
+   759→                {/* ====== SUBMIT BUTTON ====== */}
+   760→                <button
+   761→                  type="submit"
+   762→                  disabled={isLoading}
+   763→                  className="premium-submit-btn"
+   764→                >
+   765→                  {/* Button Background Layers */}
+   766→                  <div className="btn-bg-base" />
+   767→                  <div className="btn-bg-gradient" />
+   768→                  <div className="btn-shimmer" />
+   769→                  
+   770→                  {/* Loading Spinner or Content */}
+   771→                  <span className="btn-content">
+   772→                    {isLoading ? (
+   773→                      <>
+   774→                        <Loader2 className="btn-spinner" />
+   775→                        <span>Authenticating...</span>
+   776→                      </>
+   777→                    ) : (
+   778→                      <>
+   779→                        <span className="btn-text">Sign In to Portal</span>
+   780→                        <ArrowRight className="btn-arrow" />
+   781→                      </>
+   782→                    )}
+   783→                  </span>
+   784→                  
+   785→                  {/* Hover Glow */}
+   786→                  <div className="btn-hover-glow" />
+   787→                </button>
+   788→              </form>
+   789→
+   790→              {/* ====== DIVIDER ====== */}
+   791→              <div className="divider-premium">
+   792→                <div className="divider-line" />
+   793→                <span className="divider-text">
+   794→                  <Sparkles className="w-3 h-3 mr-1" />
+   795→                  Quick Access
+   796→                  <Sparkles className="w-3 h-3 ml-1" />
+   797→                </span>
+   798→                <div className="divider-line" />
+   799→              </div>
+   800→
+   801→              {/* ====== QUICK ACCESS SECTION ====== */}
+   802→              <div className="quick-access-section">
+   803→                
+   804→                {/* Admin Quick Access */}
+   805→                {selectedRole !== 'ADMIN' && (
+   806→                  <button
+   807→                    onClick={() => quickLogin('admin@niet.ac.in', 'admin123')}
+   808→                    className="admin-quick-btn"
+   809→                  >
+   810→                    <div className="admin-btn-left">
+   811→                      <div className="admin-btn-icon-wrap">
+   812→                        <Shield className="admin-btn-icon" />
+   813→                      </div>
+   814→                      <div className="admin-btn-text">
+   815→                        <span className="admin-btn-title">System Administrator</span>
+   816→                        <span className="admin-btn-desc">Full access to all modules</span>
+   817→                      </div>
+   818→                    </div>
+   819→                    <ChevronRight className="admin-btn-arrow" />
+   820→                    <div className="admin-btn-glow" />
+   821→                  </button>
+   822→                )}
+   823→
+   824→                {/* Department Selector */}
+   825→                {selectedRole !== 'ADMIN' && (
+   826→                  <div className="dept-selector-section">
+   827→                    <label className="dept-label">
+   828→                      <Building2 className="w-3 h-3 mr-1.5" />
+   829→                      Select Department
+   830→                    </label>
+   831→                    <div className="dept-dropdown-container">
+   832→                      <button
+   833→                        type="button"
+   834→                        onClick={() => setShowDeptDropdown(!showDeptDropdown)}
+   835→                        className="dept-dropdown-trigger"
+   836→                      >
+   837→                        <div className="dept-selected">
+   838→                          <div className="dept-icon-box">
+   839→                            <Building2 className="w-4 h-4 text-indigo-500" />
+   840→                          </div>
+   841→                          <span>{currentDept?.code} - {currentDept?.name}</span>
+   842→                        </div>
+   843→                        <ChevronDown className={`dept-chevron ${showDeptDropdown ? 'chevron-open' : ''}`} />
+   844→                      </button>
+   845→                      
+   846→                      {showDeptDropdown && (
+   847→                        <div className="dept-dropdown-menu">
+   848→                          {DEPARTMENTS_LIST.map((dept) => (
+   849→                            <button
+   850→                              key={dept.code}
+   851→                              type="button"
+   852→                              onClick={() => {
+   853→                                setSelectedDept(dept.code)
+   854→                                setShowDeptDropdown(false)
+   855→                              }}
+   856→                              className={`dept-option ${selectedDept === dept.code ? 'dept-option-active' : ''}`}
+   857→                            >
+   858→                              <div className={`dept-option-dot ${`dot-${dept.color || 'gray'}`}`} />
+   859→                              <span className="dept-option-code">{dept.code}</span>
+   860→                              <span className="dept-option-name">{dept.name}</span>
+   861→                              {selectedDept === dept.code && <CheckCircle className="dept-option-check" />}
+   862→                            </button>
+   863→                          ))}
+   864→                        </div>
+   865→                      )}
+   866→                    </div>
+   867→                  </div>
+   868→                )}
+   869→
+   870→                {/* Role Quick Login Grid */}
+   871→                {selectedRole !== 'ADMIN' && (
+   872→                  <div className="quick-role-grid">
+   873→                    {[
+   874→                      { id: 'STUDENT', icon: GraduationCap, label: 'Student', color: 'emerald' },
+   875→                      { id: 'STAFF', icon: BookOpen, label: 'Staff', color: 'blue' },
+   876→                      { id: 'HOD', icon: UserCheck, label: 'HOD', color: 'purple' },
+   877→                    ].map((role) => {
+   878→                      const Icon = role.icon
+   879→                      const isActive = selectedRole === role.id
+   880→                      return (
+   881→                        <button
+   882→                          key={role.id}
+   883→                          onClick={() => quickLogin(getDeptEmail(selectedDept, role.id), getPassword(role.id))}
+   884→                          className={`quick-role-btn ${isActive ? `quick-role-active-${role.color}` : ''}`}
+   885→                        >
+   886→                          <Icon className={`quick-role-icon ${isActive ? `quick-role-icon-active-${role.color}` : ''}`} />
+   887→                          <span className={`quick-role-label ${isActive ? `quick-role-label-active-${role.color}` : ''}`}>
+   888→                            {role.label}
+   889→                          </span>
+   890→                          {isActive && <div className={`quick-role-indicator indicator-${role.color}`} />}
+   891→                        </button>
+   892→                      )
+   893→                    })}
+   894→                  </div>
+   895→                )}
+   896→
+   897→                {/* Department Pills */}
+   898→                {selectedRole !== 'ADMIN' && (
+   899→                  <div className="dept-pills-container">
+   900→                    {['CSE', 'ECE', 'EEE', 'MECH', 'AI&DS', 'IT', 'AIDS', 'CIVIL'].map((code) => (
+   901→                      <button
+   902→                        key={code}
+   903→                        type="button"
+   904→                        onClick={() => setSelectedDept(code)}
+   905→                        className={`dept-pill ${selectedDept === code ? 'dept-pill-active' : ''}`}
+   906→                      >
+   907→                        {selectedDept === code && <span className="pill-glow" />}
+   908→                        <span className="pill-text">{code}</span>
+   909→                      </button>
+   910→                    ))}
+   911→                  </div>
+   912→                )}
+   913→              </div>
+   914→            </div>
+   915→            
+   916→            {/* Card Bottom Accent Line */}
+   917→            <div className="card-bottom-accent" />
+   918→          </div>
+   919→
+   920→          {/* ====== FOOTER ====== */}
+   921→          <footer className="premium-footer">
+   922→            <div className="footer-content">
+   923→              <Lock className="footer-lock-icon" />
+   924→              <span className="footer-text">Secure Authentication • NIET IQAC Enterprise System</span>
+   925→              <div className="footer-dots">
+   926→                <span className="footer-dot" />
+   927→                <span className="footer-dot footer-dot-delay" />
+   928→                <span className="footer-dot footer-dot-delay-2" />
+   929→              </div>
+   930→            </div>
+   931→          </footer>
+   932→        </div>
+   933→      </main>
+   934→
+   935→      {/* ====== PREMIUM CSS STYLES ====== */}
+   936→      <style jsx>{`
+   937→        /* ========== FLOATING ORBS ========== */
+   938→        .premium-orb {
+   939→          position: absolute;
+   940→          border-radius: 50%;
+   941→          filter: blur(80px);
+   942→          opacity: 0.5;
+   943→          will-change: transform;
+   944→        }
+   945→        .orb-1 {
+   946→          width: 500px;
+   947→          height: 500px;
+   948→          background: linear-gradient(135deg, #818cf8, #6366f1);
+   949→          top: -200px;
+   950→          right: -150px;
+   951→          animation: premiumFloat1 25s ease-in-out infinite;
+   952→        }
+   953→        .orb-2 {
+   954→          width: 450px;
+   955→          height: 450px;
+   956→          background: linear-gradient(135deg, #22d3ee, #06b6d4);
+   957→          bottom: -180px;
+   958→          left: -120px;
+   959→          animation: premiumFloat2 28s ease-in-out infinite reverse;
+   960→        }
+   961→        .orb-3 {
+   962→          width: 350px;
+   963→          height: 350px;
+   964→          background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+   965→          top: 35%;
+   966→          left: 5%;
+   967→          animation: premiumFloat3 32s ease-in-out infinite;
+   968→        }
+   969→        .orb-4 {
+   970→          width: 280px;
+   971→          height: 280px;
+   972→          background: linear-gradient(135deg, #34d399, #10b981);
+   973→          top: 15%;
+   974→          right: 10%;
+   975→          animation: premiumFloat4 22s ease-in-out infinite;
+   976→        }
+   977→        .orb-5 {
+   978→          width: 200px;
+   979→          height: 200px;
+   980→          background: linear-gradient(135deg, #fbbf24, #f59e0b);
+   981→          bottom: 25%;
+   982→          right: 20%;
+   983→          animation: premiumFloat5 26s ease-in-out infinite;
+   984→        }
+   985→
+   986→        @keyframes premiumFloat1 {
+   987→          0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+   988→          33% { transform: translate(-50px, 40px) rotate(120deg) scale(1.08); }
+   989→          66% { transform: translate(30px, -30px) rotate(240deg) scale(0.94); }
+   990→        }
+   991→        @keyframes premiumFloat2 {
+   992→          0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+   993→          33% { transform: translate(45px, -35px) rotate(-120deg) scale(1.1); }
+   994→          66% { transform: translate(-35px, 40px) rotate(-240deg) scale(0.92); }
+   995→        }
+   996→        @keyframes premiumFloat3 {
+   997→          0%, 100% { transform: translate(0, 0) scale(1); }
+   998→          50% { transform: translate(60px, 45px) scale(1.12); }
+   999→        }
+  1000→        @keyframes premiumFloat4 {
+  1001→          0%, 100% { transform: translate(0, 0); }
+  1002→          50% { transform: translate(-45px, -35px) scale(1.08); }
+  1003→        }
+  1004→        @keyframes premiumFloat5 {
+  1005→          0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  1006→          50% { transform: translate(35px, -25px) rotate(180deg); }
+  1007→        }
+  1008→
+  1009→        /* ========== AURORA EFFECT ========== */
+  1010→        .aurora-layer {
+  1011→          position: absolute;
+  1012→          width: 150%;
+  1013→          height: 150%;
+  1014→          top: -25%;
+  1015→          left: -25%;
+  1016→          opacity: 0.12;
+  1017→          mix-blend-mode: screen;
+  1018→          filter: blur(100px);
+  1019→        }
+  1020→        .aurora-1-premium {
+  1021→          background: conic-gradient(from 0deg at 50% 50%, transparent, #818cf8, transparent, #22d3ee, transparent, #a78bfa, transparent);
+  1022→          animation: auroraRotate1 40s linear infinite;
+  1023→        }
+  1024→        .aurora-2-premium {
+  1025→          background: conic-gradient(from 180deg at 50% 50%, transparent, #34d399, transparent, #fbbf24, transparent, #f472b6, transparent);
+  1026→          animation: auroraRotate2 50s linear infinite reverse;
+  1027→        }
+  1028→
+  1029→        @keyframes auroraRotate1 {
+  1030→          from { transform: rotate(0deg); }
+  1031→          to { transform: rotate(360deg); }
+  1032→        }
+  1033→        @keyframes auroraRotate2 {
+  1034→          from { transform: rotate(0deg); }
+  1035→          to { transform: rotate(-360deg); }
+  1036→        }
+  1037→
+  1038→        /* ========== PARTICLES ========== */
+  1039→        .particle-container-premium {
+  1040→          position: absolute;
+  1041→          inset: 0;
+  1042→          overflow: hidden;
+  1043→        }
+  1044→        .floating-particle {
+  1045→          position: absolute;
+  1046→          background: linear-gradient(135deg, #818cf8, #22d3ee);
+  1047→          border-radius: 50%;
+  1048→          animation: particleDrift linear infinite;
+  1049→          pointer-events: none;
+  1050→        }
+  1051→        @keyframes particleDrift {
+  1052→          0%, 100% { 
+  1053→            transform: translateY(0) translateX(0) scale(1) rotate(0deg);
+  1054→            opacity: 0;
+  1055→          }
+  1056→          10% { opacity: var(--tw-opacity); }
+  1057→          90% { opacity: var(--tw-opacity); }
+  1058→          50% { transform: translateY(-100vh) translateX(50px) scale(1.5) rotate(180deg); }
+  1059→          100% { 
+  1060→            transform: translateY(-120vh) translateX(-30px) scale(0.5) rotate(360deg);
+  1061→            opacity: 0;
+  1062→          }
+  1063→        }
+  1064→
+  1065→        /* ========== GRID PATTERN ========== */
+  1066→        .grid-pattern-premium {
+  1067→          position: absolute;
+  1068→          inset: 0;
+  1069→          opacity: 0.03;
+  1070→          background-image: 
+  1071→            linear-gradient(rgba(99,102,241,0.5) 1px, transparent 1px),
+  1072→            linear-gradient(90deg, rgba(99,102,241,0.5) 1px, transparent 1px);
+  1073→          background-size: 50px 50px;
+  1074→          mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black, transparent);
+  1075→        }
+  1076→
+  1077→        /* ========== GEOMETRIC SHAPES ========== */
+  1078→        .geo-shape {
+  1079→          position: absolute;
+  1080→          border: 1px solid rgba(99,102,241,0.15);
+  1081→          opacity: 0.6;
+  1082→        }
+  1083→        .geo-shape-1 {
+  1084→          width: 80px;
+  1085→          height: 80px;
+  1086→          top: 15%;
+  1087→          left: 8%;
+  1088→          border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+  1089→          animation: geoMorph1 20s ease-in-out infinite;
+  1090→        }
+  1091→        .geo-shape-2 {
+  1092→          width: 60px;
+  1093→          height: 60px;
+  1094→          top: 25%;
+  1095→          right: 12%;
+  1096→          border-radius: 50%;
+  1097→          animation: geoMorph2 18s ease-in-out infinite;
+  1098→        }
+  1099→        .geo-shape-3 {
+  1100→          width: 100px;
+  1101→          height: 100px;
+  1102→          bottom: 20%;
+  1103→          left: 15%;
+  1104→          border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  1105→          animation: geoMorph3 25s ease-in-out infinite reverse;
+  1106→        }
+  1107→        .geo-shape-4 {
+  1108→          width: 40px;
+  1109→          height: 40px;
+  1110→          bottom: 30%;
+  1111→          right: 18%;
+  1112→          transform: rotate(45deg);
+  1113→          animation: geoMorph4 15s ease-in-out infinite;
+  1114→        }
+  1115→
+  1116→        @keyframes geoMorph1 {
+  1117→          0%, 100% { transform: rotate(0deg) scale(1); border-color: rgba(129,140,248,0.15); }
+  1118→          50% { transform: rotate(180deg) scale(1.1); border-color: rgba(34,211,238,0.2); }
+  1119→        }
+  1120→        @keyframes geoMorph2 {
+  1121→          0%, 100% { transform: scale(1) rotate(0deg); }
+  1122→          50% { transform: scale(1.2) rotate(90deg); }
+  1123→        }
+  1124→        @keyframes geoMorph3 {
+  1125→          0%, 100% { transform: rotate(0deg) scale(1); }
+  1126→          50% { transform: rotate(-120deg) scale(1.15); }
+  1127→        }
+  1128→        @keyframes geoMorph4 {
+  1129→          0%, 100% { transform: rotate(45deg) scale(1); opacity: 0.6; }
+  1130→          50% { transform: rotate(225deg) scale(1.3); opacity: 0.3; }
+  1131→        }
+  1132→
+  1133→        /* ========== RADIAL GRADIENT DEPTH ========== */
+  1134→        .bg-gradient-radial-depth {
+  1135→          background: radial-gradient(ellipse at center, transparent 0%, rgba(248,250,252,0.4) 100%);
+  1136→        }
+  1137→
+  1138→        /* ========== STATUS BAR ========== */
+  1139→        .premium-status-bar {
+  1140→          background: rgba(255,255,255,0.72);
+  1141→          backdrop-filter: blur(20px);
+  1142→          -webkit-backdrop-filter: blur(20px);
+  1143→          border-bottom: 1px solid rgba(226,232,240,0.6);
+  1144→          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  1145→        }
+  1146→        .premium-badge {
+  1147→          display: flex;
+  1148→          align-items: center;
+  1149→          gap: 6px;
+  1150→          padding: 5px 12px;
+  1151→          border-radius: 9999px;
+  1152→          font-size: 11px;
+  1153→          font-weight: 600;
+  1154→          transition: all 0.3s ease;
+  1155→        }
+  1156→        .naac-badge {
+  1157→          background: linear-gradient(135deg, rgba(209,250,229,0.8), rgba(167,243,208,0.6));
+  1158→          border: 1px solid rgba(16,185,129,0.25);
+  1159→          color: #047857;
+  1160→        }
+  1161→        .nirf-badge {
+  1162→          background: linear-gradient(135deg, rgba(219,234,254,0.8), rgba(191,219,254,0.6));
+  1163→          border: 1px solid rgba(59,130,246,0.25);
+  1164→          color: #1d4ed8;
+  1165→        }
+  1166→        .aicte-badge {
+  1167→          background: linear-gradient(135deg, rgba(233,213,255,0.8), rgba(216,180,254,0.6));
+  1168→          border: 1px solid rgba(139,92,246,0.25);
+  1169→          color: #7c3aed;
+  1170→        }
+  1171→        .badge-pulse-ring {
+  1172→          position: absolute;
+  1173→          inset: -2px;
+  1174→          border-radius: inherit;
+  1175→          background: inherit;
+  1176→          opacity: 0.4;
+  1177→          animation: badgePulse 2s ease-out infinite;
+  1178→        }
+  1179→        @keyframes badgePulse {
+  1180→          0% { transform: scale(1); opacity: 0.4; }
+  1181→          100% { transform: scale(1.4); opacity: 0; }
+  1182→        }
+  1183→        .badge-dot {
+  1184→          width: 6px;
+  1185→          height: 6px;
+  1186→          border-radius: 50%;
+  1187→          background: currentColor;
+  1188→          animation: badgeDotPulse 2s ease-in-out infinite;
+  1189→        }
+  1190→        @keyframes badgeDotPulse {
+  1191→          0%, 100% { opacity: 1; }
+  1192→          50% { opacity: 0.5; }
+  1193→        }
+  1194→        .badge-text, .badge-text-blue, .badge-text-violet {
+  1195→          letter-spacing: 0.02em;
+  1196→        }
+  1197→        .support-link {
+  1198→          display: flex;
+  1199→          align-items: center;
+  1200→          gap: 4px;
+  1201→          font-size: 11px;
+  1202→          font-weight: 500;
+  1203→          color: #64748b;
+  1204→          transition: all 0.2s ease;
+  1205→        }
+  1206→        .support-link:hover {
+  1207→          color: #6366f1;
+  1208→        }
+  1209→        .version-badge {
+  1210→          padding: 4px 10px;
+  1211→          border-radius: 6px;
+  1212→          background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  1213→          font-size: 10px;
+  1214→          font-weight: 600;
+  1215→          color: #475569;
+  1216→          letter-spacing: 0.05em;
+  1217→        }
+  1218→
+  1219→        /* ========== HEADER ANIMATIONS ========== */
+  1220→        .premium-header-animate {
+  1221→          animation: headerReveal 1s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+  1222→        }
+  1223→        @keyframes headerReveal {
+  1224→          0% { 
+  1225→            opacity: 0; 
+  1226→            transform: translateY(-30px) scale(0.95);
+  1227→            filter: blur(10px);
+  1228→          }
+  1229→          100% { 
+  1230→            opacity: 1; 
+  1231→            transform: translateY(0) scale(1);
+  1232→            filter: blur(0);
+  1233→          }
+  1234→        }
+  1235→
+  1236→        /* ========== LOGO CONTAINER ========== */
+  1237→        .logo-container-premium {
+  1238→          position: relative;
+  1239→          display: inline-block;
+  1240→          margin-bottom: 24px;
+  1241→          animation: logoFloat 6s ease-in-out infinite;
+  1242→        }
+  1243→        @keyframes logoFloat {
+  1244→          0%, 100% { transform: translateY(0); }
+  1245→          50% { transform: translateY(-8px); }
+  1246→        }
+  1247→        .logo-glow-outer {
+  1248→          position: absolute;
+  1249→          inset: -20px;
+  1250→          border-radius: 28px;
+  1251→          background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(34,211,238,0.3));
+  1252→          filter: blur(30px);
+  1253→          opacity: 0.7;
+  1254→          animation: glowPulse 4s ease-in-out infinite;
+  1255→        }
+  1256→        .logo-glow-middle {
+  1257→          position: absolute;
+  1258→          inset: -10px;
+  1259→          border-radius: 22px;
+  1260→          background: linear-gradient(135deg, rgba(129,140,248,0.4), rgba(56,189,248,0.4));
+  1261→          filter: blur(20px);
+  1262→          opacity: 0.5;
+  1263→          animation: glowPulse 4s ease-in-out infinite 1s;
+  1264→        }
+  1265→        @keyframes glowPulse {
+  1266→          0%, 100% { opacity: 0.5; transform: scale(1); }
+  1267→          50% { opacity: 0.8; transform: scale(1.05); }
+  1268→        }
+  1269→        .logo-border-rotating {
+  1270→          position: absolute;
+  1271→          inset: -3px;
+  1272→          border-radius: 22px;
+  1273→          background: conic-gradient(from 0deg, #818cf8, #22d3ee, #a78bfa, #34d399, #fbbf24, #818cf8);
+  1274→          animation: borderRotate 6s linear infinite;
+  1275→          z-index: -1;
+  1276→        }
+  1277→        @keyframes borderRotate {
+  1278→          from { transform: rotate(0deg); }
+  1279→          to { transform: rotate(360deg); }
+  1280→        }
+  1281→        .logo-main-card {
+  1282→          position: relative;
+  1283→          width: 96px;
+  1284→          height: 96px;
+  1285→          border-radius: 18px;
+  1286→          background: rgba(255,255,255,0.9);
+  1287→          backdrop-filter: blur(20px);
+  1288→          border: 1px solid rgba(226,232,240,0.8);
+  1289→          box-shadow: 
+  1290→            0 20px 40px -10px rgba(0,0,0,0.1),
+  1291→            0 0 0 1px rgba(255,255,255,0.8) inset;
+  1292→          overflow: hidden;
+  1293→          display: flex;
+  1294→          align-items: center;
+  1295→          justify-content: center;
+  1296→        }
+  1297→        .logo-inner-gradient {
+  1298→          width: 76px;
+  1299→          height: 76px;
+  1300→          border-radius: 14px;
+  1301→          background: linear-gradient(135deg, #6366f1, #3b82f6, #06b6d4);
+  1302→          display: flex;
+  1303→          align-items: center;
+  1304→          justify-content: center;
+  1305→          box-shadow: 
+  1306→            0 4px 15px -3px rgba(99,102,241,0.4),
+  1307→            inset 0 1px 0 rgba(255,255,255,0.2);
+  1308→        }
+  1309→        .logo-icon {
+  1310→          width: 38px;
+  1311→          height: 38px;
+  1312→          color: white;
+  1313→          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+  1314→        }
+  1315→        .logo-reflection {
+  1316→          position: absolute;
+  1317→          inset: 0;
+  1318→          background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%);
+  1319→          pointer-events: none;
+  1320→        }
+  1321→        .logo-verify-badge {
+  1322→          position: absolute;
+  1323→          top: -6px;
+  1324→          right: -6px;
+  1325→          width: 26px;
+  1326→          height: 26px;
+  1327→          border-radius: 50%;
+  1328→          background: linear-gradient(135deg, #10b981, #059669);
+  1329→          display: flex;
+  1330→          align-items: center;
+  1331→          justify-content: center;
+  1332→          box-shadow: 0 4px 12px rgba(16,185,129,0.4);
+  1333→          color: white;
+  1334→          animation: verifyBounce 2s ease-in-out infinite;
+  1335→        }
+  1336→        @keyframes verifyBounce {
+  1337→          0%, 100% { transform: scale(1); }
+  1338→          50% { transform: scale(1.1); }
+  1339→        }
+  1340→        .orbit-dot {
+  1341→          position: absolute;
+  1342→          width: 8px;
+  1343→          height: 8px;
+  1344→          border-radius: 50%;
+  1345→          z-index: -1;
+  1346→        }
+  1347→        .orbit-dot-1 {
+  1348→          top: -4px;
+  1349→          left: 50%;
+  1350→          transform: translateX(-50%);
+  1351→          background: linear-gradient(135deg, #f472b6, #ec4899);
+  1352→          animation: orbitPulse1 2s ease-in-out infinite;
+  1353→        }
+  1354→        .orbit-dot-2 {
+  1355→          bottom: 10px;
+  1356→          left: -4px;
+  1357→          background: linear-gradient(135deg, #34d399, #10b981);
+  1358→          animation: orbitPulse2 2s ease-in-out infinite 0.5s;
+  1359→        }
+  1360→        .orbit-dot-3 {
+  1361→          bottom: 10px;
+  1362→          right: -4px;
+  1363→          background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  1364→          animation: orbitPulse3 2s ease-in-out infinite 1s;
+  1365→        }
+  1366→        @keyframes orbitPulse1, @keyframes orbitPulse2, @keyframes orbitPulse3 {
+  1367→          0%, 100% { transform: scale(1); opacity: 0.7; }
+  1368→          50% { transform: scale(1.3); opacity: 1; }
+  1369→        }
+  1370→
+  1371→        /* ========== TITLE & SUBTITLE ========== */
+  1372→        .premium-title {
+  1373→          margin-bottom: 8px;
+  1374→        }
+  1375→        .title-text-gradient {
+  1376→          font-size: 2.5rem;
+  1377→          font-weight: 800;
+  1378→          background: linear-gradient(135deg, #1e293b 0%, #4f46e5 50%, #06b6d4 100%);
+  1379→          background-size: 200% auto;
+  1380→          -webkit-background-clip: text;
+  1381→          -webkit-text-fill-color: transparent;
+  1382→          background-clip: text;
+  1383→          animation: titleShine 5s linear infinite;
+  1384→          letter-spacing: -0.02em;
+  1385→        }
+  1386→        @keyframes titleShine {
+  1387→          to { background-position: 200% center; }
+  1388→        }
+  1389→        .premium-subtitle {
+  1390→          display: flex;
+  1391→          align-items: center;
+  1392→          justify-content: center;
+  1393→          gap: 8px;
+  1394→          font-size: 0.95rem;
+  1395→          color: #64748b;
+  1396→          font-weight: 500;
+  1397→        }
+  1398→        .subtitle-icon-wrapper {
+  1399→          display: flex;
+  1400→          align-items: center;
+  1401→          justify-content: center;
+  1402→          width: 24px;
+  1403→          height: 24px;
+  1404→          border-radius: 6px;
+  1405→          background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  1406→          color: #6366f1;
+  1407→        }
+  1408→        .tagline-container {
+  1409→          display: flex;
+  1410→          align-items: center;
+  1411→          justify-content: center;
+  1412→          gap: 12px;
+  1413→          margin-top: 12px;
+  1414→        }
+  1415→        .tagline-line {
+  1416→          width: 30px;
+  1417→          height: 1px;
+  1418→          background: linear-gradient(90deg, transparent, #cbd5e1);
+  1419→        }
+  1420→        .tagline-line:last-child {
+  1421→          background: linear-gradient(90deg, #cbd5e1, transparent);
+  1422→        }
+  1423→        .tagline-text {
+  1424→          font-size: 11px;
+  1425→          font-weight: 600;
+  1426→          color: #94a3b8;
+  1427→          letter-spacing: 0.1em;
+  1428→          text-transform: uppercase;
+  1429→        }
+  1430→
+  1431→        /* ========== PREMIUM CARD ========== */
+  1432→        .premium-card-container {
+  1433→          position: relative;
+  1434→          animation: cardEntrance 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+  1435→        }
+  1436→        @keyframes cardEntrance {
+  1437→          0% { 
+  1438→            opacity: 0; 
+  1439→            transform: translateY(40px) scale(0.96);
+  1440→            filter: blur(10px);
+  1441→          }
+  1442→          100% { 
+  1443→            opacity: 1; 
+  1444→            transform: translateY(0) scale(1);
+  1445→            filter: blur(0);
+  1446→          }
+  1447→        }
+  1448→        .card-animated-border {
+  1449→          position: absolute;
+  1450→          inset: 0;
+  1451→          border-radius: 28px;
+  1452→          padding: 1.5px;
+  1453→          background: linear-gradient(
+  1454→            var(--mouse-x, 50%) var(--mouse-y, 50%),
+  1455→            #818cf8 0%,
+  1456→            #22d3ee 25%,
+  1457→            #a78bfa 50%,
+  1458→            #34d399 75%,
+  1459→            #818cf8 100%
+  1460→          );
+  1461→          background-size: 300% 300%;
+  1462→          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  1463→          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  1464→          -webkit-mask-composite: xor;
+  1465→          mask-composite: exclude;
+  1466→          opacity: 0.8;
+  1467→          transition: background-position 0.5s ease;
+  1468→          pointer-events: none;
+  1469→        }
+  1470→        .card-spotlight {
+  1471→          position: absolute;
+  1472→          inset: 0;
+  1473→          border-radius: 28px;
+  1474→          background: radial-gradient(
+  1475→            600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+  1476→            rgba(99,102,241,0.06),
+  1477→            transparent 40%
+  1478→          );
+  1479→          pointer-events: none;
+  1480→          opacity: 0;
+  1481→          transition: opacity 0.3s ease;
+  1482→        }
+  1483→        .premium-card-container:hover .card-spotlight {
+  1484→          opacity: 1;
+  1485→        }
+  1486→        .premium-card-content {
+  1487→          position: relative;
+  1488→          background: rgba(255,255,255,0.88);
+  1489→          backdrop-filter: blur(30px);
+  1490→          -webkit-backdrop-filter: blur(30px);
+  1491→          border-radius: 28px;
+  1492→          border: 1px solid rgba(226,232,240,0.7);
+  1493→          box-shadow: 
+  1494→            0 4px 6px -1px rgba(0,0,0,0.05),
+  1495→            0 20px 50px -12px rgba(0,0,0,0.1),
+  1496→            0 0 0 1px rgba(255,255,255,0.8) inset;
+  1497→          overflow: hidden;
+  1498→        }
+  1499→        .premium-card-content::before {
+  1500→          content: '';
+  1501→          position: absolute;
+  1502→          top: 0;
+  1503→          left: 0;
+  1504→          right: 0;
+  1505→          height: 1px;
+  1506→          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+  1507→        }
+  1508→        .card-bottom-accent {
+  1509→          position: absolute;
+  1510→          bottom: 0;
+  1511→          left: 20%;
+  1512→          right: 20%;
+  1513→          height: 2px;
+  1514→          background: linear-gradient(90deg, transparent, #818cf8, #22d3ee, transparent);
+  1515→          opacity: 0.5;
+  1516→        }
+  1517→
+  1518→        /* ========== ROLE TABS ========== */
+  1519→        .role-section {
+  1520→          padding: 24px 24px 0;
+  1521→        }
+  1522→        .role-label {
+  1523→          display: flex;
+  1524→          align-items: center;
+  1525→          gap: 8px;
+  1526→          font-size: 11px;
+  1527→          font-weight: 700;
+  1528→          color: #64748b;
+  1529→          text-transform: uppercase;
+  1530→          letter-spacing: 0.08em;
+  1531→          margin-bottom: 14px;
+  1532→        }
+  1533→        .role-label-icon {
+  1534→          display: flex;
+  1535→          align-items: center;
+  1536→          justify-content: center;
+  1537→          width: 20px;
+  1538→          height: 20px;
+  1539→          border-radius: 6px;
+  1540→          background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  1541→          color: #6366f1;
+  1542→        }
+  1543→        .role-label-line {
+  1544→          flex: 1;
+  1545→          height: 1px;
+  1546→          background: linear-gradient(90deg, #e2e8f0, transparent);
+  1547→          margin-left: 8px;
+  1548→        }
+  1549→        .role-tabs-grid {
+  1550→          display: grid;
+  1551→          grid-template-columns: repeat(4, 1fr);
+  1552→          gap: 10px;
+  1553→        }
+  1554→        .role-tab-button {
+  1555→          position: relative;
+  1556→          display: flex;
+  1557→          flex-direction: column;
+  1558→          align-items: center;
+  1559→          gap: 8px;
+  1560→          padding: 14px 8px 12px;
+  1561→          border-radius: 16px;
+  1562→          border: 1.5px solid #e2e8f0;
+  1563→          background: white;
+  1564→          cursor: pointer;
+  1565→          transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  1566→          overflow: hidden;
+  1567→        }
+  1568→        .role-tab-button:hover {
+  1569→          border-color: #cbd5e1;
+  1570→          transform: translateY(-2px);
+  1571→          box-shadow: 0 8px 20px -8px rgba(0,0,0,0.1);
+  1572→        }
+  1573→        .role-tab-button[class*="active"] {
+  1574→          border-color: transparent;
+  1575→          transform: translateY(-3px);
+  1576→          box-shadow: 0 12px 28px -10px var(--glow-color, rgba(99,102,241,0.25));
+  1577→        }
+  1578→        .active-glow {
+  1579→          position: absolute;
+  1580→          inset: 0;
+  1581→          opacity: 0.15;
+  1582→          transition: opacity 0.3s ease;
+  1583→        }
+  1584→        .active-border-gradient {
+  1585→          position: absolute;
+  1586→          inset: 0;
+  1587→          opacity: 0.5;
+  1588→        }
+  1589→        .role-icon-wrap {
+  1590→          width: 42px;
+  1591→          height: 42px;
+  1592→          border-radius: 12px;
+  1593→          display: flex;
+  1594→          align-items: center;
+  1595→          justify-content: center;
+  1596→          background: #f1f5f9;
+  1597→          transition: all 0.3s ease;
+  1598→        }
+  1599→        .role-tab-button:hover .role-icon-wrap {
+  1600→          background: #e2e8f0;
+  1601→        }
+  1602→        .role-icon-active {
+  1603→          background: transparent !important;
+  1604→        }
+  1605→        .icon-gradient-bg {
+  1606→          width: 100%;
+  1607→          height: 100%;
+  1608→          border-radius: 12px;
+  1609→          display: flex;
+  1610→          align-items: center;
+  1611→          justify-content: center;
+  1612→          box-shadow: 0 4px 12px -2px rgba(0,0,0,0.15);
+  1613→        }
+  1614→        .role-icon-active-svg {
+  1615→          width: 20px;
+  1616→          height: 20px;
+  1617→          color: white;
+  1618→          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+  1619→        }
+  1620→        .role-icon-inactive {
+  1621→          width: 20px;
+  1622→          height: 20px;
+  1623→          color: #94a3b8;
+  1624→          transition: color 0.3s ease;
+  1625→        }
+  1626→        .role-tab-button:hover .role-icon-inactive {
+  1627→          color: #64748b;
+  1628→        }
+  1629→        .role-label-text {
+  1630→          font-size: 11px;
+  1631→          font-weight: 600;
+  1632→          color: #64748b;
+  1633→          transition: color 0.3s ease;
+  1634→        }
+  1635→        .role-label-active-emerald { color: #059669; }
+  1636→        .role-label-active-blue { color: #2563eb; }
+  1637→        .role-label-active-purple { color: #9333ea; }
+  1638→        .role-label-active-amber { color: #d97706; }
+  1639→        .active-indicator-bar {
+  1640→          position: absolute;
+  1641→          bottom: 0;
+  1642→          left: 20%;
+  1643→          right: 20%;
+  1644→          height: 3px;
+  1645→          border-radius: 3px 3px 0 0;
+  1646→        }
+  1647→
+  1648→        /* ========== ERROR MESSAGE ========== */
+  1649→        .error-container-premium {
+  1650→          display: flex;
+  1651→          align-items: center;
+  1652→          justify-content: space-between;
+  1653→          margin: 16px 24px;
+  1654→          padding: 14px 16px;
+  1655→          border-radius: 14px;
+  1656→          background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  1657→          border: 1px solid #fecaca;
+  1658→          animation: errorSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1), errorShake 0.5s ease-out 0.4s;
+  1659→        }
+  1660→        @keyframes errorSlideIn {
+  1661→          from { opacity: 0; transform: translateX(-20px); }
+  1662→          to { opacity: 1; transform: translateX(0); }
+  1663→        }
+  1664→        @keyframes errorShake {
+  1665→          0%, 100% { transform: translateX(0); }
+  1666→          20% { transform: translateX(-10px); }
+  1667→          40% { transform: translateX(10px); }
+  1668→          60% { transform: translateX(-6px); }
+  1669→          80% { transform: translateX(4px); }
+  1670→        }
+  1671→        .error-content {
+  1672→          display: flex;
+  1673→          align-items: center;
+  1674→          gap: 10px;
+  1675→        }
+  1676→        .error-icon-wrap {
+  1677→          width: 28px;
+  1678→          height: 28px;
+  1679→          border-radius: 8px;
+  1680→          background: linear-gradient(135deg, #fecaca, #fca5a5);
+  1681→          display: flex;
+  1682→          align-items: center;
+  1683→          justify-content: center;
+  1684→          flex-shrink: 0;
+  1685→        }
+  1686→        .error-icon {
+  1687→          width: 16px;
+  1688→          height: 16px;
+  1689→          color: #dc2626;
+  1690→        }
+  1691→        .error-text {
+  1692→          font-size: 13px;
+  1693→          font-weight: 600;
+  1694→          color: #991b1b;
+  1695→        }
+  1696→        .error-close {
+  1697→          padding: 4px;
+  1698→          color: #dc2626;
+  1699→          opacity: 0.6;
+  1700→          transition: opacity 0.2s ease;
+  1701→        }
+  1702→        .error-close:hover {
+  1703→          opacity: 1;
+  1704→        }
+  1705→
+  1706→        /* ========== FORM INPUTS ========== */
+  1707→        .form-space-premium {
+  1708→          padding: 20px 24px;
+  1709→          display: flex;
+  1710→          flex-direction: column;
+  1711→          gap: 20px;
+  1712→        }
+  1713→        .input-group-premium {
+  1714→          display: flex;
+  1715→          flex-direction: column;
+  1716→          gap: 8px;
+  1717→        }
+  1718→        .input-label-premium {
+  1719→          display: flex;
+  1720→          align-items: center;
+  1721→          gap: 6px;
+  1722→          font-size: 13px;
+  1723→          font-weight: 600;
+  1724→          color: #475569;
+  1725→          transition: color 0.3s ease;
+  1726→        }
+  1727→        .input-label-focused {
+  1728→          color: #6366f1;
+  1729→        }
+  1730→        .input-label-icon {
+  1731→          width: 16px;
+  1732→          height: 16px;
+  1733→          color: #94a3b8;
+  1734→          transition: color 0.3s ease;
+  1735→        }
+  1736→        .input-label-focused .input-label-icon {
+  1737→          color: #6366f1;
+  1738→        }
+  1739→        .input-required-mark {
+  1740→          color: #ef4444;
+  1741→          margin-left: 2px;
+  1742→        }
+  1743→        .input-wrapper-premium {
+  1744→          position: relative;
+  1745→          display: flex;
+  1746→          align-items: center;
+  1747→          border-radius: 14px;
+  1748→          border: 1.5px solid #e2e8f0;
+  1749→          background: white;
+  1750→          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  1751→          overflow: hidden;
+  1752→        }
+  1753→        .input-wrapper-focused {
+  1754→          border-color: #818cf8;
+  1755→          box-shadow: 
+  1756→            0 0 0 4px rgba(99,102,241,0.08),
+  1757→            0 4px 12px -4px rgba(99,102,241,0.15);
+  1758→        }
+  1759→        .input-prefix {
+  1760→          display: flex;
+  1761→          align-items: center;
+  1762→          justify-content: center;
+  1763→          width: 46px;
+  1764→          height: 100%;
+  1765→          flex-shrink: 0;
+  1766→        }
+  1767→        .input-prefix-icon {
+  1768→          width: 18px;
+  1769→          height: 18px;
+  1770→          color: #94a3b8;
+  1771→          transition: all 0.3s ease;
+  1772→        }
+  1773→        .prefix-icon-focused {
+  1774→          color: #6366f1;
+  1775→          transform: scale(1.1);
+  1776→        }
+  1777→        .premium-input-field {
+  1778→          flex: 1;
+  1779→          height: 52px;
+  1780→          padding: 0 16px;
+  1781→          font-size: 14px;
+  1782→          font-weight: 500;
+  1783→          color: #1e293b;
+  1784→          background: transparent;
+  1785→          border: none;
+  1786→          outline: none;
+  1787→        }
+  1788→        .premium-input-field::placeholder {
+  1789→          color: #94a3b8;
+  1790→          font-weight: 400;
+  1791→        }
+  1792→        .input-focus-line {
+  1793→          position: absolute;
+  1794→          bottom: 0;
+  1795→          left: 50%;
+  1796→          width: 0;
+  1797→          height: 2px;
+  1798→          background: linear-gradient(90deg, #818cf8, #22d3ee);
+  1799→          transition: all 0.3s ease;
+  1800→          transform: translateX(-50%);
+  1801→        }
+  1802→        .input-wrapper-focused .input-focus-line {
+  1803→          width: 100%;
+  1804→        }
+  1805→        .input-glow-effect {
+  1806→          position: absolute;
+  1807→          inset: 0;
+  1808→          border-radius: 14px;
+  1809→          background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(34,211,238,0.08));
+  1810→          opacity: 0;
+  1811→          transition: opacity 0.3s ease;
+  1812→          pointer-events: none;
+  1813→        }
+  1814→        .input-wrapper-focused .input-glow-effect {
+  1815→          opacity: 1;
+  1816→        }
+  1817→        .password-toggle-btn {
+  1818→          position: absolute;
+  1819→          right: 12px;
+  1820→          top: 50%;
+  1821→          transform: translateY(-50%);
+  1822→          padding: 6px;
+  1823→          color: #94a3b8;
+  1824→          border-radius: 8px;
+  1825→          transition: all 0.2s ease;
+  1826→        }
+  1827→        .password-toggle-btn:hover {
+  1828→          color: #6366f1;
+  1829→          background: rgba(99,102,241,0.08);
+  1830→        }
+  1831→
+  1832→        /* ========== SUBMIT BUTTON ========== */
+  1833→        .premium-submit-btn {
+  1834→          position: relative;
+  1835→          width: 100%;
+  1836→          height: 54px;
+  1837→          border: none;
+  1838→          border-radius: 14px;
+  1839→          cursor: pointer;
+  1840→          overflow: hidden;
+  1841→          transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  1842→        }
+  1843→        .premium-submit-btn:hover {
+  1844→          transform: translateY(-2px);
+  1845→          box-shadow: 
+  1846→            0 8px 25px -8px rgba(99,102,241,0.5),
+  1847→            0 4px 10px -4px rgba(0,0,0,0.1);
+  1848→        }
+  1849→        .premium-submit-btn:active {
+  1850→          transform: translateY(0) scale(0.98);
+  1851→        }
+  1852→        .btn-bg-base {
+  1853→          position: absolute;
+  1854→          inset: 0;
+  1855→          background: linear-gradient(135deg, #6366f1, #4f46e5);
+  1856→        }
+  1857→        .btn-bg-gradient {
+  1858→          position: absolute;
+  1859→          inset: 0;
+  1860→          background: linear-gradient(135deg, #818cf8, #6366f1, #3b82f6, #06b6d4);
+  1861→          background-size: 300% 300%;
+  1862→          opacity: 0;
+  1863→          transition: opacity 0.4s ease;
+  1864→        }
+  1865→        .premium-submit-btn:hover .btn-bg-gradient {
+  1866→          opacity: 1;
+  1867→          animation: btnGradientShift 3s ease infinite;
+  1868→        }
+  1869→        @keyframes btnGradientShift {
+  1870→          0%, 100% { background-position: 0% 50%; }
+  1871→          50% { background-position: 100% 50%; }
+  1872→        }
+  1873→        .btn-shimmer {
+  1874→          position: absolute;
+  1875→          inset: 0;
+  1876→          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  1877→          transform: translateX(-100%);
+  1878→          transition: transform 0.6s ease;
+  1879→        }
+  1880→        .premium-submit-btn:hover .btn-shimmer {
+  1881→          transform: translateX(100%);
+  1882→        }
+  1883→        .btn-content {
+  1884→          position: relative;
+  1885→          z-index: 1;
+  1886→          display: flex;
+  1887→          align-items: center;
+  1888→          justify-content: center;
+  1889→          gap: 8px;
+  1890→          font-size: 15px;
+  1891→          font-weight: 700;
+  1892→          color: white;
+  1893→          letter-spacing: 0.01em;
+  1894→        }
+  1895→        .btn-spinner {
+  1896→          width: 20px;
+  1897→          height: 20px;
+  1898→          animation: spin 1s linear infinite;
+  1899→        }
+  1900→        @keyframes spin {
+  1901→          from { transform: rotate(0deg); }
+  1902→          to { transform: rotate(360deg); }
+  1903→        }
+  1904→        .btn-arrow {
+  1905→          width: 18px;
+  1906→          height: 18px;
+  1907→          transition: transform 0.3s ease;
+  1908→        }
+  1909→        .premium-submit-btn:hover .btn-arrow {
+  1910→          transform: translateX(4px);
+  1911→        }
+  1912→        .btn-hover-glow {
+  1913→          position: absolute;
+  1914→          inset: -2px;
+  1915→          border-radius: 16px;
+  1916→          background: linear-gradient(135deg, #818cf8, #22d3ee);
+  1917→          opacity: 0;
+  1918→          filter: blur(15px);
+  1919→          z-index: -1;
+  1920→          transition: opacity 0.4s ease;
+  1921→        }
+  1922→        .premium-submit-btn:hover .btn-hover-glow {
+  1923→          opacity: 0.4;
+  1924→        }
+  1925→
+  1926→        /* ========== DIVIDER ========== */
+  1927→        .divider-premium {
+  1928→          display: flex;
+  1929→          align-items: center;
+  1930→          gap: 16px;
+  1931→          margin: 20px 24px;
+  1932→        }
+  1933→        .divider-line {
+  1934→          flex: 1;
+  1935→          height: 1px;
+  1936→          background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+  1937→        }
+  1938→        .divider-text {
+  1939→          display: flex;
+  1940→          align-items: center;
+  1941→          font-size: 10px;
+  1942→          font-weight: 700;
+  1943→          color: #94a3b8;
+  1944→          text-transform: uppercase;
+  1945→          letter-spacing: 0.1em;
+  1946→          white-space: nowrap;
+  1947→        }
+  1948→
+  1949→        /* ========== QUICK ACCESS ========== */
+  1950→        .quick-access-section {
+  1951→          padding: 0 24px 24px;
+  1952→          display: flex;
+  1953→          flex-direction: column;
+  1954→          gap: 16px;
+  1955→        }
+  1956→        .admin-quick-btn {
+  1957→          position: relative;
+  1958→          display: flex;
+  1959→          align-items: center;
+  1960→          justify-content: space-between;
+  1961→          padding: 14px 16px;
+  1962→          border-radius: 14px;
+  1963→          border: 1.5px solid #fde68a;
+  1964→          background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  1965→          cursor: pointer;
+  1966→          overflow: hidden;
+  1967→          transition: all 0.3s ease;
+  1968→        }
+  1969→        .admin-quick-btn:hover {
+  1970→          border-color: #fcd34d;
+  1971→          box-shadow: 0 8px 20px -8px rgba(245,158,11,0.3);
+  1972→          transform: translateY(-1px);
+  1973→        }
+  1974→        .admin-btn-left {
+  1975→          display: flex;
+  1976→          align-items: center;
+  1977→          gap: 12px;
+  1978→        }
+  1979→        .admin-btn-icon-wrap {
+  1980→          width: 40px;
+  1981→          height: 40px;
+  1982→          border-radius: 10px;
+  1983→          background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  1984→          display: flex;
+  1985→          align-items: center;
+  1986→          justify-content: center;
+  1987→          box-shadow: 0 4px 10px -2px rgba(245,158,11,0.4);
+  1988→        }
+  1989→        .admin-btn-icon {
+  1990→          width: 20px;
+  1991→          height: 20px;
+  1992→          color: white;
+  1993→        }
+  1994→        .admin-btn-title {
+  1995→          display: block;
+  1996→          font-size: 13px;
+  1997→          font-weight: 700;
+  1998→          color: #92400e;
+  1999→        }
+  2000→        .admin-btn-desc {
+
+[showing lines 1-2000 of 7400; use offset=2001 with limit to continue reading]
