@@ -4136,6 +4136,7 @@ function Sidebar({
     </aside>
     </>
   )
+}
 
 // ============ MOBILE NAV ============
 // Note: Mobile navigation is now handled by the responsive Sidebar component
