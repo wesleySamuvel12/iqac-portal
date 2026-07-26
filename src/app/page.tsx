@@ -362,9 +362,9 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [selectedRole, setSelectedRole] = useState<'STUDENT' | 'STAFF' | 'HOD' | 'ADMIN'>('STUDENT')
   const [selectedDept, setSelectedDept] = useState('CSE')
   const [showDeptDropdown, setShowDeptDropdown] = useState(false)
-  const [isFocused, setIsFocused] = useState<string | null>(null)
   const login = useAuthStore((state) => state.login)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -401,6 +401,7 @@ function LoginPage() {
 
   const getPassword = (role: string) => {
     switch(role) {
+      case 'ADMIN': return 'admin123'
       case 'HOD': return 'hod123'
       case 'STAFF': return 'staff123'
       case 'STUDENT': return 'student123'
@@ -410,310 +411,375 @@ function LoginPage() {
 
   const currentDept = DEPARTMENTS_LIST.find(d => d.code === selectedDept)
 
+  // Role configuration for tabs
+  const roleTabs = [
+    { id: 'STUDENT' as const, label: 'Student', icon: GraduationCap, color: 'emerald', gradient: 'from-emerald-500 to-teal-600', bgColor: 'bg-emerald-50', textColor: 'text-emerald-700', borderColor: 'border-emerald-200' },
+    { id: 'STAFF' as const, label: 'Staff / Faculty', icon: BookOpen, color: 'blue', gradient: 'from-blue-500 to-indigo-600', bgColor: 'bg-blue-50', textColor: 'text-blue-700', borderColor: 'border-blue-200' },
+    { id: 'HOD' as const, label: 'HOD', icon: UserCheck, color: 'purple', gradient: 'from-purple-500 to-violet-600', bgColor: 'bg-purple-50', textColor: 'text-purple-700', borderColor: 'border-purple-200' },
+    { id: 'ADMIN' as const, label: 'IQAC Admin', icon: Shield, color: 'amber', gradient: 'from-amber-500 to-orange-600', bgColor: 'bg-amber-50', textColor: 'text-amber-700', borderColor: 'border-amber-200' },
+  ]
+
+  const getPlaceholderForRole = () => {
+    switch(selectedRole) {
+      case 'STUDENT': return 'student_cse1@niet.ac.in'
+      case 'STAFF': return 'staff_cse1@niet.ac.in'
+      case 'HOD': return 'hod_cse@niet.ac.in'
+      case 'ADMIN': return 'admin@niet.ac.in'
+      default: return 'Enter your email'
+    }
+  }
+
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#0a0a1a] flex items-center justify-center p-4">
-      {/* Animated Gradient Background */}
-      <div className="absolute inset-0">
-        {/* Base gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a2e] via-[#1a1040] to-[#0a1628]" />
+    <div className="min-h-screen relative overflow-hidden bg-slate-50 flex flex-col">
+      {/* Ambient Background with Soft Gradients */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Main Background Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40" />
         
-        {/* Liquid Glass Orbs */}
-        <div className="liquid-orb liquid-orb-1" />
-        <div className="liquid-orb liquid-orb-2" />
-        <div className="liquid-orb liquid-orb-3" />
-        <div className="liquid-orb liquid-orb-4" />
+        {/* Soft Floating Orbs - Light Theme */}
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-indigo-200/40 to-blue-200/30 rounded-full blur-3xl animate-float-orb-1" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-sky-200/40 to-cyan-200/30 rounded-full blur-3xl animate-float-orb-2" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-violet-100/20 to-pink-100/20 rounded-full blur-3xl animate-float-orb-3" />
         
-        {/* Animated Mesh Grid */}
+        {/* Subtle Grid Pattern */}
         <div 
           className="absolute inset-0 opacity-[0.03]"
           style={{
             backgroundImage: `
-              linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+              linear-gradient(rgba(99,102,241,0.5) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(99,102,241,0.5) 1px, transparent 1px)
             `,
-            backgroundSize: '60px 60px',
+            backgroundSize: '40px 40px',
           }}
         />
 
-        {/* Floating Particles */}
-        <div className="particles-container">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="particle"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 8}s`,
-                animationDuration: `${6 + Math.random() * 10}s`,
-                width: `${2 + Math.random() * 4}px`,
-                height: `${2 + Math.random() * 4}px`,
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Aurora Effect */}
-        <div className="aurora aurora-1" />
-        <div className="aurora aurora-2" />
+        {/* Decorative Shapes */}
+        <div className="absolute top-20 left-20 w-2 h-2 bg-indigo-300/60 rounded-full animate-pulse-slow-light" />
+        <div className="absolute top-40 right-32 w-3 h-3 bg-blue-300/50 rounded-full animate-pulse-slow-light-delayed" />
+        <div className="absolute bottom-32 left-40 w-2 h-2 bg-cyan-300/60 rounded-full animate-pulse-slow-light" />
+        <div className="absolute bottom-20 right-20 w-2.5 h-2.5 bg-violet-300/50 rounded-full animate-pulse-slow-light-delayed" />
       </div>
 
-      <div className="relative z-10 w-full max-w-md">
-        {/* Logo & Header with Liquid Animation */}
-        <div className="text-center mb-8 header-animate">
-          {/* Glowing Logo Container */}
-          <div className="relative inline-block mb-6">
-            {/* Outer Glow Ring */}
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 blur-xl opacity-60 animate-pulse-slow logo-glow-ring" />
-            
-            {/* Rotating Border */}
-            <div className="absolute inset-0 rounded-3xl overflow-hidden">
-              <div className="rotating-border" />
+      {/* Institutional Verification Badge - Top Status Bar */}
+      <header className="relative z-20 w-full bg-white/70 backdrop-blur-md border-b border-slate-200/60 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-12">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-full border border-emerald-200">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="text-xs font-semibold text-emerald-700">NAAC Accredited</span>
+              </div>
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-full border border-blue-200">
+                <Award className="w-3.5 h-3.5 text-blue-600" />
+                <span className="text-xs font-semibold text-blue-700">NIRF Participant</span>
+              </div>
             </div>
-            
-            {/* Main Logo */}
-            <div className="relative w-28 h-28 rounded-3xl bg-gradient-to-br from-[#0a1a3e]/90 to-[#1a0a3e]/90 backdrop-blur-2xl border border-white/20 flex items-center justify-center shadow-2xl shadow-blue-900/50">
-              <Building2 className="w-14 h-14 text-white drop-shadow-lg" />
-              
-              {/* Inner Shine */}
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-white/10 via-transparent to-transparent" />
+            <div className="flex items-center gap-3">
+              <a href="#" className="text-xs font-medium text-slate-500 hover:text-indigo-600 transition-colors flex items-center gap-1">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                IT Support
+              </a>
+              <span className="text-slate-300">|</span>
+              <span className="text-xs text-slate-400">NIET Campus Portal v3.0</span>
             </div>
-            
-            {/* Floating Dots */}
-            <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-cyan-400 animate-bounce-slow shadow-lg shadow-cyan-400/50" />
-            <div className="absolute -bottom-1 -left-1 w-3 h-3 rounded-full bg-purple-400 animate-bounce-slow-delayed shadow-lg shadow-purple-400/50" />
-          </div>
-          
-          <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-white mb-2 tracking-tight drop-shadow-2xl title-glow">
-            IQAC Portal
-          </h1>
-          <p className="text-blue-200/80 text-lg font-medium mb-3">Nehru Institute of Engineering and Technology</p>
-          
-          {/* Status Badge */}
-          <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 backdrop-blur-sm border border-amber-400/30 shadow-lg shadow-amber-500/10">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-amber-200 text-sm font-semibold">Autonomous • NAAC Accredited</span>
           </div>
         </div>
+      </header>
 
-        {/* Liquid Glass Login Card */}
-        <div className="glass-card-login card-enter">
-          {/* Card Top Glow */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-cyan-400/80 to-transparent" />
-          
-          {/* Card Content */}
-          <div className="p-8">
+      {/* Main Content Area */}
+      <main className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <div className="w-full max-w-[480px]">
+          {/* Logo & Header Section */}
+          <div className="text-center mb-8 light-header-animate">
+            {/* Logo with Light Glass Effect */}
+            <div className="relative inline-block mb-5">
+              {/* Soft Shadow/Glow */}
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-200/50 to-blue-200/50 blur-xl opacity-70" />
+              
+              {/* Main Logo Container - White Glass */}
+              <div className="relative w-24 h-24 rounded-2xl bg-white/90 backdrop-blur-xl border border-slate-200/80 shadow-xl shadow-slate-200/50 flex items-center justify-center">
+                <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-500 flex items-center justify-center shadow-inner">
+                  <Building2 className="w-10 h-10 text-white drop-shadow" />
+                </div>
+                
+                {/* Subtle Shine Overlay */}
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-transparent via-white/40 to-transparent" />
+              </div>
+
+              {/* Small Decorative Elements */}
+              <div className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 shadow-lg shadow-emerald-300/50 flex items-center justify-center">
+                <CheckCircle className="w-2.5 h-2.5 text-white" />
+              </div>
+            </div>
+            
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-1.5 tracking-tight">
+              IQAC Portal
+            </h1>
+            <p className="text-slate-500 text-sm sm:text-base font-medium">
+              Nehru Institute of Engineering and Technology
+            </p>
+          </div>
+
+          {/* Light Glass Login Card */}
+          <div className="light-glass-card light-card-enter">
+            {/* Role-Based Tabbed Selection */}
+            <div className="mb-6">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 block px-1">
+                Select Your Role
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {roleTabs.map((tab) => {
+                  const Icon = tab.icon
+                  const isActive = selectedRole === tab.id
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setSelectedRole(tab.id)}
+                      className={`relative flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-300 group ${
+                        isActive 
+                          ? `${tab.bgColor} ${tab.borderColor} shadow-sm` 
+                          : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                        isActive 
+                          ? `bg-gradient-to-br ${tab.gradient} shadow-md` 
+                          : 'bg-slate-100 group-hover:bg-slate-200'
+                      }`}>
+                        <Icon className={`w-4.5 h-4.5 transition-all duration-300 ${
+                          isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-700'
+                        }`} />
+                      </div>
+                      <span className={`text-[10px] sm:text-xs font-semibold leading-tight text-center transition-colors duration-300 ${
+                        isActive ? tab.textColor : 'text-slate-500'
+                      }`}>
+                        {tab.label.split(' ')[0]}
+                      </span>
+                      {isActive && (
+                        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-5 h-1 rounded-full bg-gradient-to-r tab.gradient opacity-60" 
+                             style={{background: `linear-gradient(to right, var(--tw-gradient-stops))`}} />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
             {/* Error Message */}
             {error && (
-              <div className="mb-6 p-4 rounded-2xl bg-red-500/10 backdrop-blur-sm border border-red-500/30 error-shake">
-                <p className="text-red-300 text-sm flex items-center gap-2 font-medium">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <div className="mb-5 p-3.5 rounded-xl bg-red-50 border border-red-200 light-error-shake">
+                <p className="text-red-600 text-sm flex items-center gap-2 font-medium">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   {error}
                 </p>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
               {/* Email Input */}
-              <div className="space-y-2 input-wrapper">
-                <label className={`text-sm font-semibold transition-colors duration-300 ${isFocused === 'email' ? 'text-cyan-400' : 'text-gray-300'}`}>
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                  <Mail className="w-4 h-4 text-slate-400" />
                   Email Address
                 </label>
-                <div className={`relative group ${isFocused === 'email' ? 'input-focused' : ''}`}>
-                  <Mail className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-all duration-300 ${isFocused === 'email' ? 'text-cyan-400 scale-110' : 'text-gray-500'}`} />
+                <div className="relative group">
                   <Input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    onFocus={() => setIsFocused('email')}
-                    onBlur={() => setIsFocused(null)}
-                    placeholder="Enter your email"
-                    className="glass-input pl-12 py-6 h-auto border-white/10 bg-white/5 focus:border-cyan-400/50 focus:bg-white/10 rounded-2xl text-base text-white placeholder:text-gray-500 transition-all duration-300"
+                    placeholder={getPlaceholderForRole()}
+                    className="light-input pl-11 pr-4 py-3.5 h-auto border-slate-200 bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 transition-all duration-200"
                     required
                   />
-                  <div className="input-glow-effect" />
                 </div>
               </div>
 
               {/* Password Input */}
-              <div className="space-y-2 input-wrapper">
-                <label className={`text-sm font-semibold transition-colors duration-300 ${isFocused === 'password' ? 'text-cyan-400' : 'text-gray-300'}`}>
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                  <Lock className="w-4 h-4 text-slate-400" />
                   Password
                 </label>
-                <div className={`relative group ${isFocused === 'password' ? 'input-focused' : ''}`}>
-                  <Lock className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-all duration-300 ${isFocused === 'password' ? 'text-cyan-400 scale-110' : 'text-gray-500'}`} />
+                <div className="relative group">
                   <Input
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    onFocus={() => setIsFocused('password')}
-                    onBlur={() => setIsFocused(null)}
                     placeholder="Enter your password"
-                    className="glass-input pl-12 pr-12 py-6 h-auto border-white/10 bg-white/5 focus:border-cyan-400/50 focus:bg-white/10 rounded-2xl text-base text-white placeholder:text-gray-500 transition-all duration-300"
+                    className="light-input pl-11 pr-11 py-3.5 h-auto border-slate-200 bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 transition-all duration-200"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-cyan-400 transition-all duration-300 hover:scale-110"
+                    className="absolute right-3.5 top-1/2 transform -translate-y-1/2 p-1 text-slate-400 hover:text-indigo-600 transition-all duration-200 hover:scale-110 rounded-md hover:bg-indigo-50"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
                   </button>
-                  <div className="input-glow-effect" />
                 </div>
               </div>
 
-              {/* Submit Button */}
+              {/* Primary Indigo Action Button */}
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-7 relative overflow-hidden rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 hover:from-cyan-400 hover:via-blue-400 hover:to-purple-500 text-white font-bold text-lg shadow-2xl shadow-blue-500/30 transition-all duration-500 group btn-liquid"
+                className="w-full py-4 relative overflow-hidden rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-semibold text-base shadow-lg shadow-indigo-200 transition-all duration-300 group light-submit-btn"
               >
-                {/* Button Background Animation */}
-                <div className="btn-bg-animation" />
-                
-                {/* Button Content */}
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   {isLoading ? (
                     <>
-                      <Loader2 className="w-6 h-6 animate-spin" />
+                      <Loader2 className="w-5 h-5 animate-spin" />
                       Authenticating...
                     </>
                   ) : (
                     <>
-                      Sign In
-                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                      Sign In to Portal
+                      <ArrowRight className="w-4.5 h-4.5 group-hover:translate-x-1 transition-transform duration-300" />
                     </>
                   )}
                 </span>
-                
-                {/* Button Glow */}
-                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-400/20 via-transparent to-purple-400/20 blur-xl" />
-                </div>
               </Button>
             </form>
 
             {/* Divider */}
-            <div className="flex items-center gap-4 my-8">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-              <span className="text-xs text-gray-500 uppercase tracking-widest font-medium">Quick Access</span>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+            <div className="flex items-center gap-4 my-6">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+              <span className="text-xs text-slate-400 uppercase tracking-wider font-medium">Quick Access</span>
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
             </div>
 
             {/* Quick Login Section */}
-            <div className="space-y-5">
-              {/* Admin Button */}
-              <button
-                onClick={() => quickLogin('admin@niet.ac.in', 'admin123')}
-                className="w-full relative overflow-hidden p-[1px] rounded-2xl group admin-btn"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-violet-600 via-fuchsia-500 to-orange-500 opacity-75 group-hover:opacity-100 transition-opacity duration-500 blur-sm" />
-                <div className="relative w-full flex items-center justify-center gap-3 px-4 py-4 rounded-2xl bg-[#0d0d25]/90 backdrop-blur-sm text-white font-bold transition-transform duration-300 group-hover:scale-[1.02]">
-                  <Shield className="w-6 h-6 text-violet-300 group-hover:rotate-12 transition-transform duration-300" />
-                  System Administrator
-                  <ChevronRight className="w-5 h-5 ml-auto opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all duration-300" />
-                </div>
-              </button>
+            <div className="space-y-4">
+              {/* Admin Quick Access - Only show if not already on admin tab */}
+              {selectedRole !== 'ADMIN' && (
+                <button
+                  onClick={() => quickLogin('admin@niet.ac.in', 'admin123')}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 hover:border-amber-300 hover:shadow-md hover:shadow-amber-100 transition-all duration-300 group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-sm">
+                      <Shield className="w-4.5 h-4.5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-amber-800">System Administrator</p>
+                      <p className="text-xs text-amber-600">Full access to all modules</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-amber-400 group-hover:translate-x-1 transition-transform duration-300" />
+                </button>
+              )}
 
               {/* Department Selector */}
-              <div>
-                <label className="text-xs font-semibold text-gray-400 mb-2 block uppercase tracking-wider">Select Department</label>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setShowDeptDropdown(!showDeptDropdown)}
-                    className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-cyan-400/40 text-sm font-semibold text-gray-200 transition-all duration-300 hover:bg-white/10"
-                  >
-                    <span className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center border border-white/10">
-                        <Building2 className="w-4 h-4 text-cyan-400" />
+              {selectedRole !== 'ADMIN' && (
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 mb-2 block uppercase tracking-wider">Select Department</label>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowDeptDropdown(!showDeptDropdown)}
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-sm text-sm font-medium text-slate-700 transition-all duration-200"
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-50 to-blue-50 flex items-center justify-center border border-slate-200">
+                          <Building2 className="w-4 h-4 text-indigo-500" />
+                        </div>
+                        <span>{currentDept?.code} - {currentDept?.name}</span>
+                      </span>
+                      <ChevronDown className={`w-4.5 h-4.5 text-slate-400 transition-transform duration-200 ${showDeptDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {showDeptDropdown && (
+                      <div className="absolute z-50 w-full mt-2 bg-white/95 backdrop-blur-xl rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 max-h-56 overflow-y-auto light-dropdown-enter">
+                        {DEPARTMENTS_LIST.map((dept) => (
+                          <button
+                            key={dept.code}
+                            type="button"
+                            onClick={() => {
+                              setSelectedDept(dept.code)
+                              setShowDeptDropdown(false)
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-slate-50 transition-all duration-150 first:rounded-t-xl last:rounded-b-xl ${
+                              selectedDept === dept.code ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600'
+                            }`}
+                          >
+                            <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                              dept.color === 'blue' ? 'bg-blue-500' :
+                              dept.color === 'green' ? 'bg-emerald-500' :
+                              dept.color === 'purple' ? 'bg-purple-500' :
+                              dept.color === 'orange' ? 'bg-orange-500' :
+                              dept.color === 'pink' ? 'bg-pink-500' :
+                              dept.color === 'cyan' ? 'bg-cyan-500' :
+                              dept.color === 'red' ? 'bg-red-500' :
+                              'bg-indigo-500'
+                            }`} />
+                            <span className="font-medium text-sm">{dept.code}</span>
+                            <span className="text-xs text-slate-400 truncate">{dept.name}</span>
+                          </button>
+                        ))}
                       </div>
-                      <span>{currentDept?.code} - {currentDept?.name}</span>
-                    </span>
-                    <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${showDeptDropdown ? 'rotate-180' : ''}`} />
-                  </button>
-                  
-                  {showDeptDropdown && (
-                    <div className="absolute z-50 w-full mt-2 bg-[#12122a]/95 backdrop-blur-2xl rounded-2xl shadow-2xl shadow-black/50 border border-white/10 max-h-64 overflow-y-auto dropdown-enter">
-                      {DEPARTMENTS_LIST.map((dept) => (
-                        <button
-                          key={dept.code}
-                          type="button"
-                          onClick={() => {
-                            setSelectedDept(dept.code)
-                            setShowDeptDropdown(false)
-                          }}
-                          className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/10 transition-all duration-200 ${
-                            selectedDept === dept.code ? 'bg-cyan-500/15 text-cyan-300' : 'text-gray-300'
-                          }`}
-                        >
-                          <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${
-                            dept.color === 'blue' ? 'from-blue-400 to-blue-600' :
-                            dept.color === 'green' ? 'from-emerald-400 to-emerald-600' :
-                            dept.color === 'purple' ? 'from-purple-400 to-purple-600' :
-                            dept.color === 'orange' ? 'from-orange-400 to-orange-600' :
-                            dept.color === 'pink' ? 'from-pink-400 to-pink-600' :
-                            dept.color === 'cyan' ? 'from-cyan-400 to-cyan-600' :
-                            dept.color === 'red' ? 'from-red-400 to-red-600' :
-                            'from-indigo-400 to-indigo-600'
-                          }`} />
-                          <span className="font-medium">{dept.code}</span>
-                          <span className="text-xs text-gray-500 truncate">{dept.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Role Buttons */}
-              <div className="space-y-3">
-                <p className="text-xs text-gray-500 text-center">
-                  Login as: <span className="font-bold text-cyan-400">{currentDept?.code}</span> Department
-                </p>
-                <div className="grid grid-cols-3 gap-3">
-                  {/* HOD Button */}
-                  <button
-                    onClick={() => quickLogin(getDeptEmail(selectedDept, 'HOD'), getPassword('HOD'))}
-                    className="role-btn role-btn-hod group"
-                  >
-                    <UserCheck className="w-6 h-6 mb-1 group-hover:scale-110 transition-transform duration-300" />
-                    <span className="text-xs font-bold">HOD</span>
-                  </button>
-                  
-                  {/* Staff Button */}
-                  <button
-                    onClick={() => quickLogin(getDeptEmail(selectedDept, 'STAFF'), getPassword('STAFF'))}
-                    className="role-btn role-btn-staff group"
-                  >
-                    <BookOpen className="w-6 h-6 mb-1 group-hover:scale-110 transition-transform duration-300" />
-                    <span className="text-xs font-bold">Staff</span>
-                  </button>
-                  
-                  {/* Student Button */}
+              {/* Role Quick Login Buttons */}
+              {selectedRole !== 'ADMIN' && (
+                <div className="grid grid-cols-3 gap-2 pt-1">
                   <button
                     onClick={() => quickLogin(getDeptEmail(selectedDept, 'STUDENT'), getPassword('STUDENT'))}
-                    className="role-btn role-btn-student group"
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-200 hover:shadow-md ${
+                      selectedRole === 'STUDENT' 
+                        ? 'bg-emerald-50 border-emerald-300 shadow-sm' 
+                        : 'bg-white border-slate-200 hover:border-emerald-200 hover:bg-emerald-50/50'
+                    }`}
                   >
-                    <GraduationCap className="w-6 h-6 mb-1 group-hover:scale-110 transition-transform duration-300" />
-                    <span className="text-xs font-bold">Student</span>
+                    <GraduationCap className={`w-5 h-5 ${selectedRole === 'STUDENT' ? 'text-emerald-600' : 'text-slate-500'}`} />
+                    <span className={`text-xs font-semibold ${selectedRole === 'STUDENT' ? 'text-emerald-700' : 'text-slate-600'}`}>Student</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => quickLogin(getDeptEmail(selectedDept, 'STAFF'), getPassword('STAFF'))}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-200 hover:shadow-md ${
+                      selectedRole === 'STAFF' 
+                        ? 'bg-blue-50 border-blue-300 shadow-sm' 
+                        : 'bg-white border-slate-200 hover:border-blue-200 hover:bg-blue-50/50'
+                    }`}
+                  >
+                    <BookOpen className={`w-5 h-5 ${selectedRole === 'STAFF' ? 'text-blue-600' : 'text-slate-500'}`} />
+                    <span className={`text-xs font-semibold ${selectedRole === 'STAFF' ? 'text-blue-700' : 'text-slate-600'}`}>Staff</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => quickLogin(getDeptEmail(selectedDept, 'HOD'), getPassword('HOD'))}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-200 hover:shadow-md ${
+                      selectedRole === 'HOD' 
+                        ? 'bg-purple-50 border-purple-300 shadow-sm' 
+                        : 'bg-white border-slate-200 hover:border-purple-200 hover:bg-purple-50/50'
+                    }`}
+                  >
+                    <UserCheck className={`w-5 h-5 ${selectedRole === 'HOD' ? 'text-purple-600' : 'text-slate-500'}`} />
+                    <span className={`text-xs font-semibold ${selectedRole === 'HOD' ? 'text-purple-700' : 'text-slate-600'}`}>HOD</span>
                   </button>
                 </div>
+              )}
 
-                {/* Quick Department Pills */}
+              {/* Quick Department Pills */}
+              {selectedRole !== 'ADMIN' && (
                 <div className="pt-2">
-                  <p className="text-xs text-gray-600 mb-2 text-center">Quick Select:</p>
-                  <div className="flex flex-wrap gap-2 justify-center">
+                  <div className="flex flex-wrap gap-1.5 justify-center">
                     {['CSE', 'ECE', 'EEE', 'MECH', 'AI&DS', 'IT'].map((code) => (
                       <button
                         key={code}
                         type="button"
                         onClick={() => setSelectedDept(code)}
-                        className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 ${
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
                           selectedDept === code 
-                            ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/30 scale-105' 
-                            : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-gray-200 border border-white/10'
+                            ? 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white shadow-md shadow-indigo-200' 
+                            : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 border border-slate-200'
                         }`}
                       >
                         {code}
@@ -721,191 +787,107 @@ function LoginPage() {
                     ))}
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
-          
-          {/* Card Bottom Glow */}
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-purple-400/60 to-transparent" />
+
+          {/* Footer */}
+          <p className="text-center mt-6 text-slate-400 text-xs font-medium light-footer-fade-in flex items-center justify-center gap-1.5">
+            <Lock className="w-3 h-3" />
+            Secure Authentication • NIET IQAC Enterprise
+          </p>
         </div>
+      </main>
 
-        {/* Footer */}
-        <p className="text-center mt-8 text-gray-600 text-xs font-medium footer-fade-in">
-          🔒 Secure Authentication • NIET IQAC Enterprise v3.0
-        </p>
-      </div>
-
-      {/* Liquid Glass Styles */}
+      {/* Light Theme Styles */}
       <style jsx>{`
-        /* Liquid Orbs */
-        .liquid-orb {
-          position: absolute;
-          border-radius: 50%;
-          filter: blur(100px);
-          opacity: 0.4;
-          will-change: transform;
+        /* Floating Orb Animations */
+        .animate-float-orb-1 {
+          animation: floatOrb1 20s ease-in-out infinite;
         }
-        .liquid-orb-1 {
-          width: 500px;
-          height: 500px;
-          background: linear-gradient(135deg, #06b6d4, #3b82f6);
-          top: -150px;
-          right: -150px;
-          animation: liquidFloat1 15s ease-in-out infinite;
+        .animate-float-orb-2 {
+          animation: floatOrb2 25s ease-in-out infinite reverse;
         }
-        .liquid-orb-2 {
-          width: 450px;
-          height: 450px;
-          background: linear-gradient(135deg, #8b5cf6, #ec4899);
-          bottom: -120px;
-          left: -120px;
-          animation: liquidFloat2 18s ease-in-out infinite reverse;
+        .animate-float-orb-3 {
+          animation: floatOrb3 30s ease-in-out infinite;
         }
-        .liquid-orb-3 {
-          width: 350px;
-          height: 350px;
-          background: linear-gradient(135deg, #10b981, #06b6d4);
-          top: 40%;
-          left: 10%;
-          animation: liquidFloat3 20s ease-in-out infinite;
-        }
-        .liquid-orb-4 {
-          width: 250px;
-          height: 250px;
-          background: linear-gradient(135deg, #f59e0b, #ef4444);
-          bottom: 20%;
-          right: 5%;
-          animation: liquidFloat4 16s ease-in-out infinite;
-        }
-
-        @keyframes liquidFloat1 {
+        
+        @keyframes floatOrb1 {
           0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(-40px, 30px) scale(1.05); }
-          66% { transform: translate(30px, -20px) scale(0.95); }
+          33% { transform: translate(-30px, 25px) scale(1.05); }
+          66% { transform: translate(25px, -15px) scale(0.95); }
         }
-        @keyframes liquidFloat2 {
+        @keyframes floatOrb2 {
           0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(35px, -25px) scale(1.08); }
-          66% { transform: translate(-30px, 35px) scale(0.92); }
+          33% { transform: translate(25px, -20px) scale(1.08); }
+          66% { transform: translate(-25px, 25px) scale(0.92); }
         }
-        @keyframes liquidFloat3 {
+        @keyframes floatOrb3 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
-          50% { transform: translate(50px, 40px) rotate(180deg); }
-        }
-        @keyframes liquidFloat4 {
-          0%, 100% { transform: translate(0, 0); }
-          50% { transform: translate(-40px, -30px); }
+          50% { transform: translate(40px, 30px) rotate(180deg); }
         }
 
-        /* Aurora Effect */
-        .aurora {
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          opacity: 0.15;
-          mix-blend-mode: screen;
-          filter: blur(80px);
+        /* Pulse Animations for Light Theme */
+        .animate-pulse-slow-light {
+          animation: pulseLight 3s ease-in-out infinite;
         }
-        .aurora-1 {
-          background: linear-gradient(45deg, transparent, #06b6d4, transparent, #8b5cf6);
-          animation: auroraMove 20s linear infinite;
+        .animate-pulse-slow-light-delayed {
+          animation: pulseLight 3s ease-in-out infinite 0.7s;
         }
-        .aurora-2 {
-          background: linear-gradient(-45deg, transparent, #ec4899, transparent, #10b981);
-          animation: auroraMove 25s linear infinite reverse;
+        @keyframes pulseLight {
+          0%, 100% { opacity: 0.5; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.2); }
         }
 
-        @keyframes auroraMove {
-          0% { transform: translateX(-100%) translateY(-100%); }
-          100% { transform: translateX(100%) translateY(100%); }
-        }
-
-        /* Particles */
-        .particles-container {
-          position: absolute;
-          inset: 0;
-          overflow: hidden;
-        }
-        .particle {
-          position: absolute;
-          background: rgba(255, 255, 255, 0.6);
-          border-radius: 50%;
-          animation: particleFloat linear infinite;
-        }
-        @keyframes particleFloat {
-          0%, 100% { 
-            transform: translateY(0) translateX(0) scale(1);
-            opacity: 0;
-          }
-          10% { opacity: 1; }
-          90% { opacity: 1; }
-          100% { 
-            transform: translateY(-100vh) translateX(50px) scale(0);
-            opacity: 0;
-          }
-        }
-
-        /* Glass Card */
-        .glass-card-login {
+        /* Light Glass Card */
+        .light-glass-card {
           position: relative;
-          background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
-          backdrop-filter: blur(40px);
-          -webkit-backdrop-filter: blur(40px);
-          border-radius: 32px;
-          border: 1px solid rgba(255,255,255,0.15);
+          background: rgba(255, 255, 255, 0.85);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-radius: 24px;
+          border: 1px solid rgba(226, 232, 240, 0.8);
           box-shadow: 
-            0 32px 64px rgba(0,0,0,0.4),
-            0 0 0 1px rgba(255,255,255,0.05) inset,
-            0 0 80px rgba(6,182,212,0.1);
+            0 4px 6px -1px rgba(0, 0, 0, 0.05),
+            0 10px 15px -3px rgba(0, 0, 0, 0.08),
+            0 20px 25px -5px rgba(0, 0, 0, 0.05),
+            0 0 0 1px rgba(255, 255, 255, 0.5) inset;
           overflow: hidden;
         }
         
-        .glass-card-login::before {
+        .light-glass-card::before {
           content: '';
           position: absolute;
           top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255,255,255,0.1),
-            transparent
-          );
-          animation: shimmer 8s ease-in-out infinite;
-        }
-
-        @keyframes shimmer {
-          0%, 100% { left: -100%; }
-          50% { left: 100%; }
+          left: 0;
+          right: 0;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
         }
 
         /* Card Enter Animation */
-        .card-enter {
-          animation: cardEnter 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        .light-card-enter {
+          animation: lightCardEnter 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
-        @keyframes cardEnter {
+        @keyframes lightCardEnter {
           0% { 
             opacity: 0; 
-            transform: translateY(60px) scale(0.9);
-            backdrop-filter: blur(0px);
+            transform: translateY(30px) scale(0.95);
           }
           100% { 
             opacity: 1; 
             transform: translateY(0) scale(1);
-            backdrop-filter: blur(40px);
           }
         }
 
         /* Header Animation */
-        .header-animate {
-          animation: headerFadeIn 1s ease-out 0.2s both;
+        .light-header-animate {
+          animation: lightHeaderFadeIn 0.7s ease-out 0.15s both;
         }
-        @keyframes headerFadeIn {
+        @keyframes lightHeaderFadeIn {
           0% { 
             opacity: 0; 
-            transform: translateY(-30px);
+            transform: translateY(-20px);
           }
           100% { 
             opacity: 1; 
@@ -913,133 +895,41 @@ function LoginPage() {
           }
         }
 
-        /* Title Glow */
-        .title-glow {
-          text-shadow: 0 0 40px rgba(59,130,246,0.5), 0 0 80px rgba(139,92,246,0.3);
+        /* Light Input Styles */
+        .light-input {
+          transition: all 0.2s ease;
+        }
+        .light-input:focus {
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
 
-        /* Logo Glow Ring */
-        .logo-glow-ring {
-          animation: pulseGlow 3s ease-in-out infinite;
-        }
-        @keyframes pulseGlow {
-          0%, 100% { opacity: 0.4; transform: scale(1); }
-          50% { opacity: 0.7; transform: scale(1.1); }
-        }
-
-        /* Rotating Border */
-        .rotating-border {
-          position: absolute;
-          inset: -2px;
-          background: conic-gradient(from 0deg, transparent, #06b6d4, #3b82f6, #8b5cf6, transparent);
-          animation: rotateBorder 4s linear infinite;
-          filter: blur(2px);
-        }
-        @keyframes rotateBorder {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        /* Bounce Animations */
-        .animate-bounce-slow {
-          animation: bounceSlow 2s ease-in-out infinite;
-        }
-        .animate-bounce-slow-delayed {
-          animation: bounceSlow 2s ease-in-out infinite 0.5s;
-        }
-        @keyframes bounceSlow {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
-        }
-
-        /* Input Styles */
-        .input-wrapper {
-          position: relative;
-        }
-        .input-focused .input-glow-effect {
-          opacity: 1;
-        }
-        .input-glow-effect {
-          position: absolute;
-          inset: -2px;
-          border-radius: 18px;
-          background: linear-gradient(135deg, #06b6d4, #3b82f6, #8b5cf6);
-          opacity: 0;
-          z-index: -1;
-          filter: blur(8px);
-          transition: opacity 0.3s ease;
-        }
-
-        /* Button Liquid Effect */
-        .btn-liquid {
+        /* Submit Button Hover Effect */
+        .light-submit-btn {
           position: relative;
           overflow: hidden;
         }
-        .btn-bg-animation {
+        .light-submit-btn::before {
+          content: '';
           position: absolute;
-          inset: 0;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-          transform: translateX(-100%);
-          animation: none;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+          transition: left 0.5s ease;
         }
-        .btn-liquid:hover .btn-bg-animation {
-          animation: btnShimmer 1.5s ease-in-out infinite;
-        }
-        @keyframes btnShimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-
-        /* Role Buttons */
-        .role-btn {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 1rem 0.5rem;
-          border-radius: 16px;
-          font-size: 0.75rem;
-          transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-          border: 1px solid rgba(255,255,255,0.1);
-          background: rgba(255,255,255,0.03);
-          color: #9ca3af;
-        }
-        .role-btn:hover {
-          transform: translateY(-4px) scale(1.05);
-          box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        .role-btn-hod:hover {
-          background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.2));
-          border-color: rgba(139,92,246,0.4);
-          color: #c4b5fd;
-        }
-        .role-btn-staff:hover {
-          background: linear-gradient(135deg, rgba(6,182,212,0.2), rgba(59,130,246,0.2));
-          border-color: rgba(6,182,212,0.4);
-          color: #67e8f9;
-        }
-        .role-btn-student:hover {
-          background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(6,182,212,0.2));
-          border-color: rgba(16,185,129,0.4);
-          color: #6ee7b7;
-        }
-
-        /* Admin Button */
-        .admin-btn {
-          transition: all 0.3s ease;
-        }
-        .admin-btn:hover {
-          box-shadow: 0 0 40px rgba(139,92,246,0.4);
+        .light-submit-btn:hover::before {
+          left: 100%;
         }
 
         /* Dropdown Animation */
-        .dropdown-enter {
-          animation: dropdownSlide 0.3s ease-out;
+        .light-dropdown-enter {
+          animation: lightDropdownSlide 0.25s ease-out;
         }
-        @keyframes dropdownSlide {
+        @keyframes lightDropdownSlide {
           0% { 
             opacity: 0; 
-            transform: translateY(-10px) scale(0.98);
+            transform: translateY(-8px) scale(0.97);
           }
           100% { 
             opacity: 1; 
@@ -1048,52 +938,30 @@ function LoginPage() {
         }
 
         /* Error Shake */
-        .error-shake {
-          animation: errorShake 0.5s ease-out;
+        .light-error-shake {
+          animation: lightErrorShake 0.5s ease-out;
         }
-        @keyframes errorShake {
+        @keyframes lightErrorShake {
           0%, 100% { transform: translateX(0); }
-          20% { transform: translateX(-15px); }
-          40% { transform: translateX(15px); }
-          60% { transform: translateX(-10px); }
-          80% { transform: translateX(5px); }
+          20% { transform: translateX(-8px); }
+          40% { transform: translateX(8px); }
+          60% { transform: translateX(-5px); }
+          80% { transform: translateX(3px); }
         }
 
         /* Footer Fade In */
-        .footer-fade-in {
-          animation: fadeInUp 0.8s ease-out 0.6s both;
+        .light-footer-fade-in {
+          animation: lightFadeInUp 0.6s ease-out 0.4s both;
         }
-        @keyframes fadeInUp {
+        @keyframes lightFadeInUp {
           0% { 
             opacity: 0; 
-            transform: translateY(10px);
+            transform: translateY(8px);
           }
           100% { 
             opacity: 1; 
             transform: translateY(0);
           }
-        }
-
-        /* Pulse Slow */
-        .animate-pulse-slow {
-          animation: pulseSlow 3s ease-in-out infinite;
-        }
-        @keyframes pulseSlow {
-          0%, 100% { opacity: 0.6; }
-          50% { opacity: 1; }
-        }
-
-        /* Glass Input Override */
-        .glass-input {
-          background: rgba(255, 255, 255, 0.05) !important;
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-        }
-        .glass-input:focus {
-          background: rgba(255, 255, 255, 0.1) !important;
-        }
-        .glass-input::placeholder {
-          color: #6b7280 !important;
         }
       `}</style>
     </div>
