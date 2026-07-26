@@ -3954,34 +3954,25 @@ function Sidebar({
   open: boolean;
   onToggle: () => void;
 }) {
-  // Sidebar always fully visible - no collapse
   const roleConfig = ROLE_SIDEBAR_CONFIG[user.role as keyof typeof ROLE_SIDEBAR_CONFIG] || ROLE_SIDEBAR_CONFIG.STUDENT
   const menuItems = roleConfig.menuItems
-
   const RoleIcon = roleConfig.roleIcon
 
   return (
-    <>
-      {/* Overlay - works for both mobile and desktop when open */}
-      {open && (
-        <div 
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
-          onClick={onToggle}
-        />
-      )}
-      <aside className={`w-72 bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col z-50 transition-all duration-300 ${open ? 'translate-x-0' : '-translate-x-full lg:-translate-x-full'} fixed inset-y-0 left-0 shadow-2xl sidebar-shadow`}>
+    <aside className={`${open ? 'w-72' : 'w-20'} bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col z-50 transition-all duration-300 fixed inset-y-0 left-0 shadow-2xl sidebar-shadow`}>
+    
+    {/* ====== ROLE-BASED HEADER ====== */}
+    <div className={`p-4 border-b border-gray-100 bg-gradient-to-r ${roleConfig.brandColor} bg-opacity-5 relative ${!open ? 'flex items-center justify-center' : ''}`}>
+      {/* Toggle Button */}
+      <button
+        onClick={onToggle}
+        className={`absolute top-3 right-3 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100/80 transition-colors z-10 ${!open ? 'top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2' : ''}`}
+        title={open ? "Collapse Sidebar" : "Expand Sidebar"}
+      >
+        {open ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+      </button>
       
-      {/* ====== ROLE-BASED HEADER ====== */}
-      <div className={`p-4 border-b border-gray-100 bg-gradient-to-r ${roleConfig.brandColor} bg-opacity-5 relative`}>
-        {/* Close Button */}
-        <button
-          onClick={onToggle}
-          className="absolute top-3 right-3 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100/80 transition-colors z-10"
-          title="Close Sidebar"
-        >
-          <X className="w-4 h-4" />
-        </button>
-        
+      {open ? (
         <div className="flex items-center gap-3 pr-8">
           {/* Role-Specific Logo */}
           <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${roleConfig.brandColor} flex items-center justify-center shadow-lg logo-glow relative overflow-hidden`}>
@@ -4001,8 +3992,15 @@ function Sidebar({
             </span>
           </div>
         </div>
-        
-        {/* User Info */}
+      ) : (
+        /* Icon only mode - just show small logo */
+        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${roleConfig.brandColor} flex items-center justify-center shadow-lg`}>
+          <RoleIcon className="w-5 h-5 text-white" />
+        </div>
+      )}
+      
+      {/* User Info - only in expanded mode */}
+      {open && (
         <div className="mt-3 pt-3 border-t border-white/20">
           <div className="flex items-center gap-2">
             <div className={`w-8 h-8 rounded-lg ${roleConfig.bgColor} flex items-center justify-center`}>
@@ -4014,43 +4012,47 @@ function Sidebar({
             </div>
           </div>
         </div>
-      </div>
+      )}
+    </div>
 
-      {/* ====== MENU SECTION LABEL ====== */}
+    {/* ====== MENU SECTION LABEL - Only show when open ====== */}
+    {open && (
       <div className="px-4 pt-4 pb-2">
         <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Main Menu</span>
       </div>
+    )}
 
-      {/* ====== MENU ITEMS ====== */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar">
-        {menuItems.map((item, index) => {
-          const Icon = item.icon
-          const isActive = activeTab === item.id
-          return (
-            <button
-              key={item.id}
-              onClick={(e) => {
-                e.stopPropagation()
-                setActiveTab(item.id)
-                // Keep sidebar open - don't close on click
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative group ${
-                isActive 
-                  ? `${roleConfig.bgColor} ${roleConfig.textColor} shadow-sm border border-${roleConfig.accentColor}-200`
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}
-
-              style={{ animationDelay: `${index * 30}ms` }}
-            >
-              {/* Icon Container */}
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
-                isActive 
-                  ? `bg-gradient-to-br ${roleConfig.brandColor} shadow-md`
-                  : 'bg-gray-100 group-hover:bg-gray-200'
-              }`}>
-                <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`} />
-              </div>
-              
+    {/* ====== MENU ITEMS ====== */}
+    <nav className={`flex-1 ${open ? 'p-3' : 'p-2'} space-y-1 overflow-y-auto custom-scrollbar`}>
+      {menuItems.map((item, index) => {
+        const Icon = item.icon
+        const isActive = activeTab === item.id
+        return (
+          <button
+            key={item.id}
+            onClick={(e) => {
+              e.stopPropagation()
+              setActiveTab(item.id)
+            }}
+            className={`w-full flex items-center ${open ? 'gap-3 px-3' : 'justify-center px-0'} py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative group ${
+              isActive 
+                ? `${roleConfig.bgColor} ${roleConfig.textColor} shadow-sm border border-${roleConfig.accentColor}-200`
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            }`}
+            title={!open ? item.label : undefined}
+            style={{ animationDelay: `${index * 30}ms` }}
+          >
+            {/* Icon Container */}
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
+              isActive 
+                ? `bg-gradient-to-br ${roleConfig.brandColor} shadow-md`
+                : 'bg-gray-100 group-hover:bg-gray-200'
+            }`}>
+              <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`} />
+            </div>
+            
+            {/* Label & Badge - Only show when open */}
+            {open && (
               <div className="flex-1 text-left min-w-0">
                 <div className="flex items-center gap-2">
                   <span className={`truncate ${isActive ? 'font-bold' : ''}`}>{item.label}</span>
@@ -4066,38 +4068,45 @@ function Sidebar({
                   <span className="text-[10px] text-gray-400 truncate block mt-0.5">{item.description}</span>
                 )}
               </div>
-              
-              {/* Active Left Border */}
-              {isActive && (
-                <span className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-gradient-to-b ${roleConfig.brandColor}`} />
-              )}
-            </button>
-          )
-        })}
-      </nav>
+            )}
+            
+            {/* Active Left Border */}
+            {isActive && open && (
+              <span className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-gradient-to-b ${roleConfig.brandColor}`} />
+            )}
+            
+            {/* Active indicator dot for collapsed mode */}
+            {isActive && !open && (
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-current opacity-60" />
+            )}
+          </button>
+        )
+      })}
+    </nav>
 
-      {/* ====== BOTTOM SECTION ====== */}
+    {/* ====== BOTTOM SECTION - Only show when open ====== */}
+    {open && (
       <div className="p-3 border-t border-gray-100 space-y-2">
         {/* Quick Stats Card */}
-          <div className={`p-3 rounded-xl bg-gradient-to-br ${roleConfig.brandColor} bg-opacity-5 border border-${roleConfig.accentColor}-100`}>
-            <div className="flex items-center gap-2 mb-2">
-              <Zap className={`w-4 h-4 ${roleConfig.textColor}`} />
-              <span className={`text-xs font-bold ${roleConfig.textColor}`}>Quick Info</span>
+        <div className={`p-3 rounded-xl bg-gradient-to-br ${roleConfig.brandColor} bg-opacity-5 border border-${roleConfig.accentColor}-100`}>
+          <div className="flex items-center gap-2 mb-2">
+            <Zap className={`w-4 h-4 ${roleConfig.textColor}`} />
+            <span className={`text-xs font-bold ${roleConfig.textColor}`}>Quick Info</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="text-center p-2 bg-white/60 rounded-lg">
+              <span className="text-lg font-bold text-gray-900">{user.role === 'ADMIN' ? '20' : user.role === 'HOD' ? '1' : 'CSE'}</span>
+              <p className="text-[9px] text-gray-500">{user.role === 'ADMIN' ? 'Depts' : user.role === 'HOD' ? 'Dept' : 'Code'}</p>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="text-center p-2 bg-white/60 rounded-lg">
-                <span className="text-lg font-bold text-gray-900">{user.role === 'ADMIN' ? '20' : user.role === 'HOD' ? '1' : 'CSE'}</span>
-                <p className="text-[9px] text-gray-500">{user.role === 'ADMIN' ? 'Depts' : user.role === 'HOD' ? 'Dept' : 'Code'}</p>
-              </div>
-              <div className="text-center p-2 bg-white/60 rounded-lg">
-                <span className="text-lg font-bold text-gray-900">{user.role === 'STUDENT' ? '13' : user.role === 'STAFF' ? '13' : user.role === 'HOD' ? '50+' : '150+'}</span>
-                <p className="text-[9px] text-gray-500">{user.role === 'ADMIN' ? 'Users' : user.role === 'HOD' ? 'Faculty' : 'Types'}</p>
-              </div>
+            <div className="text-center p-2 bg-white/60 rounded-lg">
+              <span className="text-lg font-bold text-gray-900">{user.role === 'STUDENT' ? '13' : user.role === 'STAFF' ? '13' : user.role === 'HOD' ? '50+' : '150+'}</span>
+              <p className="text-[9px] text-gray-500">{user.role === 'ADMIN' ? 'Users' : user.role === 'HOD' ? 'Faculty' : 'Types'}</p>
             </div>
           </div>
+        </div>
       </div>
+    )}
     </aside>
-    </>
   )
 }
 
@@ -7261,7 +7270,7 @@ export default function IQACPortal() {
       />
       
       {/* Main Content Area - shifts when sidebar is open */}
-      <div className={`flex-1 flex flex-col min-h-screen main-content-wrapper transition-all duration-300 ${sidebarOpen ? 'lg:ml-72' : 'lg:ml-0'}`}>
+      <div className={`flex-1 flex flex-col min-h-screen main-content-wrapper transition-all duration-300 ${sidebarOpen ? 'lg:ml-72' : 'lg:ml-20'}`}>
         {/* Header */}
         <header className="bg-white/95 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-30 header-shadow">
           <div className="flex items-center justify-between px-4 lg:px-6 h-16">
