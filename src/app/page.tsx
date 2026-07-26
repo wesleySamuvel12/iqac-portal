@@ -3954,29 +3954,9 @@ function Sidebar({
   open: boolean;
   onToggle: () => void;
 }) {
-  const [collapsed, setCollapsed] = useState(false)
-  
-  // Get role-specific configuration
+  // Sidebar always fully visible - no collapse
   const roleConfig = ROLE_SIDEBAR_CONFIG[user.role as keyof typeof ROLE_SIDEBAR_CONFIG] || ROLE_SIDEBAR_CONFIG.STUDENT
   const menuItems = roleConfig.menuItems
-
-  // Dynamic color classes based on role
-  const getActiveClasses = (isActive: boolean) => {
-    if (isActive) {
-      return `bg-${roleConfig.accentColor}-50 text-${roleConfig.accentColor}-700 shadow-sm border border-${roleConfig.accentColor}-200`
-    }
-    return 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-  }
-
-  const getIconClass = (isActive: boolean) => {
-    if (isActive) return `text-${roleConfig.accentColor}-600`
-    return 'text-gray-500 group-hover:text-gray-700'
-  }
-
-  const getBadgeClass = (isActive: boolean) => {
-    if (isActive) return `bg-${roleConfig.accentColor}-100 text-${roleConfig.accentColor}-700`
-    return 'bg-red-50 text-red-600'
-  }
 
   const RoleIcon = roleConfig.roleIcon
 
@@ -3989,7 +3969,7 @@ function Sidebar({
           onClick={onToggle}
         />
       )}
-      <aside className={`${collapsed ? 'w-20' : 'w-72'} bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col transition-all duration-300 z-50 ${open ? 'fixed inset-y-0 left-0 shadow-2xl' : ''} lg:flex sidebar-shadow`}>
+      <aside className="w-72 bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col z-50 fixed inset-y-0 left-0 shadow-2xl lg:relative lg:shadow-none sidebar-shadow">
       
       {/* ====== ROLE-BASED HEADER ====== */}
       <div className={`p-4 border-b border-gray-100 bg-gradient-to-r ${roleConfig.brandColor} bg-opacity-5`}>
@@ -3999,44 +3979,38 @@ function Sidebar({
             <RoleIcon className="w-6 h-6 text-white" />
             <div className="absolute inset-0 bg-white/20 rounded-xl" />
           </div>
-          {!collapsed && (
-            <div className="overflow-hidden flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-gray-900 text-sm block truncate">NIET IQAC</span>
-                <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full ${roleConfig.bgColor} ${roleConfig.textColor}`}>
-                  {user.role}
-                </span>
-              </div>
-              <span className={`text-xs ${roleConfig.textColor} font-medium flex items-center gap-1 mt-0.5`}>
-                <RoleIcon className="w-3 h-3" />
-                {roleConfig.roleLabel}
+          <div className="overflow-hidden flex-1">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-gray-900 text-sm block truncate">NIET IQAC</span>
+              <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full ${roleConfig.bgColor} ${roleConfig.textColor}`}>
+                {user.role}
               </span>
             </div>
-          )}
+            <span className={`text-xs ${roleConfig.textColor} font-medium flex items-center gap-1 mt-0.5`}>
+              <RoleIcon className="w-3 h-3" />
+              {roleConfig.roleLabel}
+            </span>
+          </div>
         </div>
         
-        {/* User Info (when not collapsed) */}
-        {!collapsed && (
-          <div className="mt-3 pt-3 border-t border-white/20">
-            <div className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-lg ${roleConfig.bgColor} flex items-center justify-center`}>
-                <span className={`text-sm font-bold ${roleConfig.textColor}`}>{user.name?.charAt(0) || 'U'}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">{user.name || 'User'}</p>
-                <p className="text-xs text-gray-500 truncate">{user.departmentName || 'Department'}</p>
-              </div>
+        {/* User Info */}
+        <div className="mt-3 pt-3 border-t border-white/20">
+          <div className="flex items-center gap-2">
+            <div className={`w-8 h-8 rounded-lg ${roleConfig.bgColor} flex items-center justify-center`}>
+              <span className={`text-sm font-bold ${roleConfig.textColor}`}>{user.name?.charAt(0) || 'U'}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900 truncate">{user.name || 'User'}</p>
+              <p className="text-xs text-gray-500 truncate">{user.departmentName || 'Department'}</p>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* ====== MENU SECTION LABEL ====== */}
-      {!collapsed && (
-        <div className="px-4 pt-4 pb-2">
-          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Main Menu</span>
-        </div>
-      )}
+      <div className="px-4 pt-4 pb-2">
+        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Main Menu</span>
+      </div>
 
       {/* ====== MENU ITEMS ====== */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar">
@@ -4056,7 +4030,7 @@ function Sidebar({
                   ? `${roleConfig.bgColor} ${roleConfig.textColor} shadow-sm border border-${roleConfig.accentColor}-200`
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
-              title={collapsed ? item.label : undefined}
+
               style={{ animationDelay: `${index * 30}ms` }}
             >
               {/* Icon Container */}
@@ -4068,31 +4042,24 @@ function Sidebar({
                 <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`} />
               </div>
               
-              {!collapsed && (
-                <div className="flex-1 text-left min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className={`truncate ${isActive ? 'font-bold' : ''}`}>{item.label}</span>
-                    {item.badge && (
-                      <span className={`ml-auto px-2 py-0.5 text-[10px] rounded-full font-bold shrink-0 ${
-                        isActive ? `bg-white/30 text-current` : 'bg-red-50 text-red-600'
-                      }`}>
-                        {item.badge}
-                      </span>
-                    )}
-                  </div>
-                  {!isActive && item.description && (
-                    <span className="text-[10px] text-gray-400 truncate block mt-0.5">{item.description}</span>
+              <div className="flex-1 text-left min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className={`truncate ${isActive ? 'font-bold' : ''}`}>{item.label}</span>
+                  {item.badge && (
+                    <span className={`ml-auto px-2 py-0.5 text-[10px] rounded-full font-bold shrink-0 ${
+                      isActive ? `bg-white/30 text-current` : 'bg-red-50 text-red-600'
+                    }`}>
+                      {item.badge}
+                    </span>
                   )}
                 </div>
-              )}
-              
-              {/* Active Indicator Bar (collapsed mode) */}
-              {collapsed && isActive && (
-                <span className={`absolute right-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-${roleConfig.accentColor}-500`} />
-              )}
+                {!isActive && item.description && (
+                  <span className="text-[10px] text-gray-400 truncate block mt-0.5">{item.description}</span>
+                )}
+              </div>
               
               {/* Active Left Border */}
-              {isActive && !collapsed && (
+              {isActive && (
                 <span className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-gradient-to-b ${roleConfig.brandColor}`} />
               )}
             </button>
@@ -4102,8 +4069,7 @@ function Sidebar({
 
       {/* ====== BOTTOM SECTION ====== */}
       <div className="p-3 border-t border-gray-100 space-y-2">
-        {/* Quick Stats Card (when not collapsed) */}
-        {!collapsed && (
+        {/* Quick Stats Card */}
           <div className={`p-3 rounded-xl bg-gradient-to-br ${roleConfig.brandColor} bg-opacity-5 border border-${roleConfig.accentColor}-100`}>
             <div className="flex items-center gap-2 mb-2">
               <Zap className={`w-4 h-4 ${roleConfig.textColor}`} />
@@ -4120,22 +4086,6 @@ function Sidebar({
               </div>
             </div>
           </div>
-        )}
-        
-        {/* Collapse Toggle - Desktop only */}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors hidden lg:flex items-center justify-center gap-2 group"
-        >
-          {collapsed ? (
-            <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
-          ) : (
-            <>
-              <ChevronLeft className="w-5 h-5" />
-              <span className="text-xs font-medium">Collapse</span>
-            </>
-          )}
-        </button>
       </div>
     </aside>
     </>
