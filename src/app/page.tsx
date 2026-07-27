@@ -23,7 +23,7 @@ import {
   Briefcase, Wrench, Rocket, Code, PlusCircle,
   Newspaper, Handshake, Circle,
   DollarSign, Paperclip, Inbox, Tag, XCircle, ArrowLeft,
-  Save, Sparkles
+  Save, Sparkles, PanelLeft, PanelLeftClose
 } from 'lucide-react'
 
 // ============ TYPES ============
@@ -3958,8 +3958,28 @@ function Sidebar({
   const menuItems = roleConfig.menuItems
   const RoleIcon = roleConfig.roleIcon
 
+  // Mobile: sidebar is overlay (hidden or shown), Desktop: sidebar always visible but collapses to icons
   return (
-    <aside className={`${open ? 'w-72' : 'w-20'} bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col z-50 transition-all duration-300 fixed inset-y-0 left-0 shadow-2xl sidebar-shadow`}>
+    <>
+      {/* Mobile Overlay Backdrop - only show when open on mobile */}
+      {open && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          onClick={onToggle}
+        />
+      )}
+      <aside className={`${
+        // Mobile behavior:
+        // - open: full width overlay (w-72), visible
+        // - closed: hidden off-screen (-translate-x-full)
+        //
+        // Desktop behavior (lg+):
+        // - open: expanded (w-72) with labels
+        // - closed: icon-only mode (w-20), always visible
+        open 
+          ? 'w-72 max-lg:w-72 translate-x-0' 
+          : 'max-lg:-translate-x-full max-lg:w-72 lg:w-20 lg:translate-x-0'
+      } bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col z-50 transition-all duration-300 fixed inset-y-0 left-0 shadow-2xl sidebar-shadow`}>
     
     {/* ====== ROLE-BASED HEADER ====== */}
     <div className={`p-4 border-b border-gray-100 bg-gradient-to-r ${roleConfig.brandColor} bg-opacity-5 relative ${!open ? 'flex items-center justify-center' : ''}`}>
@@ -4107,6 +4127,7 @@ function Sidebar({
       </div>
     )}
     </aside>
+    </>
   )
 }
 
@@ -7269,8 +7290,11 @@ export default function IQACPortal() {
         onToggle={() => setSidebarOpen(!sidebarOpen)}
       />
       
-      {/* Main Content Area - shifts when sidebar is open */}
-      <div className={`flex-1 flex flex-col min-h-screen main-content-wrapper transition-all duration-300 ${sidebarOpen ? 'lg:ml-72' : 'lg:ml-20'}`}>
+      {/* Main Content Area - responsive margins based on screen size and sidebar state */}
+      <div className={`flex-1 flex flex-col min-h-screen main-content-wrapper transition-all duration-300 ${
+        // Mobile: no margin (sidebar is overlay), Desktop: margin based on sidebar state
+        sidebarOpen ? 'lg:ml-72' : 'lg:ml-20'
+      }`}>
         {/* Header */}
         <header className="bg-white/95 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-30 header-shadow">
           <div className="flex items-center justify-between px-4 lg:px-6 h-16">
@@ -7279,9 +7303,9 @@ export default function IQACPortal() {
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="p-2.5 rounded-xl bg-gradient-to-r from-[#0a2a5e] to-blue-600 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-200 hover:scale-105"
-                title="Toggle Menu"
+                title={sidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
               >
-                {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                {sidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeft className="w-5 h-5" />}
               </button>
               
               {/* Logo - Always visible */}
@@ -7520,6 +7544,74 @@ export default function IQACPortal() {
         
         .dark-theme .main-content-wrapper {
           background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+        }
+        
+        /* Mobile Responsive Styles */
+        @media (max-width: 1024px) {
+          /* On mobile/tablet, main content takes full width (no margin for overlay sidebar) */
+          .main-content-wrapper {
+            margin-left: 0 !important;
+          }
+          
+          /* Ensure content doesn't overflow */
+          .content-area {
+            padding: 16px;
+          }
+          
+          /* Grid adjustments for mobile */
+          .grid-cols-3, .grid-cols-4 {
+            grid-template-columns: 1fr;
+          }
+          
+          /* Cards full width on mobile - disable hover transforms */
+          .stat-card-hover:hover,
+          .dept-card-hover:hover,
+          .action-card-hover:hover {
+            transform: none !important;
+          }
+        }
+        
+        @media (min-width: 640px) and (max-width: 1024px) {
+          /* Tablet: 2 columns for grids */
+          .grid-cols-3, .grid-cols-4 {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+        
+        @media (max-width: 640px) {
+          /* Mobile specific adjustments */
+          header .hidden.md\\:flex {
+            display: none !important;
+          }
+          
+          /* Smaller text on mobile */
+          .text-lg {
+            font-size: 1rem;
+          }
+          
+          /* Full width inputs on mobile */
+          input[type="text"], 
+          input[type="email"], 
+          input[type="password"],
+          input[type="number"],
+          input[type="url"],
+          select,
+          textarea {
+            font-size: 16px; /* Prevent zoom on iOS */
+          }
+        }
+        
+        /* Smooth transitions for sidebar */
+        aside {
+          transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Mobile sidebar slide animation */
+        @media (max-width: 1024px) {
+          aside {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
         }
       `}</style>
     </div>
