@@ -4212,9 +4212,14 @@ function StudentAchievementsPage({ user }: { user: User }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   
-  // Drag and Drop State
+  // Drag and Drop State - Achievement Cards Reordering
   const [draggedItem, setDraggedItem] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  
+  // Drag and Drop State - Achievement Types Order (for reordering type cards)
+  const [achievementTypesOrder, setAchievementTypesOrder] = useState<string[]>(Object.keys(ACHIEVEMENT_TYPES))
+  const [draggedTypeIndex, setDraggedTypeIndex] = useState<number | null>(null)
+  const [dragOverTypeIndex, setDragOverTypeIndex] = useState<number | null>(null)
   
   // File Upload with Drag & Drop
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
@@ -4339,6 +4344,40 @@ function StudentAchievementsPage({ user }: { user: User }) {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
+  // ============ DRAG AND DROP HANDLERS FOR ACHIEVEMENT TYPE CARDS ============
+  const handleTypeDragStart = (index: number) => {
+    setDraggedTypeIndex(index)
+  }
+
+  const handleTypeDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOverTypeIndex(index)
+  }
+
+  const handleTypeDrop = (dropIndex: number) => {
+    if (draggedTypeIndex === null || draggedTypeIndex === dropIndex) return
+    
+    const newOrder = [...achievementTypesOrder]
+    const draggedType = newOrder[draggedTypeIndex]
+    newOrder.splice(draggedTypeIndex, 1)
+    newOrder.splice(dropIndex, 0, draggedType)
+    
+    setAchievementTypesOrder(newOrder)
+    setDraggedTypeIndex(null)
+    setDragOverTypeIndex(null)
+  }
+
+  const handleTypeDragEnd = () => {
+    setDraggedTypeIndex(null)
+    setDragOverTypeIndex(null)
+  }
+
+  // Allow dropping on the container for reordering
+  const handleTypeContainerDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+  }
+
   const currentTypeConfig = selectedType ? ACHIEVEMENT_TYPES[selectedType] : null
 
   // Filter achievements
@@ -4359,31 +4398,100 @@ function StudentAchievementsPage({ user }: { user: User }) {
             <PlusCircle className="w-5 h-5 text-cyan-500" /> Add Student Achievement
           </h3>
           
-          {/* Type Selector */}
+          {/* Type Selector - DRAGGABLE CARDS */}
           <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
-                Select Achievement Type <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
-              >
-                <option value="">-- Select Type --</option>
-                {Object.entries(ACHIEVEMENT_TYPES).map(([key, type]) => (
-                  <option key={key} value={key}>{type.label}</option>
-                ))}
-              </select>
-            </div>
-
             {!selectedType ? (
-              <p className="text-sm text-gray-500 py-4">Please select an achievement type above.</p>
+              /* Draggable Achievement Type Cards Grid */
+              <div
+                onDragOver={handleTypeContainerDragOver}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+              >
+                {achievementTypesOrder.map((typeKey, index) => {
+                  const typeConfig = ACHIEVEMENT_TYPES[typeKey]
+                  if (!typeConfig) return null
+                  
+                  const Icon = typeConfig.icon
+                  const isSelected = selectedType === typeKey
+                  const isDragging = draggedTypeIndex === index
+                  const isDragOver = dragOverTypeIndex === index
+                  
+                  return (
+                    <div
+                      key={typeKey}
+                      draggable
+                      onDragStart={() => handleTypeDragStart(index)}
+                      onDragOver={(e) => handleTypeDragOver(e, index)}
+                      onDrop={() => handleTypeDrop(index)}
+                      onDragEnd={handleTypeDragEnd}
+                      onClick={() => setSelectedType(typeKey)}
+                      className={`relative p-4 rounded-xl border-2 cursor-grab active:cursor-grabbing transition-all duration-200 group ${
+                        isDragging 
+                          ? 'opacity-40 scale-95 rotate-2 shadow-lg z-10' 
+                          : isDragOver 
+                            ? 'border-cyan-400 bg-cyan-50 scale-[1.02] shadow-md border-dashed' 
+                            : 'border-gray-200 hover:border-cyan-300 hover:bg-cyan-50/50 hover:shadow-md'
+                      }`}
+                    >
+                      {/* Drag Handle Indicator */}
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <GripVertical className="w-4 h-4 text-gray-400" />
+                      </div>
+                      
+                      {/* Type Icon */}
+                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${typeConfig.color} flex items-center justify-center mb-3 transition-transform group-hover:scale-110 ${isDragging ? 'scale-90' : ''}`}>
+                        <Icon className="w-6 h-6 text-white" />
+                      </div>
+                      
+                      {/* Type Label */}
+                      <span className="text-sm font-semibold text-gray-800 block">{typeConfig.label}</span>
+                      
+                      {/* Field Count Badge */}
+                      <span className="inline-block mt-1.5 px-2 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-600 rounded-full">
+                        {typeConfig.fields.length} fields
+                      </span>
+                      
+                      {/* Selection Indicator */}
+                      {isSelected && (
+                        <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-cyan-500 flex items-center justify-center">
+                          <CheckCircle className="w-4 h-4 text-white" />
+                        </div>
+                      )}
+                      
+                      {/* Drag Overlay for visual feedback */}
+                      {isDragOver && !isDragging && (
+                        <div className="absolute inset-0 border-2 border-cyan-400 border-dashed rounded-xl pointer-events-none" />
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             ) : (
-              /* Dynamic Form Fields */
+              /* Dynamic Form Fields - Selected Type */
               <div className="space-y-4 border-t pt-4">
+                {/* Selected Type Header with Back Button */}
+                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${currentTypeConfig?.color} flex items-center justify-center`}>
+                      {(() => {
+                        const Icon = currentTypeConfig?.icon
+                        return Icon ? <Icon className="w-5 h-5 text-white" /> : null
+                      })()}
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-800">{currentTypeConfig?.label}</h4>
+                      <p className="text-xs text-gray-500">{currentTypeConfig?.fields.length} fields to complete</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { setSelectedType(''); setFormData({}); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <ArrowLeft className="w-4 h-4" /> Back to Types
+                  </button>
+                </div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {currentTypeConfig?.fields.map((field) => (
+                  {currentTypeConfig?.fields.filter(field => field.type !== 'textarea').map((field) => (
                     <div key={field.id} className={`space-y-1 ${field.full ? 'md:col-span-2' : ''}`}>
                       <label className="text-sm font-medium text-gray-600">
                         {field.label}
@@ -4445,18 +4553,73 @@ function StudentAchievementsPage({ user }: { user: User }) {
                           ))}
                         </select>
                       )}
-                      
-                      {field.type === 'textarea' && (
-                        <textarea
-                          value={formData[field.id] || ''}
-                          onChange={(e) => handleFieldChange(field.id, e.target.value)}
-                          placeholder={`Enter ${field.label.toLowerCase()}`}
-                          rows={3}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 resize-none bg-white"
-                        />
-                      )}
                     </div>
                   ))}
+                </div>
+
+                {/* File Upload with Drag & Drop - Above Submit Button */}
+                <div className="pt-4 border-t border-gray-100">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Upload className="w-4 h-4 text-cyan-500" /> Attachments
+                  </h4>
+                  
+                  {/* Drop Zone */}
+                  <div
+                    onDragOver={handleFileDragOver}
+                    onDragLeave={handleFileDragLeave}
+                    onDrop={handleFileDrop}
+                    className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all ${
+                      isDragOver 
+                        ? 'border-cyan-400 bg-cyan-50 scale-[1.02]' 
+                        : 'border-gray-300 hover:border-gray-400 bg-gray-50'
+                    }`}
+                  >
+                    <input
+                      type="file"
+                      multiple
+                      onChange={handleFileSelect}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    
+                    {isDragOver ? (
+                      <div className="space-y-2">
+                        <div className="w-12 h-12 mx-auto rounded-full bg-cyan-100 flex items-center justify-center animate-bounce">
+                          <Upload className="w-6 h-6 text-cyan-500" />
+                        </div>
+                        <p className="text-sm font-semibold text-cyan-600">Drop files here!</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <Upload className="w-8 h-8 mx-auto text-gray-400" />
+                        <p className="text-sm text-gray-600 font-medium">
+                          Drag & drop or <span className="text-cyan-600 underline">browse</span>
+                        </p>
+                        <p className="text-xs text-gray-400">PDF, Images, Docs (Max 10MB)</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Uploaded Files List */}
+                  {uploadedFiles.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {uploadedFiles.map((file, index) => (
+                        <div 
+                          key={`${file.name}-${index}`}
+                          className="flex items-center gap-2 p-2 bg-white border border-gray-200 rounded-lg group hover:border-cyan-300 transition-colors"
+                        >
+                          <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                          <span className="text-sm text-gray-700 truncate flex-1">{file.name}</span>
+                          <span className="text-xs text-gray-400">{(file.size / 1024).toFixed(1)} KB</span>
+                          <button
+                            onClick={() => removeFile(index)}
+                            className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Action Buttons */}
@@ -4498,8 +4661,7 @@ function StudentAchievementsPage({ user }: { user: User }) {
           {/* Table Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <GripVertical className="w-5 h-5 text-cyan-500" /> My Achievements
-              <span className="text-xs font-normal text-gray-400 ml-1">(Drag to reorder)</span>
+              <Trophy className="w-5 h-5 text-cyan-500" /> My Achievements
             </h3>
             <div className="flex flex-wrap gap-3">
               <div className="relative">
@@ -4609,85 +4771,6 @@ function StudentAchievementsPage({ user }: { user: User }) {
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* File Upload with Drag & Drop */}
-      <Card className="border border-gray-200">
-        <CardContent className="p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <Upload className="w-5 h-5 text-cyan-500" /> Attachments
-          </h3>
-          
-          {/* Drop Zone */}
-          <div
-            onDragOver={handleFileDragOver}
-            onDragLeave={handleFileDragLeave}
-            onDrop={handleFileDrop}
-            className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all ${
-              isDragOver 
-                ? 'border-cyan-400 bg-cyan-50 scale-[1.02]' 
-                : 'border-gray-300 hover:border-gray-400 bg-gray-50'
-            }`}
-          >
-            <input
-              type="file"
-              multiple
-              onChange={handleFileSelect}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            
-            {isDragOver ? (
-              <div className="space-y-2">
-                <div className="w-16 h-16 mx-auto rounded-full bg-cyan-100 flex items-center justify-center animate-bounce">
-                  <Upload className="w-8 h-8 text-cyan-500" />
-                </div>
-                <p className="text-lg font-semibold text-cyan-600">Drop files here!</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="w-14 h-14 mx-auto rounded-full bg-gray-200 flex items-center justify-center">
-                  <Upload className="w-7 h-7 text-gray-400" />
-                </div>
-                <p className="text-gray-600 font-medium">
-                  Drag & drop files here, or <span className="text-cyan-600 underline">browse</span>
-                </p>
-                <p className="text-sm text-gray-400">
-                  Supports PDF, Images, Documents (Max 10MB each)
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Uploaded Files List */}
-          {uploadedFiles.length > 0 && (
-            <div className="mt-4 space-y-2">
-              <p className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                <Paperclip className="w-4 h-4" /> Uploaded Files ({uploadedFiles.length})
-              </p>
-              {uploadedFiles.map((file, index) => (
-                <div 
-                  key={`${file.name}-${index}`}
-                  className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg group hover:border-cyan-300 transition-colors"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center flex-shrink-0">
-                    <FileText className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">{file.name}</p>
-                    <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
-                  </div>
-                  <button
-                    onClick={() => removeFile(index)}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
-                    title="Remove file"
-                  >
-                    <XCircle className="w-4 h-4" />
-                  </button>
                 </div>
               ))}
             </div>
