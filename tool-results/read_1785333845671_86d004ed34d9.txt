@@ -1,0 +1,602 @@
+     1→  4200→    </>
+     2→  4201→  )
+     3→  4202→}
+     4→  4203→
+     5→  4204→// ============ STUDENT ACHIEVEMENTS PAGE (Matching Screenshot Design) ============
+     6→  4205→function StudentAchievementsPage({ user }: { user: User }) {
+     7→  4206→  const [selectedType, setSelectedType] = useState<string>('')
+     8→  4207→  const [formData, setFormData] = useState<Record<string, string>>({})
+     9→  4208→  const [achievements, setAchievements] = useState<any[]>([])
+    10→  4209→  const [searchTerm, setSearchTerm] = useState('')
+    11→  4210→  const [filterType, setFilterType] = useState('all')
+    12→  4211→  const [filterStatus, setFilterStatus] = useState('all')
+    13→  4212→  const [isSubmitting, setIsSubmitting] = useState(false)
+    14→  4213→  const [showSuccess, setShowSuccess] = useState(false)
+    15→  4214→  
+    16→  4215→  // Drag and Drop State - Achievement Cards Reordering
+    17→  4216→  const [draggedItem, setDraggedItem] = useState<number | null>(null)
+    18→  4217→  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+    19→  4218→  
+    20→  4219→  // Drag and Drop State - Achievement Types Order (for reordering type cards)
+    21→  4220→  const [achievementTypesOrder, setAchievementTypesOrder] = useState<string[]>(Object.keys(ACHIEVEMENT_TYPES))
+    22→  4221→  const [draggedTypeIndex, setDraggedTypeIndex] = useState<number | null>(null)
+    23→  4222→  const [dragOverTypeIndex, setDragOverTypeIndex] = useState<number | null>(null)
+    24→  4223→  
+    25→  4224→  // File Upload with Drag & Drop
+    26→  4225→  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+    27→  4226→  const [isDragOver, setIsDragOver] = useState(false)
+    28→  4227→
+    29→  4228→  // Initialize form with user data when type changes
+    30→  4229→  useEffect(() => {
+    31→  4230→    if (selectedType) {
+    32→  4231→      const typeConfig = ACHIEVEMENT_TYPES[selectedType]
+    33→  4232→      if (typeConfig) {
+    34→  4233→        const initialData: Record<string, string> = {
+    35→  4234→          name: user.name || '',
+    36→  4235→          dept: user.departmentName || '',
+    37→  4236→          reg: `${user.departmentName || ''}001` // Default reg no
+    38→  4237→        }
+    39→  4238→        setFormData(initialData)
+    40→  4239→      }
+    41→  4240→    }
+    42→  4241→  }, [selectedType, user])
+    43→  4242→
+    44→  4243→  const handleFieldChange = (fieldId: string, value: string) => {
+    45→  4244→    setFormData(prev => ({ ...prev, [fieldId]: value }))
+    46→  4245→  }
+    47→  4246→
+    48→  4247→  const handleSubmit = async () => {
+    49→  4248→    if (!selectedType) return
+    50→  4249→    setIsSubmitting(true)
+    51→  4250→    
+    52→  4251→    // Simulate submission
+    53→  4252→    await new Promise(resolve => setTimeout(resolve, 1000))
+    54→  4253→    
+    55→  4254→    const newAchievement = {
+    56→  4255→      id: Date.now(),
+    57→  4256→      type: selectedType,
+    58→  4257→      typeName: ACHIEVEMENT_TYPES[selectedType]?.label || selectedType,
+    59→  4258→      title: formData.title || formData.award_name || formData.prog_name || formData.course || formData.event_name || 'Untitled',
+    60→  4259→      dept: user.departmentName,
+    61→  4260→      date: new Date().toISOString().split('T')[0],
+    62→  4261→      status: 'pending_staff',
+    63→  4262→      data: formData
+    64→  4263→    }
+    65→  4264→    
+    66→  4265→    setAchievements(prev => [newAchievement, ...prev])
+    67→  4266→    setShowSuccess(true)
+    68→  4267→    setIsSubmitting(false)
+    69→  4268→    
+    70→  4269→    setTimeout(() => {
+    71→  4270→      setShowSuccess(false)
+    72→  4271→      setSelectedType('')
+    73→  4272→      setFormData({})
+    74→  4273→    }, 2000)
+    75→  4274→  }
+    76→  4275→
+    77→  4276→  const handleClear = () => {
+    78→  4277→    setSelectedType('')
+    79→  4278→    setFormData({})
+    80→  4279→  }
+    81→  4280→
+    82→  4281→  // ============ DRAG AND DROP HANDLERS FOR REORDERING ============
+    83→  4282→  const handleDragStart = (index: number) => {
+    84→  4283→    setDraggedItem(index)
+    85→  4284→  }
+    86→  4285→
+    87→  4286→  const handleDragOver = (e: React.DragEvent, index: number) => {
+    88→  4287→    e.preventDefault()
+    89→  4288→    setDragOverIndex(index)
+    90→  4289→  }
+    91→  4290→
+    92→  4291→  const handleDrop = (dropIndex: number) => {
+    93→  4292→    if (draggedItem === null || draggedItem === dropIndex) return
+    94→  4293→    
+    95→  4294→    const newAchievements = [...filteredAchievements]
+    96→  4295→    const draggedAchievement = newAchievements[draggedItem]
+    97→  4296→    newAchievements.splice(draggedItem, 1)
+    98→  4297→    newAchievements.splice(dropIndex, 0, draggedAchievement)
+    99→  4298→    
+   100→  4299→    // Update the original achievements array with new order
+   101→  4300→    const achievementIds = newAchievements.map(a => a.id)
+   102→  4301→    const reorderedAchievements = achievementIds.map(id => 
+   103→  4302→      achievements.find(a => a.id === id)
+   104→  4303→    ).filter(Boolean)
+   105→  4304→    
+   106→  4305→    setAchievements(reorderedAchievements)
+   107→  4306→    setDraggedItem(null)
+   108→  4307→    setDragOverIndex(null)
+   109→  4308→  }
+   110→  4309→
+   111→  4310→  const handleDragEnd = () => {
+   112→  4311→    setDraggedItem(null)
+   113→  4312→    setDragOverIndex(null)
+   114→  4313→  }
+   115→  4314→
+   116→  4315→  // ============ FILE UPLOAD WITH DRAG & DROP ============
+   117→  4316→  const handleFileDragOver = (e: React.DragEvent) => {
+   118→  4317→    e.preventDefault()
+   119→  4318→    setIsDragOver(true)
+   120→  4319→  }
+   121→  4320→
+   122→  4321→  const handleFileDragLeave = (e: React.DragEvent) => {
+   123→  4322→    e.preventDefault()
+   124→  4323→    setIsDragOver(false)
+   125→  4324→  }
+   126→  4325→
+   127→  4326→  const handleFileDrop = (e: React.DragEvent) => {
+   128→  4327→    e.preventDefault()
+   129→  4328→    setIsDragOver(false)
+   130→  4329→    
+   131→  4330→    const files = Array.from(e.dataTransfer.files)
+   132→  4331→    if (files.length > 0) {
+   133→  4332→      setUploadedFiles(prev => [...prev, ...files])
+   134→  4333→    }
+   135→  4334→  }
+   136→  4335→
+   137→  4336→  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+   138→  4337→    const files = Array.from(e.target.files || [])
+   139→  4338→    if (files.length > 0) {
+   140→  4339→      setUploadedFiles(prev => [...prev, ...files])
+   141→  4340→    }
+   142→  4341→  }
+   143→  4342→
+   144→  4343→  const removeFile = (index: number) => {
+   145→  4344→    setUploadedFiles(prev => prev.filter((_, i) => i !== index))
+   146→  4345→  }
+   147→  4346→
+   148→  4347→  // ============ DRAG AND DROP HANDLERS FOR ACHIEVEMENT TYPE CARDS ============
+   149→  4348→  const handleTypeDragStart = (index: number) => {
+   150→  4349→    setDraggedTypeIndex(index)
+   151→  4350→  }
+   152→  4351→
+   153→  4352→  const handleTypeDragOver = (e: React.DragEvent, index: number) => {
+   154→  4353→    e.preventDefault()
+   155→  4354→    e.stopPropagation()
+   156→  4355→    setDragOverTypeIndex(index)
+   157→  4356→  }
+   158→  4357→
+   159→  4358→  const handleTypeDrop = (dropIndex: number) => {
+   160→  4359→    if (draggedTypeIndex === null || draggedTypeIndex === dropIndex) return
+   161→  4360→    
+   162→  4361→    const newOrder = [...achievementTypesOrder]
+   163→  4362→    const draggedType = newOrder[draggedTypeIndex]
+   164→  4363→    newOrder.splice(draggedTypeIndex, 1)
+   165→  4364→    newOrder.splice(dropIndex, 0, draggedType)
+   166→  4365→    
+   167→  4366→    setAchievementTypesOrder(newOrder)
+   168→  4367→    setDraggedTypeIndex(null)
+   169→  4368→    setDragOverTypeIndex(null)
+   170→  4369→  }
+   171→  4370→
+   172→  4371→  const handleTypeDragEnd = () => {
+   173→  4372→    setDraggedTypeIndex(null)
+   174→  4373→    setDragOverTypeIndex(null)
+   175→  4374→  }
+   176→  4375→
+   177→  4376→  // Allow dropping on the container for reordering
+   178→  4377→  const handleTypeContainerDragOver = (e: React.DragEvent) => {
+   179→  4378→    e.preventDefault()
+   180→  4379→  }
+   181→  4380→
+   182→  4381→  const currentTypeConfig = selectedType ? ACHIEVEMENT_TYPES[selectedType] : null
+   183→  4382→
+   184→  4383→  // Filter achievements
+   185→  4384→  const filteredAchievements = achievements.filter(a => {
+   186→  4385→    const matchesSearch = a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+   187→  4386→                         a.typeName.toLowerCase().includes(searchTerm.toLowerCase())
+   188→  4387→    const matchesType = filterType === 'all' || a.type === filterType
+   189→  4388→    const matchesStatus = filterStatus === 'all' || a.status === filterStatus
+   190→  4389→    return matchesSearch && matchesType && matchesStatus
+   191→  4390→  })
+   192→  4391→
+   193→  4392→  return (
+   194→  4393→    <div className="space-y-6">
+   195→  4394→      {/* Add Student Achievement Card */}
+   196→  4395→      <Card className="border border-gray-200">
+   197→  4396→        <CardContent className="p-6">
+   198→  4397→          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+   199→  4398→            <PlusCircle className="w-5 h-5 text-cyan-500" /> Add Student Achievement
+   200→  4399→          </h3>
+   201→  4400→          
+   202→  4401→          {/* Type Selector - DRAGGABLE CARDS */}
+   203→  4402→          <div className="space-y-4">
+   204→  4403→            {!selectedType ? (
+   205→  4404→              /* Draggable Achievement Type Cards Grid */
+   206→  4405→              <div
+   207→  4406→                onDragOver={handleTypeContainerDragOver}
+   208→  4407→                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+   209→  4408→              >
+   210→  4409→                {achievementTypesOrder.map((typeKey, index) => {
+   211→  4410→                  const typeConfig = ACHIEVEMENT_TYPES[typeKey]
+   212→  4411→                  if (!typeConfig) return null
+   213→  4412→                  
+   214→  4413→                  const Icon = typeConfig.icon
+   215→  4414→                  const isSelected = selectedType === typeKey
+   216→  4415→                  const isDragging = draggedTypeIndex === index
+   217→  4416→                  const isDragOver = dragOverTypeIndex === index
+   218→  4417→                  
+   219→  4418→                  return (
+   220→  4419→                    <div
+   221→  4420→                      key={typeKey}
+   222→  4421→                      draggable
+   223→  4422→                      onDragStart={() => handleTypeDragStart(index)}
+   224→  4423→                      onDragOver={(e) => handleTypeDragOver(e, index)}
+   225→  4424→                      onDrop={() => handleTypeDrop(index)}
+   226→  4425→                      onDragEnd={handleTypeDragEnd}
+   227→  4426→                      onClick={() => setSelectedType(typeKey)}
+   228→  4427→                      className={`relative p-4 rounded-xl border-2 cursor-grab active:cursor-grabbing transition-all duration-200 group ${
+   229→  4428→                        isDragging 
+   230→  4429→                          ? 'opacity-40 scale-95 rotate-2 shadow-lg z-10' 
+   231→  4430→                          : isDragOver 
+   232→  4431→                            ? 'border-cyan-400 bg-cyan-50 scale-[1.02] shadow-md border-dashed' 
+   233→  4432→                            : 'border-gray-200 hover:border-cyan-300 hover:bg-cyan-50/50 hover:shadow-md'
+   234→  4433→                      }`}
+   235→  4434→                    >
+   236→  4435→                      {/* Drag Handle Indicator */}
+   237→  4436→                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+   238→  4437→                        <GripVertical className="w-4 h-4 text-gray-400" />
+   239→  4438→                      </div>
+   240→  4439→                      
+   241→  4440→                      {/* Type Icon */}
+   242→  4441→                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${typeConfig.color} flex items-center justify-center mb-3 transition-transform group-hover:scale-110 ${isDragging ? 'scale-90' : ''}`}>
+   243→  4442→                        <Icon className="w-6 h-6 text-white" />
+   244→  4443→                      </div>
+   245→  4444→                      
+   246→  4445→                      {/* Type Label */}
+   247→  4446→                      <span className="text-sm font-semibold text-gray-800 block">{typeConfig.label}</span>
+   248→  4447→                      
+   249→  4448→                      {/* Field Count Badge */}
+   250→  4449→                      <span className="inline-block mt-1.5 px-2 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-600 rounded-full">
+   251→  4450→                        {typeConfig.fields.length} fields
+   252→  4451→                      </span>
+   253→  4452→                      
+   254→  4453→                      {/* Selection Indicator */}
+   255→  4454→                      {isSelected && (
+   256→  4455→                        <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-cyan-500 flex items-center justify-center">
+   257→  4456→                          <CheckCircle className="w-4 h-4 text-white" />
+   258→  4457→                        </div>
+   259→  4458→                      )}
+   260→  4459→                      
+   261→  4460→                      {/* Drag Overlay for visual feedback */}
+   262→  4461→                      {isDragOver && !isDragging && (
+   263→  4462→                        <div className="absolute inset-0 border-2 border-cyan-400 border-dashed rounded-xl pointer-events-none" />
+   264→  4463→                      )}
+   265→  4464→                    </div>
+   266→  4465→                  )
+   267→  4466→                })}
+   268→  4467→              </div>
+   269→  4468→            ) : (
+   270→  4469→              /* Dynamic Form Fields - Selected Type */
+   271→  4470→              <div className="space-y-4 border-t pt-4">
+   272→  4471→                {/* Selected Type Header with Back Button */}
+   273→  4472→                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+   274→  4473→                  <div className="flex items-center gap-3">
+   275→  4474→                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${currentTypeConfig?.color} flex items-center justify-center`}>
+   276→  4475→                      {(() => {
+   277→  4476→                        const Icon = currentTypeConfig?.icon
+   278→  4477→                        return Icon ? <Icon className="w-5 h-5 text-white" /> : null
+   279→  4478→                      })()}
+   280→  4479→                    </div>
+   281→  4480→                    <div>
+   282→  4481→                      <h4 className="font-semibold text-gray-800">{currentTypeConfig?.label}</h4>
+   283→  4482→                      <p className="text-xs text-gray-500">{currentTypeConfig?.fields.length} fields to complete</p>
+   284→  4483→                    </div>
+   285→  4484→                  </div>
+   286→  4485→                  <button
+   287→  4486→                    onClick={() => { setSelectedType(''); setFormData({}); }}
+   288→  4487→                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+   289→  4488→                  >
+   290→  4489→                    <ArrowLeft className="w-4 h-4" /> Back to Types
+   291→  4490→                  </button>
+   292→  4491→                </div>
+   293→  4492→                
+   294→  4493→                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   295→  4494→                  {currentTypeConfig?.fields.filter(field => field.type !== 'textarea').map((field) => (
+   296→  4495→                    <div key={field.id} className={`space-y-1 ${field.full ? 'md:col-span-2' : ''}`}>
+   297→  4496→                      <label className="text-sm font-medium text-gray-600">
+   298→  4497→                        {field.label}
+   299→  4498→                        {field.required && <span className="text-red-500 ml-1">*</span>}
+   300→  4499→                        {field.locked && <Lock className="w-3 h-3 inline ml-1 text-gray-400" />}
+   301→  4500→                      </label>
+   302→  4501→                      
+   303→  4502→                      {field.type === 'text' && (
+   304→  4503→                        <input
+   305→  4504→                          type="text"
+   306→  4505→                          value={formData[field.id] || ''}
+   307→  4506→                          onChange={(e) => handleFieldChange(field.id, e.target.value)}
+   308→  4507→                          disabled={field.locked}
+   309→  4508→                          placeholder={`Enter ${field.label.toLowerCase()}`}
+   310→  4509→                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 ${
+   311→  4510→                            field.locked ? 'bg-gray-100 cursor-not-allowed border-gray-200' : 'bg-white border-gray-200'
+   312→  4511→                          }`}
+   313→  4512→                        />
+   314→  4513→                      )}
+   315→  4514→                      
+   316→  4515→                      {field.type === 'number' && (
+   317→  4516→                        <input
+   318→  4517→                          type="number"
+   319→  4518→                          value={formData[field.id] || ''}
+   320→  4519→                          onChange={(e) => handleFieldChange(field.id, e.target.value)}
+   321→  4520→                          placeholder={`Enter ${field.label.toLowerCase()}`}
+   322→  4521→                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+   323→  4522→                        />
+   324→  4523→                      )}
+   325→  4524→                      
+   326→  4525→                      {field.type === 'url' && (
+   327→  4526→                        <input
+   328→  4527→                          type="url"
+   329→  4528→                          value={formData[field.id] || ''}
+   330→  4529→                          onChange={(e) => handleFieldChange(field.id, e.target.value)}
+   331→  4530→                          placeholder="https://..."
+   332→  4531→                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+   333→  4532→                        />
+   334→  4533→                      )}
+   335→  4534→                      
+   336→  4535→                      {field.type === 'date' && (
+   337→  4536→                        <input
+   338→  4537→                          type="date"
+   339→  4538→                          value={formData[field.id] || ''}
+   340→  4539→                          onChange={(e) => handleFieldChange(field.id, e.target.value)}
+   341→  4540→                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+   342→  4541→                        />
+   343→  4542→                      )}
+   344→  4543→                      
+   345→  4544→                      {field.type === 'select' && (
+   346→  4545→                        <select
+   347→  4546→                          value={formData[field.id] || ''}
+   348→  4547→                          onChange={(e) => handleFieldChange(field.id, e.target.value)}
+   349→  4548→                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+   350→  4549→                        >
+   351→  4550→                          <option value="">Select {field.label}</option>
+   352→  4551→                          {field.options?.map((opt: string) => (
+   353→  4552→                            <option key={opt} value={opt}>{opt}</option>
+   354→  4553→                          ))}
+   355→  4554→                        </select>
+   356→  4555→                      )}
+   357→  4556→                    </div>
+   358→  4557→                  ))}
+   359→  4558→                </div>
+   360→  4559→
+   361→  4560→                {/* File Upload with Drag & Drop - Above Submit Button */}
+   362→  4561→                <div className="pt-4 border-t border-gray-100">
+   363→  4562→                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+   364→  4563→                    <Upload className="w-4 h-4 text-cyan-500" /> Attachments
+   365→  4564→                  </h4>
+   366→  4565→                  
+   367→  4566→                  {/* Drop Zone */}
+   368→  4567→                  <div
+   369→  4568→                    onDragOver={handleFileDragOver}
+   370→  4569→                    onDragLeave={handleFileDragLeave}
+   371→  4570→                    onDrop={handleFileDrop}
+   372→  4571→                    className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all ${
+   373→  4572→                      isDragOver 
+   374→  4573→                        ? 'border-cyan-400 bg-cyan-50 scale-[1.02]' 
+   375→  4574→                        : 'border-gray-300 hover:border-gray-400 bg-gray-50'
+   376→  4575→                    }`}
+   377→  4576→                  >
+   378→  4577→                    <input
+   379→  4578→                      type="file"
+   380→  4579→                      multiple
+   381→  4580→                      onChange={handleFileSelect}
+   382→  4581→                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+   383→  4582→                    />
+   384→  4583→                    
+   385→  4584→                    {isDragOver ? (
+   386→  4585→                      <div className="space-y-2">
+   387→  4586→                        <div className="w-12 h-12 mx-auto rounded-full bg-cyan-100 flex items-center justify-center animate-bounce">
+   388→  4587→                          <Upload className="w-6 h-6 text-cyan-500" />
+   389→  4588→                        </div>
+   390→  4589→                        <p className="text-sm font-semibold text-cyan-600">Drop files here!</p>
+   391→  4590→                      </div>
+   392→  4591→                    ) : (
+   393→  4592→                      <div className="space-y-1">
+   394→  4593→                        <Upload className="w-8 h-8 mx-auto text-gray-400" />
+   395→  4594→                        <p className="text-sm text-gray-600 font-medium">
+   396→  4595→                          Drag & drop or <span className="text-cyan-600 underline">browse</span>
+   397→  4596→                        </p>
+   398→  4597→                        <p className="text-xs text-gray-400">PDF, Images, Docs (Max 10MB)</p>
+   399→  4598→                      </div>
+   400→  4599→                    )}
+   401→  4600→                  </div>
+   402→  4601→
+   403→  4602→                  {/* Uploaded Files List */}
+   404→  4603→                  {uploadedFiles.length > 0 && (
+   405→  4604→                    <div className="mt-3 space-y-2">
+   406→  4605→                      {uploadedFiles.map((file, index) => (
+   407→  4606→                        <div 
+   408→  4607→                          key={`${file.name}-${index}`}
+   409→  4608→                          className="flex items-center gap-2 p-2 bg-white border border-gray-200 rounded-lg group hover:border-cyan-300 transition-colors"
+   410→  4609→                        >
+   411→  4610→                          <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
+   412→  4611→                          <span className="text-sm text-gray-700 truncate flex-1">{file.name}</span>
+   413→  4612→                          <span className="text-xs text-gray-400">{(file.size / 1024).toFixed(1)} KB</span>
+   414→  4613→                          <button
+   415→  4614→                            onClick={() => removeFile(index)}
+   416→  4615→                            className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+   417→  4616→                          >
+   418→  4617→                            <XCircle className="w-3.5 h-3.5" />
+   419→  4618→                          </button>
+   420→  4619→                        </div>
+   421→  4620→                      ))}
+   422→  4621→                    </div>
+   423→  4622→                  )}
+   424→  4623→                </div>
+   425→  4624→
+   426→  4625→                {/* Action Buttons */}
+   427→  4626→                <div className="flex gap-3 pt-4">
+   428→  4627→                  <button
+   429→  4628→                    onClick={handleSubmit}
+   430→  4629→                    disabled={isSubmitting}
+   431→  4630→                    className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-semibold rounded-lg shadow-md transition-all disabled:opacity-50"
+   432→  4631→                  >
+   433→  4632→                    {isSubmitting ? (
+   434→  4633→                      <Loader2 className="w-4 h-4 animate-spin" />
+   435→  4634→                    ) : (
+   436→  4635→                      <Send className="w-4 h-4" />
+   437→  4636→                    )}
+   438→  4637→                    Submit for Approval
+   439→  4638→                  </button>
+   440→  4639→                  <button
+   441→  4640→                    onClick={handleClear}
+   442→  4641→                    className="px-6 py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+   443→  4642→                  >
+   444→  4643→                    Clear
+   445→  4644→                  </button>
+   446→  4645→                  
+   447→  4646→                  {showSuccess && (
+   448→  4647→                    <span className="flex items-center gap-1 text-green-600 font-medium ml-4">
+   449→  4648→                      <CheckCircle className="w-4 h-4" /> Submitted successfully!
+   450→  4649→                    </span>
+   451→  4650→                  )}
+   452→  4651→                </div>
+   453→  4652→              </div>
+   454→  4653→            )}
+   455→  4654→          </div>
+   456→  4655→        </CardContent>
+   457→  4656→      </Card>
+   458→  4657→
+   459→  4658→      {/* My Achievements - Drag & Drop Cards */}
+   460→  4659→      <Card className="border border-gray-200">
+   461→  4660→        <CardContent className="p-6">
+   462→  4661→          {/* Table Header */}
+   463→  4662→          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+   464→  4663→            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+   465→  4664→              <Trophy className="w-5 h-5 text-cyan-500" /> My Achievements
+   466→  4665→            </h3>
+   467→  4666→            <div className="flex flex-wrap gap-3">
+   468→  4667→              <div className="relative">
+   469→  4668→                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+   470→  4669→                <input
+   471→  4670→                  type="text"
+   472→  4671→                  value={searchTerm}
+   473→  4672→                  onChange={(e) => setSearchTerm(e.target.value)}
+   474→  4673→                  placeholder="Search..."
+   475→  4674→                  className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 w-40"
+   476→  4675→                />
+   477→  4676→              </div>
+   478→  4677→              <select
+   479→  4678→                value={filterType}
+   480→  4679→                onChange={(e) => setFilterType(e.target.value)}
+   481→  4680→                className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400"
+   482→  4681→              >
+   483→  4682→                <option value="all">All Types</option>
+   484→  4683→                {Object.entries(ACHIEVEMENT_TYPES).map(([key, type]) => (
+   485→  4684→                  <option key={key} value={key}>{type.label}</option>
+   486→  4685→                ))}
+   487→  4686→              </select>
+   488→  4687→              <select
+   489→  4688→                value={filterStatus}
+   490→  4689→                onChange={(e) => setFilterStatus(e.target.value)}
+   491→  4690→                className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400"
+   492→  4691→              >
+   493→  4692→                <option value="all">All Status</option>
+   494→  4693→                <option value="pending_staff">Pending Staff</option>
+   495→  4694→                <option value="staff_approved">Staff Approved</option>
+   496→  4695→                <option value="pending_hod">Pending HOD</option>
+   497→  4696→                <option value="hod_approved">HOD Approved</option>
+   498→  4697→                <option value="rejected">Rejected</option>
+   499→  4698→              </select>
+   500→  4699→            </div>
+   501→  4700→          </div>
+   502→  4701→
+   503→  4702→          {/* Drag and Drop Achievement Cards */}
+   504→  4703→          {filteredAchievements.length === 0 ? (
+   505→  4704→            <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+   506→  4705→              <Trophy className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+   507→  4706→              <p>No achievements yet</p>
+   508→  4707→              <p className="text-sm mt-1">Submit your first achievement above!</p>
+   509→  4708→            </div>
+   510→  4709→          ) : (
+   511→  4710→            <div className="space-y-3">
+   512→  4711→              {filteredAchievements.map((achievement, index) => (
+   513→  4712→                <div
+   514→  4713→                  key={achievement.id}
+   515→  4714→                  draggable
+   516→  4715→                  onDragStart={() => handleDragStart(index)}
+   517→  4716→                  onDragOver={(e) => handleDragOver(e, index)}
+   518→  4717→                  onDrop={() => handleDrop(index)}
+   519→  4718→                  onDragEnd={handleDragEnd}
+   520→  4719→                  className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all cursor-grab active:cursor-grabbing ${
+   521→  4720→                    draggedItem === index 
+   522→  4721→                      ? 'opacity-50 scale-95 border-cyan-300 bg-cyan-50 shadow-lg' 
+   523→  4722→                      : dragOverIndex === index 
+   524→  4723→                        ? 'border-cyan-400 bg-cyan-50 border-dashed' 
+   525→  4724→                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+   526→  4725→                  }`}
+   527→  4726→                >
+   528→  4727→                  {/* Drag Handle */}
+   529→  4728→                  <div className="text-gray-400 hover:text-gray-600 touch-none">
+   530→  4729→                    <GripVertical className="w-5 h-5" />
+   531→  4730→                  </div>
+   532→  4731→                  
+   533→  4732→                  {/* Index Badge */}
+   534→  4733→                  <span className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 text-emerald-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
+   535→  4734→                    {index + 1}
+   536→  4735→                  </span>
+   537→  4736→                  
+   538→  4737→                  {/* Achievement Info */}
+   539→  4738→                  <div className="flex-1 min-w-0">
+   540→  4739→                    <div className="flex items-center gap-2">
+   541→  4740→                      <Badge variant="secondary" className="font-medium text-xs">{achievement.typeName}</Badge>
+   542→  4741→                      <span className="text-sm font-medium text-gray-800 truncate">{achievement.title}</span>
+   543→  4742→                    </div>
+   544→  4743→                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+   545→  4744→                      <span>{achievement.dept}</span>
+   546→  4745→                      <span>•</span>
+   547→  4746→                      <span>{achievement.date}</span>
+   548→  4747→                    </div>
+   549→  4748→                  </div>
+   550→  4749→                  
+   551→  4750→                  {/* Status Badge */}
+   552→  4751→                  <Badge 
+   553→  4752→                    className={
+   554→  4753→                      achievement.status === 'hod_approved' ? 'bg-green-100 text-green-700' :
+   555→  4754→                      achievement.status === 'staff_approved' ? 'bg-blue-100 text-blue-700' :
+   556→  4755→                      achievement.status === 'rejected' ? 'bg-red-100 text-red-700' :
+   557→  4756→                      'bg-amber-100 text-amber-700'
+   558→  4757→                    }
+   559→  4758→                  >
+   560→  4759→                    {achievement.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+   561→  4760→                  </Badge>
+   562→  4761→                  
+   563→  4762→                  {/* Actions */}
+   564→  4763→                  <div className="flex gap-1 flex-shrink-0">
+   565→  4764→                    <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-blue-600 transition-colors" title="View">
+   566→  4765→                      <Eye className="w-4 h-4" />
+   567→  4766→                    </button>
+   568→  4767→                    <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-amber-600 transition-colors" title="Edit">
+   569→  4768→                      <Edit3 className="w-4 h-4" />
+   570→  4769→                    </button>
+   571→  4770→                    <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-red-600 transition-colors" title="Delete">
+   572→  4771→                      <Trash2 className="w-4 h-4" />
+   573→  4772→                    </button>
+   574→  4773→                  </div>
+   575→  4774→                </div>
+   576→  4775→              ))}
+   577→  4776→            </div>
+   578→  4777→          )}
+   579→  4778→        </CardContent>
+   580→  4779→      </Card>
+   581→  4780→    </div>
+   582→  4781→  )
+   583→  4782→}
+   584→  4783→
+   585→  4784→// List Icon Component
+   586→  4785→function List({ className }: { className?: string }) {
+   587→  4786→  return (
+   588→  4787→    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+   589→  4788→      <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+   590→  4789→      <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+   591→  4790→      <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+   592→  4791→    </svg>
+   593→  4792→  )
+   594→  4793→}
+   595→  4794→
+   596→  4795→// ============ STUDENT FEEDBACK PAGE (With Staff/HOD/Admin Selection) ============
+   597→  4796→function StudentFeedbackPage({ user, feedbackEnabled }: { user: User; feedbackEnabled: boolean }) {
+   598→  4797→  const [recipient, setRecipient] = useState<'staff' | 'hod' | 'admin'>('staff')
+   599→  4798→  const [subject, setSubject] = useState('')
+   600→  4799→  const [message, setMessage] = useState('')
+   601→
+   602→[showing lines 4200-4799 of 7872; use offset=4800 with limit to continue reading]

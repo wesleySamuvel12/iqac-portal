@@ -89,12 +89,12 @@ const ACHIEVEMENT_TYPES: Record<string, {
       { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
       { id: 'title', label: 'Paper Title', type: 'text', required: true, full: true },
       { id: 'journal', label: 'Journal Name', type: 'text', required: true, full: true },
-      { id: 'indexed', label: 'Indexed', type: 'select', options: ['SCI','Scopus','UGC Care','Web of Science','Other'] },
+      { id: 'indexed', label: 'Indexed In', type: 'select_with_other', options: ['SCI','Scopus','UGC Care','Web of Science'] },
       { id: 'issn', label: 'ISSN', type: 'text' },
       { id: 'publisher', label: 'Publisher', type: 'text' },
       { id: 'month', label: 'Month', type: 'select', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] },
       { id: 'year_pub', label: 'Year', type: 'number' },
-      { id: 'status_pub', label: 'Status', type: 'select', options: ['Published','Accepted','Under Review'] },
+      { id: 'status_pub', label: 'Status', type: 'constant', value: 'Published' },
       { id: 'supervisor', label: 'Supervisor', type: 'text' },
       { id: 'link', label: 'Paper Link', type: 'url' },
       { id: 'description', label: 'Description', type: 'textarea', full: true }
@@ -112,7 +112,8 @@ const ACHIEVEMENT_TYPES: Record<string, {
       { id: 'title', label: 'Paper Title', type: 'text', required: true, full: true },
       { id: 'conf', label: 'Conference Name', type: 'text', required: true, full: true },
       { id: 'org', label: 'Organizing Institute', type: 'text' },
-      { id: 'indexed', label: 'Indexed', type: 'select', options: ['IEEE','Springer','Elsevier','Scopus','Other'] },
+      { id: 'indexed', label: 'Indexed In', type: 'select_with_other', options: ['Scopus','SCI','Web of Science','UGC Care'] },
+      { id: 'publisher', label: 'Publisher', type: 'publisher_select', options: ['IEEE','Springer','Elsevier','Other'] },
       { id: 'month', label: 'Month', type: 'select', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] },
       { id: 'year_pub', label: 'Year', type: 'number' },
       { id: 'status_pub', label: 'Status', type: 'select', options: ['Presented','Published','Both'] },
@@ -148,7 +149,7 @@ const ACHIEVEMENT_TYPES: Record<string, {
       { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
       { id: 'reg', label: 'Register No', type: 'text', required: true },
       { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
-      { id: 'platform', label: 'Platform', type: 'select', options: ['NPTEL','Swayam','Coursera','edX','FutureLearn','Udemy','Other'] },
+      { id: 'platform', label: 'Platform', type: 'select_with_other', options: ['NPTEL','Swayam','Coursera','edX','FutureLearn','Udemy'] },
       { id: 'course', label: 'Course Name', type: 'text', required: true, full: true },
       { id: 'domain', label: 'Domain', type: 'text' },
       { id: 'mentor', label: 'Faculty Mentor', type: 'text' },
@@ -168,7 +169,7 @@ const ACHIEVEMENT_TYPES: Record<string, {
       { id: 'reg', label: 'Register No', type: 'text', required: true },
       { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
       { id: 'title', label: 'Event Title', type: 'text', required: true, full: true },
-      { id: 'type_sem', label: 'Type', type: 'select', options: ['Seminar','Webinar','Workshop','Conference','FDP','Other'] },
+      { id: 'type_sem', label: 'Type', type: 'select_with_other', options: ['Seminar','Webinar','Workshop','Conference','FDP'] },
       { id: 'org', label: 'Organizing Institute', type: 'text' },
       { id: 'state', label: 'State', type: 'text' },
       { id: 'from_date', label: 'From Date', type: 'date' },
@@ -242,7 +243,7 @@ const ACHIEVEMENT_TYPES: Record<string, {
       { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
       { id: 'reg', label: 'Register No', type: 'text', required: true },
       { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
-      { id: 'activity_type', label: 'Activity Type', type: 'select', options: ['Sports','Cultural','Club Activity','Social Service','Leadership','Student Council','Other'] },
+      { id: 'activity_type', label: 'Activity Type', type: 'select_with_other', options: ['Sports','Cultural','Club Activity','Social Service','Leadership','Student Council'] },
       { id: 'event_name', label: 'Event Name', type: 'text', required: true },
       { id: 'organizer', label: 'Organizer', type: 'text' },
       { id: 'level', label: 'Level', type: 'select', options: ['International','National','State','Regional','Institutional'] },
@@ -298,7 +299,7 @@ const ACHIEVEMENT_TYPES: Record<string, {
       { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
       { id: 'reg', label: 'Register No', type: 'text', required: true },
       { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
-      { id: 'category', label: 'Category', type: 'select', options: ['Hackathon','Ideathon','SIH','Innovation Challenge','Other'] },
+      { id: 'category', label: 'Category', type: 'select_with_other', options: ['Hackathon','Ideathon','SIH','Innovation Challenge'] },
       { id: 'title', label: 'Title / Idea', type: 'text', required: true, full: true },
       { id: 'event_agency', label: 'Event / Agency', type: 'text' },
       { id: 'problem_domain', label: 'Problem Domain', type: 'text' },
@@ -3141,13 +3142,144 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
           <StatCard title="Attendance" value="95%" icon={CheckCircle} color="purple" />
         </div>
 
+        {/* Staff Charts - Achievement Types Bar Graph & Flow Graph */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Achievement Types Bar Chart */}
+          <Card className="border border-gray-200 lg:col-span-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-emerald-500" /> Achievements by Type
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-72 flex items-end justify-between gap-1 px-2 overflow-x-auto">
+                {Object.entries(STAFF_ACHIEVEMENT_TYPES).map(([key, type]) => {
+                  const Icon = type.icon
+                  const colors = [
+                    'from-emerald-500 to-teal-400',
+                    'from-yellow-500 to-amber-400', 
+                    'from-pink-500 to-rose-400',
+                    'from-green-500 to-green-400',
+                    'from-blue-500 to-indigo-400',
+                    'from-cyan-500 to-blue-400',
+                    'from-amber-500 to-orange-400',
+                    'from-red-500 to-pink-400'
+                  ]
+                  const colorIndex = Object.keys(STAFF_ACHIEVEMENT_TYPES).indexOf(key) % colors.length
+                  const height = Math.floor(Math.random() * 80) + 10
+                  return (
+                    <div key={key} className="flex-1 min-w-[60px] flex flex-col items-center gap-1.5">
+                      <div className="w-full flex items-end justify-center h-52">
+                        <div 
+                          className={`w-full max-w-[50px] bg-gradient-to-t ${colors[colorIndex]} rounded-t-md hover:opacity-80 transition-opacity cursor-pointer relative group`}
+                          style={{ height: `${height}%` }}
+                        >
+                          <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            {height}%
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <Icon className="w-4 h-4 text-gray-500" />
+                        <span className="text-[9px] text-gray-600 text-center leading-tight line-clamp-2">{type.label.split(' ')[0]}</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Flow / Trend Graph */}
+          <Card className="border border-gray-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-green-500" /> Submission Flow
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-56 relative">
+                <svg viewBox="0 0 200 100" className="w-full h-full" preserveAspectRatio="none">
+                  {[0, 25, 50, 75, 100].map(y => (
+                    <line key={y} x1="0" y1={y} x2="200" y2={y} stroke="#f0f0f0" strokeWidth="0.5" />
+                  ))}
+                  <path
+                    d="M0,85 Q30,75 60,60 T120,45 T180,25 L200,20 L200,100 L0,100 Z"
+                    fill="url(#staffGradient)"
+                    opacity="0.3"
+                  />
+                  <path
+                    d="M0,85 Q30,75 60,60 T120,45 T180,25 L200,20"
+                    fill="none"
+                    stroke="#10b981"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+                  {[[0,85], [60,60], [120,45], [180,25], [200,20]].map(([x, y], i) => (
+                    <circle key={i} cx={x} cy={y} r="3" fill="#10b981" />
+                  ))}
+                  <defs>
+                    <linearGradient id="staffGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.4" />
+                      <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div className="absolute bottom-0 left-0 right-0 flex justify-between text-[9px] text-gray-400 px-1">
+                  <span>Jan</span>
+                  <span>Feb</span>
+                  <span>Mar</span>
+                  <span>Apr</span>
+                  <span>May</span>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center justify-around text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                  <span className="text-gray-500">Submissions</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3 text-green-500" />
+                  <span className="text-green-600">+18%</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Staff Achievement Type Summary Cards */}
+        <Card className="border border-gray-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+              <PieChartIcon className="w-5 h-5 text-emerald-500" /> Achievement Overview by Category
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+              {Object.entries(STAFF_ACHIEVEMENT_TYPES).map(([key, type]) => {
+                const Icon = type.icon
+                const count = Math.floor(Math.random() * 15)
+                return (
+                  <div key={key} className={`p-3 rounded-xl bg-gradient-to-br ${type.color} border border-gray-100 hover:shadow-md transition-all`}>
+                    <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
+                      <Icon className="w-4 h-4 text-white" />
+                    </div>
+                    <p className="text-lg font-bold text-white">{count}</p>
+                    <p className="text-[10px] text-white/80 leading-tight line-clamp-2">{type.label}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ActionCard 
             icon={Plus} 
             title="Submit New Activity" 
             description="Report a new activity or event"
             color="bg-gradient-to-br from-blue-500 to-indigo-600"
-            onClick={() => setActiveTab('achievements')}
+            onClick={() => setActiveTab('staff_achievement')}
           />
           <ActionCard 
             icon={MessageSquare} 
@@ -3231,65 +3363,148 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
         </Card>
       </div>
 
-      {/* Charts Section - Activity Trend & Status Distribution */}
+      {/* Charts Section - Achievement Types Bar Graph & Flow Graph */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Activity Trend Chart */}
+        {/* Achievement Types Bar Chart */}
         <Card className="border border-gray-200 lg:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-cyan-500" /> Activity Trend
+              <BarChart3 className="w-5 h-5 text-cyan-500" /> Achievements by Type
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64 flex items-end justify-between gap-2 px-4">
-              {['Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'].map((month, i) => (
-                <div key={month} className="flex-1 flex flex-col items-center gap-2">
-                  <div className="w-full flex items-end justify-center h-48">
-                    <div 
-                      className="w-full max-w-[40px] bg-gradient-to-t from-cyan-500 to-cyan-400 rounded-t-md min-h-[4px]"
-                      style={{ height: `${Math.max(4, Math.random() * 100)}%` }}
-                    />
+            <div className="h-72 flex items-end justify-between gap-1 px-2 overflow-x-auto">
+              {Object.entries(ACHIEVEMENT_TYPES).map(([key, type]) => {
+                const Icon = type.icon
+                const colors = [
+                  'from-blue-500 to-blue-400',
+                  'from-purple-500 to-purple-400', 
+                  'from-amber-500 to-orange-400',
+                  'from-green-500 to-teal-400',
+                  'from-pink-500 to-rose-400',
+                  'from-cyan-500 to-cyan-400',
+                  'from-indigo-500 to-violet-400',
+                  'from-yellow-500 to-amber-400',
+                  'from-emerald-500 to-green-400',
+                  'from-violet-500 to-purple-400',
+                  'from-red-500 to-pink-400',
+                  'from-slate-500 to-gray-400',
+                  'from-gray-400 to-gray-300'
+                ]
+                const colorIndex = Object.keys(ACHIEVEMENT_TYPES).indexOf(key) % colors.length
+                // Random height for demo - in real app, this would come from data
+                const height = Math.floor(Math.random() * 80) + 10
+                return (
+                  <div key={key} className="flex-1 min-w-[50px] flex flex-col items-center gap-1.5">
+                    <div className="w-full flex items-end justify-center h-52">
+                      <div 
+                        className={`w-full max-w-[45px] bg-gradient-to-t ${colors[colorIndex]} rounded-t-md hover:opacity-80 transition-opacity cursor-pointer relative group`}
+                        style={{ height: `${height}%` }}
+                      >
+                        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                          {height}%
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <Icon className="w-4 h-4 text-gray-500" />
+                      <span className="text-[9px] text-gray-600 text-center leading-tight line-clamp-2">{type.label.split(' ')[0]}</span>
+                    </div>
                   </div>
-                  <span className="text-xs text-gray-500">{month}</span>
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center justify-center gap-8 mt-4 text-xs text-gray-500">
-              <span>1.0</span>
-              <span>0.8</span>
-              <span>0.6</span>
-              <span>0.4</span>
-              <span>0.2</span>
-              <span>0.0</span>
-              <span>-0.2</span>
-              <span>-0.4</span>
-              <span>-0.6</span>
-              <span>-0.8</span>
-              <span>-1.0</span>
+                )
+              })}
             </div>
           </CardContent>
         </Card>
 
-        {/* Status Distribution */}
+        {/* Flow / Trend Graph */}
         <Card className="border border-gray-200">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
-              <PieChartIcon className="w-5 h-5 text-cyan-500" /> Status Distribution
+              <TrendingUp className="w-5 h-5 text-green-500" /> Achievement Flow
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center">
-            <div className="w-48 h-48 rounded-full border-[20px] border-gray-300 relative">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-sm text-gray-500">No Data</span>
+          <CardContent>
+            <div className="h-56 relative">
+              {/* Simple SVG Line Chart */}
+              <svg viewBox="0 0 200 100" className="w-full h-full" preserveAspectRatio="none">
+                {/* Grid lines */}
+                {[0, 25, 50, 75, 100].map(y => (
+                  <line key={y} x1="0" y1={y} x2="200" y2={y} stroke="#f0f0f0" strokeWidth="0.5" />
+                ))}
+                {/* Area fill */}
+                <path
+                  d="M0,80 Q25,70 50,55 T100,40 T150,30 T200,15 L200,100 L0,100 Z"
+                  fill="url(#gradient)"
+                  opacity="0.3"
+                />
+                {/* Line */}
+                <path
+                  d="M0,80 Q25,70 50,55 T100,40 T150,30 T200,15"
+                  fill="none"
+                  stroke="#06b6d4"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
+                {/* Data points */}
+                {[[0,80], [50,55], [100,40], [150,30], [200,15]].map(([x, y], i) => (
+                  <circle key={i} cx={x} cy={y} r="3" fill="#06b6d4" className="hover:r-4 transition-all cursor-pointer" />
+                ))}
+                <defs>
+                  <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#06b6d4" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              {/* X-axis labels */}
+              <div className="absolute bottom-0 left-0 right-0 flex justify-between text-[9px] text-gray-400 px-1">
+                <span>Jan</span>
+                <span>Feb</span>
+                <span>Mar</span>
+                <span>Apr</span>
+                <span>May</span>
               </div>
             </div>
-            <div className="mt-4 flex items-center gap-2 text-xs text-gray-500">
-              <div className="w-3 h-3 rounded-sm bg-gray-300" />
-              <span>No Data</span>
+            <div className="mt-3 flex items-center justify-around text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-cyan-500" />
+                <span className="text-gray-500">Submissions</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <TrendingUp className="w-3 h-3 text-green-500" />
+                <span className="text-green-600">+23%</span>
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Achievement Type Summary Cards */}
+      <Card className="border border-gray-200">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+            <PieChartIcon className="w-5 h-5 text-purple-500" /> Achievement Overview by Category
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+            {Object.entries(ACHIEVEMENT_TYPES).map(([key, type]) => {
+              const Icon = type.icon
+              const count = Math.floor(Math.random() * 10)
+              return (
+                <div key={key} className={`p-3 rounded-xl bg-gradient-to-br ${type.color} bg-opacity-10 border border-gray-100 hover:shadow-md transition-all`}>
+                  <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
+                    <Icon className="w-4 h-4 text-white" />
+                  </div>
+                  <p className="text-lg font-bold text-white">{count}</p>
+                  <p className="text-[10px] text-white/80 leading-tight line-clamp-2">{type.label}</p>
+                </div>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -4391,6 +4606,14 @@ function StudentAchievementsPage({ user }: { user: User }) {
 
   return (
     <div className="space-y-6">
+      {/* Back Button - Above Add Achievement */}
+      <button
+        onClick={() => { /* Navigate back to dashboard */ }}
+        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors w-fit"
+      >
+        <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+      </button>
+
       {/* Add Student Achievement Card */}
       <Card className="border border-gray-200">
         <CardContent className="p-6">
@@ -4444,11 +4667,6 @@ function StudentAchievementsPage({ user }: { user: User }) {
                       
                       {/* Type Label */}
                       <span className="text-sm font-semibold text-gray-800 block">{typeConfig.label}</span>
-                      
-                      {/* Field Count Badge */}
-                      <span className="inline-block mt-1.5 px-2 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-600 rounded-full">
-                        {typeConfig.fields.length} fields
-                      </span>
                       
                       {/* Selection Indicator */}
                       {isSelected && (
@@ -4552,6 +4770,73 @@ function StudentAchievementsPage({ user }: { user: User }) {
                             <option key={opt} value={opt}>{opt}</option>
                           ))}
                         </select>
+                      )}
+
+                      {field.type === 'constant' && field.value && (
+                        <div className="w-full px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-green-700 font-medium flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4" />
+                          {field.value}
+                        </div>
+                      )}
+
+                      {field.type === 'select_with_other' && (
+                        <div className="space-y-2">
+                          <select
+                            value={formData[field.id] || ''}
+                            onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+                          >
+                            <option value="">Select {field.label}</option>
+                            {field.options?.map((opt: string) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                            <option value="Other">Other</option>
+                          </select>
+                          {formData[field.id] === 'Other' && (
+                            <input
+                              type="text"
+                              value={formData[`${field.id}_other`] || ''}
+                              onChange={(e) => handleFieldChange(`${field.id}_other`, e.target.value)}
+                              placeholder="Please specify..."
+                              className="w-full px-3 py-2 border border-cyan-300 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-cyan-50"
+                            />
+                          )}
+                        </div>
+                      )}
+
+                      {field.type === 'publisher_select' && (
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            {field.options?.map((opt: string) => (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => {
+                                  handleFieldChange(field.id, opt)
+                                  if (opt !== 'Other') {
+                                    handleFieldChange(`${field.id}_other`, '')
+                                  }
+                                }}
+                                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                                  formData[field.id] === opt
+                                    ? 'bg-cyan-600 text-white shadow-md'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                } ${opt === 'Other' && formData[field.id] === 'Other' ? 'col-span-2' : ''}`}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                          {formData[field.id] === 'Other' && (
+                            <input
+                              type="text"
+                              value={formData[`${field.id}_other`] || ''}
+                              onChange={(e) => handleFieldChange(`${field.id}_other`, e.target.value)}
+                              placeholder="Enter publisher name..."
+                              className="w-full px-3 py-2 border border-cyan-300 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-cyan-50"
+                            />
+                          )}
+                        </div>
                       )}
                     </div>
                   ))}
