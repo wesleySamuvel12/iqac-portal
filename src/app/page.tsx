@@ -23,7 +23,8 @@ import {
   Briefcase, Wrench, Rocket, Code, PlusCircle,
   Newspaper, Handshake, Circle,
   DollarSign, Paperclip, Inbox, Tag, XCircle, ArrowLeft,
-  Save, Sparkles, PanelLeft, PanelLeftClose
+  Save, Sparkles, PanelLeft, PanelLeftClose,
+  GripVertical
 } from 'lucide-react'
 
 // ============ TYPES ============
@@ -3881,10 +3882,10 @@ const ROLE_SIDEBAR_CONFIG = {
     roleLabel: 'Student Portal',
     roleIcon: GraduationCap,
     menuItems: [
-      { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'Overview & Stats' },
-      { id: 'achievements', icon: Trophy, label: 'My Achievements', badge: 'New', description: 'View your achievements' },
-      { id: 'student_achievement_view', icon: FolderOpen, label: 'Submit New', badge: '+', description: 'Add new achievement' },
-      { id: 'feedback', icon: MessageSquare, label: 'Feedback', description: 'Send feedback' },
+      { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+      { id: 'achievements', icon: Trophy, label: 'My Achievements', badge: 'New' },
+      { id: 'student_achievement_view', icon: FolderOpen, label: 'Submit New', badge: '+' },
+      { id: 'feedback', icon: MessageSquare, label: 'Feedback' },
     ] as MenuItem[],
   },
   STAFF: {
@@ -4210,6 +4211,14 @@ function StudentAchievementsPage({ user }: { user: User }) {
   const [filterStatus, setFilterStatus] = useState('all')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  
+  // Drag and Drop State
+  const [draggedItem, setDraggedItem] = useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  
+  // File Upload with Drag & Drop
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+  const [isDragOver, setIsDragOver] = useState(false)
 
   // Initialize form with user data when type changes
   useEffect(() => {
@@ -4262,6 +4271,72 @@ function StudentAchievementsPage({ user }: { user: User }) {
   const handleClear = () => {
     setSelectedType('')
     setFormData({})
+  }
+
+  // ============ DRAG AND DROP HANDLERS FOR REORDERING ============
+  const handleDragStart = (index: number) => {
+    setDraggedItem(index)
+  }
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    setDragOverIndex(index)
+  }
+
+  const handleDrop = (dropIndex: number) => {
+    if (draggedItem === null || draggedItem === dropIndex) return
+    
+    const newAchievements = [...filteredAchievements]
+    const draggedAchievement = newAchievements[draggedItem]
+    newAchievements.splice(draggedItem, 1)
+    newAchievements.splice(dropIndex, 0, draggedAchievement)
+    
+    // Update the original achievements array with new order
+    const achievementIds = newAchievements.map(a => a.id)
+    const reorderedAchievements = achievementIds.map(id => 
+      achievements.find(a => a.id === id)
+    ).filter(Boolean)
+    
+    setAchievements(reorderedAchievements)
+    setDraggedItem(null)
+    setDragOverIndex(null)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedItem(null)
+    setDragOverIndex(null)
+  }
+
+  // ============ FILE UPLOAD WITH DRAG & DROP ============
+  const handleFileDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(true)
+  }
+
+  const handleFileDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+  }
+
+  const handleFileDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+    
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length > 0) {
+      setUploadedFiles(prev => [...prev, ...files])
+    }
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length > 0) {
+      setUploadedFiles(prev => [...prev, ...files])
+    }
+  }
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
   const currentTypeConfig = selectedType ? ACHIEVEMENT_TYPES[selectedType] : null
@@ -4417,13 +4492,14 @@ function StudentAchievementsPage({ user }: { user: User }) {
         </CardContent>
       </Card>
 
-      {/* My Achievements Table */}
+      {/* My Achievements - Drag & Drop Cards */}
       <Card className="border border-gray-200">
         <CardContent className="p-6">
           {/* Table Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <List className="w-5 h-5 text-cyan-500" /> My Achievements
+              <GripVertical className="w-5 h-5 text-cyan-500" /> My Achievements
+              <span className="text-xs font-normal text-gray-400 ml-1">(Drag to reorder)</span>
             </h3>
             <div className="flex flex-wrap gap-3">
               <div className="relative">
@@ -4461,68 +4537,161 @@ function StudentAchievementsPage({ user }: { user: User }) {
             </div>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">#</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">TYPE</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">TITLE</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">DEPT</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">DATE</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">STATUS</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAchievements.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-12 text-gray-500">
-                      No achievements yet
-                    </td>
-                  </tr>
-                ) : (
-                  filteredAchievements.map((achievement, index) => (
-                    <tr key={achievement.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-4 text-sm text-gray-600">{index + 1}</td>
-                      <td className="py-3 px-4">
-                        <Badge variant="secondary" className="font-medium">{achievement.typeName}</Badge>
-                      </td>
-                      <td className="py-3 px-4 text-sm font-medium text-gray-800">{achievement.title}</td>
-                      <td className="py-3 px-4 text-sm text-gray-600">{achievement.dept}</td>
-                      <td className="py-3 px-4 text-sm text-gray-600">{achievement.date}</td>
-                      <td className="py-3 px-4">
-                        <Badge 
-                          className={
-                            achievement.status === 'hod_approved' ? 'bg-green-100 text-green-700' :
-                            achievement.status === 'staff_approved' ? 'bg-blue-100 text-blue-700' :
-                            achievement.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                            'bg-amber-100 text-amber-700'
-                          }
-                        >
-                          {achievement.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex gap-2">
-                          <button className="p-1.5 hover:bg-gray-100 rounded text-gray-500 hover:text-blue-600">
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button className="p-1.5 hover:bg-gray-100 rounded text-gray-500 hover:text-amber-600">
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          <button className="p-1.5 hover:bg-gray-100 rounded text-gray-500 hover:text-red-600">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          {/* Drag and Drop Achievement Cards */}
+          {filteredAchievements.length === 0 ? (
+            <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+              <Trophy className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+              <p>No achievements yet</p>
+              <p className="text-sm mt-1">Submit your first achievement above!</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredAchievements.map((achievement, index) => (
+                <div
+                  key={achievement.id}
+                  draggable
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDrop={() => handleDrop(index)}
+                  onDragEnd={handleDragEnd}
+                  className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all cursor-grab active:cursor-grabbing ${
+                    draggedItem === index 
+                      ? 'opacity-50 scale-95 border-cyan-300 bg-cyan-50 shadow-lg' 
+                      : dragOverIndex === index 
+                        ? 'border-cyan-400 bg-cyan-50 border-dashed' 
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  {/* Drag Handle */}
+                  <div className="text-gray-400 hover:text-gray-600 touch-none">
+                    <GripVertical className="w-5 h-5" />
+                  </div>
+                  
+                  {/* Index Badge */}
+                  <span className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 text-emerald-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    {index + 1}
+                  </span>
+                  
+                  {/* Achievement Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="font-medium text-xs">{achievement.typeName}</Badge>
+                      <span className="text-sm font-medium text-gray-800 truncate">{achievement.title}</span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                      <span>{achievement.dept}</span>
+                      <span>•</span>
+                      <span>{achievement.date}</span>
+                    </div>
+                  </div>
+                  
+                  {/* Status Badge */}
+                  <Badge 
+                    className={
+                      achievement.status === 'hod_approved' ? 'bg-green-100 text-green-700' :
+                      achievement.status === 'staff_approved' ? 'bg-blue-100 text-blue-700' :
+                      achievement.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                      'bg-amber-100 text-amber-700'
+                    }
+                  >
+                    {achievement.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </Badge>
+                  
+                  {/* Actions */}
+                  <div className="flex gap-1 flex-shrink-0">
+                    <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-blue-600 transition-colors" title="View">
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-amber-600 transition-colors" title="Edit">
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-red-600 transition-colors" title="Delete">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* File Upload with Drag & Drop */}
+      <Card className="border border-gray-200">
+        <CardContent className="p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <Upload className="w-5 h-5 text-cyan-500" /> Attachments
+          </h3>
+          
+          {/* Drop Zone */}
+          <div
+            onDragOver={handleFileDragOver}
+            onDragLeave={handleFileDragLeave}
+            onDrop={handleFileDrop}
+            className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all ${
+              isDragOver 
+                ? 'border-cyan-400 bg-cyan-50 scale-[1.02]' 
+                : 'border-gray-300 hover:border-gray-400 bg-gray-50'
+            }`}
+          >
+            <input
+              type="file"
+              multiple
+              onChange={handleFileSelect}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+            
+            {isDragOver ? (
+              <div className="space-y-2">
+                <div className="w-16 h-16 mx-auto rounded-full bg-cyan-100 flex items-center justify-center animate-bounce">
+                  <Upload className="w-8 h-8 text-cyan-500" />
+                </div>
+                <p className="text-lg font-semibold text-cyan-600">Drop files here!</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="w-14 h-14 mx-auto rounded-full bg-gray-200 flex items-center justify-center">
+                  <Upload className="w-7 h-7 text-gray-400" />
+                </div>
+                <p className="text-gray-600 font-medium">
+                  Drag & drop files here, or <span className="text-cyan-600 underline">browse</span>
+                </p>
+                <p className="text-sm text-gray-400">
+                  Supports PDF, Images, Documents (Max 10MB each)
+                </p>
+              </div>
+            )}
           </div>
+
+          {/* Uploaded Files List */}
+          {uploadedFiles.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <p className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                <Paperclip className="w-4 h-4" /> Uploaded Files ({uploadedFiles.length})
+              </p>
+              {uploadedFiles.map((file, index) => (
+                <div 
+                  key={`${file.name}-${index}`}
+                  className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg group hover:border-cyan-300 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">{file.name}</p>
+                    <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+                  </div>
+                  <button
+                    onClick={() => removeFile(index)}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+                    title="Remove file"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
