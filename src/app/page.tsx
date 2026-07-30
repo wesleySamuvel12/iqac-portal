@@ -3293,18 +3293,66 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
     )
   }
 
-  // Student Dashboard - Matching Screenshot Design
+  // Student Dashboard - Use separate component for hooks compliance
+  return <StudentDashboardContent user={user} setActiveTab={setActiveTab} />
+}
+
+// ============ STUDENT DASHBOARD COMPONENT (Separate for Hooks Compliance) ============
+function StudentDashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (tab: TabType) => void }) {
+  const [studentAchievements, setStudentAchievements] = useState<any[]>([])
+  const [selectedDashboardType, setSelectedDashboardType] = useState<string | null>(null)
+  
+  // Load achievements from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('student_achievements')
+    if (saved) {
+      try {
+        setStudentAchievements(JSON.parse(saved))
+      } catch (e) {
+        console.error('Failed to parse achievements:', e)
+      }
+    }
+  }, [])
+  
+  // Calculate stats from actual data
+  const totalRecords = studentAchievements.length
+  const pendingCount = studentAchievements.filter((a: any) => 
+    a.status === 'pending_staff' || a.status === 'pending_hod'
+  ).length
+  const approvedCount = studentAchievements.filter((a: any) => 
+    a.status === 'hod_approved' || a.status === 'staff_approved'
+  ).length
+  const rejectedCount = studentAchievements.filter((a: any) => 
+    a.status === 'rejected'
+  ).length
+  
+  // Calculate counts per achievement type
+  const getTypeCount = (typeKey: string) => {
+    return studentAchievements.filter((a: any) => a.type === typeKey).length
+  }
+  
+  // Get max count for bar graph scaling
+  const maxTypeCount = Math.max(
+    ...Object.keys(ACHIEVEMENT_TYPES).map(key => getTypeCount(key)),
+    1
+  )
+  
+  // Get achievements for selected type
+  const selectedTypeAchievements = selectedDashboardType 
+    ? studentAchievements.filter((a: any) => a.type === selectedDashboardType)
+    : []
+
   return (
     <div className="space-y-6">
-      {/* Stats Cards Row - Matching Screenshot */}
+      {/* Stats Cards Row - With Real Data */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Records */}
-        <Card className="border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden">
+        <Card className="border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden cursor-pointer" onClick={() => setSelectedDashboardType(null)}>
           <CardContent className="p-5">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-gray-500 font-medium">TOTAL RECORDS</p>
-                <p className="text-3xl font-bold text-gray-800 mt-1">0</p>
+                <p className="text-3xl font-bold text-gray-800 mt-1">{totalRecords}</p>
               </div>
               <div className="w-12 h-12 rounded-xl bg-cyan-50 flex items-center justify-center">
                 <Trophy className="w-6 h-6 text-cyan-600" />
@@ -3320,7 +3368,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-gray-500 font-medium">PENDING APPROVAL</p>
-                <p className="text-3xl font-bold text-gray-800 mt-1">0</p>
+                <p className="text-3xl font-bold text-gray-800 mt-1">{pendingCount}</p>
               </div>
               <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center">
                 <Clock className="w-6 h-6 text-orange-600" />
@@ -3336,7 +3384,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-gray-500 font-medium">APPROVED</p>
-                <p className="text-3xl font-bold text-gray-800 mt-1">0</p>
+                <p className="text-3xl font-bold text-gray-800 mt-1">{approvedCount}</p>
               </div>
               <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
                 <CheckCircle className="w-6 h-6 text-green-600" />
@@ -3352,7 +3400,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-gray-500 font-medium">REJECTED</p>
-                <p className="text-3xl font-bold text-gray-800 mt-1">0</p>
+                <p className="text-3xl font-bold text-gray-800 mt-1">{rejectedCount}</p>
               </div>
               <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
                 <CloseIcon className="w-6 h-6 text-red-600" />
@@ -3365,11 +3413,16 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
 
       {/* Charts Section - Achievement Types Bar Graph & Flow Graph */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Achievement Types Bar Chart */}
+        {/* Achievement Types Bar Chart - With Real Data */}
         <Card className="border border-gray-200 lg:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-cyan-500" /> Achievements by Type
+              {selectedDashboardType && (
+                <span className="text-sm font-normal text-cyan-600 cursor-pointer hover:underline ml-2" onClick={() => setSelectedDashboardType(null)}>
+                  (Click to clear filter)
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -3392,22 +3445,28 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
                   'from-gray-400 to-gray-300'
                 ]
                 const colorIndex = Object.keys(ACHIEVEMENT_TYPES).indexOf(key) % colors.length
-                // Random height for demo - in real app, this would come from data
-                const height = Math.floor(Math.random() * 80) + 10
+                // Use real count for height
+                const count = getTypeCount(key)
+                const height = maxTypeCount > 0 ? Math.max((count / maxTypeCount) * 100, count > 0 ? 8 : 2) : 2
+                const isSelected = selectedDashboardType === key
                 return (
-                  <div key={key} className="flex-1 min-w-[50px] flex flex-col items-center gap-1.5">
+                  <div 
+                    key={key} 
+                    className={`flex-1 min-w-[50px] flex flex-col items-center gap-1.5 ${isSelected ? 'ring-2 ring-cyan-500 rounded-lg' : ''}`}
+                  >
                     <div className="w-full flex items-end justify-center h-52">
                       <div 
-                        className={`w-full max-w-[45px] bg-gradient-to-t ${colors[colorIndex]} rounded-t-md hover:opacity-80 transition-opacity cursor-pointer relative group`}
+                        onClick={() => setSelectedDashboardType(isSelected ? null : key)}
+                        className={`w-full max-w-[45px] bg-gradient-to-t ${colors[colorIndex]} ${isSelected ? 'ring-2 ring-offset-1 ring-cyan-500' : ''} rounded-t-md hover:opacity-80 transition-all cursor-pointer relative group`}
                         style={{ height: `${height}%` }}
                       >
-                        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                          {height}%
+                        <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                          {count} {count === 1 ? 'item' : 'items'}
                         </div>
                       </div>
                     </div>
                     <div className="flex flex-col items-center gap-0.5">
-                      <Icon className="w-4 h-4 text-gray-500" />
+                      <Icon className={`w-4 h-4 ${count > 0 ? 'text-cyan-600' : 'text-gray-400'}`} />
                       <span className="text-[9px] text-gray-600 text-center leading-tight line-clamp-2">{type.label.split(' ')[0]}</span>
                     </div>
                   </div>
@@ -3480,20 +3539,30 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
         </Card>
       </div>
 
-      {/* Achievement Type Summary Cards */}
+      {/* Achievement Type Summary Cards - Clickable with Real Data */}
       <Card className="border border-gray-200">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
             <PieChartIcon className="w-5 h-5 text-purple-500" /> Achievement Overview by Category
+            {selectedDashboardType && (
+              <span className="text-sm font-normal text-purple-600 cursor-pointer hover:underline ml-2" onClick={() => setSelectedDashboardType(null)}>
+                (Showing: {ACHIEVEMENT_TYPES[selectedDashboardType]?.label})
+              </span>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
             {Object.entries(ACHIEVEMENT_TYPES).map(([key, type]) => {
               const Icon = type.icon
-              const count = Math.floor(Math.random() * 10)
+              const count = getTypeCount(key)
+              const isSelected = selectedDashboardType === key
               return (
-                <div key={key} className={`p-3 rounded-xl bg-gradient-to-br ${type.color} bg-opacity-10 border border-gray-100 hover:shadow-md transition-all`}>
+                <div 
+                  key={key} 
+                  onClick={() => setSelectedDashboardType(isSelected ? null : key)}
+                  className={`p-3 rounded-xl bg-gradient-to-br ${type.color} hover:shadow-lg transition-all cursor-pointer ${isSelected ? 'ring-4 ring-cyan-400 scale-105' : 'hover:scale-102'}`}
+                >
                   <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
                     <Icon className="w-4 h-4 text-white" />
                   </div>
@@ -3505,6 +3574,78 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
           </div>
         </CardContent>
       </Card>
+
+      {/* Selected Type Detail View */}
+      {selectedDashboardType && (
+        <Card className="border border-cyan-200 bg-gradient-to-r from-cyan-50 to-white">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                {(() => {
+                  const SelectedIcon = ACHIEVEMENT_TYPES[selectedDashboardType]?.icon
+                  return SelectedIcon ? <SelectedIcon className="w-5 h-5 text-cyan-600" /> : null
+                })()}
+                {ACHIEVEMENT_TYPES[selectedDashboardType]?.label} - Details
+              </CardTitle>
+              <button 
+                onClick={() => setSelectedDashboardType(null)}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {selectedTypeAchievements.length > 0 ? (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600 mb-3">
+                  Showing <span className="font-semibold text-cyan-600">{selectedTypeAchievements.length}</span> achievement(s) in this category
+                </p>
+                <div className="grid gap-3 max-h-64 overflow-y-auto">
+                  {selectedTypeAchievements.map((achievement: any, idx: number) => (
+                    <div key={idx} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 hover:border-cyan-200 transition-colors">
+                      <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${ACHIEVEMENT_TYPES[selectedDashboardType]?.color || 'from-gray-400 to-gray-500'} flex items-center justify-center`}>
+                        {(() => {
+                          const TypeIcon = ACHIEVEMENT_TYPES[selectedDashboardType]?.icon
+                          return TypeIcon ? <TypeIcon className="w-5 h-5 text-white" /> : null
+                        })()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-800 truncate">{achievement.title || 'Untitled'}</p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(achievement.submittedAt || Date.now()).toLocaleDateString()} • 
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ml-1 ${
+                            achievement.status?.includes('approved') ? 'bg-green-100 text-green-700' :
+                            achievement.status?.includes('pending') ? 'bg-orange-100 text-orange-700' :
+                            achievement.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {achievement.status?.replace('_', ' ') || 'Unknown'}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
+                  <FolderOpen className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 font-medium">No achievements in this category yet</p>
+                <p className="text-sm text-gray-400 mt-1">Click "Submit New" to add your first achievement</p>
+                <button 
+                  onClick={() => setActiveTab('student_achievement_view')}
+                  className="mt-4 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-sm font-medium rounded-lg hover:from-cyan-700 hover:to-blue-700 transition-all"
+                >
+                  Add Achievement
+                </button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -4470,14 +4611,21 @@ function StudentAchievementsPage({ user }: { user: User }) {
       id: Date.now(),
       type: selectedType,
       typeName: ACHIEVEMENT_TYPES[selectedType]?.label || selectedType,
-      title: formData.title || formData.award_name || formData.prog_name || formData.course || formData.event_name || 'Untitled',
+      title: formData.title || formData.award_name || formData.prog_name || formData.course || formData.event_name || formData.paper_title || formData.invention_title || 'Untitled',
       dept: user.departmentName,
       date: new Date().toISOString().split('T')[0],
       status: 'pending_staff',
+      submittedAt: new Date().toISOString(),
       data: formData
     }
     
-    setAchievements(prev => [newAchievement, ...prev])
+    setAchievements(prev => {
+      const updatedAchievements = [newAchievement, ...prev]
+      // Save to localStorage for dashboard to read
+      localStorage.setItem('student_achievements', JSON.stringify(updatedAchievements))
+      return updatedAchievements
+    })
+    
     setShowSuccess(true)
     setIsSubmitting(false)
     
