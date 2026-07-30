@@ -5130,13 +5130,14 @@ function ApprovalsPage() {
 }
 
 // ============ ANALYTICS PAGE ============
-// ============ HOD DEPARTMENT ANALYTICS PAGE ============
+// ============ HOD DEPARTMENT ANALYTICS PAGE WITH CHARTS ============
 function HODDepartmentAnalyticsPage({ user }: { user: User }) {
   const [studentAchievements, setStudentAchievements] = useState<any[]>([])
   const [staffAchievements, setStaffAchievements] = useState<any[]>([])
   const [expandedStudentType, setExpandedStudentType] = useState<string | null>(null)
   const [expandedStaffType, setExpandedStaffType] = useState<string | null>(null)
-  const [activeSection, setActiveSection] = useState<'students' | 'staff'>('students')
+  const [activeSection, setActiveSection] = useState<'students' | 'staff' | 'overview'>('overview')
+  const [chartView, setChartView] = useState<'bar' | 'horizontal' | 'donut'>('bar')
 
   // Load achievements from localStorage on mount
   useEffect(() => {
@@ -5144,7 +5145,6 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
       const savedStudent = localStorage.getItem('student_achievements')
       if (savedStudent) {
         const parsed = JSON.parse(savedStudent)
-        // Filter for current department only
         const deptStudent = parsed.filter((a: any) => a.dept === user.departmentName || a.department === user.departmentName)
         setStudentAchievements(deptStudent)
       }
@@ -5152,7 +5152,6 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
       const savedStaff = localStorage.getItem('staff_achievements')
       if (savedStaff) {
         const parsed = JSON.parse(savedStaff)
-        // Filter for current department only
         const deptStaff = parsed.filter((a: any) => a.dept === user.departmentName || a.department === user.departmentName)
         setStaffAchievements(deptStaff)
       }
@@ -5183,8 +5182,7 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
   // Calculate totals
   const totalStudentAchievements = studentAchievements.length
   const totalStaffAchievements = staffAchievements.length
-  const totalTypesWithStudentData = Object.keys(ACHIEVEMENT_TYPES).filter(k => getStudentTypeCount(k) > 0).length
-  const totalTypesWithStaffData = Object.keys(STAFF_ACHIEVEMENT_TYPES).filter(k => getStaffTypeCount(k) > 0).length
+  const totalAllAchievements = totalStudentAchievements + totalStaffAchievements
 
   // Status breakdown
   const studentStatusBreakdown = {
@@ -5199,509 +5197,1051 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
     rejected: staffAchievements.filter(a => a.status?.includes('rejected')).length,
   }
 
+  // Year-wise breakdown for students
+  const studentYearBreakdown = ['I Year', 'II Year', 'III Year', 'IV Year'].map(year => ({
+    year,
+    count: studentAchievements.filter(a => a.data?.year === year || a.year === year).length
+  }))
+
+  // Year-wise breakdown for staff
+  const staffYearBreakdown = ['2023', '2024', '2025'].map(year => ({
+    year,
+    count: staffAchievements.filter(a => a.data?.year === year || a.year_pub === year).length
+  }))
+
+  // Get max value for chart scaling
+  const maxStudentTypeCount = Math.max(...Object.keys(ACHIEVEMENT_TYPES).map(k => getStudentTypeCount(k)), 1)
+  const maxStaffTypeCount = Math.max(...Object.keys(STAFF_ACHIEVEMENT_TYPES).map(k => getStaffTypeCount(k)), 1)
+
+  // Chart colors - professional palette
+  const chartColors = [
+    '#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444',
+    '#06B6D4', '#EC4899', '#84CC16', '#F97316', '#6366F1',
+    '#14B8A6', '#A855F7', '#22C55E'
+  ]
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 rounded-2xl p-8 text-white">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      {/* Header with Gradient */}
+      <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 rounded-2xl p-8 text-white relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold mb-2">Department Analytics</h2>
-            <p className="text-violet-100">{user.departmentName} • Achievement Analysis & Reports</p>
+            <h2 className="text-3xl font-bold mb-2">📊 Department Analytics</h2>
+            <p className="text-violet-100 text-lg">{user.departmentName} • Achievement Analysis & Reports</p>
           </div>
-          <Badge className="bg-white/20 text-white border-white/30 px-4 py-2">
-            <BarChart3 className="w-4 h-4 mr-2" />
-            Department-Specific View
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Badge className="bg-white/20 text-white border-white/30 px-4 py-2 text-sm">
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Department-Specific View
+            </Badge>
+            <Badge className="bg-emerald-400/20 text-white border-emerald-300/30 px-4 py-2 text-sm">
+              {totalAllAchievements} Total Records
+            </Badge>
+          </div>
         </div>
       </div>
 
-      {/* Summary Cards */}
+      {/* Summary Cards - Enhanced Design */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-blue-500 bg-blue-50/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <GraduationCap className="w-8 h-8 text-blue-500" />
+        <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all group">
+          <div className="h-1 bg-gradient-to-r from-blue-500 to-cyan-400" />
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold text-gray-900">{totalStudentAchievements}</p>
-                <p className="text-xs text-gray-500">Student Records</p>
+                <p className="text-sm text-gray-500 font-medium">Student Records</p>
+                <p className="text-4xl font-bold text-gray-800 mt-1">{totalStudentAchievements}</p>
+                <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3" /> {Object.keys(ACHIEVEMENT_TYPES).length} types available
+                </p>
+              </div>
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform">
+                <GraduationCap className="w-7 h-7 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-emerald-500 bg-emerald-50/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Users className="w-8 h-8 text-emerald-500" />
+
+        <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all group">
+          <div className="h-1 bg-gradient-to-r from-emerald-500 to-teal-400" />
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold text-gray-900">{totalStaffAchievements}</p>
-                <p className="text-xs text-gray-500">Staff Records</p>
+                <p className="text-sm text-gray-500 font-medium">Staff Records</p>
+                <p className="text-4xl font-bold text-gray-800 mt-1">{totalStaffAchievements}</p>
+                <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3" /> {Object.keys(STAFF_ACHIEVEMENT_TYPES).length} types available
+                </p>
+              </div>
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-200 group-hover:scale-110 transition-transform">
+                <Users className="w-7 h-7 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-amber-500 bg-amber-50/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Clock className="w-8 h-8 text-amber-500" />
+
+        <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all group">
+          <div className="h-1 bg-gradient-to-r from-amber-500 to-orange-400" />
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold text-gray-900">{studentStatusBreakdown.pending + staffStatusBreakdown.pending}</p>
-                <p className="text-xs text-gray-500">Pending Review</p>
+                <p className="text-sm text-gray-500 font-medium">Pending Review</p>
+                <p className="text-4xl font-bold text-gray-800 mt-1">{studentStatusBreakdown.pending + staffStatusBreakdown.pending}</p>
+                <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                  <Clock className="w-3 h-3" /> Requires attention
+                </p>
+              </div>
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-400 flex items-center justify-center shadow-lg shadow-amber-200 group-hover:scale-110 transition-transform">
+                <Clock className="w-7 h-7 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-green-500 bg-green-50/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <CheckCircle className="w-8 h-8 text-green-500" />
+
+        <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all group">
+          <div className="h-1 bg-gradient-to-r from-green-500 to-emerald-400" />
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold text-gray-900">{studentStatusBreakdown.approved + staffStatusBreakdown.approved}</p>
-                <p className="text-xs text-gray-500">Approved</p>
+                <p className="text-sm text-gray-500 font-medium">Approved</p>
+                <p className="text-4xl font-bold text-gray-800 mt-1">{studentStatusBreakdown.approved + staffStatusBreakdown.approved}</p>
+                <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" /> Verified records
+                </p>
+              </div>
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-green-200 group-hover:scale-110 transition-transform">
+                <CheckCircle className="w-7 h-7 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Section Toggle */}
-      <div className="flex gap-2 bg-gray-100 p-1 rounded-xl w-fit">
-        <button
-          onClick={() => setActiveSection('students')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
-            activeSection === 'students'
-              ? 'bg-white text-blue-700 shadow-md'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-          }`}
-        >
-          <GraduationCap className="w-4 h-4" />
-          Student Analytics
-          <span className={`px-2 py-0.5 rounded-full text-xs ${
-            activeSection === 'students' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'
-          }`}>
-            {totalStudentAchievements}
-          </span>
-        </button>
-        <button
-          onClick={() => setActiveSection('staff')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
-            activeSection === 'staff'
-              ? 'bg-white text-emerald-700 shadow-md'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          Staff Analytics
-          <span className={`px-2 py-0.5 rounded-full text-xs ${
-            activeSection === 'staff' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'
-          }`}>
-            {totalStaffAchievements}
-          </span>
-        </button>
+      {/* Section Toggle & Chart View Toggle */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div className="flex gap-2 bg-gray-100 p-1.5 rounded-xl">
+          <button
+            onClick={() => setActiveSection('overview')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
+              activeSection === 'overview'
+                ? 'bg-white text-violet-700 shadow-md'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+            }`}
+          >
+            <PieChartIcon className="w-4 h-4" />
+            Overview
+          </button>
+          <button
+            onClick={() => setActiveSection('students')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
+              activeSection === 'students'
+                ? 'bg-white text-blue-700 shadow-md'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+            }`}
+          >
+            <GraduationCap className="w-4 h-4" />
+            Students
+            <span className={`px-2 py-0.5 rounded-full text-xs ${
+              activeSection === 'students' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'
+            }`}>{totalStudentAchievements}</span>
+          </button>
+          <button
+            onClick={() => setActiveSection('staff')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
+              activeSection === 'staff'
+                ? 'bg-white text-emerald-700 shadow-md'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            Staff
+            <span className={`px-2 py-0.5 rounded-full text-xs ${
+              activeSection === 'staff' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'
+            }`}>{totalStaffAchievements}</span>
+          </button>
+        </div>
+
+        {(activeSection === 'students' || activeSection === 'staff') && (
+          <div className="flex gap-2 bg-gray-100 p-1.5 rounded-xl">
+            <button
+              onClick={() => setChartView('bar')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
+                chartView === 'bar' ? 'bg-white shadow-md text-violet-700' : 'text-gray-600 hover:bg-white/50'
+              }`}
+              title="Bar Chart"
+            >
+              <BarChart3 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setChartView('horizontal')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
+                chartView === 'horizontal' ? 'bg-white shadow-md text-violet-700' : 'text-gray-600 hover:bg-white/50'
+              }`}
+              title="Horizontal Bar"
+            >
+              <BarChart3 className="w-4 h-4 rotate-90" />
+            </button>
+            <button
+              onClick={() => setChartView('donut')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
+                chartView === 'donut' ? 'bg-white shadow-md text-violet-700' : 'text-gray-600 hover:bg-white/50'
+              }`}
+              title="Donut Chart"
+            >
+              <PieChartIcon className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* STUDENT ANALYTICS SECTION */}
-      {activeSection === 'students' && (
+      {/* ==================== OVERVIEW SECTION ==================== */}
+      {activeSection === 'overview' && (
         <div className="space-y-6">
-          {/* Status Overview */}
-          <div className="grid grid-cols-3 gap-4">
-            <Card className="p-4 bg-green-50 border-green-200">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-8 h-8 text-green-600" />
-                <div>
-                  <p className="text-2xl font-bold text-green-700">{studentStatusBreakdown.approved}</p>
-                  <p className="text-xs text-green-600">Approved</p>
-                </div>
+          {/* Charts Row 1: Status Distribution Donuts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Student Status Donut */}
+            <Card className="border-0 shadow-lg overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4">
+                <h3 className="font-semibold text-white flex items-center gap-2">
+                  <GraduationCap className="w-5 h-5" /> Student Achievement Status
+                </h3>
               </div>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-center gap-8">
+                  {/* Donut Chart CSS */}
+                  <div className="relative w-40 h-40">
+                    <svg viewBox="0 0 100 100" className="transform -rotate-90">
+                      <circle cx="50" cy="50" r="40" fill="none" stroke="#E5E7EB" strokeWidth="12" />
+                      {totalStudentAchievements > 0 && (
+                        <>
+                          <circle 
+                            cx="50" cy="50" r="40" fill="none" 
+                            stroke="#10B981" strokeWidth="12"
+                            strokeDasharray={`${(studentStatusBreakdown.approved / totalStudentAchievements) * 251.2} 251.2`}
+                            strokeDashoffset="0"
+                            className="transition-all duration-1000 ease-out"
+                          />
+                          <circle 
+                            cx="50" cy="50" r="40" fill="none" 
+                            stroke="#F59E0B" strokeWidth="12"
+                            strokeDasharray={`${(studentStatusBreakdown.pending / totalStudentAchievements) * 251.2} 251.2`}
+                            strokeDashoffset={`${-(studentStatusBreakdown.approved / totalStudentAchievements) * 251.2}`}
+                            className="transition-all duration-1000 ease-out"
+                          />
+                          <circle 
+                            cx="50" cy="50" r="40" fill="none" 
+                            stroke="#EF4444" strokeWidth="12"
+                            strokeDasharray={`${(studentStatusBreakdown.rejected / totalStudentAchievements) * 251.2} 251.2`}
+                            strokeDashoffset={`${-((studentStatusBreakdown.approved + studentStatusBreakdown.pending) / totalStudentAchievements) * 251.2}`}
+                            className="transition-all duration-1000 ease-out"
+                          />
+                        </>
+                      )}
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-gray-800">{totalStudentAchievements}</p>
+                        <p className="text-xs text-gray-500">Total</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Legend */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full bg-green-500" />
+                      <span className="text-sm text-gray-600">Approved</span>
+                      <span className="ml-auto font-bold text-green-600">{studentStatusBreakdown.approved}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full bg-amber-500" />
+                      <span className="text-sm text-gray-600">Pending</span>
+                      <span className="ml-auto font-bold text-amber-600">{studentStatusBreakdown.pending}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full bg-red-500" />
+                      <span className="text-sm text-gray-600">Rejected</span>
+                      <span className="ml-auto font-bold text-red-600">{studentStatusBreakdown.rejected}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Progress Bars */}
+                <div className="mt-6 space-y-3">
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-600">Approval Rate</span>
+                      <span className="font-semibold text-green-600">
+                        {totalStudentAchievements > 0 ? Math.round((studentStatusBreakdown.approved / totalStudentAchievements) * 100) : 0}%
+                      </span>
+                    </div>
+                    <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all duration-1000"
+                        style={{ width: `${totalStudentAchievements > 0 ? (studentStatusBreakdown.approved / totalStudentAchievements) * 100 : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
-            <Card className="p-4 bg-amber-50 border-amber-200">
-              <div className="flex items-center gap-3">
-                <Clock className="w-8 h-8 text-amber-600" />
-                <div>
-                  <p className="text-2xl font-bold text-amber-700">{studentStatusBreakdown.pending}</p>
-                  <p className="text-xs text-amber-600">Pending</p>
-                </div>
+
+            {/* Staff Status Donut */}
+            <Card className="border-0 shadow-lg overflow-hidden">
+              <div className="bg-gradient-to-r from-emerald-500 to-teal-600 p-4">
+                <h3 className="font-semibold text-white flex items-center gap-2">
+                  <Users className="w-5 h-5" /> Staff Achievement Status
+                </h3>
               </div>
-            </Card>
-            <Card className="p-4 bg-red-50 border-red-200">
-              <div className="flex items-center gap-3">
-                <XCircle className="w-8 h-8 text-red-600" />
-                <div>
-                  <p className="text-2xl font-bold text-red-700">{studentStatusBreakdown.rejected}</p>
-                  <p className="text-xs text-red-600">Rejected</p>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-center gap-8">
+                  {/* Donut Chart CSS */}
+                  <div className="relative w-40 h-40">
+                    <svg viewBox="0 0 100 100" className="transform -rotate-90">
+                      <circle cx="50" cy="50" r="40" fill="none" stroke="#E5E7EB" strokeWidth="12" />
+                      {totalStaffAchievements > 0 && (
+                        <>
+                          <circle 
+                            cx="50" cy="50" r="40" fill="none" 
+                            stroke="#10B981" strokeWidth="12"
+                            strokeDasharray={`${(staffStatusBreakdown.approved / totalStaffAchievements) * 251.2} 251.2`}
+                            strokeDashoffset="0"
+                            className="transition-all duration-1000 ease-out"
+                          />
+                          <circle 
+                            cx="50" cy="50" r="40" fill="none" 
+                            stroke="#F59E0B" strokeWidth="12"
+                            strokeDasharray={`${(staffStatusBreakdown.pending / totalStaffAchievements) * 251.2} 251.2`}
+                            strokeDashoffset={`${-(staffStatusBreakdown.approved / totalStaffAchievements) * 251.2}`}
+                            className="transition-all duration-1000 ease-out"
+                          />
+                          <circle 
+                            cx="50" cy="50" r="40" fill="none" 
+                            stroke="#EF4444" strokeWidth="12"
+                            strokeDasharray={`${(staffStatusBreakdown.rejected / totalStaffAchievements) * 251.2} 251.2`}
+                            strokeDashoffset={`${-((staffStatusBreakdown.approved + staffStatusBreakdown.pending) / totalStaffAchievements) * 251.2}`}
+                            className="transition-all duration-1000 ease-out"
+                          />
+                        </>
+                      )}
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-gray-800">{totalStaffAchievements}</p>
+                        <p className="text-xs text-gray-500">Total</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Legend */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full bg-green-500" />
+                      <span className="text-sm text-gray-600">Approved</span>
+                      <span className="ml-auto font-bold text-green-600">{staffStatusBreakdown.approved}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full bg-amber-500" />
+                      <span className="text-sm text-gray-600">Pending</span>
+                      <span className="ml-auto font-bold text-amber-600">{staffStatusBreakdown.pending}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full bg-red-500" />
+                      <span className="text-sm text-gray-600">Rejected</span>
+                      <span className="ml-auto font-bold text-red-600">{staffStatusBreakdown.rejected}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+                
+                {/* Progress Bars */}
+                <div className="mt-6 space-y-3">
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-600">Approval Rate</span>
+                      <span className="font-semibold text-green-600">
+                        {totalStaffAchievements > 0 ? Math.round((staffStatusBreakdown.approved / totalStaffAchievements) * 100) : 0}%
+                      </span>
+                    </div>
+                    <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all duration-1000"
+                        style={{ width: `${totalStaffAchievements > 0 ? (staffStatusBreakdown.approved / totalStaffAchievements) * 100 : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
           </div>
 
-          {/* Student Achievement Types - Expandable List */}
-          <Card className="border border-gray-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-blue-500" /> 
-                Student Achievement Types ({Object.keys(ACHIEVEMENT_TYPES).length} Types Available)
-              </CardTitle>
-              <p className="text-sm text-gray-500">Click on any type to view individual submissions</p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                {Object.entries(ACHIEVEMENT_TYPES).map(([key, type]) => {
-                  const count = getStudentTypeCount(key)
-                  const Icon = type.icon
-                  const isExpanded = expandedStudentType === key
-                  const achievementsForType = getStudentAchievementsByType(key)
-
-                  return (
-                    <div key={key} className="border border-gray-200 rounded-xl overflow-hidden bg-white hover:shadow-md transition-shadow">
-                      {/* Type Header - Clickable */}
-                      <button
-                        onClick={() => setExpandedStudentType(isExpanded ? null : key)}
-                        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors text-left"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${type.color} flex items-center justify-center`}>
-                            <Icon className="w-5 h-5 text-white" />
+          {/* Combined Bar Chart - Types Comparison */}
+          <Card className="border-0 shadow-lg">
+            <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 p-4">
+              <h3 className="font-semibold text-white flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" /> Achievement Types Distribution
+              </h3>
+            </div>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Student Types Bar Chart */}
+                <div>
+                  <h4 className="text-sm font-semibold text-blue-600 mb-4 flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4" /> Student Achievement Types
+                  </h4>
+                  <div className="space-y-2">
+                    {Object.entries(ACHIEVEMENT_TYPES).slice(0, 7).map(([key, type], idx) => {
+                      const count = getStudentTypeCount(key)
+                      const percentage = (count / maxStudentTypeCount) * 100
+                      return (
+                        <div key={key} className="group">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs text-gray-600 truncate max-w-[140px]" title={type.label}>{type.label}</span>
+                            <span className="text-xs font-bold text-gray-800">{count}</span>
                           </div>
-                          <div>
-                            <p className="font-semibold text-gray-800 text-sm">{type.label}</p>
-                            <p className="text-xs text-gray-500">{count} submission{count !== 1 ? 's' : ''}</p>
+                          <div className="h-5 bg-gray-100 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full rounded-full flex items-center justify-end pr-2 transition-all duration-700 ease-out group-hover:opacity-80"
+                              style={{ 
+                                width: `${Math.max(percentage, count > 0 ? 15 : 0)}%`,
+                                background: `linear-gradient(90deg, ${chartColors[idx % chartColors.length]}99, ${chartColors[idx % chartColors.length]}66)`
+                              }}
+                            >
+                              {count > 0 && percentage > 20 && (
+                                <span className="text-[10px] font-bold text-white">{count}</span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          {count > 0 && (
-                            <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-bold">
-                              {count}
-                            </span>
-                          )}
-                          <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                        </div>
-                      </button>
-
-                      {/* Expanded Content - Individual Achievements */}
-                      {isExpanded && (
-                        <div className="border-t border-gray-200 bg-gray-50 p-4 max-h-[400px] overflow-y-auto">
-                          {achievementsForType.length > 0 ? (
-                            <div className="space-y-3">
-                              <p className="text-sm font-medium text-gray-600 mb-3">
-                                {count} {type.label}{count !== 1 ? 's' : ''} submitted
-                              </p>
-                              {achievementsForType.map((achievement, idx) => (
-                                <div key={idx} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                                  <div className="flex items-start justify-between mb-2">
-                                    <div className="flex-1">
-                                      <p className="font-semibold text-gray-800 text-sm">
-                                        {achievement.data?.name || achievement.studentName || 'Unknown Student'}
-                                      </p>
-                                      <p className="text-xs text-gray-500">
-                                        Reg: {achievement.data?.reg || achievement.regNo || 'N/A'} • 
-                                        Year: {achievement.data?.year || achievement.year || 'N/A'}
-                                      </p>
-                                    </div>
-                                    <Badge className={
-                                      achievement.status?.includes('approved') ? 'bg-green-100 text-green-700' :
-                                      achievement.status?.includes('pending') ? 'bg-amber-100 text-amber-700' :
-                                      'bg-gray-100 text-gray-600'
-                                    }>
-                                      {achievement.status?.replace('_', ' ') || 'Pending'}
-                                    </Badge>
-                                  </div>
-                                  {/* Key Details based on type */}
-                                  <div className="mt-2 space-y-1">
-                                    {key === 'journal' && (
-                                      <>
-                                        <p className="text-xs text-gray-600"><strong>Paper:</strong> {achievement.data?.title || 'N/A'}</p>
-                                        <p className="text-xs text-gray-600"><strong>Journal:</strong> {achievement.data?.journal || 'N/A'}</p>
-                                      </>
-                                    )}
-                                    {key === 'conference' && (
-                                      <>
-                                        <p className="text-xs text-gray-600"><strong>Paper:</strong> {achievement.data?.title || 'N/A'}</p>
-                                        <p className="text-xs text-gray-600"><strong>Conference:</strong> {achievement.data?.conf || 'N/A'}</p>
-                                      </>
-                                    )}
-                                    {key === 'patent' && (
-                                      <>
-                                        <p className="text-xs text-gray-600"><strong>Invention:</strong> {achievement.data?.title || 'N/A'}</p>
-                                        <p className="text-xs text-gray-600"><strong>Status:</strong> {achievement.data?.status_pub || 'N/A'}</p>
-                                      </>
-                                    )}
-                                    {key === 'nptel' && (
-                                      <>
-                                        <p className="text-xs text-gray-600"><strong>Course:</strong> {achievement.data?.course || 'N/A'}</p>
-                                        <p className="text-xs text-gray-600"><strong>Grade:</strong> {achievement.data?.grade || 'N/A'}</p>
-                                      </>
-                                    )}
-                                    {key === 'seminar' && (
-                                      <>
-                                        <p className="text-xs text-gray-600"><strong>Event:</strong> {achievement.data?.title || 'N/A'}</p>
-                                        <p className="text-xs text-gray-600"><strong>Type:</strong> {achievement.data?.type_sem || 'N/A'}</p>
-                                      </>
-                                    )}
-                                    {key === 'internship' && (
-                                      <>
-                                        <p className="text-xs text-gray-600"><strong>Company:</strong> {achievement.data?.org_name || 'N/A'}</p>
-                                        <p className="text-xs text-gray-600"><strong>Role:</strong> {achievement.data?.role || 'N/A'}</p>
-                                      </>
-                                    )}
-                                    {key === 'award' && (
-                                      <>
-                                        <p className="text-xs text-gray-600"><strong>Award:</strong> {achievement.data?.award_name || 'N/A'}</p>
-                                        <p className="text-xs text-gray-600"><strong>Level:</strong> {achievement.data?.level || 'N/A'}</p>
-                                      </>
-                                    )}
-                                    {key === 'placement' && (
-                                      <>
-                                        <p className="text-xs text-gray-600"><strong>Company:</strong> {achievement.data?.company || 'N/A'}</p>
-                                        <p className="text-xs text-gray-600"><strong>Package:</strong> {achievement.data?.package || 'N/A'} LPA</p>
-                                      </>
-                                    )}
-                                    {key === 'hackathon' && (
-                                      <>
-                                        <p className="text-xs text-gray-600"><strong>Title:</strong> {achievement.data?.title || 'N/A'}</p>
-                                        <p className="text-xs text-gray-600"><strong>Stage:</strong> {achievement.data?.stage || 'N/A'}</p>
-                                      </>
-                                    )}
-                                    {key === 'startup' && (
-                                      <>
-                                        <p className="text-xs text-gray-600"><strong>Idea:</strong> {achievement.data?.title || 'N/A'}</p>
-                                        <p className="text-xs text-gray-600"><strong>Stage:</strong> {achievement.data?.stage || 'N/A'}</p>
-                                      </>
-                                    )}
-                                    {!['journal', 'conference', 'patent', 'nptel', 'seminar', 'internship', 'award', 'placement', 'hackathon', 'startup'].includes(key) && (
-                                      <p className="text-xs text-gray-600">
-                                        <strong>Title:</strong> {achievement.data?.title || achievement.data?.event_name || achievement.data?.award_name || achievement.data?.prog_name || 'N/A'}
-                                      </p>
-                                    )}
-                                  </div>
-                                  <p className="text-xs text-gray-400 mt-2">
-                                    Submitted: {achievement.submittedAt ? new Date(achievement.submittedAt).toLocaleDateString() : 'N/A'}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-center py-8">
-                              <Icon className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                              <p className="text-gray-500 font-medium">No submissions yet</p>
-                              <p className="text-sm text-gray-400 mt-1">Students haven't submitted any {type.label.toLowerCase()} records</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-              
-              {/* Empty State */}
-              {totalStudentAchievements === 0 && (
-                <div className="text-center py-12">
-                  <GraduationCap className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500 font-medium text-lg">No student achievements yet</p>
-                  <p className="text-sm text-gray-400 mt-2">When students submit achievements, they will appear here</p>
+                      )
+                    })}
+                  </div>
                 </div>
-              )}
+
+                {/* Staff Types Bar Chart */}
+                <div>
+                  <h4 className="text-sm font-semibold text-emerald-600 mb-4 flex items-center gap-2">
+                    <Users className="w-4 h-4" /> Staff Achievement Types
+                  </h4>
+                  <div className="space-y-2">
+                    {Object.entries(STAFF_ACHIEVEMENT_TYPES).slice(0, 7).map(([key, type], idx) => {
+                      const count = getStaffTypeCount(key)
+                      const percentage = (count / Math.max(maxStaffTypeCount, 1)) * 100
+                      return (
+                        <div key={key} className="group">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs text-gray-600 truncate max-w-[140px]" title={type.label}>{type.label}</span>
+                            <span className="text-xs font-bold text-gray-800">{count}</span>
+                          </div>
+                          <div className="h-5 bg-gray-100 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full rounded-full flex items-center justify-end pr-2 transition-all duration-700 ease-out group-hover:opacity-80"
+                              style={{ 
+                                width: `${Math.max(percentage, count > 0 ? 15 : 0)}%`,
+                                background: `linear-gradient(90deg, ${chartColors[(idx + 7) % chartColors.length]}99, ${chartColors[(idx + 7) % chartColors.length]}66)`
+                              }}
+                            >
+                              {count > 0 && percentage > 20 && (
+                                <span className="text-[10px] font-bold text-white">{count}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Year-wise Analysis */}
+          <Card className="border-0 shadow-lg">
+            <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-4">
+              <h3 className="font-semibold text-white flex items-center gap-2">
+                <Calendar className="w-5 h-5" /> Year-wise Distribution
+              </h3>
+            </div>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Student Year Chart */}
+                <div>
+                  <h4 className="text-sm font-semibold text-blue-600 mb-4">Students by Year of Study</h4>
+                  <div className="flex items-end justify-around h-48 gap-2">
+                    {studentYearBreakdown.map((item, idx) => {
+                      const maxYearCount = Math.max(...studentYearBreakdown.map(y => y.count), 1)
+                      const height = (item.count / maxYearCount) * 100
+                      return (
+                        <div key={item.year} className="flex-1 flex flex-col items-center gap-2">
+                          <div className="w-full relative" style={{ height: '160px' }}>
+                            <div 
+                              className="absolute bottom-0 w-full rounded-t-lg transition-all duration-700 ease-out hover:opacity-80 cursor-pointer"
+                              style={{ 
+                                height: `${Math.max(height, item.count > 0 ? 8 : 2)}%`,
+                                background: `linear-gradient(180deg, ${chartColors[idx]}88, ${chartColors[idx]})`
+                              }}
+                            >
+                              {item.count > 0 && (
+                                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded-md font-bold whitespace-nowrap">
+                                  {item.count}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <span className="text-xs font-medium text-gray-600 text-center">{item.year.replace(' ', '\n')}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Staff Year Chart */}
+                <div>
+                  <h4 className="text-sm font-semibold text-emerald-600 mb-4">Staff Submissions by Year</h4>
+                  <div className="flex items-end justify-around h-48 gap-2">
+                    {staffYearBreakdown.map((item, idx) => {
+                      const maxYearCount = Math.max(...staffYearBreakdown.map(y => y.count), 1)
+                      const height = (item.count / maxYearCount) * 100
+                      return (
+                        <div key={item.year} className="flex-1 flex flex-col items-center gap-2">
+                          <div className="w-full relative" style={{ height: '160px' }}>
+                            <div 
+                              className="absolute bottom-0 w-full rounded-t-lg transition-all duration-700 ease-out hover:opacity-80 cursor-pointer"
+                              style={{ 
+                                height: `${Math.max(height, item.count > 0 ? 8 : 2)}%`,
+                                background: `linear-gradient(180deg, ${chartColors[idx + 3]}88, ${chartColors[idx + 3]})`
+                              }}
+                            >
+                              {item.count > 0 && (
+                                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded-md font-bold whitespace-nowrap">
+                                  {item.count}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <span className="text-xs font-medium text-gray-600">{item.year}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* STAFF ANALYTICS SECTION */}
-      {activeSection === 'staff' && (
+      {/* ==================== STUDENT ANALYTICS SECTION WITH CHARTS ==================== */}
+      {activeSection === 'students' && (
         <div className="space-y-6">
-          {/* Status Overview */}
+          {/* Status Cards Row */}
           <div className="grid grid-cols-3 gap-4">
-            <Card className="p-4 bg-green-50 border-green-200">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-8 h-8 text-green-600" />
-                <div>
-                  <p className="text-2xl font-bold text-green-700">{staffStatusBreakdown.approved}</p>
-                  <p className="text-xs text-green-600">Approved</p>
+            <Card className="border-0 shadow-md overflow-hidden">
+              <div className="h-1 bg-green-500" />
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
-              </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-800">{studentStatusBreakdown.approved}</p>
+                  <p className="text-sm text-gray-500">Approved</p>
+                </div>
+              </CardContent>
             </Card>
-            <Card className="p-4 bg-amber-50 border-amber-200">
-              <div className="flex items-center gap-3">
-                <Clock className="w-8 h-8 text-amber-600" />
-                <div>
-                  <p className="text-2xl font-bold text-amber-700">{staffStatusBreakdown.pending}</p>
-                  <p className="text-xs text-amber-600">Pending</p>
+            <Card className="border-0 shadow-md overflow-hidden">
+              <div className="h-1 bg-amber-500" />
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-amber-600" />
                 </div>
-              </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-800">{studentStatusBreakdown.pending}</p>
+                  <p className="text-sm text-gray-500">Pending</p>
+                </div>
+              </CardContent>
             </Card>
-            <Card className="p-4 bg-red-50 border-red-200">
-              <div className="flex items-center gap-3">
-                <XCircle className="w-8 h-8 text-red-600" />
-                <div>
-                  <p className="text-2xl font-bold text-red-700">{staffStatusBreakdown.rejected}</p>
-                  <p className="text-xs text-red-600">Rejected</p>
+            <Card className="border-0 shadow-md overflow-hidden">
+              <div className="h-1 bg-red-500" />
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
+                  <XCircle className="w-6 h-6 text-red-600" />
                 </div>
-              </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-800">{studentStatusBreakdown.rejected}</p>
+                  <p className="text-sm text-gray-500">Rejected</p>
+                </div>
+              </CardContent>
             </Card>
           </div>
 
-          {/* Staff Achievement Types - Expandable List */}
-          <Card className="border border-gray-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-emerald-500" /> 
-                Staff Achievement Types ({Object.keys(STAFF_ACHIEVEMENT_TYPES).length} Types Available)
-              </CardTitle>
-              <p className="text-sm text-gray-500">Click on any type to view individual submissions</p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                {Object.entries(STAFF_ACHIEVEMENT_TYPES).map(([key, type]) => {
-                  const count = getStaffTypeCount(key)
-                  const Icon = type.icon
-                  const isExpanded = expandedStaffType === key
-                  const achievementsForType = getStaffAchievementsByType(key)
-
-                  return (
-                    <div key={key} className="border border-gray-200 rounded-xl overflow-hidden bg-white hover:shadow-md transition-shadow">
-                      {/* Type Header - Clickable */}
-                      <button
-                        onClick={() => setExpandedStaffType(isExpanded ? null : key)}
-                        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors text-left"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${type.color} flex items-center justify-center`}>
-                            <Icon className="w-5 h-5 text-white" />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-800 text-sm">{type.label}</p>
-                            <p className="text-xs text-gray-500">{count} submission{count !== 1 ? 's' : ''}</p>
+          {/* BAR CHART VIEW */}
+          {chartView === 'bar' && (
+            <Card className="border-0 shadow-lg">
+              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4">
+                <h3 className="font-semibold text-white flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" /> Student Achievements by Type (Vertical Bar)
+                </h3>
+              </div>
+              <CardContent className="p-6">
+                <div className="flex items-end justify-around h-72 gap-3">
+                  {Object.entries(ACHIEVEMENT_TYPES).slice(0, 10).map(([key, type], idx) => {
+                    const count = getStudentTypeCount(key)
+                    const height = (count / Math.max(maxStudentTypeCount, 1)) * 100
+                    const Icon = type.icon
+                    return (
+                      <div key={key} className="flex-1 flex flex-col items-center gap-2 group">
+                        <div className="w-full relative flex items-end justify-center" style={{ height: '220px' }}>
+                          <div 
+                            className="w-full max-w-[50px] rounded-t-lg transition-all duration-500 ease-out cursor-pointer hover:opacity-80 relative"
+                            style={{ 
+                              height: `${Math.max(height, count > 0 ? 10 : 4)}%`,
+                              background: `linear-gradient(180deg, ${chartColors[idx % chartColors.length]}, ${chartColors[idx % chartColors.length]}aa)`
+                            }}
+                          >
+                            {count > 0 && (
+                              <>
+                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded-md font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                  {count}
+                                </div>
+                                <div className="absolute inset-x-0 -bottom-1 mx-auto w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          {count > 0 && (
-                            <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-sm font-bold">
-                              {count}
-                            </span>
-                          )}
-                          <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center" title={type.label}>
+                          <Icon className="w-4 h-4 text-gray-600" />
                         </div>
-                      </button>
+                        <span className="text-[9px] text-gray-500 text-center leading-tight line-clamp-2">{type.label.split(' ')[0]}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-                      {/* Expanded Content - Individual Achievements */}
-                      {isExpanded && (
-                        <div className="border-t border-gray-200 bg-gray-50 p-4 max-h-[400px] overflow-y-auto">
-                          {achievementsForType.length > 0 ? (
-                            <div className="space-y-3">
-                              <p className="text-sm font-medium text-gray-600 mb-3">
-                                {count} {type.label}{count !== 1 ? 's' : ''} submitted
-                              </p>
-                              {achievementsForType.map((achievement, idx) => (
-                                <div key={idx} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                                  <div className="flex items-start justify-between mb-2">
-                                    <div className="flex-1">
-                                      <p className="font-semibold text-gray-800 text-sm">
-                                        {achievement.data?.faculty_name || achievement.submittedBy || 'Unknown Faculty'}
-                                      </p>
-                                      <p className="text-xs text-gray-500">
-                                        Designation: {achievement.data?.designation || 'N/A'}
-                                      </p>
-                                    </div>
-                                    <Badge className={
-                                      achievement.status?.includes('approved') ? 'bg-green-100 text-green-700' :
-                                      achievement.status?.includes('pending') ? 'bg-amber-100 text-amber-700' :
+          {/* HORIZONTAL BAR CHART VIEW */}
+          {chartView === 'horizontal' && (
+            <Card className="border-0 shadow-lg">
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-4">
+                <h3 className="font-semibold text-white flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 rotate-90" /> Student Achievements by Type (Horizontal)
+                </h3>
+              </div>
+              <CardContent className="p-6">
+                <div className="space-y-3">
+                  {Object.entries(ACHIEVEMENT_TYPES).map(([key, type], idx) => {
+                    const count = getStudentTypeCount(key)
+                    const percentage = (count / Math.max(maxStudentTypeCount, 1)) * 100
+                    const Icon = type.icon
+                    return (
+                      <div key={key} className="group cursor-pointer" onClick={() => setExpandedStudentType(expandedStudentType === key ? null : key)}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${chartColors[idx % chartColors.length]}22` }}>
+                            <Icon className="w-4 h-4" style={{ color: chartColors[idx % chartColors.length] }} />
+                          </div>
+                          <span className="text-sm text-gray-700 w-40 truncate flex-shrink-0">{type.label}</span>
+                          <div className="flex-1 h-8 bg-gray-100 rounded-lg overflow-hidden relative">
+                            <div 
+                              className="h-full rounded-lg flex items-center justify-end pr-3 transition-all duration-500 group-hover:brightness-110"
+                              style={{ 
+                                width: `${Math.max(percentage, count > 0 ? 8 : 2)}%`,
+                                background: `linear-gradient(90deg, ${chartColors[idx % chartColors.length]}44, ${chartColors[idx % chartColors.length]})`
+                              }}
+                            >
+                              {count > 0 && (
+                                <span className="text-sm font-bold text-white drop-shadow-md">{count}</span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="text-xs text-gray-400 w-8 text-right">{count}</span>
+                          <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedStudentType === key ? 'rotate-90' : ''}`} />
+                        </div>
+                        
+                        {/* Expanded Content */}
+                        {expandedStudentType === key && (
+                          <div className="ml-11 mt-2 p-4 bg-gray-50 rounded-lg animate-in slide-in-from-top-2">
+                            {getStudentAchievementsByType(key).length > 0 ? (
+                              <div className="space-y-2 max-h-60 overflow-y-auto">
+                                {getStudentAchievementsByType(key).map((ach, i) => (
+                                  <div key={i} className="flex items-center justify-between p-2 bg-white rounded-lg text-sm">
+                                    <span className="font-medium text-gray-700">{ach.data?.name || ach.studentName}</span>
+                                    <Badge variant={ach.status?.includes('approved') ? 'default' : 'secondary'} className={
+                                      ach.status?.includes('approved') ? 'bg-green-100 text-green-700' :
+                                      ach.status?.includes('pending') ? 'bg-amber-100 text-amber-700' :
                                       'bg-gray-100 text-gray-600'
                                     }>
-                                      {achievement.status?.replace('_', ' ') || 'Pending'}
+                                      {ach.status || 'Pending'}
                                     </Badge>
                                   </div>
-                                  {/* Key Details based on type */}
-                                  <div className="mt-2 space-y-1">
-                                    {key === 'industry_interaction' && (
-                                      <>
-                                        <p className="text-xs text-gray-600"><strong>Company:</strong> {achievement.data?.company_name || 'N/A'}</p>
-                                        <p className="text-xs text-gray-600"><strong>Nature:</strong> {achievement.data?.nature || 'N/A'}</p>
-                                      </>
-                                    )}
-                                    {key === 'award_record' && (
-                                      <>
-                                        <p className="text-xs text-gray-600"><strong>Award:</strong> {achievement.data?.award_name || 'N/A'}</p>
-                                        <p className="text-xs text-gray-600"><strong>Level:</strong> {achievement.data?.level || 'N/A'}</p>
-                                      </>
-                                    )}
-                                    {key === 'event_organized' && (
-                                      <>
-                                        <p className="text-xs text-gray-600"><strong>Event:</strong> {achievement.data?.event_title || 'N/A'}</p>
-                                        <p className="text-xs text-gray-600"><strong>Type:</strong> {achievement.data?.event_type || 'N/A'}</p>
-                                      </>
-                                    )}
-                                    {key === 'fdp_sttp' && (
-                                      <>
-                                        <p className="text-xs text-gray-600"><strong>Course:</strong> {achievement.data?.course_name || 'N/A'}</p>
-                                        <p className="text-xs text-gray-600"><strong>Platform:</strong> {achievement.data?.platform || 'N/A'}</p>
-                                      </>
-                                    )}
-                                    {key === 'grant' && (
-                                      <>
-                                        <p className="text-xs text-gray-600"><strong>Project:</strong> {achievement.data?.project_title || 'N/A'}</p>
-                                        <p className="text-xs text-gray-600"><strong>Amount:</strong> ₹{achievement.data?.amount || 'N/A'}</p>
-                                      </>
-                                    )}
-                                    {key === 'publication' && (
-                                      <>
-                                        <p className="text-xs text-gray-600"><strong>Paper:</strong> {achievement.data?.paper_title || 'N/A'}</p>
-                                        <p className="text-xs text-gray-600"><strong>Conference:</strong> {achievement.data?.conference_name || 'N/A'}</p>
-                                      </>
-                                    )}
-                                    {key === 'chapter' && (
-                                      <>
-                                        <p className="text-xs text-gray-600"><strong>Chapter:</strong> {achievement.data?.chapter_title || 'N/A'}</p>
-                                        <p className="text-xs text-gray-600"><strong>Book:</strong> {achievement.data?.book_name || 'N/A'}</p>
-                                      </>
-                                    )}
-                                    {key === 'resource_person' && (
-                                      <>
-                                        <p className="text-xs text-gray-600"><strong>Event:</strong> {achievement.data?.event_title || 'N/A'}</p>
-                                        <p className="text-xs text-gray-600"><strong>Type:</strong> {achievement.data?.event_type || 'N/A'}</p>
-                                      </>
-                                    )}
-                                    {!['industry_interaction', 'award_record', 'event_organized', 'fdp_sttp', 'grant', 'publication', 'chapter', 'resource_person'].includes(key) && (
-                                      <p className="text-xs text-gray-600">
-                                        Type: {type.label}
-                                      </p>
-                                    )}
-                                  </div>
-                                  <p className="text-xs text-gray-400 mt-2">
-                                    Submitted: {achievement.submittedAt ? new Date(achievement.submittedAt).toLocaleDateString() : 'N/A'}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-center py-8">
-                              <Icon className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                              <p className="text-gray-500 font-medium">No submissions yet</p>
-                              <p className="text-sm text-gray-400 mt-1">Faculty members haven't submitted any {type.label.toLowerCase()} records</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-              
-              {/* Empty State */}
-              {totalStaffAchievements === 0 && (
-                <div className="text-center py-12">
-                  <Users className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500 font-medium text-lg">No staff achievements yet</p>
-                  <p className="text-sm text-gray-400 mt-2">When faculty submit achievements, they will appear here</p>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-400 text-center py-4">No submissions yet</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* DONUT CHART VIEW */}
+          {chartView === 'donut' && (
+            <Card className="border-0 shadow-lg">
+              <div className="bg-gradient-to-r from-pink-500 to-rose-600 p-4">
+                <h3 className="font-semibold text-white flex items-center gap-2">
+                  <PieChartIcon className="w-5 h-5" /> Student Achievement Distribution (Donut)
+                </h3>
+              </div>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                  {/* Donut SVG */}
+                  <div className="relative w-64 h-64 mx-auto">
+                    <svg viewBox="0 0 100 100" className="transform -rotate-90">
+                      {(() => {
+                        let cumulativeOffset = 0
+                        const total = totalStudentAchievements || 1
+                        return Object.entries(ACHIEVEMENT_TYPES).map(([key, type], idx) => {
+                          const count = getStudentTypeCount(key)
+                          if (count === 0) return null
+                          const percentage = count / total
+                          const dashArray = `${percentage * 251.2} 251.2`
+                          const dashOffset = -cumulativeOffset * 251.2
+                          cumulativeOffset += percentage
+                          
+                          return (
+                            <circle
+                              key={key}
+                              cx="50" cy="50" r="40"
+                              fill="none"
+                              stroke={chartColors[idx % chartColors.length]}
+                              strokeWidth="20"
+                              strokeDasharray={dashArray}
+                              strokeDashoffset={dashOffset}
+                              className="transition-all duration-1000 ease-out cursor-pointer hover:stroke-width-[25]"
+                            />
+                          )
+                        })
+                      })()}
+                      {/* Background circle for empty state */}
+                      {totalStudentAchievements === 0 && (
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="#E5E7EB" strokeWidth="20" />
+                      )}
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                        <p className="text-3xl font-bold text-gray-800">{totalStudentAchievements}</p>
+                        <p className="text-sm text-gray-500">Total</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Legend */}
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {Object.entries(ACHIEVEMENT_TYPES).map(([key, type], idx) => {
+                      const count = getStudentTypeCount(key)
+                      if (count === 0) return null
+                      return (
+                        <div 
+                          key={key} 
+                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                          onClick={() => setExpandedStudentType(expandedStudentType === key ? null : key)}
+                        >
+                          <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: chartColors[idx % chartColors.length] }} />
+                          <span className="text-sm text-gray-700 flex-1 truncate">{type.label}</span>
+                          <span className="text-sm font-bold text-gray-800">{count}</span>
+                        </div>
+                      )
+                    })}
+                    {totalStudentAchievements === 0 && (
+                      <p className="text-sm text-gray-400 text-center py-4">No data to display</p>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Expanded Details */}
+                {expandedStudentType && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-xl">
+                    <h4 className="font-semibold text-gray-800 mb-3">
+                      {ACHIEVEMENT_TYPES[expandedStudentType as keyof typeof ACHIEVEMENT_TYPES]?.label} - Details
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                      {getStudentAchievementsByType(expandedStudentType).map((ach, i) => (
+                        <div key={i} className="p-3 bg-white rounded-lg text-sm">
+                          <p className="font-medium text-gray-800">{ach.data?.name || ach.studentName}</p>
+                          <p className="text-xs text-gray-500">Reg: {ach.data?.reg || 'N/A'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* ==================== STAFF ANALYTICS SECTION WITH CHARTS ==================== */}
+      {activeSection === 'staff' && (
+        <div className="space-y-6">
+          {/* Status Cards Row */}
+          <div className="grid grid-cols-3 gap-4">
+            <Card className="border-0 shadow-md overflow-hidden">
+              <div className="h-1 bg-green-500" />
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-800">{staffStatusBreakdown.approved}</p>
+                  <p className="text-sm text-gray-500">Approved</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 shadow-md overflow-hidden">
+              <div className="h-1 bg-amber-500" />
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-800">{staffStatusBreakdown.pending}</p>
+                  <p className="text-sm text-gray-500">Pending</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 shadow-md overflow-hidden">
+              <div className="h-1 bg-red-500" />
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
+                  <XCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-800">{staffStatusBreakdown.rejected}</p>
+                  <p className="text-sm text-gray-500">Rejected</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* BAR CHART VIEW */}
+          {chartView === 'bar' && (
+            <Card className="border-0 shadow-lg">
+              <div className="bg-gradient-to-r from-emerald-500 to-teal-600 p-4">
+                <h3 className="font-semibold text-white flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" /> Staff Achievements by Type (Vertical Bar)
+                </h3>
+              </div>
+              <CardContent className="p-6">
+                <div className="flex items-end justify-around h-72 gap-3">
+                  {Object.entries(STAFF_ACHIEVEMENT_TYPES).slice(0, 10).map(([key, type], idx) => {
+                    const count = getStaffTypeCount(key)
+                    const height = (count / Math.max(maxStaffTypeCount, 1)) * 100
+                    const Icon = type.icon
+                    return (
+                      <div key={key} className="flex-1 flex flex-col items-center gap-2 group">
+                        <div className="w-full relative flex items-end justify-center" style={{ height: '220px' }}>
+                          <div 
+                            className="w-full max-w-[50px] rounded-t-lg transition-all duration-500 ease-out cursor-pointer hover:opacity-80 relative"
+                            style={{ 
+                              height: `${Math.max(height, count > 0 ? 10 : 4)}%`,
+                              background: `linear-gradient(180deg, ${chartColors[(idx + 3) % chartColors.length]}, ${chartColors[(idx + 3) % chartColors.length]}aa)`
+                            }}
+                          >
+                            {count > 0 && (
+                              <>
+                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded-md font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                  {count}
+                                </div>
+                                <div className="absolute inset-x-0 -bottom-1 mx-auto w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center" title={type.label}>
+                          <Icon className="w-4 h-4 text-gray-600" />
+                        </div>
+                        <span className="text-[9px] text-gray-500 text-center leading-tight line-clamp-2">{type.label.split(' ')[0]}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* HORIZONTAL BAR CHART VIEW */}
+          {chartView === 'horizontal' && (
+            <Card className="border-0 shadow-lg">
+              <div className="bg-gradient-to-r from-teal-500 to-cyan-600 p-4">
+                <h3 className="font-semibold text-white flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 rotate-90" /> Staff Achievements by Type (Horizontal)
+                </h3>
+              </div>
+              <CardContent className="p-6">
+                <div className="space-y-3">
+                  {Object.entries(STAFF_ACHIEVEMENT_TYPES).map(([key, type], idx) => {
+                    const count = getStaffTypeCount(key)
+                    const percentage = (count / Math.max(maxStaffTypeCount, 1)) * 100
+                    const Icon = type.icon
+                    return (
+                      <div key={key} className="group cursor-pointer" onClick={() => setExpandedStaffType(expandedStaffType === key ? null : key)}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${chartColors[(idx + 3) % chartColors.length]}22` }}>
+                            <Icon className="w-4 h-4" style={{ color: chartColors[(idx + 3) % chartColors.length] }} />
+                          </div>
+                          <span className="text-sm text-gray-700 w-40 truncate flex-shrink-0">{type.label}</span>
+                          <div className="flex-1 h-8 bg-gray-100 rounded-lg overflow-hidden relative">
+                            <div 
+                              className="h-full rounded-lg flex items-center justify-end pr-3 transition-all duration-500 group-hover:brightness-110"
+                              style={{ 
+                                width: `${Math.max(percentage, count > 0 ? 8 : 2)}%`,
+                                background: `linear-gradient(90deg, ${chartColors[(idx + 3) % chartColors.length]}44, ${chartColors[(idx + 3) % chartColors.length]})`
+                              }}
+                            >
+                              {count > 0 && (
+                                <span className="text-sm font-bold text-white drop-shadow-md">{count}</span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="text-xs text-gray-400 w-8 text-right">{count}</span>
+                          <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedStaffType === key ? 'rotate-90' : ''}`} />
+                        </div>
+                        
+                        {/* Expanded Content */}
+                        {expandedStaffType === key && (
+                          <div className="ml-11 mt-2 p-4 bg-gray-50 rounded-lg animate-in slide-in-from-top-2">
+                            {getStaffAchievementsByType(key).length > 0 ? (
+                              <div className="space-y-2 max-h-60 overflow-y-auto">
+                                {getStaffAchievementsByType(key).map((ach, i) => (
+                                  <div key={i} className="flex items-center justify-between p-2 bg-white rounded-lg text-sm">
+                                    <span className="font-medium text-gray-700">{ach.data?.faculty_name || ach.submittedBy}</span>
+                                    <Badge variant={ach.status?.includes('approved') ? 'default' : 'secondary'} className={
+                                      ach.status?.includes('approved') ? 'bg-green-100 text-green-700' :
+                                      ach.status?.includes('pending') ? 'bg-amber-100 text-amber-700' :
+                                      'bg-gray-100 text-gray-600'
+                                    }>
+                                      {ach.status || 'Pending'}
+                                    </Badge>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-400 text-center py-4">No submissions yet</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* DONUT CHART VIEW */}
+          {chartView === 'donut' && (
+            <Card className="border-0 shadow-lg">
+              <div className="bg-gradient-to-r from-orange-500 to-amber-600 p-4">
+                <h3 className="font-semibold text-white flex items-center gap-2">
+                  <PieChartIcon className="w-5 h-5" /> Staff Achievement Distribution (Donut)
+                </h3>
+              </div>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                  {/* Donut SVG */}
+                  <div className="relative w-64 h-64 mx-auto">
+                    <svg viewBox="0 0 100 100" className="transform -rotate-90">
+                      {(() => {
+                        let cumulativeOffset = 0
+                        const total = totalStaffAchievements || 1
+                        return Object.entries(STAFF_ACHIEVEMENT_TYPES).map(([key, type], idx) => {
+                          const count = getStaffTypeCount(key)
+                          if (count === 0) return null
+                          const percentage = count / total
+                          const dashArray = `${percentage * 251.2} 251.2`
+                          const dashOffset = -cumulativeOffset * 251.2
+                          cumulativeOffset += percentage
+                          
+                          return (
+                            <circle
+                              key={key}
+                              cx="50" cy="50" r="40"
+                              fill="none"
+                              stroke={chartColors[(idx + 3) % chartColors.length]}
+                              strokeWidth="20"
+                              strokeDasharray={dashArray}
+                              strokeDashoffset={dashOffset}
+                              className="transition-all duration-1000 ease-out cursor-pointer hover:stroke-width-[25]"
+                            />
+                          )
+                        })
+                      })()}
+                      {totalStaffAchievements === 0 && (
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="#E5E7EB" strokeWidth="20" />
+                      )}
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                        <p className="text-3xl font-bold text-gray-800">{totalStaffAchievements}</p>
+                        <p className="text-sm text-gray-500">Total</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Legend */}
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {Object.entries(STAFF_ACHIEVEMENT_TYPES).map(([key, type], idx) => {
+                      const count = getStaffTypeCount(key)
+                      if (count === 0) return null
+                      return (
+                        <div 
+                          key={key} 
+                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                          onClick={() => setExpandedStaffType(expandedStaffType === key ? null : key)}
+                        >
+                          <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: chartColors[(idx + 3) % chartColors.length] }} />
+                          <span className="text-sm text-gray-700 flex-1 truncate">{type.label}</span>
+                          <span className="text-sm font-bold text-gray-800">{count}</span>
+                        </div>
+                      )
+                    })}
+                    {totalStaffAchievements === 0 && (
+                      <p className="text-sm text-gray-400 text-center py-4">No data to display</p>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Expanded Details */}
+                {expandedStaffType && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-xl">
+                    <h4 className="font-semibold text-gray-800 mb-3">
+                      {STAFF_ACHIEVEMENT_TYPES[expandedStaffType as keyof typeof STAFF_ACHIEVEMENT_TYPES]?.label} - Details
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                      {getStaffAchievementsByType(expandedStaffType).map((ach, i) => (
+                        <div key={i} className="p-3 bg-white rounded-lg text-sm">
+                          <p className="font-medium text-gray-800">{ach.data?.faculty_name || ach.submittedBy}</p>
+                          <p className="text-xs text-gray-500">{ach.data?.designation || 'Faculty'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
     </div>
   )
 }
-
-// ============ ANALYTICS PAGE (Admin/General) ============
 function AnalyticsPage() {
   return (
     <div className="space-y-6">
