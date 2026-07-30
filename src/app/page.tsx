@@ -62,6 +62,7 @@ type TabType = 'dashboard' | 'departments' | 'faculty' | 'students' | 'activitie
   | 'approvals' | 'analytics' | 'documents' | 'settings' | 'achievements' | 'feedback'
   | 'staff_achievement' | 'student_achievement_view'
   | 'hod_student_approval' | 'hod_staff_approval' | 'my_achievement'
+  | 'report_generator'
 
 // ============ ACHIEVEMENT TYPES DEFINITION (13 Types - Student Focused) ============
 const ACHIEVEMENT_TYPES: Record<string, {
@@ -6242,6 +6243,1056 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
     </div>
   )
 }
+// ============ HOD REPORT GENERATOR PAGE (Monthly Department Report) ============
+function HODReportGeneratorPage({ user }: { user: User }) {
+  const [generating, setGenerating] = useState(false)
+  const [activeSection, setActiveSection] = useState<number>(0)
+  const [generated, setGenerated] = useState(false)
+  
+  // Basic Info Section
+  const [reportData, setReportData] = useState({
+    // Header Info
+    schoolName: '',
+    department: user.departmentName || '',
+    reportingMonth: '',
+    reportingYear: '2026',
+    academicYear: '2026 – 2027',
+    
+    // DEPT. BASIC INFORMATION
+    facultyCount: '',
+    profCount: '',
+    aspCount: '',
+    apCount: '',
+    phdHolders: '',
+    phdCount: '',
+    pursuingPhd: '',
+    notRegistered: '',
+    totalStudents: '',
+    year1Students: '',
+    year2Students: '',
+    year3Students: '',
+    year4Students: '',
+    
+    // A. ACADEMIC ACTIVITIES
+    syllabusCoverageTheory: '',
+    syllabusCoverageLab: '',
+    lessonPlanTheory: '',
+    lessonPlanLab: '',
+    ciaConducted: '',
+    ciaEnclose: '',
+    attendanceReport: '',
+    attendanceEnclose: '',
+    remedialClasses: '',
+    remedialEnclose: '',
+    mentoringSessions: '',
+    
+    // B. STUDENT DEVELOPMENT ACTIVITIES
+    studentDev: {
+      guestLectures: { prev: '', curr: '' },
+      workshops: { prev: '', curr: '' },
+      industrialVisits: { prev: '', curr: '' },
+      valueAddedCourses: { prev: '', curr: '' },
+      skillEnhancement: { prev: '', curr: '' },
+      handsOnTraining: { prev: '', curr: '' },
+      hackathon: { prev: '', curr: '' },
+      profSocietyActivities: { prev: '', curr: '' }
+    },
+    
+    // C. RESEARCH & INNOVATION
+    researchFaculty: Array(9).fill(null).map(() => ({
+      name: '',
+      journalPub: { prev: '', curr: '' },
+      conferencePapers: { prev: '', curr: '' },
+      book: { prev: '', curr: '' },
+      bookChapters: { prev: '', curr: '' },
+      patents: { prev: '', curr: '' },
+      fundedProjects: { prev: '', curr: '' }
+    })),
+    
+    // Cumulative Research
+    cumulativeResearch: {
+      journalPub: { prev: '', cumulative: '' },
+      conferencePapers: { prev: '', cumulative: '' },
+      book: { prev: '', cumulative: '' },
+      bookChapters: { prev: '', cumulative: '' },
+      patents: { prev: '', cumulative: '' },
+      fundedProjects: { prev: '', cumulative: '' }
+    },
+    
+    // D. FACULTY DEVELOPMENT
+    facultyDev: Array(9).fill(null).map(() => ({
+      name: '',
+      fdpsAttended: { prev: '', curr: '' },
+      fdpsOrganized: { prev: '', curr: '' },
+      nptelCompleted: { prev: '', curr: '' },
+      moocsCompleted: { prev: '', curr: '' },
+      resourcePerson: { prev: '', curr: '' }
+    })),
+    
+    // Cumulative Faculty Dev
+    cumulativeFacultyDev: {
+      fdpsAttended: { prev: '', cumulative: '' },
+      fdpsOrganized: { prev: '', cumulative: '' },
+      nptelCompleted: { prev: '', cumulative: '' },
+      moocsCompleted: { prev: '', cumulative: '' },
+      resourcePerson: { prev: '', cumulative: '' }
+    },
+    
+    // E. STUDENTS INTERNSHIP
+    internship: {
+      previous: { paid: '', nonPaid: '', virtual: '', notAvailed: '' },
+      current: { paid: '', nonPaid: '', virtual: '', notAvailed: '' },
+      total: { paid: '', nonPaid: '', virtual: '', notAvailed: '' }
+    },
+    
+    // F. FACULTY-INDUSTRY INTERACTION
+    industryInteraction: Array(8).fill(null).map(() => ({
+      name: '',
+      mousSigned: { prev: '', curr: '' },
+      industryVisits: { prev: '', curr: '' },
+      expertsInvited: { prev: '', curr: '' },
+      collaborativeActivities: { prev: '', curr: '' },
+      consultancyServices: { prev: '', curr: '' }
+    })),
+    
+    // G. QUALITY ASSURANCE ACTIVITIES
+    qaActivities: [
+      { particular: 'Course File', status: 'Updated', remarks: '' },
+      { particular: 'Question Bank', status: 'Updated', remarks: '' },
+      { particular: 'CO-PO Mapping File', status: 'Updated', remarks: '' },
+      { particular: "Student's Monthly Feedback with ATR", status: 'Updated', remarks: '' },
+      { particular: 'Academic Audit Observations', status: 'Phase I / II / III / IV Completed', remarks: 'Enclose the report' },
+      { particular: 'Best Practices Implemented', status: 'Yes / No', remarks: '' },
+      { particular: 'Mentor-Mentee Records', status: 'Updated', remarks: '' },
+      { particular: 'SDG Activities File', status: 'Updated', remarks: '' },
+      { particular: 'Dept./NBA Documentation Updation', status: 'Updated', remarks: '' },
+      { particular: 'Total Fees pending', status: '', remarks: '' }
+    ],
+    
+    // H. DOCUMENTS TO BE ATTACHED
+    documents: {
+      eventReports: false,
+      workshopCertificates: false,
+      publicationProofs: false,
+      placementDetails: false,
+      internshipDetails: false,
+      studentAchievementProofs: false,
+      sdgExtensionReports: false,
+      mouIndustryDocuments: false
+    }
+  })
+
+  const sections = [
+    { id: 0, title: 'Header Information', icon: FileText },
+    { id: 1, title: 'Dept. Basic Information', icon: Users },
+    { id: 2, title: 'A. Academic Activities', icon: BookOpen },
+    { id: 3, title: 'B. Student Development', icon: GraduationCap },
+    { id: 4, title: 'C. Research & Innovation', icon: Award },
+    { id: 5, title: 'D. Faculty Development', icon: TrendingUp },
+    { id: 6, title: 'E. Students Internship', icon: Briefcase },
+    { id: 7, title: 'F. Industry Interaction', icon: Handshake },
+    { id: 8, title: 'G. Quality Assurance', icon: Shield },
+    { id: 9, title: 'H. Documents Checklist', icon: FolderOpen }
+  ]
+
+  const updateField = (field: string, value: string) => {
+    setReportData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const updateStudentDev = (key: string, subKey: string, value: string) => {
+    setReportData(prev => ({
+      ...prev,
+      studentDev: {
+        ...prev.studentDev,
+        [key]: { ...prev.studentDev[key as keyof typeof prev.studentDev], [subKey]: value }
+      }
+    }))
+  }
+
+  const updateResearchFaculty = (index: number, field: string, subKey?: string, value?: string) => {
+    setReportData(prev => {
+      const newFaculty = [...prev.researchFaculty]
+      if (subKey && value !== undefined) {
+        newFaculty[index] = {
+          ...newFaculty[index],
+          [field]: { ...newFaculty[index][field as keyof typeof newFaculty[0]], [subKey]: value }
+        }
+      } else {
+        newFaculty[index] = { ...newFaculty[index], [field]: value || '' }
+      }
+      return { ...prev, researchFaculty: newFaculty }
+    })
+  }
+
+  const updateFacultyDev = (index: number, field: string, subKey: string, value: string) => {
+    setReportData(prev => {
+      const newFaculty = [...prev.facultyDev]
+      newFaculty[index] = {
+        ...newFaculty[index],
+        [field]: { ...newFaculty[index][field as keyof typeof newFaculty[0]], [subKey]: value }
+      }
+      return { ...prev, facultyDev: newFaculty }
+    })
+  }
+
+  const updateInternship = (period: string, field: string, value: string) => {
+    setReportData(prev => ({
+      ...prev,
+      internship: {
+        ...prev.internship,
+        [period]: { ...prev.internship[period as keyof typeof prev.internship], [field]: value }
+      }
+    }))
+  }
+
+  const updateIndustryInteraction = (index: number, field: string, subKey: string, value: string) => {
+    setReportData(prev => {
+      const newData = [...prev.industryInteraction]
+      newData[index] = {
+        ...newData[index],
+        [field]: { ...newData[index][field as keyof typeof newData[0]], [subKey]: value }
+      }
+      return { ...prev, industryInteraction: newData }
+    })
+  }
+
+  const updateQAActivity = (index: number, field: string, value: string) => {
+    setReportData(prev => {
+      const newQA = [...prev.qaActivities]
+      newQA[index] = { ...newQA[index], [field]: value }
+      return { ...prev, qaActivities: newQA }
+    })
+  }
+
+  const updateDocuments = (field: string, value: boolean) => {
+    setReportData(prev => ({
+      ...prev,
+      documents: { ...prev.documents, [field]: value }
+    }))
+  }
+
+  const generateReport = async () => {
+    setGenerating(true)
+    try {
+      const response = await fetch('/api/generate-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportData, department: user.departmentName })
+      })
+      
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `Monthly_Department_Report_${user.departmentName}_${reportData.reportingMonth}_${reportData.reportingYear}.docx`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+        setGenerated(true)
+        setTimeout(() => setGenerated(false), 3000)
+      } else {
+        alert('Error generating report')
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      alert('Error generating report')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6 p-4 lg:p-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            📋 Monthly Department Report Generator
+          </h2>
+          <p className="text-gray-500 mt-1">Generate comprehensive monthly reports for NIET</p>
+        </div>
+        <div className="flex gap-3">
+          <Button 
+            onClick={generateReport} 
+            disabled={generating}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 shadow-lg"
+          >
+            {generating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-2" />
+                Generate DOCX
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {generated && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
+          <CheckCircle className="w-5 h-5 text-green-600" />
+          <span className="text-green-700 font-medium">Report generated successfully!</span>
+        </div>
+      )}
+
+      {/* Section Navigation */}
+      <div className="bg-white rounded-xl border border-gray-200 p-2 overflow-x-auto">
+        <div className="flex gap-2 min-w-max">
+          {sections.map((section) => (
+            <button
+              key={section.id}
+              onClick={() => setActiveSection(section.id)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                activeSection === section.id
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <section.icon className="w-4 h-4" />
+              <span className="hidden sm:inline">{section.title}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Section Content */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        {/* Section 0: Header Information */}
+        {activeSection === 0 && (
+          <div className="p-6 space-y-6">
+            <div className="border-b pb-4">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <FileText className="w-6 h-6 text-blue-500" />
+                Header Information
+              </h3>
+              <p className="text-gray-500 text-sm mt-1">Basic report identification details</p>
+            </div>
+            
+            {/* NIET Header Preview */}
+            <div className="bg-gradient-to-r from-slate-800 to-blue-900 rounded-xl p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold">NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY</h1>
+                  <p className="text-blue-200 text-sm mt-1">(AUTONOMOUS) – An ISO 9001:2015 & ISO 14001:2015 Certified Institution</p>
+                  <p className="text-blue-300 text-xs mt-2">Affiliated to Anna University, Chennai | Approved by AICTE | Accredited by NAAC with "A+" | NBA Accredited</p>
+                </div>
+                <div className="hidden md:block text-right">
+                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center">
+                    <GraduationCap className="w-10 h-10" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+              <h4 className="font-bold text-blue-900 text-lg">MONTHLY DEPARTMENT REPORT</h4>
+              <p className="text-blue-700">Academic Year: {reportData.academicYear}</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Name of the School *</label>
+                <Input 
+                  value={reportData.schoolName} 
+                  onChange={(e) => updateField('schoolName', e.target.value)}
+                  placeholder="e.g., School of Computing"
+                  className="border-gray-300"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Name of the Department *</label>
+                <Input 
+                  value={reportData.department} 
+                  onChange={(e) => updateField('department', e.target.value)}
+                  placeholder="Department Name"
+                  className="border-gray-300"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Reporting Month & Year *</label>
+                <div className="flex gap-2">
+                  <select 
+                    value={reportData.reportingMonth}
+                    onChange={(e) => updateField('reportingMonth', e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Month</option>
+                    <option value="January">January</option>
+                    <option value="February">February</option>
+                    <option value="March">March</option>
+                    <option value="April">April</option>
+                    <option value="May">May</option>
+                    <option value="June">June</option>
+                    <option value="July">July</option>
+                    <option value="August">August</option>
+                    <option value="September">September</option>
+                    <option value="October">October</option>
+                    <option value="November">November</option>
+                    <option value="December">December</option>
+                  </select>
+                  <Input 
+                    value={reportData.reportingYear}
+                    onChange={(e) => updateField('reportingYear', e.target.value)}
+                    placeholder="2026"
+                    className="w-24 border-gray-300"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
+              <strong>Preamble:</strong> This Monthly Department Report is submitted by the respective department to Principal-NIET, providing details of academic, research, student development, and other institutional activities carried out during the reporting period.
+            </div>
+          </div>
+        )}
+
+        {/* Section 1: Dept. Basic Information */}
+        {activeSection === 1 && (
+          <div className="p-6 space-y-6">
+            <div className="border-b pb-4">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <Users className="w-6 h-6 text-green-500" />
+                DEPT. BASIC INFORMATION
+              </h3>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <tbody>
+                  <tr className="border-b">
+                    <td className="p-3 bg-teal-50 font-semibold text-teal-900 w-1/4">Number of Faculty</td>
+                    <td className="p-3 border"><Input value={reportData.facultyCount} onChange={(e) => updateField('facultyCount', e.target.value)} className="border-0" /></td>
+                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">No. of Prof:</td>
+                    <td className="p-3 border"><Input value={reportData.profCount} onChange={(e) => updateField('profCount', e.target.value)} className="border-0" /></td>
+                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">No. of AsP:</td>
+                    <td className="p-3 border"><Input value={reportData.aspCount} onChange={(e) => updateField('aspCount', e.target.value)} className="border-0" /></td>
+                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">No. of AP:</td>
+                    <td className="p-3 border"><Input value={reportData.apCount} onChange={(e) => updateField('apCount', e.target.value)} className="border-0" /></td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">Ph. D Holders</td>
+                    <td className="p-3 border" colSpan={2}><Input value={reportData.phdHolders} onChange={(e) => updateField('phdHolders', e.target.value)} className="border-0" /></td>
+                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">No. of PhD:</td>
+                    <td className="p-3 border"><Input value={reportData.phdCount} onChange={(e) => updateField('phdCount', e.target.value)} className="border-0" /></td>
+                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">Pursuing PhD:</td>
+                    <td className="p-3 border"><Input value={reportData.pursuingPhd} onChange={(e) => updateField('pursuingPhd', e.target.value)} className="border-0" /></td>
+                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">Not Yet Registered:</td>
+                    <td className="p-3 border"><Input value={reportData.notRegistered} onChange={(e) => updateField('notRegistered', e.target.value)} className="border-0" /></td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">Number of Students</td>
+                    <td className="p-3 border"><Input value={reportData.totalStudents} onChange={(e) => updateField('totalStudents', e.target.value)} className="border-0" placeholder="(Total)" /></td>
+                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">I Year:</td>
+                    <td className="p-3 border"><Input value={reportData.year1Students} onChange={(e) => updateField('year1Students', e.target.value)} className="border-0" /></td>
+                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">II Year:</td>
+                    <td className="p-3 border"><Input value={reportData.year2Students} onChange={(e) => updateField('year2Students', e.target.value)} className="border-0" /></td>
+                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">III Year:</td>
+                    <td className="p-3 border"><Input value={reportData.year3Students} onChange={(e) => updateField('year3Students', e.target.value)} className="border-0" /></td>
+                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">IV Year:</td>
+                    <td className="p-3 border"><Input value={reportData.year4Students} onChange={(e) => updateField('year4Students', e.target.value)} className="border-0" /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Section 2: A. Academic Activities */}
+        {activeSection === 2 && (
+          <div className="p-6 space-y-6">
+            <div className="bg-green-100 border border-green-300 rounded-t-xl p-3">
+              <h3 className="font-bold text-green-900 text-lg">A. ACADEMIC ACTIVITIES</h3>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border">
+                <thead>
+                  <tr className="bg-green-50">
+                    <th className="p-3 border text-left font-semibold text-green-900 w-12">Sl.</th>
+                    <th className="p-3 border text-left font-semibold text-green-900">Particulars</th>
+                    <th className="p-3 border text-center font-semibold text-green-900">Theory</th>
+                    <th className="p-3 border text-center font-semibold text-green-900">Lab / Practical</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td className="p-3 border text-center">1</td><td className="p-3 border font-medium">Syllabus Coverage</td><td className="p-3 border"><Input value={reportData.syllabusCoverageTheory} onChange={(e) => updateField('syllabusCoverageTheory', e.target.value)} className="border-0" /></td><td className="p-3 border"><Input value={reportData.syllabusCoverageLab} onChange={(e) => updateField('syllabusCoverageLab', e.target.value)} className="border-0" /></td></tr>
+                  <tr><td className="p-3 border text-center">2</td><td className="p-3 border font-medium">Lesson Plan Update</td><td className="p-3 border">
+                    <select value={reportData.lessonPlanTheory} onChange={(e) => updateField('lessonPlanTheory', e.target.value)} className="w-full border-0 bg-transparent">
+                      <option value="">Yes / No</option>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </td><td className="p-3 border">
+                    <select value={reportData.lessonPlanLab} onChange={(e) => updateField('lessonPlanLab', e.target.value)} className="w-full border-0 bg-transparent">
+                      <option value="">Yes / No</option>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </td></tr>
+                  <tr><td className="p-3 border text-center">3</td><td className="p-3 border font-medium">CIA – I / II / III Conducted & Report Submitted</td><td className="p-3 border">
+                    <select value={reportData.ciaConducted} onChange={(e) => updateField('ciaConducted', e.target.value)} className="w-full border-0 bg-transparent">
+                      <option value="">Yes / No</option>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </td><td className="p-3 border text-center text-gray-400">NA</td></tr>
+                  <tr><td className="p-3 border text-center">4</td><td className="p-3 border font-medium">Student Attendance Report Prepared & Submitted</td><td className="p-3 border" colSpan={2}>
+                    <div className="flex items-center gap-2">
+                      <select value={reportData.attendanceReport} onChange={(e) => updateField('attendanceReport', e.target.value)} className="flex-1 border-0 bg-transparent">
+                        <option value="">Yes / No</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                      <span className="text-xs text-gray-500">(if yes, enclose)</span>
+                    </div>
+                  </td></tr>
+                  <tr><td className="p-3 border text-center">5</td><td className="p-3 border font-medium">Remedial Classes Conducted (Enclose Report)</td><td className="p-3 border">
+                    <div className="flex items-center gap-2">
+                      <Input value={reportData.remedialClasses} onChange={(e) => updateField('remedialClasses', e.target.value)} className="border-0" placeholder="No. of Classes:" />
+                    </div>
+                  </td><td className="p-3 border text-center text-gray-400">NA</td></tr>
+                  <tr><td className="p-3 border text-center">6</td><td className="p-3 border font-medium">Mentoring Sessions Conducted</td><td className="p-3 border">
+                    <Input value={reportData.mentoringSessions} onChange={(e) => updateField('mentoringSessions', e.target.value)} className="border-0" placeholder="No. of Sessions:" />
+                  </td><td className="p-3 border text-center text-gray-400">NA</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Section 3: B. Student Development Activities */}
+        {activeSection === 3 && (
+          <div className="p-6 space-y-6">
+            <div className="bg-purple-100 border border-purple-300 rounded-t-xl p-3">
+              <h3 className="font-bold text-purple-900 text-lg">B. STUDENT DEVELOPMENT ACTIVITIES</h3>
+              <p className="text-purple-700 text-xs">(*Prev Months: Cumulative counting starts from 1st July)</p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border text-sm">
+                <thead>
+                  <tr className="bg-purple-50">
+                    <th className="p-2 border font-semibold text-purple-900" rowSpan={2}>Particulars</th>
+                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Guest Lectures / Seminar/Webinar</th>
+                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Workshops Organized</th>
+                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Industrial Visits</th>
+                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Value Added Courses</th>
+                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Skill Enhancement</th>
+                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Hands-on Training</th>
+                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Hackathon</th>
+                    <th className="p-2 border font-semibold text-purple-900" rowSpan={2}>Prof. Society Activities</th>
+                  </tr>
+                  <tr className="bg-purple-50">
+                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
+                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
+                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
+                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
+                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
+                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
+                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="p-2 border font-medium bg-gray-50">Prev Months*</td>
+                    <td className="p-1 border"><Input value={reportData.studentDev.guestLectures.prev} onChange={(e) => updateStudentDev('guestLectures', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
+                    <td className="p-1 border"></td>
+                    <td className="p-1 border"><Input value={reportData.studentDev.workshops.prev} onChange={(e) => updateStudentDev('workshops', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
+                    <td className="p-1 border"></td>
+                    <td className="p-1 border"><Input value={reportData.studentDev.industrialVisits.prev} onChange={(e) => updateStudentDev('industrialVisits', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
+                    <td className="p-1 border"></td>
+                    <td className="p-1 border"><Input value={reportData.studentDev.valueAddedCourses.prev} onChange={(e) => updateStudentDev('valueAddedCourses', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
+                    <td className="p-1 border"></td>
+                    <td className="p-1 border"><Input value={reportData.studentDev.skillEnhancement.prev} onChange={(e) => updateStudentDev('skillEnhancement', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
+                    <td className="p-1 border"></td>
+                    <td className="p-1 border"><Input value={reportData.studentDev.handsOnTraining.prev} onChange={(e) => updateStudentDev('handsOnTraining', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
+                    <td className="p-1 border"></td>
+                    <td className="p-1 border"><Input value={reportData.studentDev.hackathon.prev} onChange={(e) => updateStudentDev('hackathon', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
+                    <td className="p-1 border"></td>
+                    <td className="p-1 border"></td>
+                  </tr>
+                  <tr>
+                    <td className="p-2 border font-medium bg-blue-50">Curr Month</td>
+                    <td className="p-1 border"></td>
+                    <td className="p-1 border"><Input value={reportData.studentDev.guestLectures.curr} onChange={(e) => updateStudentDev('guestLectures', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
+                    <td className="p-1 border"></td>
+                    <td className="p-1 border"><Input value={reportData.studentDev.workshops.curr} onChange={(e) => updateStudentDev('workshops', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
+                    <td className="p-1 border"></td>
+                    <td className="p-1 border"><Input value={reportData.studentDev.industrialVisits.curr} onChange={(e) => updateStudentDev('industrialVisits', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
+                    <td className="p-1 border"></td>
+                    <td className="p-1 border"><Input value={reportData.studentDev.valueAddedCourses.curr} onChange={(e) => updateStudentDev('valueAddedCourses', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
+                    <td className="p-1 border"></td>
+                    <td className="p-1 border"><Input value={reportData.studentDev.skillEnhancement.curr} onChange={(e) => updateStudentDev('skillEnhancement', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
+                    <td className="p-1 border"></td>
+                    <td className="p-1 border"><Input value={reportData.studentDev.handsOnTraining.curr} onChange={(e) => updateStudentDev('handsOnTraining', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
+                    <td className="p-1 border"></td>
+                    <td className="p-1 border"><Input value={reportData.studentDev.hackathon.curr} onChange={(e) => updateStudentDev('hackathon', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
+                    <td className="p-1 border"></td>
+                    <td className="p-1 border"></td>
+                  </tr>
+                  <tr>
+                    <td className="p-2 border font-bold bg-green-50">Total (Cumulative)</td>
+                    <td className="p-1 border bg-green-50" colSpan={2}></td>
+                    <td className="p-1 border bg-green-50" colSpan={2}></td>
+                    <td className="p-1 border bg-green-50" colSpan={2}></td>
+                    <td className="p-1 border bg-green-50" colSpan={2}></td>
+                    <td className="p-1 border bg-green-50" colSpan={2}></td>
+                    <td className="p-1 border bg-green-50" colSpan={2}></td>
+                    <td className="p-1 border bg-green-50" colSpan={2}></td>
+                    <td className="p-1 border bg-green-50"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Section 4: C. Research & Innovation */}
+        {activeSection === 4 && (
+          <div className="p-6 space-y-6">
+            <div className="bg-emerald-100 border border-emerald-300 rounded-t-xl p-3">
+              <h3 className="font-bold text-emerald-900 text-lg">C. RESEARCH & INNOVATION</h3>
+              <p className="text-emerald-700 text-xs">(*Prev Months: Cumulative counting starts from 1st July)</p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border text-xs">
+                <thead>
+                  <tr className="bg-emerald-50">
+                    <th className="p-2 border font-semibold text-emerald-900" rowSpan={2}>Particulars</th>
+                    <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Journal Publication (SCI / Scopus / WoS only)</th>
+                    <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Conference Papers (Scopus Indexed only)</th>
+                    <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Book</th>
+                    <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Book Chapters (Scopus Indexed only)</th>
+                    <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Patents Published / Grand</th>
+                    <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Funded Projects Proposal submission</th>
+                    <th className="p-2 border font-semibold text-emerald-900" rowSpan={2}>Faculty Sign</th>
+                  </tr>
+                  <tr className="bg-emerald-50">
+                    {[...Array(6)].map((_, i) => (
+                      <React.Fragment key={i}>
+                        <th className="p-1 border text-xs">Prev Months</th>
+                        <th className="p-1 border text-xs">Curr Month</th>
+                      </React.Fragment>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td className="p-2 border font-semibold bg-gray-50">Faculty Name</td>
+                    {Array(12).fill(null).map((_, i) => <td key={i} className="p-1 border"></td>)}
+                    <td className="p-1 border"></td>
+                  </tr>
+                  {reportData.researchFaculty.map((faculty, idx) => (
+                    <tr key={idx}>
+                      <td className="p-2 border">
+                        <Input value={faculty.name} onChange={(e) => updateResearchFaculty(idx, 'name', undefined, e.target.value)} className="border-0 h-7 text-xs" placeholder={`Faculty ${idx + 1}`} />
+                      </td>
+                      <td className="p-1 border"><Input value={faculty.journalPub.prev} onChange={(e) => updateResearchFaculty(idx, 'journalPub', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.journalPub.curr} onChange={(e) => updateResearchFaculty(idx, 'journalPub', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.conferencePapers.prev} onChange={(e) => updateResearchFaculty(idx, 'conferencePapers', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.conferencePapers.curr} onChange={(e) => updateResearchFaculty(idx, 'conferencePapers', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.book.prev} onChange={(e) => updateResearchFaculty(idx, 'book', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.book.curr} onChange={(e) => updateResearchFaculty(idx, 'book', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.bookChapters.prev} onChange={(e) => updateResearchFaculty(idx, 'bookChapters', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.bookChapters.curr} onChange={(e) => updateResearchFaculty(idx, 'bookChapters', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.patents.prev} onChange={(e) => updateResearchFaculty(idx, 'patents', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.patents.curr} onChange={(e) => updateResearchFaculty(idx, 'patents', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.fundedProjects.prev} onChange={(e) => updateResearchFaculty(idx, 'fundedProjects', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.fundedProjects.curr} onChange={(e) => updateResearchFaculty(idx, 'fundedProjects', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Cumulative Research Table */}
+            <div className="mt-6">
+              <h4 className="font-semibold text-emerald-800 mb-3">Cumulative Faculty Research Contribution</h4>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse border text-xs">
+                  <thead>
+                    <tr className="bg-emerald-50">
+                      <th className="p-2 border font-semibold text-emerald-900" rowSpan={2}></th>
+                      <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Journal publication (SCI / Scopus / WoS only)</th>
+                      <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Conference Papers (Scopus Indexed only)</th>
+                      <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Book</th>
+                      <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Book Chapters (Scopus Indexed only)</th>
+                      <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Patents Published</th>
+                      <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Funded Projects Proposal Submission</th>
+                    </tr>
+                    <tr className="bg-emerald-50">
+                      {[...Array(6)].map((_, i) => (
+                        <React.Fragment key={i}>
+                          <th className="p-1 border text-xs">Prev Total</th>
+                          <th className="p-1 border text-xs">Cumulative</th>
+                        </React.Fragment>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="p-2 border font-medium bg-orange-50">As on (Month), 20...</td>
+                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.journalPub.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, journalPub: {...p.cumulativeResearch.journalPub, prev: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.journalPub.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, journalPub: {...p.cumulativeResearch.journalPub, cumulative: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.conferencePapers.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, conferencePapers: {...p.cumulativeResearch.conferencePapers, prev: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.conferencePapers.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, conferencePapers: {...p.cumulativeResearch.conferencePapers, cumulative: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.book.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, book: {...p.cumulativeResearch.book, prev: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.book.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, book: {...p.cumulativeResearch.book, cumulative: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.bookChapters.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, bookChapters: {...p.cumulativeResearch.bookChapters, prev: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.bookChapters.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, bookChapters: {...p.cumulativeResearch.bookChapters, cumulative: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.patents.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, patents: {...p.cumulativeResearch.patents, prev: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.patents.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, patents: {...p.cumulativeResearch.patents, cumulative: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.fundedProjects.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, fundedProjects: {...p.cumulativeResearch.fundedProjects, prev: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.fundedProjects.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, fundedProjects: {...p.cumulativeResearch.fundedProjects, cumulative: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Section 5: D. Faculty Development */}
+        {activeSection === 5 && (
+          <div className="p-6 space-y-6">
+            <div className="bg-amber-100 border border-amber-300 rounded-t-xl p-3">
+              <h3 className="font-bold text-amber-900 text-lg">D. FACULTY DEVELOPMENT</h3>
+              <p className="text-amber-700 text-xs">(*Prev Months: Cumulative counting starts from 1st July)</p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border text-xs">
+                <thead>
+                  <tr className="bg-amber-50">
+                    <th className="p-2 border font-semibold text-amber-900" rowSpan={2}>Particulars</th>
+                    <th className="p-2 border font-semibold text-amber-900" colSpan={2}>FDPs / Workshops / Conf / Seminars Attended</th>
+                    <th className="p-2 border font-semibold text-amber-900" colSpan={2}>FDPs / Workshops / Conf / Seminars Organized</th>
+                    <th className="p-2 border font-semibold text-amber-900" colSpan={2}>NPTEL Completed</th>
+                    <th className="p-2 border font-semibold text-amber-900" colSpan={2}>MOOCs Completed</th>
+                    <th className="p-2 border font-semibold text-amber-900" colSpan={2}>Resource Person Engagements</th>
+                    <th className="p-2 border font-semibold text-amber-900" rowSpan={2}>Faculty Sign</th>
+                  </tr>
+                  <tr className="bg-amber-50">
+                    {[...Array(5)].map((_, i) => (
+                      <React.Fragment key={i}>
+                        <th className="p-1 border text-xs">Prev Month</th>
+                        <th className="p-1 border text-xs">Curr Month</th>
+                      </React.Fragment>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td className="p-2 border font-semibold bg-gray-50">Faculty Name / Designation</td>
+                    {Array(10).fill(null).map((_, i) => <td key={i} className="p-1 border"></td>)}
+                    <td className="p-1 border"></td>
+                  </tr>
+                  {reportData.facultyDev.map((faculty, idx) => (
+                    <tr key={idx}>
+                      <td className="p-2 border">
+                        <Input value={faculty.name} onChange={(e) => {
+                          const newF = [...reportData.facultyDev]
+                          newF[idx] = {...newF[idx], name: e.target.value}
+                          setReportData(p => ({...p, facultyDev: newF}))
+                        }} className="border-0 h-7 text-xs" placeholder={`Faculty ${idx + 1}`} />
+                      </td>
+                      <td className="p-1 border"><Input value={faculty.fdpsAttended.prev} onChange={(e) => updateFacultyDev(idx, 'fdpsAttended', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.fdpsAttended.curr} onChange={(e) => updateFacultyDev(idx, 'fdpsAttended', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.fdpsOrganized.prev} onChange={(e) => updateFacultyDev(idx, 'fdpsOrganized', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.fdpsOrganized.curr} onChange={(e) => updateFacultyDev(idx, 'fdpsOrganized', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.nptelCompleted.prev} onChange={(e) => updateFacultyDev(idx, 'nptelCompleted', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.nptelCompleted.curr} onChange={(e) => updateFacultyDev(idx, 'nptelCompleted', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.moocsCompleted.prev} onChange={(e) => updateFacultyDev(idx, 'moocsCompleted', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.moocsCompleted.curr} onChange={(e) => updateFacultyDev(idx, 'moocsCompleted', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.resourcePerson.prev} onChange={(e) => updateFacultyDev(idx, 'resourcePerson', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.resourcePerson.curr} onChange={(e) => updateFacultyDev(idx, 'resourcePerson', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Cumulative Faculty Development */}
+            <div className="mt-6">
+              <h4 className="font-semibold text-amber-800 mb-3">Cumulative Faculty Contribution</h4>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse border text-xs">
+                  <thead>
+                    <tr className="bg-amber-50">
+                      <th className="p-2 border font-semibold text-amber-900" rowSpan={2}>As on (Month), 2026</th>
+                      <th className="p-2 border font-semibold text-amber-900" colSpan={2}>FDPs / Workshops / Conf / Seminars Attended</th>
+                      <th className="p-2 border font-semibold text-amber-900" colSpan={2}>FDPs / Workshops Organized</th>
+                      <th className="p-2 border font-semibold text-amber-900" colSpan={2}>NPTEL Completed</th>
+                      <th className="p-2 border font-semibold text-amber-900" colSpan={2}>MOOCs Completed</th>
+                      <th className="p-2 border font-semibold text-amber-900" colSpan={2}>Resource Person Engagements</th>
+                    </tr>
+                    <tr className="bg-amber-50">
+                      {[...Array(5)].map((_, i) => (
+                        <React.Fragment key={i}>
+                          <th className="p-1 border text-xs">Prev Total</th>
+                          <th className="p-1 border text-xs">Cumulative</th>
+                        </React.Fragment>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="p-2 border font-medium bg-orange-50"></td>
+                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Section 6: E. Students Internship */}
+        {activeSection === 6 && (
+          <div className="p-6 space-y-6">
+            <div className="bg-red-100 border border-red-300 rounded-t-xl p-3">
+              <h3 className="font-bold text-red-900 text-lg">E. STUDENTS INTERNSHIP</h3>
+              <p className="text-red-700 text-xs">(*Prev Months: Cumulative counting starts from 1st July)</p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border">
+                <thead>
+                  <tr className="bg-red-50">
+                    <th className="p-3 border font-semibold text-red-900" colSpan={2}>Internship Details</th>
+                    <th className="p-3 border font-semibold text-red-900">Industry Internships (Paid)</th>
+                    <th className="p-3 border font-semibold text-red-900">Industry Internships (Non-Paid)</th>
+                    <th className="p-3 border font-semibold text-red-900">Virtual Internships</th>
+                    <th className="p-3 border font-semibold text-red-900">No. of Students Not Availed Internship</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="p-3 border font-medium bg-pink-50" colSpan={2}>Previous Months</td>
+                    <td className="p-3 border"><Input value={reportData.internship.previous.paid} onChange={(e) => updateInternship('previous', 'paid', e.target.value)} className="border-0" /></td>
+                    <td className="p-3 border"><Input value={reportData.internship.previous.nonPaid} onChange={(e) => updateInternship('previous', 'nonPaid', e.target.value)} className="border-0" /></td>
+                    <td className="p-3 border"><Input value={reportData.internship.previous.virtual} onChange={(e) => updateInternship('previous', 'virtual', e.target.value)} className="border-0" /></td>
+                    <td className="p-3 border"><Input value={reportData.internship.previous.notAvailed} onChange={(e) => updateInternship('previous', 'notAvailed', e.target.value)} className="border-0" /></td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 border font-medium bg-blue-50" colSpan={2}>Current Month</td>
+                    <td className="p-3 border"><Input value={reportData.internship.current.paid} onChange={(e) => updateInternship('current', 'paid', e.target.value)} className="border-0" /></td>
+                    <td className="p-3 border"><Input value={reportData.internship.current.nonPaid} onChange={(e) => updateInternship('current', 'nonPaid', e.target.value)} className="border-0" /></td>
+                    <td className="p-3 border"><Input value={reportData.internship.current.virtual} onChange={(e) => updateInternship('current', 'virtual', e.target.value)} className="border-0" /></td>
+                    <td className="p-3 border"><Input value={reportData.internship.current.notAvailed} onChange={(e) => updateInternship('current', 'notAvailed', e.target.value)} className="border-0" /></td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 border font-bold bg-green-50" colSpan={2}>Total (Cumulative)</td>
+                    <td className="p-3 border bg-green-50"><Input value={reportData.internship.total.paid} onChange={(e) => updateInternship('total', 'paid', e.target.value)} className="border-0 bg-transparent font-semibold" /></td>
+                    <td className="p-3 border bg-green-50"><Input value={reportData.internship.total.nonPaid} onChange={(e) => updateInternship('total', 'nonPaid', e.target.value)} className="border-0 bg-transparent font-semibold" /></td>
+                    <td className="p-3 border bg-green-50"><Input value={reportData.internship.total.virtual} onChange={(e) => updateInternship('total', 'virtual', e.target.value)} className="border-0 bg-transparent font-semibold" /></td>
+                    <td className="p-3 border bg-green-50"><Input value={reportData.internship.total.notAvailed} onChange={(e) => updateInternship('total', 'notAvailed', e.target.value)} className="border-0 bg-transparent font-semibold" /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Section 7: F. Faculty-Industry Interaction */}
+        {activeSection === 7 && (
+          <div className="p-6 space-y-6">
+            <div className="bg-cyan-100 border border-cyan-300 rounded-t-xl p-3">
+              <h3 className="font-bold text-cyan-900 text-lg">F. FACULTY - INDUSTRY INTERACTION</h3>
+              <p className="text-cyan-700 text-xs">(*Prev months: Cumulative counting starts from 1st July)</p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border text-xs">
+                <thead>
+                  <tr className="bg-cyan-50">
+                    <th className="p-2 border font-semibold text-cyan-900" rowSpan={2}>Faculty Name / Designation</th>
+                    <th className="p-2 border font-semibold text-cyan-900" colSpan={2}>MoUs Signed</th>
+                    <th className="p-2 border font-semibold text-cyan-900" colSpan={2}>Industry Visits</th>
+                    <th className="p-2 border font-semibold text-cyan-900" colSpan={2}>Experts Invited</th>
+                    <th className="p-2 border font-semibold text-cyan-900" colSpan={2}>Collaborative Activities</th>
+                    <th className="p-2 border font-semibold text-cyan-900" colSpan={2}>Consultancy Services</th>
+                  </tr>
+                  <tr className="bg-cyan-50">
+                    {[...Array(5)].map((_, i) => (
+                      <React.Fragment key={i}>
+                        <th className="p-1 border text-xs">Prev Months</th>
+                        <th className="p-1 border text-xs">Curr Month</th>
+                      </React.Fragment>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportData.industryInteraction.map((faculty, idx) => (
+                    <tr key={idx}>
+                      <td className="p-2 border">
+                        <Input value={faculty.name} onChange={(e) => {
+                          const newData = [...reportData.industryInteraction]
+                          newData[idx] = {...newData[idx], name: e.target.value}
+                          setReportData(p => ({...p, industryInteraction: newData}))
+                        }} className="border-0 h-7 text-xs" placeholder={`Faculty ${idx + 1}`} />
+                      </td>
+                      <td className="p-1 border"><Input value={faculty.mousSigned.prev} onChange={(e) => updateIndustryInteraction(idx, 'mousSigned', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.mousSigned.curr} onChange={(e) => updateIndustryInteraction(idx, 'mousSigned', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.industryVisits.prev} onChange={(e) => updateIndustryInteraction(idx, 'industryVisits', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.industryVisits.curr} onChange={(e) => updateIndustryInteraction(idx, 'industryVisits', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.expertsInvited.prev} onChange={(e) => updateIndustryInteraction(idx, 'expertsInvited', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.expertsInvited.curr} onChange={(e) => updateIndustryInteraction(idx, 'expertsInvited', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.collaborativeActivities.prev} onChange={(e) => updateIndustryInteraction(idx, 'collaborativeActivities', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.collaborativeActivities.curr} onChange={(e) => updateIndustryInteraction(idx, 'collaborativeActivities', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.consultancyServices.prev} onChange={(e) => updateIndustryInteraction(idx, 'consultancyServices', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-1 border"><Input value={faculty.consultancyServices.curr} onChange={(e) => updateIndustryInteraction(idx, 'consultancyServices', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                    </tr>
+                  ))}
+                  <tr>
+                    <td className="p-2 border font-bold bg-green-50">As on _____, 20... (Cumulative)</td>
+                    {[...Array(10)].map((_, i) => <td key={i} className="p-1 border bg-green-50"></td>)}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Section 8: G. Quality Assurance Activities */}
+        {activeSection === 8 && (
+          <div className="p-6 space-y-6">
+            <div className="bg-lime-100 border border-lime-300 rounded-t-xl p-3">
+              <h3 className="font-bold text-lime-900 text-lg">G. QUALITY ASSURANCE ACTIVITIES</h3>
+              <p className="text-lime-700 text-xs">(Documents and supporting evidence shall be maintained and kept ready for Academic Audit)</p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border">
+                <thead>
+                  <tr className="bg-lime-50">
+                    <th className="p-3 border font-semibold text-lime-900">Particulars</th>
+                    <th className="p-3 border font-semibold text-lime-900">Status</th>
+                    <th className="p-3 border font-semibold text-lime-900">Remarks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportData.qaActivities.map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="p-3 border font-medium">{item.particular}</td>
+                      <td className="p-3 border">
+                        <Input 
+                          value={item.status} 
+                          onChange={(e) => updateQAActivity(idx, 'status', e.target.value)}
+                          className="border-0" 
+                        />
+                      </td>
+                      <td className="p-3 border">
+                        <Input 
+                          value={item.remarks} 
+                          onChange={(e) => updateQAActivity(idx, 'remarks', e.target.value)}
+                          className="border-0" 
+                          placeholder="Add remarks..."
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Section 9: H. Documents to be Attached */}
+        {activeSection === 9 && (
+          <div className="p-6 space-y-6">
+            <div className="bg-indigo-100 border border-indigo-300 rounded-t-xl p-3">
+              <h3 className="font-bold text-indigo-900 text-lg">H. DOCUMENTS TO BE ATTACHED</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                { key: 'eventReports', label: 'Event Reports' },
+                { key: 'workshopCertificates', label: 'Workshop / FDP / Conference etc. participation Certificates' },
+                { key: 'publicationProofs', label: 'Publication Proofs' },
+                { key: 'placementDetails', label: 'Placement Details' },
+                { key: 'internshipDetails', label: 'Internship Details' },
+                { key: 'studentAchievementProofs', label: 'Student Achievement Proofs' },
+                { key: 'sdgExtensionReports', label: 'SDG / Extension Activity Reports' },
+                { key: 'mouIndustryDocuments', label: 'MoU / Industry Interaction Documents' }
+              ].map((doc) => (
+                <label key={doc.key} className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                  <input 
+                    type="checkbox" 
+                    checked={reportData.documents[doc.key as keyof typeof reportData.documents]}
+                    onChange={(e) => updateDocuments(doc.key, e.target.checked)}
+                    className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span className="text-sm text-gray-700">{doc.label}</span>
+                </label>
+              ))}
+            </div>
+
+            {/* Signature Section */}
+            <div className="mt-8 pt-6 border-t">
+              <h4 className="font-semibold text-gray-900 mb-4">Approval Signatures</h4>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                {['HoD', 'School Dean / Director', 'Head-IQAC', 'Vice-Principal', 'Principal'].map((role) => (
+                  <div key={role} className="text-center p-4 border rounded-lg">
+                    <div className="h-16 border-b-2 border-dashed mb-2 flex items-end justify-center">
+                      <span className="text-xs text-gray-400">Signature</span>
+                    </div>
+                    <p className="font-semibold text-sm text-gray-900">{role}</p>
+                    <p className="text-xs text-gray-500">Date: _________</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Copy Submitted To */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <h4 className="font-semibold text-gray-900 mb-3">Copy submitted to</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-start gap-3">
+                  <span className="font-medium">1.</span>
+                  <div>
+                    <p className="font-medium">AO / HR / Principal office</p>
+                    <div className="flex gap-4 mt-1 text-sm text-gray-600">
+                      <span>Submitted on: ___________</span>
+                      <span>Received by: ___________</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="font-medium">2.</span>
+                  <div>
+                    <p className="font-medium">IQAC</p>
+                    <div className="flex gap-4 mt-1 text-sm text-gray-600">
+                      <span>Submitted on: ___________</span>
+                      <span>Received by: ___________</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function AnalyticsPage() {
   return (
     <div className="space-y-6">
@@ -6579,6 +7630,7 @@ const ROLE_SIDEBAR_CONFIG = {
       { id: 'hod_staff_approval', icon: BookOpen, label: 'Staff Approvals', badge: 'Pending', description: 'Review staff submissions' },
       { id: 'my_achievement', icon: Trophy, label: 'My Achievements', description: 'Personal achievements' },
       { id: 'analytics', icon: BarChart3, label: 'Department Analytics', description: 'Stats & Reports' },
+      { id: 'report_generator', icon: FileText, label: 'Report Generator', badge: 'New', description: 'Monthly Reports' },
       { id: 'settings', icon: Settings, label: 'Settings', description: 'Preferences' },
     ] as MenuItem[],
   },
@@ -10497,6 +11549,7 @@ export default function IQACPortal() {
       case 'feedback': return user?.role === 'STUDENT'
         ? <StudentFeedbackPage user={user} feedbackEnabled={feedbackEnabled} />
         : <FeedbackModule user={user} feedbackEnabled={feedbackEnabled} setFeedbackEnabled={setFeedbackEnabled} />
+      case 'report_generator': return <HODReportGeneratorPage user={user} />
       default: return <DashboardContent user={user} setActiveTab={setActiveTab} />
     }
   }
