@@ -5971,6 +5971,23 @@ function StaffAchievementPage({ user }: { user: User }) {
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  
+  // Search and expand states for Total Achievements section
+  const [searchAchievement, setSearchAchievement] = useState('')
+  const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set())
+
+  // Toggle expand/collapse for achievement type
+  const toggleAchievementType = (typeKey: string) => {
+    setExpandedTypes(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(typeKey)) {
+        newSet.delete(typeKey)
+      } else {
+        newSet.add(typeKey)
+      }
+      return newSet
+    })
+  }
 
   // Load saved achievements from localStorage on mount
   useEffect(() => {
@@ -6452,62 +6469,139 @@ function StaffAchievementPage({ user }: { user: User }) {
         </Card>
       </div>
 
-      {/* Total Achievements Summary */}
-      <Card className="mt-8 overflow-hidden border-0 shadow-lg bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            {/* Left - Total Count */}
-            <div className="flex items-center gap-5">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
-                <Award className="w-8 h-8 text-white" />
+      {/* Total Achievements Summary - White Background with Search */}
+      <Card className="mt-8 border border-gray-200 shadow-sm bg-white">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md">
+                <Award className="w-6 h-6 text-white" />
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-300 uppercase tracking-wider">Total Achievements</p>
-                <p className="text-4xl font-bold text-white mt-1">{submittedEntries.length}</p>
+                <CardTitle className="text-xl font-bold text-gray-900">Total Achievements</CardTitle>
+                <p className="text-sm text-gray-500 mt-0.5">{submittedEntries.length} record(s) submitted</p>
               </div>
             </div>
-
-            {/* Right - Category Breakdown */}
-            <div className="flex flex-wrap gap-3">
-              {Object.entries(STAFF_ACHIEVEMENT_TYPES).map(([key, typeConfig]) => {
-                const count = submittedEntries.filter(e => e.type === key).length
-                if (count === 0) return null
-                const Icon = typeConfig.icon
-                return (
-                  <div key={key} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/10">
-                    <Icon className="w-4 h-4 text-white/80" />
-                    <span className="text-sm text-white/90">{typeConfig.label}: </span>
-                    <span className="text-sm font-bold text-amber-400">{count}</span>
-                  </div>
-                )
-              })}
-              {submittedEntries.length === 0 && (
-                <p className="text-sm text-slate-400 italic">No achievements submitted yet</p>
-              )}
+            
+            {/* Search Box */}
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search achievements..."
+                onChange={(e) => setSearchAchievement(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none transition-all"
+              />
             </div>
           </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {(() => {
+            // Filter entries based on search term
+            const filteredTypes = Object.entries(STAFF_ACHIEVEMENT_TYPES).filter(([key, typeConfig]) => {
+              if (!searchAchievement.trim()) return true
+              const searchTermLower = searchAchievement.toLowerCase()
+              return (
+                typeConfig.label.toLowerCase().includes(searchTermLower) ||
+                key.toLowerCase().includes(searchTermLower)
+              )
+            })
 
-          {/* Achievement Type Breakdown Grid */}
-          {submittedEntries.length > 0 && (
-            <div className="mt-6 pt-6 border-t border-white/10">
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-4">Achievements by Type</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                {Object.entries(STAFF_ACHIEVEMENT_TYPES).map(([key, typeConfig]) => {
+            if (submittedEntries.length === 0) {
+              return (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                    <ClipboardList className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <p className="text-gray-600 font-medium">No achievements submitted yet</p>
+                  <p className="text-sm text-gray-400 mt-1">Submit your first achievement to see it here</p>
+                </div>
+              )
+            }
+
+            return (
+              <div className="space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar">
+                {filteredTypes.map(([key, typeConfig]) => {
                   const count = submittedEntries.filter(e => e.type === key).length
                   const Icon = typeConfig.icon
+                  
+                  // Get entries for this type
+                  const typeEntries = submittedEntries.filter(e => e.type === key)
+                  
                   return (
-                    <div key={key} className={`p-3 rounded-xl text-center transition-all ${count > 0 ? 'bg-white/10' : 'bg-white/5 opacity-50'}`}>
-                      <div className={`w-10 h-10 mx-auto rounded-lg bg-gradient-to-br ${typeConfig.color} flex items-center justify-center mb-2 ${count > 0 ? '' : 'grayscale'}`}>
-                        <Icon className="w-5 h-5 text-white" />
+                    <div 
+                      key={key} 
+                      className={`border rounded-lg transition-all hover:shadow-md ${
+                        count > 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-60'
+                      }`}
+                    >
+                      {/* Type Header Row */}
+                      <div className="flex items-center justify-between p-4 cursor-pointer" onClick={() => toggleAchievementType(key)}>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${typeConfig.color} flex items-center justify-center shadow-sm`}>
+                            <Icon className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-800 text-sm">{typeConfig.label}</p>
+                            <p className="text-xs text-gray-500">{typeConfig.category === 'achievement' ? 'Achievement' : 'Research & Publication'}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                            count > 0 
+                              ? 'bg-blue-100 text-blue-700' 
+                              : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            {count}
+                          </span>
+                          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedTypes.has(key) ? 'rotate-180' : ''}`} />
+                        </div>
                       </div>
-                      <p className="text-xs font-medium text-white truncate">{typeConfig.label}</p>
-                      <p className={`text-lg font-bold mt-1 ${count > 0 ? 'text-amber-400' : 'text-slate-500'}`}>{count}</p>
+
+                      {/* Expandable Entry List */}
+                      {expandedTypes.has(key) && count > 0 && (
+                        <div className="border-t border-gray-100 bg-gray-50/50">
+                          {typeEntries.map((entry, idx) => (
+                            <div key={entry.id} className="flex items-center justify-between px-4 py-3 hover:bg-gray-100/50 transition-colors">
+                              <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div className="w-8 h-8 rounded-md bg-white border border-gray-200 flex items-center justify-center flex-shrink-0">
+                                  <FileText className="w-4 h-4 text-gray-400" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium text-gray-700 truncate">{entry.title}</p>
+                                  <p className="text-xs text-gray-400 mt-0.5">
+                                    {new Date(entry.submittedAt).toLocaleDateString('en-IN', { 
+                                      day: 'numeric', 
+                                      month: 'short', 
+                                      year: 'numeric' 
+                                    })}
+                                  </p>
+                                </div>
+                              </div>
+                              <Badge className={
+                                entry.status === 'pending_staff' ? 'bg-amber-100 text-amber-700 border-amber-200 ml-3' :
+                                entry.status === 'approved' ? 'bg-green-100 text-green-700 border-green-200 ml-3' :
+                                'bg-gray-100 text-gray-600 border-gray-200 ml-3'
+                              } flex-shrink-0>
+                                {entry.status === 'pending_staff' ? 'Pending' : entry.status.replace('_', ' ')}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )
                 })}
+
+                {filteredTypes.length === 0 && (
+                  <div className="text-center py-8">
+                    <Search className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-gray-500">No results found for "{searchAchievement}"</p>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            )
+          })()}
         </CardContent>
       </Card>
     </div>
