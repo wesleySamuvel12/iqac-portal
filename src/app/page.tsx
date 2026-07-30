@@ -4450,7 +4450,6 @@ const ROLE_SIDEBAR_CONFIG = {
     menuItems: [
       { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
       { id: 'achievements', icon: Trophy, label: 'My Achievements', badge: 'New' },
-      { id: 'student_achievement_view', icon: FolderOpen, label: 'Submit New', badge: '+' },
       { id: 'feedback', icon: MessageSquare, label: 'Feedback' },
     ] as MenuItem[],
   },
@@ -5840,6 +5839,32 @@ const STAFF_ACHIEVEMENT_TYPES = {
       { id: 'quartile', label: 'QUARTILE', type: 'select', options: ['Q1', 'Q2', 'Q3', 'Q4', 'NA'], full: false },
       { id: 'paper_link', label: 'PAPER LINK (DRIVE)', type: 'url', required: false, placeholder: 'https://...', full: false },
       { id: 'publisher_online_link', label: 'PUBLISHER ONLINE LINK', type: 'url', required: false, placeholder: 'https://doi.org/...', full: false }
+    ]
+  },
+  // Resource Person Engagement
+  resource_person: {
+    label: 'Resource Person Engagement',
+    icon: Presentation,
+    color: 'from-violet-500 to-purple-600',
+    category: 'achievement',
+    headerTitle: 'Add Resource Person Record',
+    headerIcon: PlusCircle,
+    fields: [
+      { id: 'faculty_name', label: 'FACULTY NAME', type: 'text', required: true, full: false },
+      { id: 'dept', label: 'DEPT', type: 'dept_select', required: true, full: false },
+      { id: 'designation', label: 'DESIGNATION', type: 'text', required: false, full: false },
+      { id: 'event_title', label: 'EVENT / SESSION TITLE', type: 'text', required: true, full: true },
+      { id: 'organizing_institute', label: 'ORGANIZING INSTITUTE', type: 'text', required: false, full: false },
+      { id: 'event_type', label: 'EVENT TYPE', type: 'select', options: ['Workshop', 'Seminar', 'FDP', 'STTP', 'Guest Lecture', 'Webinar', 'Conference', 'Hackathon', 'Other'], full: false },
+      { id: 'topic', label: 'TOPIC / AREA OF EXPERTISE', type: 'text', required: true, full: true },
+      { id: 'session_type', label: 'SESSION TYPE', type: 'select', options: ['Keynote Address', 'Technical Session', 'Panel Discussion', 'Hands-on Session', 'Invited Talk', 'Tutorial', 'Other'], full: false },
+      { id: 'from_date', label: 'FROM DATE', type: 'date', required: false, full: false },
+      { id: 'to_date', label: 'TO DATE', type: 'date', required: false, full: false },
+      { id: 'mode', label: 'MODE', type: 'select', options: ['Online', 'Offline', 'Hybrid'], full: false },
+      { id: 'no_of_participants', label: 'NO. OF PARTICIPANTS', type: 'number', required: false, full: false },
+      { id: 'duration_hours', label: 'DURATION (HOURS)', type: 'number', required: false, full: false },
+      { id: 'certificate_link', label: 'CERTIFICATE / INVITATION LINK', type: 'url', required: false, placeholder: 'https://...', full: true },
+      { id: 'description', label: 'DESCRIPTION / REMARKS', type: 'textarea', required: false, full: true }
     ]
   }
 }
