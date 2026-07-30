@@ -4606,14 +4606,6 @@ function StudentAchievementsPage({ user }: { user: User }) {
 
   return (
     <div className="space-y-6">
-      {/* Back Button - Above Add Achievement */}
-      <button
-        onClick={() => { /* Navigate back to dashboard */ }}
-        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors w-fit"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back to Dashboard
-      </button>
-
       {/* Add Student Achievement Card */}
       <Card className="border border-gray-200">
         <CardContent className="p-6">
