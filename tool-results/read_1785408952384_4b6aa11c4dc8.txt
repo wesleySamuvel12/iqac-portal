@@ -1,0 +1,502 @@
+  4013→            {/* Students List */}
+  4014→            <Card className="border border-gray-200 lg:col-span-2">
+  4015→              <CardHeader className="pb-3">
+  4016→                <div className="flex items-center justify-between">
+  4017→                  <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+  4018→                    <GraduationCap className="w-5 h-5 text-blue-500" /> 
+  4019→                    Department Students ({filteredStudents.length})
+  4020→                  </CardTitle>
+  4021→                  <Badge variant="outline" className="text-xs">{user.departmentName}</Badge>
+  4022→                </div>
+  4023→              </CardHeader>
+  4024→              <CardContent>
+  4025→                <div className="overflow-x-auto">
+  4026→                  <table className="w-full">
+  4027→                    <thead>
+  4028→                      <tr className="border-b border-gray-200 bg-gray-50">
+  4029→                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Reg No</th>
+  4030→                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Name</th>
+  4031→                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Year</th>
+  4032→                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Status</th>
+  4033→                        <th className="text-right py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Actions</th>
+  4034→                      </tr>
+  4035→                    </thead>
+  4036→                    <tbody>
+  4037→                      {filteredStudents.map(student => {
+  4038→                        const studentAchievementCount = studentAchievements.filter(
+  4039→                          a => a.studentName === student.name || a.reg === student.regNo
+  4040→                        ).length
+  4041→                        return (
+  4042→                          <tr key={student.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+  4043→                            <td className="py-3 px-4 text-sm font-mono text-gray-700">{student.regNo}</td>
+  4044→                            <td className="py-3 px-4">
+  4045→                              <div>
+  4046→                                <p className="text-sm font-medium text-gray-800">{student.name}</p>
+  4047→                                <p className="text-xs text-gray-500">{student.email}</p>
+  4048→                              </div>
+  4049→                            </td>
+  4050→                            <td className="py-3 px-4 text-sm text-gray-600">{student.year}</td>
+  4051→                            <td className="py-3 px-4">
+  4052→                              <Badge className={
+  4053→                                student.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+  4054→                              }>
+  4055→                                {student.status}
+  4056→                              </Badge>
+  4057→                            </td>
+  4058→                            <td className="py-3 px-4">
+  4059→                              <div className="flex items-center justify-end gap-2">
+  4060→                                <span className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium mr-2">
+  4061→                                  <Trophy className="w-3 h-3" />
+  4062→                                  {studentAchievementCount}
+  4063→                                </span>
+  4064→                                <button
+  4065→                                  onClick={() => handleEditStudent(student)}
+  4066→                                  className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+  4067→                                  title="Edit Student"
+  4068→                                >
+  4069→                                  <Edit3 className="w-4 h-4" />
+  4070→                                </button>
+  4071→                                <button
+  4072→                                  onClick={() => handleDeleteStudent(student.id)}
+  4073→                                  className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+  4074→                                  title="Delete Student"
+  4075→                                >
+  4076→                                  <Trash2 className="w-4 h-4" />
+  4077→                                </button>
+  4078→                              </div>
+  4079→                            </td>
+  4080→                          </tr>
+  4081→                        )
+  4082→                      })}
+  4083→                    </tbody>
+  4084→                  </table>
+  4085→                  {filteredStudents.length === 0 && (
+  4086→                    <div className="text-center py-12">
+  4087→                      <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+  4088→                      <p className="text-gray-500 font-medium">No students found</p>
+  4089→                      <p className="text-sm text-gray-400 mt-1">Add students to your department or adjust your search</p>
+  4090→                    </div>
+  4091→                  )}
+  4092→                </div>
+  4093→              </CardContent>
+  4094→            </Card>
+  4095→
+  4096→            {/* Student Achievements Summary */}
+  4097→            <Card className="border border-gray-200">
+  4098→              <CardHeader className="pb-3">
+  4099→                <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+  4100→                  <Trophy className="w-5 h-5 text-amber-500" /> Achievement Summary
+  4101→                </CardTitle>
+  4102→              </CardHeader>
+  4103→              <CardContent>
+  4104→                <div className="space-y-4">
+  4105→                  <div className="p-3 bg-blue-50 rounded-lg">
+  4106→                    <p className="text-xs text-blue-600 font-medium">Total Student Achievements</p>
+  4107→                    <p className="text-2xl font-bold text-blue-700">{filteredStudentAchievements.length}</p>
+  4108→                  </div>
+  4109→                  
+  4110→                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+  4111→                    {Object.entries(ACHIEVEMENT_TYPES).map(([key, type]) => {
+  4112→                      const count = getStudentTypeCount(key)
+  4113→                      if (count === 0) return null
+  4114→                      const Icon = type.icon
+  4115→                      return (
+  4116→                        <div key={key} className="flex items-center justify-between p-2 rounded-lg bg-gray-50">
+  4117→                          <div className="flex items-center gap-2">
+  4118→                            <Icon className="w-4 h-4 text-gray-500" />
+  4119→                            <span className="text-xs text-gray-700 truncate max-w-[120px]">{type.label}</span>
+  4120→                          </div>
+  4121→                          <span className="text-sm font-bold text-gray-800">{count}</span>
+  4122→                        </div>
+  4123→                      )
+  4124→                    })}
+  4125→                    {filteredStudentAchievements.length === 0 && (
+  4126→                      <p className="text-sm text-gray-400 text-center py-4">No achievements yet</p>
+  4127→                    )}
+  4128→                  </div>
+  4129→
+  4130→                  {/* Students by Year */}
+  4131→                  <div className="pt-3 border-t border-gray-200">
+  4132→                    <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Students by Year</p>
+  4133→                    <div className="space-y-2">
+  4134→                      {Object.entries(studentsByYear).map(([year, count]) => (
+  4135→                        <div key={year} className="flex items-center justify-between">
+  4136→                          <span className="text-sm text-gray-600">{year}</span>
+  4137→                          <div className="flex items-center gap-2">
+  4138→                            <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+  4139→                              <div 
+  4140→                                className="h-full bg-blue-500 rounded-full"
+  4141→                                style={{ width: `${(count / totalStudents) * 100}%` }}
+  4142→                              />
+  4143→                            </div>
+  4144→                            <span className="text-sm font-medium text-gray-700 w-6 text-right">{count}</span>
+  4145→                          </div>
+  4146→                        </div>
+  4147→                      ))}
+  4148→                    </div>
+  4149→                  </div>
+  4150→                </div>
+  4151→              </CardContent>
+  4152→            </Card>
+  4153→          </div>
+  4154→        </div>
+  4155→      )}
+  4156→
+  4157→      {/* STAFF TAB - User Management with CRUD */}
+  4158→      {activeTab === 'staff' && (
+  4159→        <div className="space-y-6">
+  4160→          {/* Search and Add Button */}
+  4161→          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+  4162→            <div className="relative flex-1 max-w-md">
+  4163→              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+  4164→              <input
+  4165→                type="text"
+  4166→                placeholder="Search staff by name or designation..."
+  4167→                value={searchUser}
+  4168→                onChange={(e) => setSearchUser(e.target.value)}
+  4169→                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
+  4170→              />
+  4171→            </div>
+  4172→            <Button
+  4173→              onClick={handleAddStaff}
+  4174→              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2"
+  4175→            >
+  4176→              <PlusCircle className="w-4 h-4" />
+  4177→              Add Faculty
+  4178→            </Button>
+  4179→          </div>
+  4180→
+  4181→          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  4182→            {/* Staff List */}
+  4183→            <Card className="border border-gray-200 lg:col-span-2">
+  4184→              <CardHeader className="pb-3">
+  4185→                <div className="flex items-center justify-between">
+  4186→                  <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+  4187→                    <Users className="w-5 h-5 text-emerald-500" /> 
+  4188→                    Department Faculty ({filteredStaffList.length})
+  4189→                  </CardTitle>
+  4190→                  <Badge variant="outline" className="text-xs">{user.departmentName}</Badge>
+  4191→                </div>
+  4192→              </CardHeader>
+  4193→              <CardContent>
+  4194→                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  4195→                  {filteredStaffList.map(staffMember => {
+  4196→                    const staffAchievementCount = staffAchievements.filter(
+  4197→                      a => a.submittedBy === staffMember.name
+  4198→                    ).length
+  4199→                    return (
+  4200→                      <div key={staffMember.id} className="p-4 border border-gray-200 rounded-xl hover:shadow-md transition-shadow bg-white">
+  4201→                        <div className="flex items-start gap-3">
+  4202→                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+  4203→                            {staffMember.name.split(' ').map(n => n[0]).join('')}
+  4204→                          </div>
+  4205→                          <div className="flex-1 min-w-0">
+  4206→                            <div className="flex items-start justify-between">
+  4207→                              <div>
+  4208→                                <p className="font-semibold text-gray-800 text-sm">{staffMember.name}</p>
+  4209→                                <p className="text-xs text-gray-500">{staffMember.designation}</p>
+  4210→                                <p className="text-xs text-gray-400 mt-1">{staffMember.email}</p>
+  4211→                                {staffMember.phone && (
+  4212→                                  <p className="text-xs text-gray-400">{staffMember.phone}</p>
+  4213→                                )}
+  4214→                              </div>
+  4215→                              <div className="flex items-center gap-1">
+  4216→                                <button
+  4217→                                  onClick={() => handleEditStaff(staffMember)}
+  4218→                                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+  4219→                                  title="Edit Staff"
+  4220→                                >
+  4221→                                  <Edit3 className="w-3.5 h-3.5" />
+  4222→                                </button>
+  4223→                                <button
+  4224→                                  onClick={() => handleDeleteStaff(staffMember.id)}
+  4225→                                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+  4226→                                  title="Delete Staff"
+  4227→                                >
+  4228→                                  <Trash2 className="w-3.5 h-3.5" />
+  4229→                                </button>
+  4230→                              </div>
+  4231→                            </div>
+  4232→                            <div className="flex items-center gap-2 mt-2">
+  4233→                              <Badge className={
+  4234→                                staffMember.status === 'active' ? 'bg-green-100 text-green-700' : 
+  4235→                                staffMember.status === 'on_leave' ? 'bg-amber-100 text-amber-700' :
+  4236→                                'bg-gray-100 text-gray-600'
+  4237→                              }>
+  4238→                                {staffMember.status.replace('_', ' ')}
+  4239→                              </Badge>
+  4240→                              <span className="text-xs text-emerald-600 font-medium">
+  4241→                                <Trophy className="w-3 h-3 inline mr-1" />
+  4242→                                {staffAchievementCount} achievements
+  4243→                              </span>
+  4244→                            </div>
+  4245→                          </div>
+  4246→                        </div>
+  4247→                      </div>
+  4248→                    )
+  4249→                  })}
+  4250→                </div>
+  4251→                {filteredStaffList.length === 0 && (
+  4252→                  <div className="text-center py-12">
+  4253→                    <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+  4254→                    <p className="text-gray-500 font-medium">No faculty members found</p>
+  4255→                    <p className="text-sm text-gray-400 mt-1">Add faculty to your department</p>
+  4256→                  </div>
+  4257→                )}
+  4258→              </CardContent>
+  4259→            </Card>
+  4260→
+  4261→            {/* Staff Achievements Summary */}
+  4262→            <Card className="border border-gray-200">
+  4263→              <CardHeader className="pb-3">
+  4264→                <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+  4265→                  <Award className="w-5 h-5 text-violet-500" /> Staff Achievements
+  4266→                </CardTitle>
+  4267→              </CardHeader>
+  4268→              <CardContent>
+  4269→                <div className="space-y-4">
+  4270→                  <div className="p-3 bg-emerald-50 rounded-lg">
+  4271→                    <p className="text-xs text-emerald-600 font-medium">Total Staff Achievements</p>
+  4272→                    <p className="text-2xl font-bold text-emerald-700">{filteredStaffAchievements.length}</p>
+  4273→                  </div>
+  4274→                  
+  4275→                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+  4276→                    {Object.entries(STAFF_ACHIEVEMENT_TYPES).map(([key, type]) => {
+  4277→                      const count = getStaffTypeCount(key)
+  4278→                      if (count === 0) return null
+  4279→                      const Icon = type.icon
+  4280→                      return (
+  4281→                        <div key={key} className="flex items-center justify-between p-2 rounded-lg bg-gray-50">
+  4282→                          <div className="flex items-center gap-2">
+  4283→                            <Icon className="w-4 h-4 text-gray-500" />
+  4284→                            <span className="text-xs text-gray-700 truncate max-w-[120px]">{type.label}</span>
+  4285→                          </div>
+  4286→                          <span className="text-sm font-bold text-gray-800">{count}</span>
+  4287→                        </div>
+  4288→                      )
+  4289→                    })}
+  4290→                    {filteredStaffAchievements.length === 0 && (
+  4291→                      <p className="text-sm text-gray-400 text-center py-4">No achievements yet</p>
+  4292→                    )}
+  4293→                  </div>
+  4294→                </div>
+  4295→              </CardContent>
+  4296→            </Card>
+  4297→          </div>
+  4298→        </div>
+  4299→      )}
+  4300→
+  4301→      {/* ANALYTICS TAB - Split by Student/Staff and Year */}
+  4302→      {activeTab === 'analytics' && (
+  4303→        <div className="space-y-6">
+  4304→          {/* Year Filter */}
+  4305→          <div className="flex items-center gap-4">
+  4306→            <label className="text-sm font-medium text-gray-700">Filter by Year:</label>
+  4307→            <select
+  4308→              value={selectedYear}
+  4309→              onChange={(e) => setSelectedYear(e.target.value)}
+  4310→              className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
+  4311→            >
+  4312→              <option value="all">All Years</option>
+  4313→              <option value="I Year">I Year</option>
+  4314→              <option value="II Year">II Year</option>
+  4315→              <option value="III Year">III Year</option>
+  4316→              <option value="IV Year">IV Year</option>
+  4317→            </select>
+  4318→            {selectedYear !== 'all' && (
+  4319→              <Button variant="ghost" size="sm" onClick={() => setSelectedYear('all')}>
+  4320→                Clear Filter
+  4321→              </Button>
+  4322→            )}
+  4323→          </div>
+  4324→
+  4325→          {/* Summary Cards */}
+  4326→          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+  4327→            <Card className="border-l-4 border-l-blue-500 bg-blue-50/50">
+  4328→              <CardContent className="p-4">
+  4329→                <div className="flex items-center gap-3">
+  4330→                  <GraduationCap className="w-8 h-8 text-blue-500" />
+  4331→                  <div>
+  4332→                    <p className="text-2xl font-bold text-gray-900">{filteredStudentAchievements.length}</p>
+  4333→                    <p className="text-xs text-gray-500">Student Records</p>
+  4334→                  </div>
+  4335→                </div>
+  4336→              </CardContent>
+  4337→            </Card>
+  4338→            <Card className="border-l-4 border-l-emerald-500 bg-emerald-50/50">
+  4339→              <CardContent className="p-4">
+  4340→                <div className="flex items-center gap-3">
+  4341→                  <Users className="w-8 h-8 text-emerald-500" />
+  4342→                  <div>
+  4343→                    <p className="text-2xl font-bold text-gray-900">{filteredStaffAchievements.length}</p>
+  4344→                    <p className="text-xs text-gray-500">Staff Records</p>
+  4345→                  </div>
+  4346→                </div>
+  4347→              </CardContent>
+  4348→            </Card>
+  4349→            <Card className="border-l-4 border-l-amber-500 bg-amber-50/50">
+  4350→              <CardContent className="p-4">
+  4351→                <div className="flex items-center gap-3">
+  4352→                  <Clock className="w-8 h-8 text-amber-500" />
+  4353→                  <div>
+  4354→                    <p className="text-2xl font-bold text-gray-900">
+  4355→                      {filteredStudentAchievements.filter(a => a.status?.includes('pending')).length + 
+  4356→                       filteredStaffAchievements.filter(a => a.status?.includes('pending')).length}
+  4357→                    </p>
+  4358→                    <p className="text-xs text-gray-500">Pending Review</p>
+  4359→                  </div>
+  4360→                </div>
+  4361→              </CardContent>
+  4362→            </Card>
+  4363→            <Card className="border-l-4 border-l-green-500 bg-green-50/50">
+  4364→              <CardContent className="p-4">
+  4365→                <div className="flex items-center gap-3">
+  4366→                  <CheckCircle className="w-8 h-8 text-green-500" />
+  4367→                  <div>
+  4368→                    <p className="text-2xl font-bold text-gray-900">
+  4369→                      {filteredStudentAchievements.filter(a => a.status?.includes('approved')).length + 
+  4370→                       filteredStaffAchievements.filter(a => a.status?.includes('approved')).length}
+  4371→                    </p>
+  4372→                    <p className="text-xs text-gray-500">Approved</p>
+  4373→                  </div>
+  4374→                </div>
+  4375→              </CardContent>
+  4376→            </Card>
+  4377→          </div>
+  4378→
+  4379→          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  4380→            {/* Student Achievements by Type */}
+  4381→            <Card className="border border-gray-200">
+  4382→              <CardHeader className="pb-2">
+  4383→                <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+  4384→                  <BarChart3 className="w-5 h-5 text-blue-500" /> Student Achievements by Type
+  4385→                </CardTitle>
+  4386→              </CardHeader>
+  4387→              <CardContent>
+  4388→                <div className="space-y-3 max-h-[350px] overflow-y-auto">
+  4389→                  {Object.entries(ACHIEVEMENT_TYPES).map(([key, type]) => {
+  4390→                    const count = getStudentTypeCount(key)
+  4391→                    const Icon = type.icon
+  4392→                    const maxCount = Math.max(...Object.keys(ACHIEVEMENT_TYPES).map(k => getStudentTypeCount(k)), 1)
+  4393→                    const percentage = (count / maxCount) * 100
+  4394→                    return (
+  4395→                      <div key={key} className="flex items-center gap-3">
+  4396→                        <Icon className="w-4 h-4 text-gray-500 flex-shrink-0" />
+  4397→                        <span className="text-xs text-gray-700 w-28 truncate flex-shrink-0">{type.label}</span>
+  4398→                        <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+  4399→                          <div 
+  4400→                            className="h-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full flex items-center justify-end pr-2"
+  4401→                            style={{ width: `${Math.max(percentage, count > 0 ? 5 : 0)}%` }}
+  4402→                          >
+  4403→                            {count > 0 && <span className="text-[10px] font-bold text-white">{count}</span>}
+  4404→                          </div>
+  4405→                        </div>
+  4406→                      </div>
+  4407→                    )
+  4408→                  })}
+  4409→                </div>
+  4410→              </CardContent>
+  4411→            </Card>
+  4412→
+  4413→            {/* Staff Achievements by Type */}
+  4414→            <Card className="border border-gray-200">
+  4415→              <CardHeader className="pb-2">
+  4416→                <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+  4417→                  <BarChart3 className="w-5 h-5 text-emerald-500" /> Staff Achievements by Type
+  4418→                </CardTitle>
+  4419→              </CardHeader>
+  4420→              <CardContent>
+  4421→                <div className="space-y-3 max-h-[350px] overflow-y-auto">
+  4422→                  {Object.entries(STAFF_ACHIEVEMENT_TYPES).map(([key, type]) => {
+  4423→                    const count = getStaffTypeCount(key)
+  4424→                    const Icon = type.icon
+  4425→                    const maxCount = Math.max(...Object.keys(STAFF_ACHIEVEMENT_TYPES).map(k => getStaffTypeCount(k)), 1)
+  4426→                    const percentage = (count / maxCount) * 100
+  4427→                    return (
+  4428→                      <div key={key} className="flex items-center gap-3">
+  4429→                        <Icon className="w-4 h-4 text-gray-500 flex-shrink-0" />
+  4430→                        <span className="text-xs text-gray-700 w-28 truncate flex-shrink-0">{type.label}</span>
+  4431→                        <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+  4432→                          <div 
+  4433→                            className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full flex items-center justify-end pr-2"
+  4434→                            style={{ width: `${Math.max(percentage, count > 0 ? 5 : 0)}%` }}
+  4435→                          >
+  4436→                            {count > 0 && <span className="text-[10px] font-bold text-white">{count}</span>}
+  4437→                          </div>
+  4438→                        </div>
+  4439→                      </div>
+  4440→                    )
+  4441→                  })}
+  4442→                </div>
+  4443→              </CardContent>
+  4444→            </Card>
+  4445→          </div>
+  4446→
+  4447→          {/* Year-wise Breakdown */}
+  4448→          <Card className="border border-gray-200">
+  4449→            <CardHeader className="pb-2">
+  4450→              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+  4451→                <Calendar className="w-5 h-5 text-violet-500" /> Year-wise Distribution
+  4452→              </CardTitle>
+  4453→            </CardHeader>
+  4454→            <CardContent>
+  4455→              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+  4456→                {['I Year', 'II Year', 'III Year', 'IV Year'].map(year => {
+  4457→                  const studentInYear = studentAchievements.filter(a => a.data?.year === year || a.year === year).length
+  4458→                  const staffInYear = staffAchievements.filter(a => a.data?.year_pub === year || a.year === year).length
+  4459→                  return (
+  4460→                    <div key={year} className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+  4461→                      <p className="font-semibold text-gray-800 mb-3">{year}</p>
+  4462→                      <div className="space-y-2">
+  4463→                        <div className="flex items-center justify-between">
+  4464→                          <span className="text-xs text-blue-600 flex items-center gap-1">
+  4465→                            <GraduationCap className="w-3 h-3" /> Students
+  4466→                          </span>
+  4467→                          <span className="text-sm font-bold text-blue-700">{studentInYear}</span>
+  4468→                        </div>
+  4469→                        <div className="w-full h-2 bg-blue-100 rounded-full overflow-hidden">
+  4470→                          <div 
+  4471→                            className="h-full bg-blue-500 rounded-full"
+  4472→                            style={{ width: `${Math.max((studentInYear / Math.max(studentAchievements.length, 1)) * 100, studentInYear > 0 ? 10 : 0)}%` }}
+  4473→                          />
+  4474→                        </div>
+  4475→                        <div className="flex items-center justify-between mt-2">
+  4476→                          <span className="text-xs text-emerald-600 flex items-center gap-1">
+  4477→                            <Users className="w-3 h-3" /> Staff
+  4478→                          </span>
+  4479→                          <span className="text-sm font-bold text-emerald-700">{staffInYear}</span>
+  4480→                        </div>
+  4481→                        <div className="w-full h-2 bg-emerald-100 rounded-full overflow-hidden">
+  4482→                          <div 
+  4483→                            className="h-full bg-emerald-500 rounded-full"
+  4484→                            style={{ width: `${Math.max((staffInYear / Math.max(staffAchievements.length, 1)) * 100, staffInYear > 0 ? 10 : 0)}%` }}
+  4485→                          />
+  4486→                        </div>
+  4487→                      </div>
+  4488→                    </div>
+  4489→                  )
+  4490→                })}
+  4491→              </div>
+  4492→            </CardContent>
+  4493→          </Card>
+  4494→        </div>
+  4495→      )}
+  4496→
+  4497→      {/* ==================== MODALS ==================== */}
+  4498→      
+  4499→      {/* Student Add/Edit Modal */}
+  4500→      {showStudentModal && (
+  4501→        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+  4502→          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+  4503→            <div className="p-6 border-b border-gray-200">
+  4504→              <div className="flex items-center justify-between">
+  4505→                <h3 className="text-xl font-bold text-gray-900">
+  4506→                  {editingStudent ? 'Edit Student' : 'Add New Student'}
+  4507→                </h3>
+  4508→                <button
+  4509→                  onClick={() => setShowStudentModal(false)}
+  4510→                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+  4511→                >
+  4512→                  <XCircle className="w-5 h-5 text-gray-500" />
+
+[showing lines 4013-4512 of 9925; use offset=4513 with limit to continue reading]

@@ -3512,7 +3512,7 @@ function CloseIcon({ className }: { className?: string }) {
 
 // ============ HOD DASHBOARD COMPONENT (Department-Specific with User Management & Analytics) ============
 function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (tab: TabType) => void }) {
-  const [activeTab, setActiveTabLocal] = useState<'overview' | 'students' | 'staff' | 'analytics'>('overview')
+  const [activeTab, setActiveTabLocal] = useState<'overview' | 'students' | 'staff'>('overview')
   const [studentAchievements, setStudentAchievements] = useState<any[]>([])
   const [staffAchievements, setStaffAchievements] = useState<any[]>([])
   const [selectedYear, setSelectedYear] = useState<string>('all')
@@ -3786,7 +3786,6 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
           { id: 'overview', label: 'Overview', icon: LayoutDashboard },
           { id: 'students', label: 'Students', icon: GraduationCap, count: totalStudents },
           { id: 'staff', label: 'Staff', icon: Users, count: totalStaff },
-          { id: 'analytics', label: 'Analytics', icon: BarChart3 },
         ].map(tab => (
           <button
             key={tab.id}
@@ -4298,201 +4297,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
         </div>
       )}
 
-      {/* ANALYTICS TAB - Split by Student/Staff and Year */}
-      {activeTab === 'analytics' && (
-        <div className="space-y-6">
-          {/* Year Filter */}
-          <div className="flex items-center gap-4">
-            <label className="text-sm font-medium text-gray-700">Filter by Year:</label>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
-            >
-              <option value="all">All Years</option>
-              <option value="I Year">I Year</option>
-              <option value="II Year">II Year</option>
-              <option value="III Year">III Year</option>
-              <option value="IV Year">IV Year</option>
-            </select>
-            {selectedYear !== 'all' && (
-              <Button variant="ghost" size="sm" onClick={() => setSelectedYear('all')}>
-                Clear Filter
-              </Button>
-            )}
-          </div>
-
-          {/* Summary Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="border-l-4 border-l-blue-500 bg-blue-50/50">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <GraduationCap className="w-8 h-8 text-blue-500" />
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">{filteredStudentAchievements.length}</p>
-                    <p className="text-xs text-gray-500">Student Records</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-l-4 border-l-emerald-500 bg-emerald-50/50">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Users className="w-8 h-8 text-emerald-500" />
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">{filteredStaffAchievements.length}</p>
-                    <p className="text-xs text-gray-500">Staff Records</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-l-4 border-l-amber-500 bg-amber-50/50">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Clock className="w-8 h-8 text-amber-500" />
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {filteredStudentAchievements.filter(a => a.status?.includes('pending')).length + 
-                       filteredStaffAchievements.filter(a => a.status?.includes('pending')).length}
-                    </p>
-                    <p className="text-xs text-gray-500">Pending Review</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-l-4 border-l-green-500 bg-green-50/50">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-8 h-8 text-green-500" />
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {filteredStudentAchievements.filter(a => a.status?.includes('approved')).length + 
-                       filteredStaffAchievements.filter(a => a.status?.includes('approved')).length}
-                    </p>
-                    <p className="text-xs text-gray-500">Approved</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Student Achievements by Type */}
-            <Card className="border border-gray-200">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-blue-500" /> Student Achievements by Type
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 max-h-[350px] overflow-y-auto">
-                  {Object.entries(ACHIEVEMENT_TYPES).map(([key, type]) => {
-                    const count = getStudentTypeCount(key)
-                    const Icon = type.icon
-                    const maxCount = Math.max(...Object.keys(ACHIEVEMENT_TYPES).map(k => getStudentTypeCount(k)), 1)
-                    const percentage = (count / maxCount) * 100
-                    return (
-                      <div key={key} className="flex items-center gap-3">
-                        <Icon className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                        <span className="text-xs text-gray-700 w-28 truncate flex-shrink-0">{type.label}</span>
-                        <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full flex items-center justify-end pr-2"
-                            style={{ width: `${Math.max(percentage, count > 0 ? 5 : 0)}%` }}
-                          >
-                            {count > 0 && <span className="text-[10px] font-bold text-white">{count}</span>}
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Staff Achievements by Type */}
-            <Card className="border border-gray-200">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-emerald-500" /> Staff Achievements by Type
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 max-h-[350px] overflow-y-auto">
-                  {Object.entries(STAFF_ACHIEVEMENT_TYPES).map(([key, type]) => {
-                    const count = getStaffTypeCount(key)
-                    const Icon = type.icon
-                    const maxCount = Math.max(...Object.keys(STAFF_ACHIEVEMENT_TYPES).map(k => getStaffTypeCount(k)), 1)
-                    const percentage = (count / maxCount) * 100
-                    return (
-                      <div key={key} className="flex items-center gap-3">
-                        <Icon className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                        <span className="text-xs text-gray-700 w-28 truncate flex-shrink-0">{type.label}</span>
-                        <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full flex items-center justify-end pr-2"
-                            style={{ width: `${Math.max(percentage, count > 0 ? 5 : 0)}%` }}
-                          >
-                            {count > 0 && <span className="text-[10px] font-bold text-white">{count}</span>}
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Year-wise Breakdown */}
-          <Card className="border border-gray-200">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-violet-500" /> Year-wise Distribution
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {['I Year', 'II Year', 'III Year', 'IV Year'].map(year => {
-                  const studentInYear = studentAchievements.filter(a => a.data?.year === year || a.year === year).length
-                  const staffInYear = staffAchievements.filter(a => a.data?.year_pub === year || a.year === year).length
-                  return (
-                    <div key={year} className="p-4 rounded-xl bg-gray-50 border border-gray-200">
-                      <p className="font-semibold text-gray-800 mb-3">{year}</p>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-blue-600 flex items-center gap-1">
-                            <GraduationCap className="w-3 h-3" /> Students
-                          </span>
-                          <span className="text-sm font-bold text-blue-700">{studentInYear}</span>
-                        </div>
-                        <div className="w-full h-2 bg-blue-100 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-blue-500 rounded-full"
-                            style={{ width: `${Math.max((studentInYear / Math.max(studentAchievements.length, 1)) * 100, studentInYear > 0 ? 10 : 0)}%` }}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="text-xs text-emerald-600 flex items-center gap-1">
-                            <Users className="w-3 h-3" /> Staff
-                          </span>
-                          <span className="text-sm font-bold text-emerald-700">{staffInYear}</span>
-                        </div>
-                        <div className="w-full h-2 bg-emerald-100 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-emerald-500 rounded-full"
-                            style={{ width: `${Math.max((staffInYear / Math.max(staffAchievements.length, 1)) * 100, staffInYear > 0 ? 10 : 0)}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* Note: Analytics moved to Department Analytics in sidebar - accessible via setActiveTab('analytics') */}
 
       {/* ==================== MODALS ==================== */}
       
