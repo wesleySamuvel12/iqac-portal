@@ -3522,6 +3522,17 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
   const [departmentStudents, setDepartmentStudents] = useState<any[]>([])
   const [departmentStaff, setDepartmentStaff] = useState<any[]>([])
 
+  // CRUD Modal States
+  const [showStudentModal, setShowStudentModal] = useState(false)
+  const [showStaffModal, setShowStaffModal] = useState(false)
+  const [editingStudent, setEditingStudent] = useState<any>(null)
+  const [editingStaff, setEditingStaff] = useState<any>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{type: 'student' | 'staff', id: number} | null>(null)
+
+  // Form States
+  const [studentForm, setStudentForm] = useState({ name: '', regNo: '', year: 'I Year', email: '', status: 'active' })
+  const [staffForm, setStaffForm] = useState({ name: '', designation: '', email: '', status: 'active', phone: '' })
+
   // Load achievements from localStorage on mount
   useEffect(() => {
     try {
@@ -3545,9 +3556,22 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
     }
   }, [user.departmentName])
 
-  // Load department users
+  // Load department users from localStorage or use defaults
   useEffect(() => {
-    // Demo data - in real app this would come from API/database filtered by department
+    const storageKey = `hod_users_${user.departmentName}`
+    try {
+      const saved = localStorage.getItem(storageKey)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed.students) setDepartmentStudents(parsed.students)
+        if (parsed.staff) setDepartmentStaff(parsed.staff)
+        return
+      }
+    } catch (e) {
+      console.error('Failed to load department users:', e)
+    }
+
+    // Default demo data - in real app this would come from API/database filtered by department
     const demoStudents = [
       { id: 1, name: 'Bhavani S', regNo: 'CSE001', year: 'III Year', email: 'bhavani@niet.ac.in', status: 'active' },
       { id: 2, name: 'Arun Kumar', regNo: 'CSE002', year: 'IV Year', email: 'arun@niet.ac.in', status: 'active' },
@@ -3560,16 +3584,127 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
     ]
     
     const demoStaff = [
-      { id: 1, name: 'Dr. Ramesh Kumar', designation: 'Professor & HOD', email: 'ramesh@niet.ac.in', status: 'active', achievements: 12 },
-      { id: 2, name: 'Dr. Lakshmi Devi', designation: 'Associate Professor', email: 'lakshmi@niet.ac.in', status: 'active', achievements: 8 },
-      { id: 3, name: 'Mr. Suresh Babu', designation: 'Assistant Professor', email: 'suresh@niet.ac.in', status: 'active', achievements: 5 },
-      { id: 4, name: 'Ms. Anitha Reddy', designation: 'Assistant Professor', email: 'anitha@niet.ac.in', status: 'on_leave', achievements: 3 },
-      { id: 5, name: 'Dr. Venkat Rao', designation: 'Associate Professor', email: 'venkat@niet.ac.in', status: 'active', achievements: 10 },
+      { id: 1, name: 'Dr. Ramesh Kumar', designation: 'Professor & HOD', email: 'ramesh@niet.ac.in', status: 'active', phone: '+91 98765 43210' },
+      { id: 2, name: 'Dr. Lakshmi Devi', designation: 'Associate Professor', email: 'lakshmi@niet.ac.in', status: 'active', phone: '+91 98765 43211' },
+      { id: 3, name: 'Mr. Suresh Babu', designation: 'Assistant Professor', email: 'suresh@niet.ac.in', status: 'active', phone: '+91 98765 43212' },
+      { id: 4, name: 'Ms. Anitha Reddy', designation: 'Assistant Professor', email: 'anitha@niet.ac.in', status: 'on_leave', phone: '+91 98765 43213' },
+      { id: 5, name: 'Dr. Venkat Rao', designation: 'Associate Professor', email: 'venkat@niet.ac.in', status: 'active', phone: '+91 98765 43214' },
     ]
     
     setDepartmentStudents(demoStudents)
     setDepartmentStaff(demoStaff)
-  }, [])
+    
+    // Save to localStorage
+    localStorage.setItem(storageKey, JSON.stringify({ students: demoStudents, staff: demoStaff }))
+  }, [user.departmentName])
+
+  // Save department users to localStorage whenever they change
+  useEffect(() => {
+    if (departmentStudents.length > 0 || departmentStaff.length > 0) {
+      const storageKey = `hod_users_${user.departmentName}`
+      localStorage.setItem(storageKey, JSON.stringify({ students: departmentStudents, staff: departmentStaff }))
+    }
+  }, [departmentStudents, departmentStaff, user.departmentName])
+
+  // ==================== STUDENT CRUD OPERATIONS ====================
+  const handleAddStudent = () => {
+    setEditingStudent(null)
+    setStudentForm({ name: '', regNo: '', year: 'I Year', email: '', status: 'active' })
+    setShowStudentModal(true)
+  }
+
+  const handleEditStudent = (student: any) => {
+    setEditingStudent(student)
+    setStudentForm({ 
+      name: student.name, 
+      regNo: student.regNo, 
+      year: student.year, 
+      email: student.email, 
+      status: student.status 
+    })
+    setShowStudentModal(true)
+  }
+
+  const handleSaveStudent = () => {
+    if (!studentForm.name.trim() || !studentForm.regNo.trim()) {
+      alert('Please fill in all required fields')
+      return
+    }
+
+    if (editingStudent) {
+      // Update existing student
+      setDepartmentStudents(prev => prev.map(s => 
+        s.id === editingStudent.id ? { ...s, ...studentForm } : s
+      ))
+    } else {
+      // Add new student
+      const newId = Math.max(...departmentStudents.map(s => s.id), 0) + 1
+      setDepartmentStudents(prev => [...prev, { id: newId, ...studentForm }])
+    }
+    
+    setShowStudentModal(false)
+    setEditingStudent(null)
+  }
+
+  const handleDeleteStudent = (id: number) => {
+    setDeleteConfirm({ type: 'student', id })
+  }
+
+  const confirmDelete = () => {
+    if (!deleteConfirm) return
+    
+    if (deleteConfirm.type === 'student') {
+      setDepartmentStudents(prev => prev.filter(s => s.id !== deleteConfirm.id))
+    } else {
+      setDepartmentStaff(prev => prev.filter(s => s.id !== deleteConfirm.id))
+    }
+    
+    setDeleteConfirm(null)
+  }
+
+  // ==================== STAFF CRUD OPERATIONS ====================
+  const handleAddStaff = () => {
+    setEditingStaff(null)
+    setStaffForm({ name: '', designation: '', email: '', status: 'active', phone: '' })
+    setShowStaffModal(true)
+  }
+
+  const handleEditStaff = (staffMember: any) => {
+    setEditingStaff(staffMember)
+    setStaffForm({ 
+      name: staffMember.name, 
+      designation: staffMember.designation, 
+      email: staffMember.email, 
+      status: staffMember.status,
+      phone: staffMember.phone || ''
+    })
+    setShowStaffModal(true)
+  }
+
+  const handleSaveStaff = () => {
+    if (!staffForm.name.trim() || !staffForm.designation.trim()) {
+      alert('Please fill in all required fields')
+      return
+    }
+
+    if (editingStaff) {
+      // Update existing staff
+      setDepartmentStaff(prev => prev.map(s => 
+        s.id === editingStaff.id ? { ...s, ...staffForm } : s
+      ))
+    } else {
+      // Add new staff
+      const newId = Math.max(...departmentStaff.map(s => s.id), 0) + 1
+      setDepartmentStaff(prev => [...prev, { id: newId, ...staffForm, achievements: 0 }])
+    }
+    
+    setShowStaffModal(false)
+    setEditingStaff(null)
+  }
+
+  const handleDeleteStaff = (id: number) => {
+    setDeleteConfirm({ type: 'staff', id })
+  }
 
   // Calculate department stats
   const totalStudents = departmentStudents.length
@@ -3839,10 +3974,10 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
         </>
       )}
 
-      {/* STUDENTS TAB - User Management */}
+      {/* STUDENTS TAB - User Management with CRUD */}
       {activeTab === 'students' && (
         <div className="space-y-6">
-          {/* Search and Filter */}
+          {/* Search, Filter and Add Button */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -3865,22 +4000,32 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
               <option value="III Year">III Year</option>
               <option value="IV Year">IV Year</option>
             </select>
+            <Button
+              onClick={handleAddStudent}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2"
+            >
+              <PlusCircle className="w-4 h-4" />
+              Add Student
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Students List */}
             <Card className="border border-gray-200 lg:col-span-2">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5 text-blue-500" /> 
-                  Department Students ({filteredStudents.length})
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                    <GraduationCap className="w-5 h-5 text-blue-500" /> 
+                    Department Students ({filteredStudents.length})
+                  </CardTitle>
+                  <Badge variant="outline" className="text-xs">{user.departmentName}</Badge>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-gray-200">
+                      <tr className="border-b border-gray-200 bg-gray-50">
                         <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Reg No</th>
                         <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Name</th>
                         <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Year</th>
@@ -3894,7 +4039,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                           a => a.studentName === student.name || a.reg === student.regNo
                         ).length
                         return (
-                          <tr key={student.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <tr key={student.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                             <td className="py-3 px-4 text-sm font-mono text-gray-700">{student.regNo}</td>
                             <td className="py-3 px-4">
                               <div>
@@ -3910,11 +4055,27 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                                 {student.status}
                               </Badge>
                             </td>
-                            <td className="py-3 px-4 text-right">
-                              <span className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium">
-                                <Trophy className="w-3 h-3" />
-                                {studentAchievementCount} records
-                              </span>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center justify-end gap-2">
+                                <span className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium mr-2">
+                                  <Trophy className="w-3 h-3" />
+                                  {studentAchievementCount}
+                                </span>
+                                <button
+                                  onClick={() => handleEditStudent(student)}
+                                  className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="Edit Student"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteStudent(student.id)}
+                                  className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Delete Student"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         )
@@ -3922,7 +4083,11 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                     </tbody>
                   </table>
                   {filteredStudents.length === 0 && (
-                    <p className="text-sm text-gray-400 text-center py-8">No students found</p>
+                    <div className="text-center py-12">
+                      <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500 font-medium">No students found</p>
+                      <p className="text-sm text-gray-400 mt-1">Add students to your department or adjust your search</p>
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -3989,29 +4154,41 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
         </div>
       )}
 
-      {/* STAFF TAB - User Management */}
+      {/* STAFF TAB - User Management with CRUD */}
       {activeTab === 'staff' && (
         <div className="space-y-6">
-          {/* Search */}
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search staff by name or designation..."
-              value={searchUser}
-              onChange={(e) => setSearchUser(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
-            />
+          {/* Search and Add Button */}
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search staff by name or designation..."
+                value={searchUser}
+                onChange={(e) => setSearchUser(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
+              />
+            </div>
+            <Button
+              onClick={handleAddStaff}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2"
+            >
+              <PlusCircle className="w-4 h-4" />
+              Add Faculty
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Staff List */}
             <Card className="border border-gray-200 lg:col-span-2">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-emerald-500" /> 
-                  Department Faculty ({filteredStaffList.length})
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-emerald-500" /> 
+                    Department Faculty ({filteredStaffList.length})
+                  </CardTitle>
+                  <Badge variant="outline" className="text-xs">{user.departmentName}</Badge>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -4020,18 +4197,43 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                       a => a.submittedBy === staffMember.name
                     ).length
                     return (
-                      <div key={staffMember.id} className="p-4 border border-gray-200 rounded-xl hover:shadow-md transition-shadow">
+                      <div key={staffMember.id} className="p-4 border border-gray-200 rounded-xl hover:shadow-md transition-shadow bg-white">
                         <div className="flex items-start gap-3">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-lg">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                             {staffMember.name.split(' ').map(n => n[0]).join('')}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-gray-800 text-sm">{staffMember.name}</p>
-                            <p className="text-xs text-gray-500">{staffMember.designation}</p>
-                            <p className="text-xs text-gray-400 mt-1">{staffMember.email}</p>
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <p className="font-semibold text-gray-800 text-sm">{staffMember.name}</p>
+                                <p className="text-xs text-gray-500">{staffMember.designation}</p>
+                                <p className="text-xs text-gray-400 mt-1">{staffMember.email}</p>
+                                {staffMember.phone && (
+                                  <p className="text-xs text-gray-400">{staffMember.phone}</p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => handleEditStaff(staffMember)}
+                                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="Edit Staff"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteStaff(staffMember.id)}
+                                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Delete Staff"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
                             <div className="flex items-center gap-2 mt-2">
                               <Badge className={
-                                staffMember.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                                staffMember.status === 'active' ? 'bg-green-100 text-green-700' : 
+                                staffMember.status === 'on_leave' ? 'bg-amber-100 text-amber-700' :
+                                'bg-gray-100 text-gray-600'
                               }>
                                 {staffMember.status.replace('_', ' ')}
                               </Badge>
@@ -4047,7 +4249,11 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                   })}
                 </div>
                 {filteredStaffList.length === 0 && (
-                  <p className="text-sm text-gray-400 text-center py-8">No staff found</p>
+                  <div className="text-center py-12">
+                    <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500 font-medium">No faculty members found</p>
+                    <p className="text-sm text-gray-400 mt-1">Add faculty to your department</p>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -4285,6 +4491,230 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
               </div>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* ==================== MODALS ==================== */}
+      
+      {/* Student Add/Edit Modal */}
+      {showStudentModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900">
+                  {editingStudent ? 'Edit Student' : 'Add New Student'}
+                </h3>
+                <button
+                  onClick={() => setShowStudentModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <XCircle className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 mt-1">{user.departmentName} Department</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                <input
+                  type="text"
+                  value={studentForm.name}
+                  onChange={(e) => setStudentForm({...studentForm, name: e.target.value})}
+                  placeholder="Enter student full name"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Register Number *</label>
+                <input
+                  type="text"
+                  value={studentForm.regNo}
+                  onChange={(e) => setStudentForm({...studentForm, regNo: e.target.value.toUpperCase()})}
+                  placeholder="e.g., CSE001"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none font-mono"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                  <select
+                    value={studentForm.year}
+                    onChange={(e) => setStudentForm({...studentForm, year: e.target.value})}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                  >
+                    <option value="I Year">I Year</option>
+                    <option value="II Year">II Year</option>
+                    <option value="III Year">III Year</option>
+                    <option value="IV Year">IV Year</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    value={studentForm.status}
+                    onChange={(e) => setStudentForm({...studentForm, status: e.target.value})}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={studentForm.email}
+                  onChange={(e) => setStudentForm({...studentForm, email: e.target.value})}
+                  placeholder="student@niet.ac.in"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                />
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setShowStudentModal(false)}
+                className="px-6"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveStudent}
+                className="px-6 bg-blue-600 hover:bg-blue-700"
+              >
+                {editingStudent ? 'Update Student' : 'Add Student'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Staff Add/Edit Modal */}
+      {showStaffModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900">
+                  {editingStaff ? 'Edit Faculty Member' : 'Add New Faculty'}
+                </h3>
+                <button
+                  onClick={() => setShowStaffModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <XCircle className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 mt-1">{user.departmentName} Department</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                <input
+                  type="text"
+                  value={staffForm.name}
+                  onChange={(e) => setStaffForm({...staffForm, name: e.target.value})}
+                  placeholder="Enter faculty full name"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Designation *</label>
+                <input
+                  type="text"
+                  value={staffForm.designation}
+                  onChange={(e) => setStaffForm({...staffForm, designation: e.target.value})}
+                  placeholder="e.g., Assistant Professor"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={staffForm.email}
+                    onChange={(e) => setStaffForm({...staffForm, email: e.target.value})}
+                    placeholder="faculty@niet.ac.in"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <input
+                    type="text"
+                    value={staffForm.phone}
+                    onChange={(e) => setStaffForm({...staffForm, phone: e.target.value})}
+                    placeholder="+91 98765 43210"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={staffForm.status}
+                  onChange={(e) => setStaffForm({...staffForm, status: e.target.value})}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none"
+                >
+                  <option value="active">Active</option>
+                  <option value="on_leave">On Leave</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setShowStaffModal(false)}
+                className="px-6"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveStaff}
+                className="px-6 bg-emerald-600 hover:bg-emerald-700"
+              >
+                {editingStaff ? 'Update Faculty' : 'Add Faculty'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertCircle className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Confirm Delete</h3>
+              <p className="text-gray-600 text-sm">
+                Are you sure you want to delete this {deleteConfirm.type === 'student' ? 'student' : 'faculty member'}? 
+                This action cannot be undone.
+              </p>
+            </div>
+            <div className="p-6 pt-0 flex gap-3 justify-center">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteConfirm(null)}
+                className="px-6"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmDelete}
+                className="px-6 bg-red-600 hover:bg-red-700"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
