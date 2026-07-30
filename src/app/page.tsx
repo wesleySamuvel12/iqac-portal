@@ -3127,170 +3127,9 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
     )
   }
 
-  // Staff Dashboard
+  // Staff Dashboard - Use separate component for hooks compliance
   if (user.role === 'STAFF') {
-    return (
-      <div className="space-y-6">
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-white">
-          <h2 className="text-2xl font-bold mb-2">Staff Portal</h2>
-          <p className="text-emerald-100">Welcome, {user.name} • {user.departmentName}</p>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard title="My Activities" value="8" icon={Calendar} color="blue" />
-          <StatCard title="Research Papers" value="5" icon={FileText} color="green" />
-          <StatCard title="Attendance" value="95%" icon={CheckCircle} color="purple" />
-        </div>
-
-        {/* Staff Charts - Achievement Types Bar Graph & Flow Graph */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Achievement Types Bar Chart */}
-          <Card className="border border-gray-200 lg:col-span-2">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-emerald-500" /> Achievements by Type
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-72 flex items-end justify-between gap-1 px-2 overflow-x-auto">
-                {Object.entries(STAFF_ACHIEVEMENT_TYPES).map(([key, type]) => {
-                  const Icon = type.icon
-                  const colors = [
-                    'from-emerald-500 to-teal-400',
-                    'from-yellow-500 to-amber-400', 
-                    'from-pink-500 to-rose-400',
-                    'from-green-500 to-green-400',
-                    'from-blue-500 to-indigo-400',
-                    'from-cyan-500 to-blue-400',
-                    'from-amber-500 to-orange-400',
-                    'from-red-500 to-pink-400'
-                  ]
-                  const colorIndex = Object.keys(STAFF_ACHIEVEMENT_TYPES).indexOf(key) % colors.length
-                  const height = Math.floor(Math.random() * 80) + 10
-                  return (
-                    <div key={key} className="flex-1 min-w-[60px] flex flex-col items-center gap-1.5">
-                      <div className="w-full flex items-end justify-center h-52">
-                        <div 
-                          className={`w-full max-w-[50px] bg-gradient-to-t ${colors[colorIndex]} rounded-t-md hover:opacity-80 transition-opacity cursor-pointer relative group`}
-                          style={{ height: `${height}%` }}
-                        >
-                          <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                            {height}%
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-center gap-0.5">
-                        <Icon className="w-4 h-4 text-gray-500" />
-                        <span className="text-[9px] text-gray-600 text-center leading-tight line-clamp-2">{type.label.split(' ')[0]}</span>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Flow / Trend Graph */}
-          <Card className="border border-gray-200">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-green-500" /> Submission Flow
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-56 relative">
-                <svg viewBox="0 0 200 100" className="w-full h-full" preserveAspectRatio="none">
-                  {[0, 25, 50, 75, 100].map(y => (
-                    <line key={y} x1="0" y1={y} x2="200" y2={y} stroke="#f0f0f0" strokeWidth="0.5" />
-                  ))}
-                  <path
-                    d="M0,85 Q30,75 60,60 T120,45 T180,25 L200,20 L200,100 L0,100 Z"
-                    fill="url(#staffGradient)"
-                    opacity="0.3"
-                  />
-                  <path
-                    d="M0,85 Q30,75 60,60 T120,45 T180,25 L200,20"
-                    fill="none"
-                    stroke="#10b981"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
-                  {[[0,85], [60,60], [120,45], [180,25], [200,20]].map(([x, y], i) => (
-                    <circle key={i} cx={x} cy={y} r="3" fill="#10b981" />
-                  ))}
-                  <defs>
-                    <linearGradient id="staffGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.4" />
-                      <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <div className="absolute bottom-0 left-0 right-0 flex justify-between text-[9px] text-gray-400 px-1">
-                  <span>Jan</span>
-                  <span>Feb</span>
-                  <span>Mar</span>
-                  <span>Apr</span>
-                  <span>May</span>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center justify-around text-xs">
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                  <span className="text-gray-500">Submissions</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <TrendingUp className="w-3 h-3 text-green-500" />
-                  <span className="text-green-600">+18%</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Staff Achievement Type Summary Cards */}
-        <Card className="border border-gray-200">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
-              <PieChartIcon className="w-5 h-5 text-emerald-500" /> Achievement Overview by Category
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-              {Object.entries(STAFF_ACHIEVEMENT_TYPES).map(([key, type]) => {
-                const Icon = type.icon
-                const count = Math.floor(Math.random() * 15)
-                return (
-                  <div key={key} className={`p-3 rounded-xl bg-gradient-to-br ${type.color} border border-gray-100 hover:shadow-md transition-all`}>
-                    <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
-                      <Icon className="w-4 h-4 text-white" />
-                    </div>
-                    <p className="text-lg font-bold text-white">{count}</p>
-                    <p className="text-[10px] text-white/80 leading-tight line-clamp-2">{type.label}</p>
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ActionCard 
-            icon={Plus} 
-            title="Submit New Activity" 
-            description="Report a new activity or event"
-            color="bg-gradient-to-br from-blue-500 to-indigo-600"
-            onClick={() => setActiveTab('staff_achievement')}
-          />
-          <ActionCard 
-            icon={MessageSquare} 
-            title="Give Feedback" 
-            description="Share your thoughts and suggestions"
-            color="bg-gradient-to-br from-purple-500 to-pink-600"
-            onClick={() => setActiveTab('feedback')}
-          />
-        </div>
-      </div>
-    )
+    return <StaffDashboardContent user={user} setActiveTab={setActiveTab} />
   }
 
   // Student Dashboard - Use separate component for hooks compliance
@@ -3299,7 +3138,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
 
 // ============ STUDENT DASHBOARD COMPONENT (Separate for Hooks Compliance) ============
 function StudentDashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (tab: TabType) => void }) {
-  const [studentAchievements, setStudentAchievements] = useState<any[]>([])
+  const [allStudentAchievements, setAllStudentAchievements] = useState<any[]>([])
   const [selectedDashboardType, setSelectedDashboardType] = useState<string | null>(null)
   
   // Load achievements from localStorage on mount
@@ -3307,14 +3146,20 @@ function StudentDashboardContent({ user, setActiveTab }: { user: User; setActive
     const saved = localStorage.getItem('student_achievements')
     if (saved) {
       try {
-        setStudentAchievements(JSON.parse(saved))
+        setAllStudentAchievements(JSON.parse(saved))
       } catch (e) {
         console.error('Failed to parse achievements:', e)
       }
     }
   }, [])
   
-  // Calculate stats from actual data
+  // IMPORTANT: Filter to show ONLY current student's achievements
+  // Each student can only see their own records, not other students'
+  const studentAchievements = allStudentAchievements.filter((a: any) => 
+    a.studentId === user.id || a.studentEmail === user.email || a.studentName === user.name
+  )
+  
+  // Calculate stats from actual data (filtered for current student only)
   const totalRecords = studentAchievements.length
   const pendingCount = studentAchievements.filter((a: any) => 
     a.status === 'pending_staff' || a.status === 'pending_hod'
@@ -3326,7 +3171,7 @@ function StudentDashboardContent({ user, setActiveTab }: { user: User; setActive
     a.status === 'rejected'
   ).length
   
-  // Calculate counts per achievement type
+  // Calculate counts per achievement type (for current student only)
   const getTypeCount = (typeKey: string) => {
     return studentAchievements.filter((a: any) => a.type === typeKey).length
   }
@@ -3337,7 +3182,7 @@ function StudentDashboardContent({ user, setActiveTab }: { user: User; setActive
     1
   )
   
-  // Get achievements for selected type
+  // Get achievements for selected type (for current student only)
   const selectedTypeAchievements = selectedDashboardType 
     ? studentAchievements.filter((a: any) => a.type === selectedDashboardType)
     : []
@@ -3691,6 +3536,371 @@ function CloseIcon({ className }: { className?: string }) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M18 6L6 18M6 6l12 12"/>
     </svg>
+  )
+}
+
+// ============ STAFF DASHBOARD COMPONENT (Separate for Hooks Compliance) ============
+function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (tab: TabType) => void }) {
+  const [staffAchievements, setStaffAchievements] = useState<any[]>([])
+  const [selectedDashboardType, setSelectedDashboardType] = useState<string | null>(null)
+  
+  // Load achievements from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('staff_achievements')
+    if (saved) {
+      try {
+        setStaffAchievements(JSON.parse(saved))
+      } catch (e) {
+        console.error('Failed to parse staff achievements:', e)
+      }
+    }
+  }, [])
+  
+  // Calculate stats from actual data
+  const totalRecords = staffAchievements.length
+  const pendingCount = staffAchievements.filter((a: any) => 
+    a.status === 'pending_staff' || a.status === 'pending_hod'
+  ).length
+  const approvedCount = staffAchievements.filter((a: any) => 
+    a.status === 'hod_approved' || a.status === 'staff_approved'
+  ).length
+  const rejectedCount = staffAchievements.filter((a: any) => 
+    a.status === 'rejected'
+  ).length
+  
+  // Calculate counts per achievement type
+  const getTypeCount = (typeKey: string) => {
+    return staffAchievements.filter((a: any) => a.type === typeKey).length
+  }
+  
+  // Get max count for bar graph scaling
+  const maxTypeCount = Math.max(
+    ...Object.keys(STAFF_ACHIEVEMENT_TYPES).map(key => getTypeCount(key)),
+    1
+  )
+  
+  // Get achievements for selected type
+  const selectedTypeAchievements = selectedDashboardType 
+    ? staffAchievements.filter((a: any) => a.type === selectedDashboardType)
+    : []
+
+  return (
+    <div className="space-y-6">
+      {/* Stats Cards Row - With Real Data */}
+      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-white">
+        <h2 className="text-2xl font-bold mb-2">Staff Portal</h2>
+        <p className="text-emerald-100">Welcome, {user.name} • {user.departmentName}</p>
+      </div>
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Records */}
+        <Card className="border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden cursor-pointer" onClick={() => setSelectedDashboardType(null)}>
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm text-gray-500 font-medium">TOTAL RECORDS</p>
+                <p className="text-3xl font-bold text-gray-800 mt-1">{totalRecords}</p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center">
+                <Trophy className="w-6 h-6 text-emerald-600" />
+              </div>
+            </div>
+          </CardContent>
+          <div className="h-1 bg-gradient-to-r from-emerald-400 to-emerald-500" />
+        </Card>
+
+        {/* Pending Approval */}
+        <Card className="border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden">
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm text-gray-500 font-medium">PENDING APPROVAL</p>
+                <p className="text-3xl font-bold text-gray-800 mt-1">{pendingCount}</p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center">
+                <Clock className="w-6 h-6 text-orange-600" />
+              </div>
+            </div>
+          </CardContent>
+          <div className="h-1 bg-gradient-to-r from-orange-400 to-orange-500" />
+        </Card>
+
+        {/* Approved */}
+        <Card className="border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden">
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm text-gray-500 font-medium">APPROVED</p>
+                <p className="text-3xl font-bold text-gray-800 mt-1">{approvedCount}</p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+          <div className="h-1 bg-gradient-to-r from-green-400 to-green-500" />
+        </Card>
+
+        {/* Rejected */}
+        <Card className="border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden">
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm text-gray-500 font-medium">REJECTED</p>
+                <p className="text-3xl font-bold text-gray-800 mt-1">{rejectedCount}</p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
+                <CloseIcon className="w-6 h-6 text-red-600" />
+              </div>
+            </div>
+          </CardContent>
+          <div className="h-1 bg-gradient-to-r from-red-400 to-red-500" />
+        </Card>
+      </div>
+
+      {/* Charts Section - Achievement Types Bar Graph & Flow Graph */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Achievement Types Bar Chart - With Real Data */}
+        <Card className="border border-gray-200 lg:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-emerald-500" /> Achievements by Type
+              {selectedDashboardType && (
+                <span className="text-sm font-normal text-emerald-600 cursor-pointer hover:underline ml-2" onClick={() => setSelectedDashboardType(null)}>
+                  (Click to clear filter)
+                </span>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-72 flex items-end justify-between gap-1 px-2 overflow-x-auto">
+              {Object.entries(STAFF_ACHIEVEMENT_TYPES).map(([key, type]) => {
+                const Icon = type.icon
+                const colors = [
+                  'from-emerald-500 to-teal-400',
+                  'from-yellow-500 to-amber-400', 
+                  'from-pink-500 to-rose-400',
+                  'from-green-500 to-green-400',
+                  'from-blue-500 to-indigo-400',
+                  'from-cyan-500 to-blue-400',
+                  'from-amber-500 to-orange-400',
+                  'from-red-500 to-pink-400'
+                ]
+                const colorIndex = Object.keys(STAFF_ACHIEVEMENT_TYPES).indexOf(key) % colors.length
+                // Use real count for height
+                const count = getTypeCount(key)
+                const height = maxTypeCount > 0 ? Math.max((count / maxTypeCount) * 100, count > 0 ? 8 : 2) : 2
+                const isSelected = selectedDashboardType === key
+                return (
+                  <div 
+                    key={key} 
+                    className={`flex-1 min-w-[50px] flex flex-col items-center gap-1.5 ${isSelected ? 'ring-2 ring-emerald-500 rounded-lg' : ''}`}
+                  >
+                    <div className="w-full flex items-end justify-center h-52">
+                      <div 
+                        onClick={() => setSelectedDashboardType(isSelected ? null : key)}
+                        className={`w-full max-w-[45px] bg-gradient-to-t ${colors[colorIndex]} ${isSelected ? 'ring-2 ring-offset-1 ring-emerald-500' : ''} rounded-t-md hover:opacity-80 transition-all cursor-pointer relative group`}
+                        style={{ height: `${height}%` }}
+                      >
+                        <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                          {count} {count === 1 ? 'item' : 'items'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <Icon className={`w-4 h-4 ${count > 0 ? 'text-emerald-600' : 'text-gray-400'}`} />
+                      <span className="text-[9px] text-gray-600 text-center leading-tight line-clamp-2">{type.label.split(' ')[0]}</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Flow / Trend Graph */}
+        <Card className="border border-gray-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-green-500" /> Submission Flow
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-56 relative">
+              <svg viewBox="0 0 200 100" className="w-full h-full" preserveAspectRatio="none">
+                {[0, 25, 50, 75, 100].map(y => (
+                  <line key={y} x1="0" y1={y} x2="200" y2={y} stroke="#f0f0f0" strokeWidth="0.5" />
+                ))}
+                <path
+                  d="M0,85 Q30,75 60,60 T120,45 T180,25 L200,20 L200,100 L0,100 Z"
+                  fill="url(#staffGradient)"
+                  opacity="0.3"
+                />
+                <path
+                  d="M0,85 Q30,75 60,60 T120,45 T180,25 L200,20"
+                  fill="none"
+                  stroke="#10b981"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
+                {[[0,85], [60,60], [120,45], [180,25], [200,20]].map(([x, y], i) => (
+                  <circle key={i} cx={x} cy={y} r="3" fill="#10b981" />
+                ))}
+                <defs>
+                  <linearGradient id="staffGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div className="absolute bottom-0 left-0 right-0 flex justify-between text-[9px] text-gray-400 px-1">
+                <span>Jan</span>
+                <span>Feb</span>
+                <span>Mar</span>
+                <span>Apr</span>
+                <span>May</span>
+              </div>
+            </div>
+            <div className="mt-3 flex items-center justify-around text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                <span className="text-gray-500">Submissions</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <TrendingUp className="w-3 h-3 text-green-500" />
+                <span className="text-green-600">+{totalRecords > 0 ? Math.round((approvedCount / totalRecords) * 100) : 0}%</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Achievement Type Summary Cards - Clickable with Real Data */}
+      <Card className="border border-gray-200">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+            <PieChartIcon className="w-5 h-5 text-emerald-500" /> Achievement Overview by Category
+            {selectedDashboardType && (
+              <span className="text-sm font-normal text-emerald-600 cursor-pointer hover:underline ml-2" onClick={() => setSelectedDashboardType(null)}>
+                (Showing: {STAFF_ACHIEVEMENT_TYPES[selectedDashboardType]?.label})
+              </span>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+            {Object.entries(STAFF_ACHIEVEMENT_TYPES).map(([key, type]) => {
+              const Icon = type.icon
+              const count = getTypeCount(key)
+              const isSelected = selectedDashboardType === key
+              return (
+                <div 
+                  key={key} 
+                  onClick={() => setSelectedDashboardType(isSelected ? null : key)}
+                  className={`p-3 rounded-xl bg-gradient-to-br ${type.color} hover:shadow-lg transition-all cursor-pointer ${isSelected ? 'ring-4 ring-emerald-400 scale-105' : 'hover:scale-102'}`}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
+                    <Icon className="w-4 h-4 text-white" />
+                  </div>
+                  <p className="text-lg font-bold text-white">{count}</p>
+                  <p className="text-[10px] text-white/80 leading-tight line-clamp-2">{type.label}</p>
+                </div>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Selected Type Detail View */}
+      {selectedDashboardType && (
+        <Card className="border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                {(() => {
+                  const SelectedIcon = STAFF_ACHIEVEMENT_TYPES[selectedDashboardType]?.icon
+                  return SelectedIcon ? <SelectedIcon className="w-5 h-5 text-emerald-600" /> : null
+                })()}
+                {STAFF_ACHIEVEMENT_TYPES[selectedDashboardType]?.label} - Details
+              </CardTitle>
+              <button 
+                onClick={() => setSelectedDashboardType(null)}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {selectedTypeAchievements.length > 0 ? (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600 mb-3">
+                  Showing <span className="font-semibold text-emerald-600">{selectedTypeAchievements.length}</span> achievement(s) in this category
+                </p>
+                <div className="grid gap-3 max-h-64 overflow-y-auto">
+                  {selectedTypeAchievements.map((achievement: any, idx: number) => (
+                    <div key={idx} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 hover:border-emerald-200 transition-colors">
+                      <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${STAFF_ACHIEVEMENT_TYPES[selectedDashboardType]?.color || 'from-gray-400 to-gray-500'} flex items-center justify-center`}>
+                        {(() => {
+                          const TypeIcon = STAFF_ACHIEVEMENT_TYPES[selectedDashboardType]?.icon
+                          return TypeIcon ? <TypeIcon className="w-5 h-5 text-white" /> : null
+                        })()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-800 truncate">{achievement.title || 'Untitled'}</p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(achievement.submittedAt || Date.now()).toLocaleDateString()} • 
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ml-1 ${
+                            achievement.status?.includes('approved') ? 'bg-green-100 text-green-700' :
+                            achievement.status?.includes('pending') ? 'bg-orange-100 text-orange-700' :
+                            achievement.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {achievement.status?.replace('_', ' ') || 'Unknown'}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
+                  <FolderOpen className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 font-medium">No achievements in this category yet</p>
+                <p className="text-sm text-gray-400 mt-1">Click "Submit New" to add your first achievement</p>
+                <button 
+                  onClick={() => setActiveTab('staff_achievement')}
+                  className="mt-4 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-medium rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all"
+                >
+                  Add Achievement
+                </button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+        <ActionCard 
+          icon={Plus} 
+          title="Submit New Activity" 
+          description="Report a new activity or event"
+          color="bg-gradient-to-br from-blue-500 to-indigo-600"
+          onClick={() => setActiveTab('staff_achievement')}
+        />
+        <ActionCard 
+          icon={MessageSquare} 
+          title="Give Feedback" 
+          description="Share your thoughts and suggestions"
+          color="bg-gradient-to-br from-purple-500 to-pink-600"
+          onClick={() => setActiveTab('feedback')}
+        />
+      </div>
+    </div>
   )
 }
 
@@ -4581,6 +4791,23 @@ function StudentAchievementsPage({ user }: { user: User }) {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [isDragOver, setIsDragOver] = useState(false)
 
+  // Load achievements from localStorage on mount (filtered for current student)
+  useEffect(() => {
+    const saved = localStorage.getItem('student_achievements')
+    if (saved) {
+      try {
+        const allAchievements = JSON.parse(saved)
+        // Only load current student's own records
+        const myAchievements = allAchievements.filter((a: any) => 
+          a.studentId === user.id || a.studentEmail === user.email || a.studentName === user.name
+        )
+        setAchievements(myAchievements)
+      } catch (e) {
+        console.error('Failed to parse achievements:', e)
+      }
+    }
+  }, [user.id, user.email, user.name])
+
   // Initialize form with user data when type changes
   useEffect(() => {
     if (selectedType) {
@@ -4613,10 +4840,19 @@ function StudentAchievementsPage({ user }: { user: User }) {
       typeName: ACHIEVEMENT_TYPES[selectedType]?.label || selectedType,
       title: formData.title || formData.award_name || formData.prog_name || formData.course || formData.event_name || formData.paper_title || formData.invention_title || 'Untitled',
       dept: user.departmentName,
+      studentName: user.name,
+      studentEmail: user.email,
+      studentId: user.id,
       date: new Date().toISOString().split('T')[0],
-      status: 'pending_staff',
+      status: 'pending_staff',  // First goes to same-department Staff/Faculty for review
       submittedAt: new Date().toISOString(),
-      data: formData
+      data: formData,
+      // Routing info - will be reviewed by same dept faculty then HOD
+      reviewRoute: {
+        current: 'staff',
+        next: 'hod',
+        department: user.departmentName
+      }
     }
     
     setAchievements(prev => {
@@ -4745,6 +4981,10 @@ function StudentAchievementsPage({ user }: { user: User }) {
 
   // Filter achievements
   const filteredAchievements = achievements.filter(a => {
+    // IMPORTANT: Only show current student's own records
+    const isOwnRecord = a.studentId === user.id || a.studentEmail === user.email || a.studentName === user.name
+    if (!isOwnRecord) return false
+    
     const matchesSearch = a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          a.typeName.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesType = filterType === 'all' || a.type === filterType
@@ -5774,7 +6014,12 @@ function StaffAchievementPage({ user }: { user: User }) {
       submittedBy: user.name
     }
     
-    setSubmittedEntries(prev => [newEntry, ...prev])
+    setSubmittedEntries(prev => {
+      const updatedEntries = [newEntry, ...prev]
+      // Save to localStorage for dashboard to read
+      localStorage.setItem('staff_achievements', JSON.stringify(updatedEntries))
+      return updatedEntries
+    })
     setShowSuccess(true)
     setIsSubmitting(false)
     
@@ -7949,7 +8194,9 @@ export default function IQACPortal() {
         ? <StudentAchievementsPage user={user} />
         : <AchievementForm user={user} onBack={() => setActiveTab('dashboard')} />
       case 'staff_achievement': return <StaffAchievementPage user={user} />
-      case 'student_achievement_view': return <StudentAchievementViewPage user={user} />
+      case 'student_achievement_view': return user?.role === 'STUDENT' 
+        ? <StudentAchievementsPage user={user} />
+        : <StudentAchievementViewPage user={user} />
       case 'my_achievement': return <MyAchievementPage user={user} />
       case 'hod_student_approval': return <HODStudentApprovalPage user={user} />
       case 'hod_staff_approval': return <HODStaffApprovalPage user={user} />
