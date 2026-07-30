@@ -4606,6 +4606,16 @@ function StudentAchievementsPage({ user }: { user: User }) {
 
   return (
     <div className="space-y-6">
+      {/* Back to Types Button - Above Add Achievement (shown when type is selected) */}
+      {selectedType && (
+        <button
+          onClick={() => { setSelectedType(''); setFormData({}); }}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors w-fit"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Types
+        </button>
+      )}
+
       {/* Add Student Achievement Card */}
       <Card className="border border-gray-200">
         <CardContent className="p-6">
@@ -4692,12 +4702,6 @@ function StudentAchievementsPage({ user }: { user: User }) {
                       <p className="text-xs text-gray-500">{currentTypeConfig?.fields.length} fields to complete</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => { setSelectedType(''); setFormData({}); }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <ArrowLeft className="w-4 h-4" /> Back to Types
-                  </button>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
