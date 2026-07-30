@@ -6514,29 +6514,29 @@ function HODReportGeneratorPage({ user }: { user: User }) {
   }
 
   return (
-    <div className="space-y-6 p-4 lg:p-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="h-[calc(100vh-140px)] flex flex-col gap-3 p-3 lg:p-4 overflow-hidden">
+      {/* Header - Compact */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 flex-shrink-0">
         <div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            📋 Monthly Department Report Generator
+          <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            📋 Report Generator
           </h2>
-          <p className="text-gray-500 mt-1">Generate comprehensive monthly reports for NIET</p>
+          <p className="text-gray-500 text-xs lg:text-sm mt-0.5">Monthly Department Report for NIET</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <Button 
             onClick={generateReport} 
             disabled={generating}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 shadow-lg"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-4 py-2 h-9 text-sm shadow-lg"
           >
             {generating ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                 Generating...
               </>
             ) : (
               <>
-                <Download className="w-4 h-4 mr-2" />
+                <Download className="w-3.5 h-3.5 mr-1.5" />
                 Generate DOCX
               </>
             )}
@@ -6545,92 +6545,91 @@ function HODReportGeneratorPage({ user }: { user: User }) {
       </div>
 
       {generated && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
-          <CheckCircle className="w-5 h-5 text-green-600" />
-          <span className="text-green-700 font-medium">Report generated successfully!</span>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2 flex-shrink-0">
+          <CheckCircle className="w-4 h-4 text-green-600" />
+          <span className="text-green-700 font-medium text-sm">Report generated successfully!</span>
         </div>
       )}
 
-      {/* Section Navigation */}
-      <div className="bg-white rounded-xl border border-gray-200 p-2 overflow-x-auto">
-        <div className="flex gap-2 min-w-max">
+      {/* Section Navigation - Compact Horizontal Scroll */}
+      <div className="bg-white rounded-lg border border-gray-200 p-1.5 overflow-x-auto flex-shrink-0 scrollbar-hide">
+        <div className="flex gap-1 min-w-max">
           {sections.map((section) => (
             <button
               key={section.id}
               onClick={() => setActiveSection(section.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-xs transition-all whitespace-nowrap ${
                 activeSection === section.id
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-sm'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              <section.icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{section.title}</span>
+              <section.icon className="w-3.5 h-3.5" />
+              {section.title}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Section Content */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      {/* Section Content - Scrollable Area */}
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden flex-1 min-h-0">
+        <div className="h-full overflow-y-auto overflow-x-hidden">
         {/* Section 0: Header Information */}
         {activeSection === 0 && (
-          <div className="p-6 space-y-6">
-            <div className="border-b pb-4">
-              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                <FileText className="w-6 h-6 text-blue-500" />
+          <div className="p-4 space-y-4">
+            <div className="border-b pb-3">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-blue-500" />
                 Header Information
               </h3>
-              <p className="text-gray-500 text-sm mt-1">Basic report identification details</p>
+              <p className="text-gray-500 text-xs mt-0.5">Basic report identification details</p>
             </div>
             
-            {/* NIET Header Preview */}
-            <div className="bg-gradient-to-r from-slate-800 to-blue-900 rounded-xl p-6 text-white">
+            {/* NIET Header Preview - Compact */}
+            <div className="bg-gradient-to-r from-slate-800 to-blue-900 rounded-lg p-4 text-white">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-2xl font-bold">NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY</h1>
-                  <p className="text-blue-200 text-sm mt-1">(AUTONOMOUS) – An ISO 9001:2015 & ISO 14001:2015 Certified Institution</p>
-                  <p className="text-blue-300 text-xs mt-2">Affiliated to Anna University, Chennai | Approved by AICTE | Accredited by NAAC with "A+" | NBA Accredited</p>
+                  <h1 className="text-base lg:text-lg font-bold leading-tight">NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY</h1>
+                  <p className="text-blue-200 text-xs mt-1">(AUTONOMOUS) – ISO 9001:2015 & 14001:2015 Certified</p>
+                  <p className="text-blue-300 text-xs mt-1 hidden sm:block">Affiliated to Anna University | AICTE Approved | NAAC "A+" | NBA Accredited</p>
                 </div>
-                <div className="hidden md:block text-right">
-                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center">
-                    <GraduationCap className="w-10 h-10" />
-                  </div>
+                <div className="hidden md:flex w-12 h-12 bg-white/10 rounded-full items-center justify-center flex-shrink-0 ml-3">
+                  <GraduationCap className="w-7 h-7" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-              <h4 className="font-bold text-blue-900 text-lg">MONTHLY DEPARTMENT REPORT</h4>
-              <p className="text-blue-700">Academic Year: {reportData.academicYear}</p>
+            <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+              <h4 className="font-bold text-blue-900 text-sm">MONTHLY DEPARTMENT REPORT</h4>
+              <p className="text-blue-700 text-xs">Academic Year: {reportData.academicYear}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Name of the School *</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-700">Name of the School *</label>
                 <Input 
                   value={reportData.schoolName} 
                   onChange={(e) => updateField('schoolName', e.target.value)}
                   placeholder="e.g., School of Computing"
-                  className="border-gray-300"
+                  className="border-gray-300 h-9 text-sm"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Name of the Department *</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-700">Name of the Department *</label>
                 <Input 
                   value={reportData.department} 
                   onChange={(e) => updateField('department', e.target.value)}
                   placeholder="Department Name"
-                  className="border-gray-300"
+                  className="border-gray-300 h-9 text-sm"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Reporting Month & Year *</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-700">Reporting Month & Year *</label>
                 <div className="flex gap-2">
                   <select 
                     value={reportData.reportingMonth}
                     onChange={(e) => updateField('reportingMonth', e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-2 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm h-9"
                   >
                     <option value="">Select Month</option>
                     <option value="January">January</option>
@@ -6650,62 +6649,62 @@ function HODReportGeneratorPage({ user }: { user: User }) {
                     value={reportData.reportingYear}
                     onChange={(e) => updateField('reportingYear', e.target.value)}
                     placeholder="2026"
-                    className="w-24 border-gray-300"
+                    className="w-20 border-gray-300 h-9 text-sm"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
-              <strong>Preamble:</strong> This Monthly Department Report is submitted by the respective department to Principal-NIET, providing details of academic, research, student development, and other institutional activities carried out during the reporting period.
+            <div className="bg-gray-50 rounded-md p-3 text-xs text-gray-600">
+              <strong>Preamble:</strong> This Monthly Department Report is submitted by the respective department to Principal-NIET.
             </div>
           </div>
         )}
 
         {/* Section 1: Dept. Basic Information */}
         {activeSection === 1 && (
-          <div className="p-6 space-y-6">
-            <div className="border-b pb-4">
-              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                <Users className="w-6 h-6 text-green-500" />
+          <div className="p-4 space-y-4">
+            <div className="border-b pb-3">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Users className="w-5 h-5 text-green-500" />
                 DEPT. BASIC INFORMATION
               </h3>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
+              <table className="w-full border-collapse text-sm">
                 <tbody>
                   <tr className="border-b">
-                    <td className="p-3 bg-teal-50 font-semibold text-teal-900 w-1/4">Number of Faculty</td>
-                    <td className="p-3 border"><Input value={reportData.facultyCount} onChange={(e) => updateField('facultyCount', e.target.value)} className="border-0" /></td>
-                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">No. of Prof:</td>
-                    <td className="p-3 border"><Input value={reportData.profCount} onChange={(e) => updateField('profCount', e.target.value)} className="border-0" /></td>
-                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">No. of AsP:</td>
-                    <td className="p-3 border"><Input value={reportData.aspCount} onChange={(e) => updateField('aspCount', e.target.value)} className="border-0" /></td>
-                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">No. of AP:</td>
-                    <td className="p-3 border"><Input value={reportData.apCount} onChange={(e) => updateField('apCount', e.target.value)} className="border-0" /></td>
+                    <td className="p-2 bg-teal-50 font-semibold text-teal-900 w-1/5 text-xs">Number of Faculty</td>
+                    <td className="p-2 border"><Input value={reportData.facultyCount} onChange={(e) => updateField('facultyCount', e.target.value)} className="border-0 h-8 text-xs px-2" /></td>
+                    <td className="p-2 bg-teal-50 font-semibold text-teal-900 text-xs">No. of Prof:</td>
+                    <td className="p-2 border"><Input value={reportData.profCount} onChange={(e) => updateField('profCount', e.target.value)} className="border-0 h-8 text-xs px-2" /></td>
+                    <td className="p-2 bg-teal-50 font-semibold text-teal-900 text-xs">No. of AsP:</td>
+                    <td className="p-2 border"><Input value={reportData.aspCount} onChange={(e) => updateField('aspCount', e.target.value)} className="border-0 h-8 text-xs px-2" /></td>
+                    <td className="p-2 bg-teal-50 font-semibold text-teal-900 text-xs">No. of AP:</td>
+                    <td className="p-2 border"><Input value={reportData.apCount} onChange={(e) => updateField('apCount', e.target.value)} className="border-0 h-8 text-xs px-2" /></td>
                   </tr>
                   <tr className="border-b">
-                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">Ph. D Holders</td>
-                    <td className="p-3 border" colSpan={2}><Input value={reportData.phdHolders} onChange={(e) => updateField('phdHolders', e.target.value)} className="border-0" /></td>
-                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">No. of PhD:</td>
-                    <td className="p-3 border"><Input value={reportData.phdCount} onChange={(e) => updateField('phdCount', e.target.value)} className="border-0" /></td>
-                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">Pursuing PhD:</td>
-                    <td className="p-3 border"><Input value={reportData.pursuingPhd} onChange={(e) => updateField('pursuingPhd', e.target.value)} className="border-0" /></td>
-                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">Not Yet Registered:</td>
-                    <td className="p-3 border"><Input value={reportData.notRegistered} onChange={(e) => updateField('notRegistered', e.target.value)} className="border-0" /></td>
+                    <td className="p-2 bg-teal-50 font-semibold text-teal-900 text-xs">Ph. D Holders</td>
+                    <td className="p-2 border" colSpan={2}><Input value={reportData.phdHolders} onChange={(e) => updateField('phdHolders', e.target.value)} className="border-0 h-8 text-xs px-2" /></td>
+                    <td className="p-2 bg-teal-50 font-semibold text-teal-900 text-xs">No. of PhD:</td>
+                    <td className="p-2 border"><Input value={reportData.phdCount} onChange={(e) => updateField('phdCount', e.target.value)} className="border-0 h-8 text-xs px-2" /></td>
+                    <td className="p-2 bg-teal-50 font-semibold text-teal-900 text-xs">Pursuing PhD:</td>
+                    <td className="p-2 border"><Input value={reportData.pursuingPhd} onChange={(e) => updateField('pursuingPhd', e.target.value)} className="border-0 h-8 text-xs px-2" /></td>
+                    <td className="p-2 bg-teal-50 font-semibold text-teal-900 text-xs">Not Registered:</td>
+                    <td className="p-2 border"><Input value={reportData.notRegistered} onChange={(e) => updateField('notRegistered', e.target.value)} className="border-0 h-8 text-xs px-2" /></td>
                   </tr>
                   <tr>
-                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">Number of Students</td>
-                    <td className="p-3 border"><Input value={reportData.totalStudents} onChange={(e) => updateField('totalStudents', e.target.value)} className="border-0" placeholder="(Total)" /></td>
-                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">I Year:</td>
-                    <td className="p-3 border"><Input value={reportData.year1Students} onChange={(e) => updateField('year1Students', e.target.value)} className="border-0" /></td>
-                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">II Year:</td>
-                    <td className="p-3 border"><Input value={reportData.year2Students} onChange={(e) => updateField('year2Students', e.target.value)} className="border-0" /></td>
-                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">III Year:</td>
-                    <td className="p-3 border"><Input value={reportData.year3Students} onChange={(e) => updateField('year3Students', e.target.value)} className="border-0" /></td>
-                    <td className="p-3 bg-teal-50 font-semibold text-teal-900">IV Year:</td>
-                    <td className="p-3 border"><Input value={reportData.year4Students} onChange={(e) => updateField('year4Students', e.target.value)} className="border-0" /></td>
+                    <td className="p-2 bg-teal-50 font-semibold text-teal-900 text-xs">Number of Students</td>
+                    <td className="p-2 border"><Input value={reportData.totalStudents} onChange={(e) => updateField('totalStudents', e.target.value)} className="border-0 h-8 text-xs px-2" placeholder="(Total)" /></td>
+                    <td className="p-2 bg-teal-50 font-semibold text-teal-900 text-xs">I Year:</td>
+                    <td className="p-2 border"><Input value={reportData.year1Students} onChange={(e) => updateField('year1Students', e.target.value)} className="border-0 h-8 text-xs px-2" /></td>
+                    <td className="p-2 bg-teal-50 font-semibold text-teal-900 text-xs">II Year:</td>
+                    <td className="p-2 border"><Input value={reportData.year2Students} onChange={(e) => updateField('year2Students', e.target.value)} className="border-0 h-8 text-xs px-2" /></td>
+                    <td className="p-2 bg-teal-50 font-semibold text-teal-900 text-xs">III Year:</td>
+                    <td className="p-2 border"><Input value={reportData.year3Students} onChange={(e) => updateField('year3Students', e.target.value)} className="border-0 h-8 text-xs px-2" /></td>
+                    <td className="p-2 bg-teal-50 font-semibold text-teal-900 text-xs">IV Year:</td>
+                    <td className="p-2 border"><Input value={reportData.year4Students} onChange={(e) => updateField('year4Students', e.target.value)} className="border-0 h-8 text-xs px-2" /></td>
                   </tr>
                 </tbody>
               </table>
@@ -6715,61 +6714,61 @@ function HODReportGeneratorPage({ user }: { user: User }) {
 
         {/* Section 2: A. Academic Activities */}
         {activeSection === 2 && (
-          <div className="p-6 space-y-6">
-            <div className="bg-green-100 border border-green-300 rounded-t-xl p-3">
-              <h3 className="font-bold text-green-900 text-lg">A. ACADEMIC ACTIVITIES</h3>
+          <div className="p-4 space-y-4">
+            <div className="bg-green-100 border border-green-300 rounded-t-lg p-2.5">
+              <h3 className="font-bold text-green-900 text-sm">A. ACADEMIC ACTIVITIES</h3>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border">
+              <table className="w-full border-collapse border text-xs">
                 <thead>
                   <tr className="bg-green-50">
-                    <th className="p-3 border text-left font-semibold text-green-900 w-12">Sl.</th>
-                    <th className="p-3 border text-left font-semibold text-green-900">Particulars</th>
-                    <th className="p-3 border text-center font-semibold text-green-900">Theory</th>
-                    <th className="p-3 border text-center font-semibold text-green-900">Lab / Practical</th>
+                    <th className="p-2 border text-left font-semibold text-green-900 w-8">Sl.</th>
+                    <th className="p-2 border text-left font-semibold text-green-900">Particulars</th>
+                    <th className="p-2 border text-center font-semibold text-green-900 w-24">Theory</th>
+                    <th className="p-2 border text-center font-semibold text-green-900 w-28">Lab / Practical</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td className="p-3 border text-center">1</td><td className="p-3 border font-medium">Syllabus Coverage</td><td className="p-3 border"><Input value={reportData.syllabusCoverageTheory} onChange={(e) => updateField('syllabusCoverageTheory', e.target.value)} className="border-0" /></td><td className="p-3 border"><Input value={reportData.syllabusCoverageLab} onChange={(e) => updateField('syllabusCoverageLab', e.target.value)} className="border-0" /></td></tr>
-                  <tr><td className="p-3 border text-center">2</td><td className="p-3 border font-medium">Lesson Plan Update</td><td className="p-3 border">
-                    <select value={reportData.lessonPlanTheory} onChange={(e) => updateField('lessonPlanTheory', e.target.value)} className="w-full border-0 bg-transparent">
+                  <tr><td className="p-2 border text-center">1</td><td className="p-2 border font-medium">Syllabus Coverage</td><td className="p-2 border"><Input value={reportData.syllabusCoverageTheory} onChange={(e) => updateField('syllabusCoverageTheory', e.target.value)} className="border-0 h-7 text-xs px-1" /></td><td className="p-2 border"><Input value={reportData.syllabusCoverageLab} onChange={(e) => updateField('syllabusCoverageLab', e.target.value)} className="border-0 h-7 text-xs px-1" /></td></tr>
+                  <tr><td className="p-2 border text-center">2</td><td className="p-2 border font-medium">Lesson Plan Update</td><td className="p-2 border">
+                    <select value={reportData.lessonPlanTheory} onChange={(e) => updateField('lessonPlanTheory', e.target.value)} className="w-full border-0 bg-transparent text-xs">
                       <option value="">Yes / No</option>
                       <option value="Yes">Yes</option>
                       <option value="No">No</option>
                     </select>
-                  </td><td className="p-3 border">
-                    <select value={reportData.lessonPlanLab} onChange={(e) => updateField('lessonPlanLab', e.target.value)} className="w-full border-0 bg-transparent">
+                  </td><td className="p-2 border">
+                    <select value={reportData.lessonPlanLab} onChange={(e) => updateField('lessonPlanLab', e.target.value)} className="w-full border-0 bg-transparent text-xs">
                       <option value="">Yes / No</option>
                       <option value="Yes">Yes</option>
                       <option value="No">No</option>
                     </select>
                   </td></tr>
-                  <tr><td className="p-3 border text-center">3</td><td className="p-3 border font-medium">CIA – I / II / III Conducted & Report Submitted</td><td className="p-3 border">
-                    <select value={reportData.ciaConducted} onChange={(e) => updateField('ciaConducted', e.target.value)} className="w-full border-0 bg-transparent">
+                  <tr><td className="p-2 border text-center">3</td><td className="p-2 border font-medium">CIA – I / II / III Conducted & Report Submitted</td><td className="p-2 border">
+                    <select value={reportData.ciaConducted} onChange={(e) => updateField('ciaConducted', e.target.value)} className="w-full border-0 bg-transparent text-xs">
                       <option value="">Yes / No</option>
                       <option value="Yes">Yes</option>
                       <option value="No">No</option>
                     </select>
-                  </td><td className="p-3 border text-center text-gray-400">NA</td></tr>
-                  <tr><td className="p-3 border text-center">4</td><td className="p-3 border font-medium">Student Attendance Report Prepared & Submitted</td><td className="p-3 border" colSpan={2}>
+                  </td><td className="p-2 border text-center text-gray-400">NA</td></tr>
+                  <tr><td className="p-2 border text-center">4</td><td className="p-2 border font-medium">Student Attendance Report Prepared & Submitted</td><td className="p-2 border" colSpan={2}>
                     <div className="flex items-center gap-2">
-                      <select value={reportData.attendanceReport} onChange={(e) => updateField('attendanceReport', e.target.value)} className="flex-1 border-0 bg-transparent">
+                      <select value={reportData.attendanceReport} onChange={(e) => updateField('attendanceReport', e.target.value)} className="flex-1 border-0 bg-transparent text-xs">
                         <option value="">Yes / No</option>
                         <option value="Yes">Yes</option>
                         <option value="No">No</option>
                       </select>
-                      <span className="text-xs text-gray-500">(if yes, enclose)</span>
+                      <span className="text-xs text-gray-500 whitespace-nowrap">(if yes, enclose)</span>
                     </div>
                   </td></tr>
-                  <tr><td className="p-3 border text-center">5</td><td className="p-3 border font-medium">Remedial Classes Conducted (Enclose Report)</td><td className="p-3 border">
-                    <div className="flex items-center gap-2">
-                      <Input value={reportData.remedialClasses} onChange={(e) => updateField('remedialClasses', e.target.value)} className="border-0" placeholder="No. of Classes:" />
+                  <tr><td className="p-2 border text-center">5</td><td className="p-2 border font-medium">Remedial Classes Conducted (Enclose Report)</td><td className="p-2 border">
+                    <div className="flex items-center gap-1">
+                      <Input value={reportData.remedialClasses} onChange={(e) => updateField('remedialClasses', e.target.value)} className="border-0 h-7 text-xs px-1" placeholder="No. of Classes:" />
                     </div>
-                  </td><td className="p-3 border text-center text-gray-400">NA</td></tr>
-                  <tr><td className="p-3 border text-center">6</td><td className="p-3 border font-medium">Mentoring Sessions Conducted</td><td className="p-3 border">
-                    <Input value={reportData.mentoringSessions} onChange={(e) => updateField('mentoringSessions', e.target.value)} className="border-0" placeholder="No. of Sessions:" />
-                  </td><td className="p-3 border text-center text-gray-400">NA</td></tr>
+                  </td><td className="p-2 border text-center text-gray-400">NA</td></tr>
+                  <tr><td className="p-2 border text-center">6</td><td className="p-2 border font-medium">Mentoring Sessions Conducted</td><td className="p-2 border">
+                    <Input value={reportData.mentoringSessions} onChange={(e) => updateField('mentoringSessions', e.target.value)} className="border-0 h-7 text-xs px-1" placeholder="No. of Sessions:" />
+                  </td><td className="p-2 border text-center text-gray-400">NA</td></tr>
                 </tbody>
               </table>
             </div>
@@ -6778,84 +6777,84 @@ function HODReportGeneratorPage({ user }: { user: User }) {
 
         {/* Section 3: B. Student Development Activities */}
         {activeSection === 3 && (
-          <div className="p-6 space-y-6">
-            <div className="bg-purple-100 border border-purple-300 rounded-t-xl p-3">
-              <h3 className="font-bold text-purple-900 text-lg">B. STUDENT DEVELOPMENT ACTIVITIES</h3>
+          <div className="p-4 space-y-4">
+            <div className="bg-purple-100 border border-purple-300 rounded-t-lg p-2.5">
+              <h3 className="font-bold text-purple-900 text-sm">B. STUDENT DEVELOPMENT ACTIVITIES</h3>
               <p className="text-purple-700 text-xs">(*Prev Months: Cumulative counting starts from 1st July)</p>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border text-sm">
+              <table className="w-full border-collapse border text-xs">
                 <thead>
                   <tr className="bg-purple-50">
-                    <th className="p-2 border font-semibold text-purple-900" rowSpan={2}>Particulars</th>
-                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Guest Lectures / Seminar/Webinar</th>
-                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Workshops Organized</th>
-                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Industrial Visits</th>
-                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Value Added Courses</th>
-                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Skill Enhancement</th>
-                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Hands-on Training</th>
-                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Hackathon</th>
-                    <th className="p-2 border font-semibold text-purple-900" rowSpan={2}>Prof. Society Activities</th>
+                    <th className="p-1.5 border font-semibold text-purple-900" rowSpan={2}>Particulars</th>
+                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Guest Lectures</th>
+                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Workshops</th>
+                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Industrial Visits</th>
+                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Value Added</th>
+                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Skill Enhance.</th>
+                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Hands-on</th>
+                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Hackathon</th>
+                    <th className="p-1 border font-semibold text-purple-900" rowSpan={2}>Prof. Society</th>
                   </tr>
                   <tr className="bg-purple-50">
-                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
-                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
-                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
-                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
-                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
-                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
-                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
+                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
+                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
+                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
+                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
+                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
+                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
+                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="p-2 border font-medium bg-gray-50">Prev Months*</td>
-                    <td className="p-1 border"><Input value={reportData.studentDev.guestLectures.prev} onChange={(e) => updateStudentDev('guestLectures', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
-                    <td className="p-1 border"></td>
-                    <td className="p-1 border"><Input value={reportData.studentDev.workshops.prev} onChange={(e) => updateStudentDev('workshops', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
-                    <td className="p-1 border"></td>
-                    <td className="p-1 border"><Input value={reportData.studentDev.industrialVisits.prev} onChange={(e) => updateStudentDev('industrialVisits', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
-                    <td className="p-1 border"></td>
-                    <td className="p-1 border"><Input value={reportData.studentDev.valueAddedCourses.prev} onChange={(e) => updateStudentDev('valueAddedCourses', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
-                    <td className="p-1 border"></td>
-                    <td className="p-1 border"><Input value={reportData.studentDev.skillEnhancement.prev} onChange={(e) => updateStudentDev('skillEnhancement', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
-                    <td className="p-1 border"></td>
-                    <td className="p-1 border"><Input value={reportData.studentDev.handsOnTraining.prev} onChange={(e) => updateStudentDev('handsOnTraining', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
-                    <td className="p-1 border"></td>
-                    <td className="p-1 border"><Input value={reportData.studentDev.hackathon.prev} onChange={(e) => updateStudentDev('hackathon', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
-                    <td className="p-1 border"></td>
-                    <td className="p-1 border"></td>
+                    <td className="p-1.5 border font-medium bg-gray-50">Prev Months*</td>
+                    <td className="p-0.5 border"><Input value={reportData.studentDev.guestLectures.prev} onChange={(e) => updateStudentDev('guestLectures', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+                    <td className="p-0.5 border"></td>
+                    <td className="p-0.5 border"><Input value={reportData.studentDev.workshops.prev} onChange={(e) => updateStudentDev('workshops', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+                    <td className="p-0.5 border"></td>
+                    <td className="p-0.5 border"><Input value={reportData.studentDev.industrialVisits.prev} onChange={(e) => updateStudentDev('industrialVisits', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+                    <td className="p-0.5 border"></td>
+                    <td className="p-0.5 border"><Input value={reportData.studentDev.valueAddedCourses.prev} onChange={(e) => updateStudentDev('valueAddedCourses', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+                    <td className="p-0.5 border"></td>
+                    <td className="p-0.5 border"><Input value={reportData.studentDev.skillEnhancement.prev} onChange={(e) => updateStudentDev('skillEnhancement', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+                    <td className="p-0.5 border"></td>
+                    <td className="p-0.5 border"><Input value={reportData.studentDev.handsOnTraining.prev} onChange={(e) => updateStudentDev('handsOnTraining', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+                    <td className="p-0.5 border"></td>
+                    <td className="p-0.5 border"><Input value={reportData.studentDev.hackathon.prev} onChange={(e) => updateStudentDev('hackathon', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+                    <td className="p-0.5 border"></td>
+                    <td className="p-0.5 border"></td>
                   </tr>
                   <tr>
-                    <td className="p-2 border font-medium bg-blue-50">Curr Month</td>
-                    <td className="p-1 border"></td>
-                    <td className="p-1 border"><Input value={reportData.studentDev.guestLectures.curr} onChange={(e) => updateStudentDev('guestLectures', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
-                    <td className="p-1 border"></td>
-                    <td className="p-1 border"><Input value={reportData.studentDev.workshops.curr} onChange={(e) => updateStudentDev('workshops', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
-                    <td className="p-1 border"></td>
-                    <td className="p-1 border"><Input value={reportData.studentDev.industrialVisits.curr} onChange={(e) => updateStudentDev('industrialVisits', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
-                    <td className="p-1 border"></td>
-                    <td className="p-1 border"><Input value={reportData.studentDev.valueAddedCourses.curr} onChange={(e) => updateStudentDev('valueAddedCourses', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
-                    <td className="p-1 border"></td>
-                    <td className="p-1 border"><Input value={reportData.studentDev.skillEnhancement.curr} onChange={(e) => updateStudentDev('skillEnhancement', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
-                    <td className="p-1 border"></td>
-                    <td className="p-1 border"><Input value={reportData.studentDev.handsOnTraining.curr} onChange={(e) => updateStudentDev('handsOnTraining', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
-                    <td className="p-1 border"></td>
-                    <td className="p-1 border"><Input value={reportData.studentDev.hackathon.curr} onChange={(e) => updateStudentDev('hackathon', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
-                    <td className="p-1 border"></td>
-                    <td className="p-1 border"></td>
+                    <td className="p-1.5 border font-medium bg-blue-50">Curr Month</td>
+                    <td className="p-0.5 border"></td>
+                    <td className="p-0.5 border"><Input value={reportData.studentDev.guestLectures.curr} onChange={(e) => updateStudentDev('guestLectures', 'curr', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+                    <td className="p-0.5 border"></td>
+                    <td className="p-0.5 border"><Input value={reportData.studentDev.workshops.curr} onChange={(e) => updateStudentDev('workshops', 'curr', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+                    <td className="p-0.5 border"></td>
+                    <td className="p-0.5 border"><Input value={reportData.studentDev.industrialVisits.curr} onChange={(e) => updateStudentDev('industrialVisits', 'curr', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+                    <td className="p-0.5 border"></td>
+                    <td className="p-0.5 border"><Input value={reportData.studentDev.valueAddedCourses.curr} onChange={(e) => updateStudentDev('valueAddedCourses', 'curr', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+                    <td className="p-0.5 border"></td>
+                    <td className="p-0.5 border"><Input value={reportData.studentDev.skillEnhancement.curr} onChange={(e) => updateStudentDev('skillEnhancement', 'curr', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+                    <td className="p-0.5 border"></td>
+                    <td className="p-0.5 border"><Input value={reportData.studentDev.handsOnTraining.curr} onChange={(e) => updateStudentDev('handsOnTraining', 'curr', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+                    <td className="p-0.5 border"></td>
+                    <td className="p-0.5 border"><Input value={reportData.studentDev.hackathon.curr} onChange={(e) => updateStudentDev('hackathon', 'curr', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+                    <td className="p-0.5 border"></td>
+                    <td className="p-0.5 border"></td>
                   </tr>
                   <tr>
-                    <td className="p-2 border font-bold bg-green-50">Total (Cumulative)</td>
-                    <td className="p-1 border bg-green-50" colSpan={2}></td>
-                    <td className="p-1 border bg-green-50" colSpan={2}></td>
-                    <td className="p-1 border bg-green-50" colSpan={2}></td>
-                    <td className="p-1 border bg-green-50" colSpan={2}></td>
-                    <td className="p-1 border bg-green-50" colSpan={2}></td>
-                    <td className="p-1 border bg-green-50" colSpan={2}></td>
-                    <td className="p-1 border bg-green-50" colSpan={2}></td>
-                    <td className="p-1 border bg-green-50"></td>
+                    <td className="p-1.5 border font-bold bg-green-50">Total (Cumulative)</td>
+                    <td className="p-0.5 border bg-green-50" colSpan={2}></td>
+                    <td className="p-0.5 border bg-green-50" colSpan={2}></td>
+                    <td className="p-0.5 border bg-green-50" colSpan={2}></td>
+                    <td className="p-0.5 border bg-green-50" colSpan={2}></td>
+                    <td className="p-0.5 border bg-green-50" colSpan={2}></td>
+                    <td className="p-0.5 border bg-green-50" colSpan={2}></td>
+                    <td className="p-0.5 border bg-green-50" colSpan={2}></td>
+                    <td className="p-0.5 border bg-green-50"></td>
                   </tr>
                 </tbody>
               </table>
@@ -6865,9 +6864,9 @@ function HODReportGeneratorPage({ user }: { user: User }) {
 
         {/* Section 4: C. Research & Innovation */}
         {activeSection === 4 && (
-          <div className="p-6 space-y-6">
-            <div className="bg-emerald-100 border border-emerald-300 rounded-t-xl p-3">
-              <h3 className="font-bold text-emerald-900 text-lg">C. RESEARCH & INNOVATION</h3>
+          <div className="p-4 space-y-4">
+            <div className="bg-emerald-100 border border-emerald-300 rounded-t-lg p-2.5">
+              <h3 className="font-bold text-emerald-900 text-sm">C. RESEARCH & INNOVATION</h3>
               <p className="text-emerald-700 text-xs">(*Prev Months: Cumulative counting starts from 1st July)</p>
             </div>
 
@@ -6875,92 +6874,92 @@ function HODReportGeneratorPage({ user }: { user: User }) {
               <table className="w-full border-collapse border text-xs">
                 <thead>
                   <tr className="bg-emerald-50">
-                    <th className="p-2 border font-semibold text-emerald-900" rowSpan={2}>Particulars</th>
-                    <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Journal Publication (SCI / Scopus / WoS only)</th>
-                    <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Conference Papers (Scopus Indexed only)</th>
-                    <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Book</th>
-                    <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Book Chapters (Scopus Indexed only)</th>
-                    <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Patents Published / Grand</th>
-                    <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Funded Projects Proposal submission</th>
-                    <th className="p-2 border font-semibold text-emerald-900" rowSpan={2}>Faculty Sign</th>
+                    <th className="p-1 border font-semibold text-emerald-900" rowSpan={2}>Particulars</th>
+                    <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Journal Pub (SCI/Scopus)</th>
+                    <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Conf Papers</th>
+                    <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Book</th>
+                    <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Book Chapters</th>
+                    <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Patents</th>
+                    <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Funded Projects</th>
+                    <th className="p-1 border font-semibold text-emerald-900" rowSpan={2}>Sign</th>
                   </tr>
                   <tr className="bg-emerald-50">
                     {[...Array(6)].map((_, i) => (
                       <React.Fragment key={i}>
-                        <th className="p-1 border text-xs">Prev Months</th>
-                        <th className="p-1 border text-xs">Curr Month</th>
+                        <th className="p-0.5 border text-xs">P</th>
+                        <th className="p-0.5 border text-xs">C</th>
                       </React.Fragment>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td className="p-2 border font-semibold bg-gray-50">Faculty Name</td>
-                    {Array(12).fill(null).map((_, i) => <td key={i} className="p-1 border"></td>)}
-                    <td className="p-1 border"></td>
+                  <tr><td className="p-1 border font-semibold bg-gray-50">Faculty Name</td>
+                    {Array(12).fill(null).map((_, i) => <td key={i} className="p-0.5 border"></td>)}
+                    <td className="p-0.5 border"></td>
                   </tr>
                   {reportData.researchFaculty.map((faculty, idx) => (
                     <tr key={idx}>
-                      <td className="p-2 border">
-                        <Input value={faculty.name} onChange={(e) => updateResearchFaculty(idx, 'name', undefined, e.target.value)} className="border-0 h-7 text-xs" placeholder={`Faculty ${idx + 1}`} />
+                      <td className="p-1 border">
+                        <Input value={faculty.name} onChange={(e) => updateResearchFaculty(idx, 'name', undefined, e.target.value)} className="border-0 h-6 text-xs px-1" placeholder={`F${idx + 1}`} />
                       </td>
-                      <td className="p-1 border"><Input value={faculty.journalPub.prev} onChange={(e) => updateResearchFaculty(idx, 'journalPub', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.journalPub.curr} onChange={(e) => updateResearchFaculty(idx, 'journalPub', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.conferencePapers.prev} onChange={(e) => updateResearchFaculty(idx, 'conferencePapers', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.conferencePapers.curr} onChange={(e) => updateResearchFaculty(idx, 'conferencePapers', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.book.prev} onChange={(e) => updateResearchFaculty(idx, 'book', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.book.curr} onChange={(e) => updateResearchFaculty(idx, 'book', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.bookChapters.prev} onChange={(e) => updateResearchFaculty(idx, 'bookChapters', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.bookChapters.curr} onChange={(e) => updateResearchFaculty(idx, 'bookChapters', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.patents.prev} onChange={(e) => updateResearchFaculty(idx, 'patents', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.patents.curr} onChange={(e) => updateResearchFaculty(idx, 'patents', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.fundedProjects.prev} onChange={(e) => updateResearchFaculty(idx, 'fundedProjects', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.fundedProjects.curr} onChange={(e) => updateResearchFaculty(idx, 'fundedProjects', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"></td>
+                      <td className="p-0.5 border"><Input value={faculty.journalPub.prev} onChange={(e) => updateResearchFaculty(idx, 'journalPub', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.journalPub.curr} onChange={(e) => updateResearchFaculty(idx, 'journalPub', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.conferencePapers.prev} onChange={(e) => updateResearchFaculty(idx, 'conferencePapers', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.conferencePapers.curr} onChange={(e) => updateResearchFaculty(idx, 'conferencePapers', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.book.prev} onChange={(e) => updateResearchFaculty(idx, 'book', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.book.curr} onChange={(e) => updateResearchFaculty(idx, 'book', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.bookChapters.prev} onChange={(e) => updateResearchFaculty(idx, 'bookChapters', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.bookChapters.curr} onChange={(e) => updateResearchFaculty(idx, 'bookChapters', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.patents.prev} onChange={(e) => updateResearchFaculty(idx, 'patents', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.patents.curr} onChange={(e) => updateResearchFaculty(idx, 'patents', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.fundedProjects.prev} onChange={(e) => updateResearchFaculty(idx, 'fundedProjects', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.fundedProjects.curr} onChange={(e) => updateResearchFaculty(idx, 'fundedProjects', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            {/* Cumulative Research Table */}
-            <div className="mt-6">
-              <h4 className="font-semibold text-emerald-800 mb-3">Cumulative Faculty Research Contribution</h4>
+            {/* Cumulative Research Table - Compact */}
+            <div className="mt-4">
+              <h4 className="font-semibold text-emerald-800 mb-2 text-sm">Cumulative Faculty Research Contribution</h4>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse border text-xs">
                   <thead>
                     <tr className="bg-emerald-50">
-                      <th className="p-2 border font-semibold text-emerald-900" rowSpan={2}></th>
-                      <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Journal publication (SCI / Scopus / WoS only)</th>
-                      <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Conference Papers (Scopus Indexed only)</th>
-                      <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Book</th>
-                      <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Book Chapters (Scopus Indexed only)</th>
-                      <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Patents Published</th>
-                      <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Funded Projects Proposal Submission</th>
+                      <th className="p-1 border font-semibold text-emerald-900" rowSpan={2}></th>
+                      <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Journal Pub</th>
+                      <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Conf Papers</th>
+                      <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Book</th>
+                      <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Book Ch.</th>
+                      <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Patents</th>
+                      <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Funded Proj.</th>
                     </tr>
                     <tr className="bg-emerald-50">
                       {[...Array(6)].map((_, i) => (
                         <React.Fragment key={i}>
-                          <th className="p-1 border text-xs">Prev Total</th>
-                          <th className="p-1 border text-xs">Cumulative</th>
+                          <th className="p-0.5 border text-xs">Prev</th>
+                          <th className="p-0.5 border text-xs">Cum.</th>
                         </React.Fragment>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td className="p-2 border font-medium bg-orange-50">As on (Month), 20...</td>
-                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.journalPub.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, journalPub: {...p.cumulativeResearch.journalPub, prev: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.journalPub.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, journalPub: {...p.cumulativeResearch.journalPub, cumulative: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.conferencePapers.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, conferencePapers: {...p.cumulativeResearch.conferencePapers, prev: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.conferencePapers.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, conferencePapers: {...p.cumulativeResearch.conferencePapers, cumulative: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.book.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, book: {...p.cumulativeResearch.book, prev: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.book.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, book: {...p.cumulativeResearch.book, cumulative: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.bookChapters.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, bookChapters: {...p.cumulativeResearch.bookChapters, prev: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.bookChapters.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, bookChapters: {...p.cumulativeResearch.bookChapters, cumulative: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.patents.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, patents: {...p.cumulativeResearch.patents, prev: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.patents.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, patents: {...p.cumulativeResearch.patents, cumulative: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.fundedProjects.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, fundedProjects: {...p.cumulativeResearch.fundedProjects, prev: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.fundedProjects.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, fundedProjects: {...p.cumulativeResearch.fundedProjects, cumulative: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border font-medium bg-orange-50 text-xs">As on (Month), 20...</td>
+                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.journalPub.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, journalPub: {...p.cumulativeResearch.journalPub, prev: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.journalPub.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, journalPub: {...p.cumulativeResearch.journalPub, cumulative: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.conferencePapers.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, conferencePapers: {...p.cumulativeResearch.conferencePapers, prev: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.conferencePapers.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, conferencePapers: {...p.cumulativeResearch.conferencePapers, cumulative: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.book.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, book: {...p.cumulativeResearch.book, prev: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.book.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, book: {...p.cumulativeResearch.book, cumulative: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.bookChapters.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, bookChapters: {...p.cumulativeResearch.bookChapters, prev: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.bookChapters.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, bookChapters: {...p.cumulativeResearch.bookChapters, cumulative: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.patents.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, patents: {...p.cumulativeResearch.patents, prev: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.patents.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, patents: {...p.cumulativeResearch.patents, cumulative: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.fundedProjects.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, fundedProjects: {...p.cumulativeResearch.fundedProjects, prev: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.fundedProjects.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, fundedProjects: {...p.cumulativeResearch.fundedProjects, cumulative: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
                     </tr>
                   </tbody>
                 </table>
@@ -6971,9 +6970,9 @@ function HODReportGeneratorPage({ user }: { user: User }) {
 
         {/* Section 5: D. Faculty Development */}
         {activeSection === 5 && (
-          <div className="p-6 space-y-6">
-            <div className="bg-amber-100 border border-amber-300 rounded-t-xl p-3">
-              <h3 className="font-bold text-amber-900 text-lg">D. FACULTY DEVELOPMENT</h3>
+          <div className="p-4 space-y-4">
+            <div className="bg-amber-100 border border-amber-300 rounded-t-lg p-2.5">
+              <h3 className="font-bold text-amber-900 text-sm">D. FACULTY DEVELOPMENT</h3>
               <p className="text-amber-700 text-xs">(*Prev Months: Cumulative counting starts from 1st July)</p>
             </div>
 
@@ -6981,90 +6980,90 @@ function HODReportGeneratorPage({ user }: { user: User }) {
               <table className="w-full border-collapse border text-xs">
                 <thead>
                   <tr className="bg-amber-50">
-                    <th className="p-2 border font-semibold text-amber-900" rowSpan={2}>Particulars</th>
-                    <th className="p-2 border font-semibold text-amber-900" colSpan={2}>FDPs / Workshops / Conf / Seminars Attended</th>
-                    <th className="p-2 border font-semibold text-amber-900" colSpan={2}>FDPs / Workshops / Conf / Seminars Organized</th>
-                    <th className="p-2 border font-semibold text-amber-900" colSpan={2}>NPTEL Completed</th>
-                    <th className="p-2 border font-semibold text-amber-900" colSpan={2}>MOOCs Completed</th>
-                    <th className="p-2 border font-semibold text-amber-900" colSpan={2}>Resource Person Engagements</th>
-                    <th className="p-2 border font-semibold text-amber-900" rowSpan={2}>Faculty Sign</th>
+                    <th className="p-1 border font-semibold text-amber-900" rowSpan={2}>Particulars</th>
+                    <th className="p-1 border font-semibold text-amber-900" colSpan={2}>FDPs Attended</th>
+                    <th className="p-1 border font-semibold text-amber-900" colSpan={2}>FDPs Organized</th>
+                    <th className="p-1 border font-semibold text-amber-900" colSpan={2}>NPTEL</th>
+                    <th className="p-1 border font-semibold text-amber-900" colSpan={2}>MOOCs</th>
+                    <th className="p-1 border font-semibold text-amber-900" colSpan={2}>Resource Person</th>
+                    <th className="p-1 border font-semibold text-amber-900" rowSpan={2}>Sign</th>
                   </tr>
                   <tr className="bg-amber-50">
                     {[...Array(5)].map((_, i) => (
                       <React.Fragment key={i}>
-                        <th className="p-1 border text-xs">Prev Month</th>
-                        <th className="p-1 border text-xs">Curr Month</th>
+                        <th className="p-0.5 border text-xs">P</th>
+                        <th className="p-0.5 border text-xs">C</th>
                       </React.Fragment>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td className="p-2 border font-semibold bg-gray-50">Faculty Name / Designation</td>
-                    {Array(10).fill(null).map((_, i) => <td key={i} className="p-1 border"></td>)}
-                    <td className="p-1 border"></td>
+                  <tr><td className="p-1 border font-semibold bg-gray-50">Faculty Name</td>
+                    {Array(10).fill(null).map((_, i) => <td key={i} className="p-0.5 border"></td>)}
+                    <td className="p-0.5 border"></td>
                   </tr>
                   {reportData.facultyDev.map((faculty, idx) => (
                     <tr key={idx}>
-                      <td className="p-2 border">
+                      <td className="p-1 border">
                         <Input value={faculty.name} onChange={(e) => {
                           const newF = [...reportData.facultyDev]
                           newF[idx] = {...newF[idx], name: e.target.value}
                           setReportData(p => ({...p, facultyDev: newF}))
-                        }} className="border-0 h-7 text-xs" placeholder={`Faculty ${idx + 1}`} />
+                        }} className="border-0 h-6 text-xs px-1" placeholder={`F${idx + 1}`} />
                       </td>
-                      <td className="p-1 border"><Input value={faculty.fdpsAttended.prev} onChange={(e) => updateFacultyDev(idx, 'fdpsAttended', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.fdpsAttended.curr} onChange={(e) => updateFacultyDev(idx, 'fdpsAttended', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.fdpsOrganized.prev} onChange={(e) => updateFacultyDev(idx, 'fdpsOrganized', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.fdpsOrganized.curr} onChange={(e) => updateFacultyDev(idx, 'fdpsOrganized', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.nptelCompleted.prev} onChange={(e) => updateFacultyDev(idx, 'nptelCompleted', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.nptelCompleted.curr} onChange={(e) => updateFacultyDev(idx, 'nptelCompleted', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.moocsCompleted.prev} onChange={(e) => updateFacultyDev(idx, 'moocsCompleted', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.moocsCompleted.curr} onChange={(e) => updateFacultyDev(idx, 'moocsCompleted', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.resourcePerson.prev} onChange={(e) => updateFacultyDev(idx, 'resourcePerson', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.resourcePerson.curr} onChange={(e) => updateFacultyDev(idx, 'resourcePerson', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"></td>
+                      <td className="p-0.5 border"><Input value={faculty.fdpsAttended.prev} onChange={(e) => updateFacultyDev(idx, 'fdpsAttended', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.fdpsAttended.curr} onChange={(e) => updateFacultyDev(idx, 'fdpsAttended', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.fdpsOrganized.prev} onChange={(e) => updateFacultyDev(idx, 'fdpsOrganized', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.fdpsOrganized.curr} onChange={(e) => updateFacultyDev(idx, 'fdpsOrganized', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.nptelCompleted.prev} onChange={(e) => updateFacultyDev(idx, 'nptelCompleted', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.nptelCompleted.curr} onChange={(e) => updateFacultyDev(idx, 'nptelCompleted', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.moocsCompleted.prev} onChange={(e) => updateFacultyDev(idx, 'moocsCompleted', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.moocsCompleted.curr} onChange={(e) => updateFacultyDev(idx, 'moocsCompleted', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.resourcePerson.prev} onChange={(e) => updateFacultyDev(idx, 'resourcePerson', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.resourcePerson.curr} onChange={(e) => updateFacultyDev(idx, 'resourcePerson', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            {/* Cumulative Faculty Development */}
-            <div className="mt-6">
-              <h4 className="font-semibold text-amber-800 mb-3">Cumulative Faculty Contribution</h4>
+            {/* Cumulative Faculty Development - Compact */}
+            <div className="mt-4">
+              <h4 className="font-semibold text-amber-800 mb-2 text-sm">Cumulative Faculty Contribution</h4>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse border text-xs">
                   <thead>
                     <tr className="bg-amber-50">
-                      <th className="p-2 border font-semibold text-amber-900" rowSpan={2}>As on (Month), 2026</th>
-                      <th className="p-2 border font-semibold text-amber-900" colSpan={2}>FDPs / Workshops / Conf / Seminars Attended</th>
-                      <th className="p-2 border font-semibold text-amber-900" colSpan={2}>FDPs / Workshops Organized</th>
-                      <th className="p-2 border font-semibold text-amber-900" colSpan={2}>NPTEL Completed</th>
-                      <th className="p-2 border font-semibold text-amber-900" colSpan={2}>MOOCs Completed</th>
-                      <th className="p-2 border font-semibold text-amber-900" colSpan={2}>Resource Person Engagements</th>
+                      <th className="p-1 border font-semibold text-amber-900" rowSpan={2}>As on (Month), 2026</th>
+                      <th className="p-1 border font-semibold text-amber-900" colSpan={2}>FDPs Attended</th>
+                      <th className="p-1 border font-semibold text-amber-900" colSpan={2}>FDPs Organized</th>
+                      <th className="p-1 border font-semibold text-amber-900" colSpan={2}>NPTEL</th>
+                      <th className="p-1 border font-semibold text-amber-900" colSpan={2}>MOOCs</th>
+                      <th className="p-1 border font-semibold text-amber-900" colSpan={2}>Resource Person</th>
                     </tr>
                     <tr className="bg-amber-50">
                       {[...Array(5)].map((_, i) => (
                         <React.Fragment key={i}>
-                          <th className="p-1 border text-xs">Prev Total</th>
-                          <th className="p-1 border text-xs">Cumulative</th>
+                          <th className="p-0.5 border text-xs">Prev</th>
+                          <th className="p-0.5 border text-xs">Cum.</th>
                         </React.Fragment>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td className="p-2 border font-medium bg-orange-50"></td>
-                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
-                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+                      <td className="p-1 border font-medium bg-orange-50"></td>
+                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
                     </tr>
                   </tbody>
                 </table>
@@ -7075,44 +7074,44 @@ function HODReportGeneratorPage({ user }: { user: User }) {
 
         {/* Section 6: E. Students Internship */}
         {activeSection === 6 && (
-          <div className="p-6 space-y-6">
-            <div className="bg-red-100 border border-red-300 rounded-t-xl p-3">
-              <h3 className="font-bold text-red-900 text-lg">E. STUDENTS INTERNSHIP</h3>
+          <div className="p-4 space-y-4">
+            <div className="bg-red-100 border border-red-300 rounded-t-lg p-2.5">
+              <h3 className="font-bold text-red-900 text-sm">E. STUDENTS INTERNSHIP</h3>
               <p className="text-red-700 text-xs">(*Prev Months: Cumulative counting starts from 1st July)</p>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border">
+              <table className="w-full border-collapse border text-xs">
                 <thead>
                   <tr className="bg-red-50">
-                    <th className="p-3 border font-semibold text-red-900" colSpan={2}>Internship Details</th>
-                    <th className="p-3 border font-semibold text-red-900">Industry Internships (Paid)</th>
-                    <th className="p-3 border font-semibold text-red-900">Industry Internships (Non-Paid)</th>
-                    <th className="p-3 border font-semibold text-red-900">Virtual Internships</th>
-                    <th className="p-3 border font-semibold text-red-900">No. of Students Not Availed Internship</th>
+                    <th className="p-2 border font-semibold text-red-900" colSpan={2}>Internship Details</th>
+                    <th className="p-2 border font-semibold text-red-900 w-24">Paid</th>
+                    <th className="p-2 border font-semibold text-red-900 w-24">Non-Paid</th>
+                    <th className="p-2 border font-semibold text-red-900 w-24">Virtual</th>
+                    <th className="p-2 border font-semibold text-red-900 w-28">Not Availed</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="p-3 border font-medium bg-pink-50" colSpan={2}>Previous Months</td>
-                    <td className="p-3 border"><Input value={reportData.internship.previous.paid} onChange={(e) => updateInternship('previous', 'paid', e.target.value)} className="border-0" /></td>
-                    <td className="p-3 border"><Input value={reportData.internship.previous.nonPaid} onChange={(e) => updateInternship('previous', 'nonPaid', e.target.value)} className="border-0" /></td>
-                    <td className="p-3 border"><Input value={reportData.internship.previous.virtual} onChange={(e) => updateInternship('previous', 'virtual', e.target.value)} className="border-0" /></td>
-                    <td className="p-3 border"><Input value={reportData.internship.previous.notAvailed} onChange={(e) => updateInternship('previous', 'notAvailed', e.target.value)} className="border-0" /></td>
+                    <td className="p-2 border font-medium bg-pink-50 colSpan={2} text-xs">Previous Months</td>
+                    <td className="p-2 border"><Input value={reportData.internship.previous.paid} onChange={(e) => updateInternship('previous', 'paid', e.target.value)} className="border-0 h-7 text-xs" /></td>
+                    <td className="p-2 border"><Input value={reportData.internship.previous.nonPaid} onChange={(e) => updateInternship('previous', 'nonPaid', e.target.value)} className="border-0 h-7 text-xs" /></td>
+                    <td className="p-2 border"><Input value={reportData.internship.previous.virtual} onChange={(e) => updateInternship('previous', 'virtual', e.target.value)} className="border-0 h-7 text-xs" /></td>
+                    <td className="p-2 border"><Input value={reportData.internship.previous.notAvailed} onChange={(e) => updateInternship('previous', 'notAvailed', e.target.value)} className="border-0 h-7 text-xs" /></td>
                   </tr>
                   <tr>
-                    <td className="p-3 border font-medium bg-blue-50" colSpan={2}>Current Month</td>
-                    <td className="p-3 border"><Input value={reportData.internship.current.paid} onChange={(e) => updateInternship('current', 'paid', e.target.value)} className="border-0" /></td>
-                    <td className="p-3 border"><Input value={reportData.internship.current.nonPaid} onChange={(e) => updateInternship('current', 'nonPaid', e.target.value)} className="border-0" /></td>
-                    <td className="p-3 border"><Input value={reportData.internship.current.virtual} onChange={(e) => updateInternship('current', 'virtual', e.target.value)} className="border-0" /></td>
-                    <td className="p-3 border"><Input value={reportData.internship.current.notAvailed} onChange={(e) => updateInternship('current', 'notAvailed', e.target.value)} className="border-0" /></td>
+                    <td className="p-2 border font-medium bg-blue-50 colSpan={2} text-xs">Current Month</td>
+                    <td className="p-2 border"><Input value={reportData.internship.current.paid} onChange={(e) => updateInternship('current', 'paid', e.target.value)} className="border-0 h-7 text-xs" /></td>
+                    <td className="p-2 border"><Input value={reportData.internship.current.nonPaid} onChange={(e) => updateInternship('current', 'nonPaid', e.target.value)} className="border-0 h-7 text-xs" /></td>
+                    <td className="p-2 border"><Input value={reportData.internship.current.virtual} onChange={(e) => updateInternship('current', 'virtual', e.target.value)} className="border-0 h-7 text-xs" /></td>
+                    <td className="p-2 border"><Input value={reportData.internship.current.notAvailed} onChange={(e) => updateInternship('current', 'notAvailed', e.target.value)} className="border-0 h-7 text-xs" /></td>
                   </tr>
                   <tr>
-                    <td className="p-3 border font-bold bg-green-50" colSpan={2}>Total (Cumulative)</td>
-                    <td className="p-3 border bg-green-50"><Input value={reportData.internship.total.paid} onChange={(e) => updateInternship('total', 'paid', e.target.value)} className="border-0 bg-transparent font-semibold" /></td>
-                    <td className="p-3 border bg-green-50"><Input value={reportData.internship.total.nonPaid} onChange={(e) => updateInternship('total', 'nonPaid', e.target.value)} className="border-0 bg-transparent font-semibold" /></td>
-                    <td className="p-3 border bg-green-50"><Input value={reportData.internship.total.virtual} onChange={(e) => updateInternship('total', 'virtual', e.target.value)} className="border-0 bg-transparent font-semibold" /></td>
-                    <td className="p-3 border bg-green-50"><Input value={reportData.internship.total.notAvailed} onChange={(e) => updateInternship('total', 'notAvailed', e.target.value)} className="border-0 bg-transparent font-semibold" /></td>
+                    <td className="p-2 border font-bold bg-green-50 colSpan={2} text-xs">Total (Cumulative)</td>
+                    <td className="p-2 border bg-green-50"><Input value={reportData.internship.total.paid} onChange={(e) => updateInternship('total', 'paid', e.target.value)} className="border-0 bg-transparent font-semibold h-7 text-xs" /></td>
+                    <td className="p-2 border bg-green-50"><Input value={reportData.internship.total.nonPaid} onChange={(e) => updateInternship('total', 'nonPaid', e.target.value)} className="border-0 bg-transparent font-semibold h-7 text-xs" /></td>
+                    <td className="p-2 border bg-green-50"><Input value={reportData.internship.total.virtual} onChange={(e) => updateInternship('total', 'virtual', e.target.value)} className="border-0 bg-transparent font-semibold h-7 text-xs" /></td>
+                    <td className="p-2 border bg-green-50"><Input value={reportData.internship.total.notAvailed} onChange={(e) => updateInternship('total', 'notAvailed', e.target.value)} className="border-0 bg-transparent font-semibold h-7 text-xs" /></td>
                   </tr>
                 </tbody>
               </table>
@@ -7122,9 +7121,9 @@ function HODReportGeneratorPage({ user }: { user: User }) {
 
         {/* Section 7: F. Faculty-Industry Interaction */}
         {activeSection === 7 && (
-          <div className="p-6 space-y-6">
-            <div className="bg-cyan-100 border border-cyan-300 rounded-t-xl p-3">
-              <h3 className="font-bold text-cyan-900 text-lg">F. FACULTY - INDUSTRY INTERACTION</h3>
+          <div className="p-4 space-y-4">
+            <div className="bg-cyan-100 border border-cyan-300 rounded-t-lg p-2.5">
+              <h3 className="font-bold text-cyan-900 text-sm">F. FACULTY - INDUSTRY INTERACTION</h3>
               <p className="text-cyan-700 text-xs">(*Prev months: Cumulative counting starts from 1st July)</p>
             </div>
 
@@ -7132,18 +7131,18 @@ function HODReportGeneratorPage({ user }: { user: User }) {
               <table className="w-full border-collapse border text-xs">
                 <thead>
                   <tr className="bg-cyan-50">
-                    <th className="p-2 border font-semibold text-cyan-900" rowSpan={2}>Faculty Name / Designation</th>
-                    <th className="p-2 border font-semibold text-cyan-900" colSpan={2}>MoUs Signed</th>
-                    <th className="p-2 border font-semibold text-cyan-900" colSpan={2}>Industry Visits</th>
-                    <th className="p-2 border font-semibold text-cyan-900" colSpan={2}>Experts Invited</th>
-                    <th className="p-2 border font-semibold text-cyan-900" colSpan={2}>Collaborative Activities</th>
-                    <th className="p-2 border font-semibold text-cyan-900" colSpan={2}>Consultancy Services</th>
+                    <th className="p-1 border font-semibold text-cyan-900" rowSpan={2}>Faculty Name</th>
+                    <th className="p-1 border font-semibold text-cyan-900" colSpan={2}>MoUs</th>
+                    <th className="p-1 border font-semibold text-cyan-900" colSpan={2}>Ind. Visits</th>
+                    <th className="p-1 border font-semibold text-cyan-900" colSpan={2}>Experts Inv.</th>
+                    <th className="p-1 border font-semibold text-cyan-900" colSpan={2}>Collab. Act.</th>
+                    <th className="p-1 border font-semibold text-cyan-900" colSpan={2}>Consultancy</th>
                   </tr>
                   <tr className="bg-cyan-50">
                     {[...Array(5)].map((_, i) => (
                       <React.Fragment key={i}>
-                        <th className="p-1 border text-xs">Prev Months</th>
-                        <th className="p-1 border text-xs">Curr Month</th>
+                        <th className="p-0.5 border text-xs">P</th>
+                        <th className="p-0.5 border text-xs">C</th>
                       </React.Fragment>
                     ))}
                   </tr>
@@ -7151,28 +7150,28 @@ function HODReportGeneratorPage({ user }: { user: User }) {
                 <tbody>
                   {reportData.industryInteraction.map((faculty, idx) => (
                     <tr key={idx}>
-                      <td className="p-2 border">
+                      <td className="p-1 border">
                         <Input value={faculty.name} onChange={(e) => {
                           const newData = [...reportData.industryInteraction]
                           newData[idx] = {...newData[idx], name: e.target.value}
                           setReportData(p => ({...p, industryInteraction: newData}))
-                        }} className="border-0 h-7 text-xs" placeholder={`Faculty ${idx + 1}`} />
+                        }} className="border-0 h-6 text-xs px-1" placeholder={`F${idx + 1}`} />
                       </td>
-                      <td className="p-1 border"><Input value={faculty.mousSigned.prev} onChange={(e) => updateIndustryInteraction(idx, 'mousSigned', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.mousSigned.curr} onChange={(e) => updateIndustryInteraction(idx, 'mousSigned', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.industryVisits.prev} onChange={(e) => updateIndustryInteraction(idx, 'industryVisits', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.industryVisits.curr} onChange={(e) => updateIndustryInteraction(idx, 'industryVisits', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.expertsInvited.prev} onChange={(e) => updateIndustryInteraction(idx, 'expertsInvited', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.expertsInvited.curr} onChange={(e) => updateIndustryInteraction(idx, 'expertsInvited', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.collaborativeActivities.prev} onChange={(e) => updateIndustryInteraction(idx, 'collaborativeActivities', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.collaborativeActivities.curr} onChange={(e) => updateIndustryInteraction(idx, 'collaborativeActivities', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.consultancyServices.prev} onChange={(e) => updateIndustryInteraction(idx, 'consultancyServices', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
-                      <td className="p-1 border"><Input value={faculty.consultancyServices.curr} onChange={(e) => updateIndustryInteraction(idx, 'consultancyServices', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.mousSigned.prev} onChange={(e) => updateIndustryInteraction(idx, 'mousSigned', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.mousSigned.curr} onChange={(e) => updateIndustryInteraction(idx, 'mousSigned', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.industryVisits.prev} onChange={(e) => updateIndustryInteraction(idx, 'industryVisits', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.industryVisits.curr} onChange={(e) => updateIndustryInteraction(idx, 'industryVisits', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.expertsInvited.prev} onChange={(e) => updateIndustryInteraction(idx, 'expertsInvited', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.expertsInvited.curr} onChange={(e) => updateIndustryInteraction(idx, 'expertsInvited', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.collaborativeActivities.prev} onChange={(e) => updateIndustryInteraction(idx, 'collaborativeActivities', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.collaborativeActivities.curr} onChange={(e) => updateIndustryInteraction(idx, 'collaborativeActivities', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.consultancyServices.prev} onChange={(e) => updateIndustryInteraction(idx, 'consultancyServices', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-0.5 border"><Input value={faculty.consultancyServices.curr} onChange={(e) => updateIndustryInteraction(idx, 'consultancyServices', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
                     </tr>
                   ))}
                   <tr>
-                    <td className="p-2 border font-bold bg-green-50">As on _____, 20... (Cumulative)</td>
-                    {[...Array(10)].map((_, i) => <td key={i} className="p-1 border bg-green-50"></td>)}
+                    <td className="p-1 border font-bold bg-green-50 text-xs">As on _____, 20...</td>
+                    {[...Array(10)].map((_, i) => <td key={i} className="p-0.5 border bg-green-50"></td>)}
                   </tr>
                 </tbody>
               </table>
@@ -7182,37 +7181,37 @@ function HODReportGeneratorPage({ user }: { user: User }) {
 
         {/* Section 8: G. Quality Assurance Activities */}
         {activeSection === 8 && (
-          <div className="p-6 space-y-6">
-            <div className="bg-lime-100 border border-lime-300 rounded-t-xl p-3">
-              <h3 className="font-bold text-lime-900 text-lg">G. QUALITY ASSURANCE ACTIVITIES</h3>
-              <p className="text-lime-700 text-xs">(Documents and supporting evidence shall be maintained and kept ready for Academic Audit)</p>
+          <div className="p-4 space-y-4">
+            <div className="bg-lime-100 border border-lime-300 rounded-t-lg p-2.5">
+              <h3 className="font-bold text-lime-900 text-sm">G. QUALITY ASSURANCE ACTIVITIES</h3>
+              <p className="text-lime-700 text-xs">(Documents and supporting evidence shall be maintained for Academic Audit)</p>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border">
+              <table className="w-full border-collapse border text-xs">
                 <thead>
                   <tr className="bg-lime-50">
-                    <th className="p-3 border font-semibold text-lime-900">Particulars</th>
-                    <th className="p-3 border font-semibold text-lime-900">Status</th>
-                    <th className="p-3 border font-semibold text-lime-900">Remarks</th>
+                    <th className="p-2 border font-semibold text-lime-900">Particulars</th>
+                    <th className="p-2 border font-semibold text-lime-900 w-32">Status</th>
+                    <th className="p-2 border font-semibold text-lime-900 w-40">Remarks</th>
                   </tr>
                 </thead>
                 <tbody>
                   {reportData.qaActivities.map((item, idx) => (
                     <tr key={idx}>
-                      <td className="p-3 border font-medium">{item.particular}</td>
-                      <td className="p-3 border">
+                      <td className="p-2 border font-medium text-xs">{item.particular}</td>
+                      <td className="p-2 border">
                         <Input 
                           value={item.status} 
                           onChange={(e) => updateQAActivity(idx, 'status', e.target.value)}
-                          className="border-0" 
+                          className="border-0 h-7 text-xs"
                         />
                       </td>
-                      <td className="p-3 border">
+                      <td className="p-2 border">
                         <Input 
                           value={item.remarks} 
                           onChange={(e) => updateQAActivity(idx, 'remarks', e.target.value)}
-                          className="border-0" 
+                          className="border-0 h-7 text-xs"
                           placeholder="Add remarks..."
                         />
                       </td>
@@ -7226,15 +7225,15 @@ function HODReportGeneratorPage({ user }: { user: User }) {
 
         {/* Section 9: H. Documents to be Attached */}
         {activeSection === 9 && (
-          <div className="p-6 space-y-6">
-            <div className="bg-indigo-100 border border-indigo-300 rounded-t-xl p-3">
-              <h3 className="font-bold text-indigo-900 text-lg">H. DOCUMENTS TO BE ATTACHED</h3>
+          <div className="p-4 space-y-4">
+            <div className="bg-indigo-100 border border-indigo-300 rounded-t-lg p-2.5">
+              <h3 className="font-bold text-indigo-900 text-sm">H. DOCUMENTS TO BE ATTACHED</h3>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
                 { key: 'eventReports', label: 'Event Reports' },
-                { key: 'workshopCertificates', label: 'Workshop / FDP / Conference etc. participation Certificates' },
+                { key: 'workshopCertificates', label: 'Workshop / FDP / Conference Certificates' },
                 { key: 'publicationProofs', label: 'Publication Proofs' },
                 { key: 'placementDetails', label: 'Placement Details' },
                 { key: 'internshipDetails', label: 'Internship Details' },
@@ -7242,55 +7241,55 @@ function HODReportGeneratorPage({ user }: { user: User }) {
                 { key: 'sdgExtensionReports', label: 'SDG / Extension Activity Reports' },
                 { key: 'mouIndustryDocuments', label: 'MoU / Industry Interaction Documents' }
               ].map((doc) => (
-                <label key={doc.key} className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <label key={doc.key} className="flex items-center gap-2 p-2.5 border rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
                   <input 
                     type="checkbox" 
                     checked={reportData.documents[doc.key as keyof typeof reportData.documents]}
                     onChange={(e) => updateDocuments(doc.key, e.target.checked)}
-                    className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   />
-                  <span className="text-sm text-gray-700">{doc.label}</span>
+                  <span className="text-xs text-gray-700">{doc.label}</span>
                 </label>
               ))}
             </div>
 
-            {/* Signature Section */}
-            <div className="mt-8 pt-6 border-t">
-              <h4 className="font-semibold text-gray-900 mb-4">Approval Signatures</h4>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                {['HoD', 'School Dean / Director', 'Head-IQAC', 'Vice-Principal', 'Principal'].map((role) => (
-                  <div key={role} className="text-center p-4 border rounded-lg">
-                    <div className="h-16 border-b-2 border-dashed mb-2 flex items-end justify-center">
+            {/* Signature Section - Compact */}
+            <div className="mt-4 pt-4 border-t">
+              <h4 className="font-semibold text-gray-900 mb-3 text-sm">Approval Signatures</h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                {['HoD', 'School Dean', 'Head-IQAC', 'Vice-Principal', 'Principal'].map((role) => (
+                  <div key={role} className="text-center p-2 border rounded-md">
+                    <div className="h-12 border-b-2 border-dashed mb-1 flex items-end justify-center">
                       <span className="text-xs text-gray-400">Signature</span>
                     </div>
-                    <p className="font-semibold text-sm text-gray-900">{role}</p>
-                    <p className="text-xs text-gray-500">Date: _________</p>
+                    <p className="font-semibold text-xs text-gray-900">{role}</p>
+                    <p className="text-xs text-gray-500">Date: ___</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Copy Submitted To */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <h4 className="font-semibold text-gray-900 mb-3">Copy submitted to</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-start gap-3">
-                  <span className="font-medium">1.</span>
+            {/* Copy Submitted To - Compact */}
+            <div className="mt-4 p-3 bg-gray-50 rounded-md">
+              <h4 className="font-semibold text-gray-900 mb-2 text-sm">Copy submitted to</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex items-start gap-2">
+                  <span className="font-medium text-xs">1.</span>
                   <div>
-                    <p className="font-medium">AO / HR / Principal office</p>
-                    <div className="flex gap-4 mt-1 text-sm text-gray-600">
-                      <span>Submitted on: ___________</span>
-                      <span>Received by: ___________</span>
+                    <p className="font-medium text-xs">AO / HR / Principal office</p>
+                    <div className="flex gap-3 mt-0.5 text-xs text-gray-600">
+                      <span>Submitted on: ___</span>
+                      <span>Received by: ___</span>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <span className="font-medium">2.</span>
+                <div className="flex items-start gap-2">
+                  <span className="font-medium text-xs">2.</span>
                   <div>
-                    <p className="font-medium">IQAC</p>
-                    <div className="flex gap-4 mt-1 text-sm text-gray-600">
-                      <span>Submitted on: ___________</span>
-                      <span>Received by: ___________</span>
+                    <p className="font-medium text-xs">IQAC</p>
+                    <div className="flex gap-3 mt-0.5 text-xs text-gray-600">
+                      <span>Submitted on: ___</span>
+                      <span>Received by: ___</span>
                     </div>
                   </div>
                 </div>
@@ -7298,6 +7297,7 @@ function HODReportGeneratorPage({ user }: { user: User }) {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   )

@@ -1,0 +1,602 @@
+     1→  6757→                      <select value={reportData.attendanceReport} onChange={(e) => updateField('attendanceReport', e.target.value)} className="flex-1 border-0 bg-transparent">
+     2→  6758→                        <option value="">Yes / No</option>
+     3→  6759→                        <option value="Yes">Yes</option>
+     4→  6760→                        <option value="No">No</option>
+     5→  6761→                      </select>
+     6→  6762→                      <span className="text-xs text-gray-500">(if yes, enclose)</span>
+     7→  6763→                    </div>
+     8→  6764→                  </td></tr>
+     9→  6765→                  <tr><td className="p-3 border text-center">5</td><td className="p-3 border font-medium">Remedial Classes Conducted (Enclose Report)</td><td className="p-3 border">
+    10→  6766→                    <div className="flex items-center gap-2">
+    11→  6767→                      <Input value={reportData.remedialClasses} onChange={(e) => updateField('remedialClasses', e.target.value)} className="border-0" placeholder="No. of Classes:" />
+    12→  6768→                    </div>
+    13→  6769→                  </td><td className="p-3 border text-center text-gray-400">NA</td></tr>
+    14→  6770→                  <tr><td className="p-3 border text-center">6</td><td className="p-3 border font-medium">Mentoring Sessions Conducted</td><td className="p-3 border">
+    15→  6771→                    <Input value={reportData.mentoringSessions} onChange={(e) => updateField('mentoringSessions', e.target.value)} className="border-0" placeholder="No. of Sessions:" />
+    16→  6772→                  </td><td className="p-3 border text-center text-gray-400">NA</td></tr>
+    17→  6773→                </tbody>
+    18→  6774→              </table>
+    19→  6775→            </div>
+    20→  6776→          </div>
+    21→  6777→        )}
+    22→  6778→
+    23→  6779→        {/* Section 3: B. Student Development Activities */}
+    24→  6780→        {activeSection === 3 && (
+    25→  6781→          <div className="p-6 space-y-6">
+    26→  6782→            <div className="bg-purple-100 border border-purple-300 rounded-t-xl p-3">
+    27→  6783→              <h3 className="font-bold text-purple-900 text-lg">B. STUDENT DEVELOPMENT ACTIVITIES</h3>
+    28→  6784→              <p className="text-purple-700 text-xs">(*Prev Months: Cumulative counting starts from 1st July)</p>
+    29→  6785→            </div>
+    30→  6786→
+    31→  6787→            <div className="overflow-x-auto">
+    32→  6788→              <table className="w-full border-collapse border text-sm">
+    33→  6789→                <thead>
+    34→  6790→                  <tr className="bg-purple-50">
+    35→  6791→                    <th className="p-2 border font-semibold text-purple-900" rowSpan={2}>Particulars</th>
+    36→  6792→                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Guest Lectures / Seminar/Webinar</th>
+    37→  6793→                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Workshops Organized</th>
+    38→  6794→                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Industrial Visits</th>
+    39→  6795→                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Value Added Courses</th>
+    40→  6796→                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Skill Enhancement</th>
+    41→  6797→                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Hands-on Training</th>
+    42→  6798→                    <th className="p-2 border font-semibold text-purple-900" colSpan={2}>Hackathon</th>
+    43→  6799→                    <th className="p-2 border font-semibold text-purple-900" rowSpan={2}>Prof. Society Activities</th>
+    44→  6800→                  </tr>
+    45→  6801→                  <tr className="bg-purple-50">
+    46→  6802→                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
+    47→  6803→                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
+    48→  6804→                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
+    49→  6805→                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
+    50→  6806→                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
+    51→  6807→                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
+    52→  6808→                    <th className="p-1 border text-xs">Prev</th><th className="p-1 border text-xs">Curr</th>
+    53→  6809→                  </tr>
+    54→  6810→                </thead>
+    55→  6811→                <tbody>
+    56→  6812→                  <tr>
+    57→  6813→                    <td className="p-2 border font-medium bg-gray-50">Prev Months*</td>
+    58→  6814→                    <td className="p-1 border"><Input value={reportData.studentDev.guestLectures.prev} onChange={(e) => updateStudentDev('guestLectures', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
+    59→  6815→                    <td className="p-1 border"></td>
+    60→  6816→                    <td className="p-1 border"><Input value={reportData.studentDev.workshops.prev} onChange={(e) => updateStudentDev('workshops', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
+    61→  6817→                    <td className="p-1 border"></td>
+    62→  6818→                    <td className="p-1 border"><Input value={reportData.studentDev.industrialVisits.prev} onChange={(e) => updateStudentDev('industrialVisits', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
+    63→  6819→                    <td className="p-1 border"></td>
+    64→  6820→                    <td className="p-1 border"><Input value={reportData.studentDev.valueAddedCourses.prev} onChange={(e) => updateStudentDev('valueAddedCourses', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
+    65→  6821→                    <td className="p-1 border"></td>
+    66→  6822→                    <td className="p-1 border"><Input value={reportData.studentDev.skillEnhancement.prev} onChange={(e) => updateStudentDev('skillEnhancement', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
+    67→  6823→                    <td className="p-1 border"></td>
+    68→  6824→                    <td className="p-1 border"><Input value={reportData.studentDev.handsOnTraining.prev} onChange={(e) => updateStudentDev('handsOnTraining', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
+    69→  6825→                    <td className="p-1 border"></td>
+    70→  6826→                    <td className="p-1 border"><Input value={reportData.studentDev.hackathon.prev} onChange={(e) => updateStudentDev('hackathon', 'prev', e.target.value)} className="border-0 h-7 text-center" /></td>
+    71→  6827→                    <td className="p-1 border"></td>
+    72→  6828→                    <td className="p-1 border"></td>
+    73→  6829→                  </tr>
+    74→  6830→                  <tr>
+    75→  6831→                    <td className="p-2 border font-medium bg-blue-50">Curr Month</td>
+    76→  6832→                    <td className="p-1 border"></td>
+    77→  6833→                    <td className="p-1 border"><Input value={reportData.studentDev.guestLectures.curr} onChange={(e) => updateStudentDev('guestLectures', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
+    78→  6834→                    <td className="p-1 border"></td>
+    79→  6835→                    <td className="p-1 border"><Input value={reportData.studentDev.workshops.curr} onChange={(e) => updateStudentDev('workshops', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
+    80→  6836→                    <td className="p-1 border"></td>
+    81→  6837→                    <td className="p-1 border"><Input value={reportData.studentDev.industrialVisits.curr} onChange={(e) => updateStudentDev('industrialVisits', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
+    82→  6838→                    <td className="p-1 border"></td>
+    83→  6839→                    <td className="p-1 border"><Input value={reportData.studentDev.valueAddedCourses.curr} onChange={(e) => updateStudentDev('valueAddedCourses', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
+    84→  6840→                    <td className="p-1 border"></td>
+    85→  6841→                    <td className="p-1 border"><Input value={reportData.studentDev.skillEnhancement.curr} onChange={(e) => updateStudentDev('skillEnhancement', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
+    86→  6842→                    <td className="p-1 border"></td>
+    87→  6843→                    <td className="p-1 border"><Input value={reportData.studentDev.handsOnTraining.curr} onChange={(e) => updateStudentDev('handsOnTraining', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
+    88→  6844→                    <td className="p-1 border"></td>
+    89→  6845→                    <td className="p-1 border"><Input value={reportData.studentDev.hackathon.curr} onChange={(e) => updateStudentDev('hackathon', 'curr', e.target.value)} className="border-0 h-7 text-center" /></td>
+    90→  6846→                    <td className="p-1 border"></td>
+    91→  6847→                    <td className="p-1 border"></td>
+    92→  6848→                  </tr>
+    93→  6849→                  <tr>
+    94→  6850→                    <td className="p-2 border font-bold bg-green-50">Total (Cumulative)</td>
+    95→  6851→                    <td className="p-1 border bg-green-50" colSpan={2}></td>
+    96→  6852→                    <td className="p-1 border bg-green-50" colSpan={2}></td>
+    97→  6853→                    <td className="p-1 border bg-green-50" colSpan={2}></td>
+    98→  6854→                    <td className="p-1 border bg-green-50" colSpan={2}></td>
+    99→  6855→                    <td className="p-1 border bg-green-50" colSpan={2}></td>
+   100→  6856→                    <td className="p-1 border bg-green-50" colSpan={2}></td>
+   101→  6857→                    <td className="p-1 border bg-green-50" colSpan={2}></td>
+   102→  6858→                    <td className="p-1 border bg-green-50"></td>
+   103→  6859→                  </tr>
+   104→  6860→                </tbody>
+   105→  6861→              </table>
+   106→  6862→            </div>
+   107→  6863→          </div>
+   108→  6864→        )}
+   109→  6865→
+   110→  6866→        {/* Section 4: C. Research & Innovation */}
+   111→  6867→        {activeSection === 4 && (
+   112→  6868→          <div className="p-6 space-y-6">
+   113→  6869→            <div className="bg-emerald-100 border border-emerald-300 rounded-t-xl p-3">
+   114→  6870→              <h3 className="font-bold text-emerald-900 text-lg">C. RESEARCH & INNOVATION</h3>
+   115→  6871→              <p className="text-emerald-700 text-xs">(*Prev Months: Cumulative counting starts from 1st July)</p>
+   116→  6872→            </div>
+   117→  6873→
+   118→  6874→            <div className="overflow-x-auto">
+   119→  6875→              <table className="w-full border-collapse border text-xs">
+   120→  6876→                <thead>
+   121→  6877→                  <tr className="bg-emerald-50">
+   122→  6878→                    <th className="p-2 border font-semibold text-emerald-900" rowSpan={2}>Particulars</th>
+   123→  6879→                    <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Journal Publication (SCI / Scopus / WoS only)</th>
+   124→  6880→                    <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Conference Papers (Scopus Indexed only)</th>
+   125→  6881→                    <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Book</th>
+   126→  6882→                    <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Book Chapters (Scopus Indexed only)</th>
+   127→  6883→                    <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Patents Published / Grand</th>
+   128→  6884→                    <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Funded Projects Proposal submission</th>
+   129→  6885→                    <th className="p-2 border font-semibold text-emerald-900" rowSpan={2}>Faculty Sign</th>
+   130→  6886→                  </tr>
+   131→  6887→                  <tr className="bg-emerald-50">
+   132→  6888→                    {[...Array(6)].map((_, i) => (
+   133→  6889→                      <React.Fragment key={i}>
+   134→  6890→                        <th className="p-1 border text-xs">Prev Months</th>
+   135→  6891→                        <th className="p-1 border text-xs">Curr Month</th>
+   136→  6892→                      </React.Fragment>
+   137→  6893→                    ))}
+   138→  6894→                  </tr>
+   139→  6895→                </thead>
+   140→  6896→                <tbody>
+   141→  6897→                  <tr><td className="p-2 border font-semibold bg-gray-50">Faculty Name</td>
+   142→  6898→                    {Array(12).fill(null).map((_, i) => <td key={i} className="p-1 border"></td>)}
+   143→  6899→                    <td className="p-1 border"></td>
+   144→  6900→                  </tr>
+   145→  6901→                  {reportData.researchFaculty.map((faculty, idx) => (
+   146→  6902→                    <tr key={idx}>
+   147→  6903→                      <td className="p-2 border">
+   148→  6904→                        <Input value={faculty.name} onChange={(e) => updateResearchFaculty(idx, 'name', undefined, e.target.value)} className="border-0 h-7 text-xs" placeholder={`Faculty ${idx + 1}`} />
+   149→  6905→                      </td>
+   150→  6906→                      <td className="p-1 border"><Input value={faculty.journalPub.prev} onChange={(e) => updateResearchFaculty(idx, 'journalPub', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   151→  6907→                      <td className="p-1 border"><Input value={faculty.journalPub.curr} onChange={(e) => updateResearchFaculty(idx, 'journalPub', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   152→  6908→                      <td className="p-1 border"><Input value={faculty.conferencePapers.prev} onChange={(e) => updateResearchFaculty(idx, 'conferencePapers', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   153→  6909→                      <td className="p-1 border"><Input value={faculty.conferencePapers.curr} onChange={(e) => updateResearchFaculty(idx, 'conferencePapers', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   154→  6910→                      <td className="p-1 border"><Input value={faculty.book.prev} onChange={(e) => updateResearchFaculty(idx, 'book', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   155→  6911→                      <td className="p-1 border"><Input value={faculty.book.curr} onChange={(e) => updateResearchFaculty(idx, 'book', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   156→  6912→                      <td className="p-1 border"><Input value={faculty.bookChapters.prev} onChange={(e) => updateResearchFaculty(idx, 'bookChapters', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   157→  6913→                      <td className="p-1 border"><Input value={faculty.bookChapters.curr} onChange={(e) => updateResearchFaculty(idx, 'bookChapters', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   158→  6914→                      <td className="p-1 border"><Input value={faculty.patents.prev} onChange={(e) => updateResearchFaculty(idx, 'patents', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   159→  6915→                      <td className="p-1 border"><Input value={faculty.patents.curr} onChange={(e) => updateResearchFaculty(idx, 'patents', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   160→  6916→                      <td className="p-1 border"><Input value={faculty.fundedProjects.prev} onChange={(e) => updateResearchFaculty(idx, 'fundedProjects', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   161→  6917→                      <td className="p-1 border"><Input value={faculty.fundedProjects.curr} onChange={(e) => updateResearchFaculty(idx, 'fundedProjects', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   162→  6918→                      <td className="p-1 border"></td>
+   163→  6919→                    </tr>
+   164→  6920→                  ))}
+   165→  6921→                </tbody>
+   166→  6922→              </table>
+   167→  6923→            </div>
+   168→  6924→
+   169→  6925→            {/* Cumulative Research Table */}
+   170→  6926→            <div className="mt-6">
+   171→  6927→              <h4 className="font-semibold text-emerald-800 mb-3">Cumulative Faculty Research Contribution</h4>
+   172→  6928→              <div className="overflow-x-auto">
+   173→  6929→                <table className="w-full border-collapse border text-xs">
+   174→  6930→                  <thead>
+   175→  6931→                    <tr className="bg-emerald-50">
+   176→  6932→                      <th className="p-2 border font-semibold text-emerald-900" rowSpan={2}></th>
+   177→  6933→                      <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Journal publication (SCI / Scopus / WoS only)</th>
+   178→  6934→                      <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Conference Papers (Scopus Indexed only)</th>
+   179→  6935→                      <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Book</th>
+   180→  6936→                      <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Book Chapters (Scopus Indexed only)</th>
+   181→  6937→                      <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Patents Published</th>
+   182→  6938→                      <th className="p-2 border font-semibold text-emerald-900" colSpan={2}>Funded Projects Proposal Submission</th>
+   183→  6939→                    </tr>
+   184→  6940→                    <tr className="bg-emerald-50">
+   185→  6941→                      {[...Array(6)].map((_, i) => (
+   186→  6942→                        <React.Fragment key={i}>
+   187→  6943→                          <th className="p-1 border text-xs">Prev Total</th>
+   188→  6944→                          <th className="p-1 border text-xs">Cumulative</th>
+   189→  6945→                        </React.Fragment>
+   190→  6946→                      ))}
+   191→  6947→                    </tr>
+   192→  6948→                  </thead>
+   193→  6949→                  <tbody>
+   194→  6950→                    <tr>
+   195→  6951→                      <td className="p-2 border font-medium bg-orange-50">As on (Month), 20...</td>
+   196→  6952→                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.journalPub.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, journalPub: {...p.cumulativeResearch.journalPub, prev: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+   197→  6953→                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.journalPub.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, journalPub: {...p.cumulativeResearch.journalPub, cumulative: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+   198→  6954→                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.conferencePapers.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, conferencePapers: {...p.cumulativeResearch.conferencePapers, prev: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+   199→  6955→                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.conferencePapers.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, conferencePapers: {...p.cumulativeResearch.conferencePapers, cumulative: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+   200→  6956→                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.book.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, book: {...p.cumulativeResearch.book, prev: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+   201→  6957→                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.book.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, book: {...p.cumulativeResearch.book, cumulative: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+   202→  6958→                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.bookChapters.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, bookChapters: {...p.cumulativeResearch.bookChapters, prev: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+   203→  6959→                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.bookChapters.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, bookChapters: {...p.cumulativeResearch.bookChapters, cumulative: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+   204→  6960→                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.patents.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, patents: {...p.cumulativeResearch.patents, prev: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+   205→  6961→                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.patents.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, patents: {...p.cumulativeResearch.patents, cumulative: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+   206→  6962→                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.fundedProjects.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, fundedProjects: {...p.cumulativeResearch.fundedProjects, prev: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+   207→  6963→                      <td className="p-1 border"><Input value={reportData.cumulativeResearch.fundedProjects.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, fundedProjects: {...p.cumulativeResearch.fundedProjects, cumulative: e.target.value}}}))} className="border-0 h-6 w-14 text-center" /></td>
+   208→  6964→                    </tr>
+   209→  6965→                  </tbody>
+   210→  6966→                </table>
+   211→  6967→              </div>
+   212→  6968→            </div>
+   213→  6969→          </div>
+   214→  6970→        )}
+   215→  6971→
+   216→  6972→        {/* Section 5: D. Faculty Development */}
+   217→  6973→        {activeSection === 5 && (
+   218→  6974→          <div className="p-6 space-y-6">
+   219→  6975→            <div className="bg-amber-100 border border-amber-300 rounded-t-xl p-3">
+   220→  6976→              <h3 className="font-bold text-amber-900 text-lg">D. FACULTY DEVELOPMENT</h3>
+   221→  6977→              <p className="text-amber-700 text-xs">(*Prev Months: Cumulative counting starts from 1st July)</p>
+   222→  6978→            </div>
+   223→  6979→
+   224→  6980→            <div className="overflow-x-auto">
+   225→  6981→              <table className="w-full border-collapse border text-xs">
+   226→  6982→                <thead>
+   227→  6983→                  <tr className="bg-amber-50">
+   228→  6984→                    <th className="p-2 border font-semibold text-amber-900" rowSpan={2}>Particulars</th>
+   229→  6985→                    <th className="p-2 border font-semibold text-amber-900" colSpan={2}>FDPs / Workshops / Conf / Seminars Attended</th>
+   230→  6986→                    <th className="p-2 border font-semibold text-amber-900" colSpan={2}>FDPs / Workshops / Conf / Seminars Organized</th>
+   231→  6987→                    <th className="p-2 border font-semibold text-amber-900" colSpan={2}>NPTEL Completed</th>
+   232→  6988→                    <th className="p-2 border font-semibold text-amber-900" colSpan={2}>MOOCs Completed</th>
+   233→  6989→                    <th className="p-2 border font-semibold text-amber-900" colSpan={2}>Resource Person Engagements</th>
+   234→  6990→                    <th className="p-2 border font-semibold text-amber-900" rowSpan={2}>Faculty Sign</th>
+   235→  6991→                  </tr>
+   236→  6992→                  <tr className="bg-amber-50">
+   237→  6993→                    {[...Array(5)].map((_, i) => (
+   238→  6994→                      <React.Fragment key={i}>
+   239→  6995→                        <th className="p-1 border text-xs">Prev Month</th>
+   240→  6996→                        <th className="p-1 border text-xs">Curr Month</th>
+   241→  6997→                      </React.Fragment>
+   242→  6998→                    ))}
+   243→  6999→                  </tr>
+   244→  7000→                </thead>
+   245→  7001→                <tbody>
+   246→  7002→                  <tr><td className="p-2 border font-semibold bg-gray-50">Faculty Name / Designation</td>
+   247→  7003→                    {Array(10).fill(null).map((_, i) => <td key={i} className="p-1 border"></td>)}
+   248→  7004→                    <td className="p-1 border"></td>
+   249→  7005→                  </tr>
+   250→  7006→                  {reportData.facultyDev.map((faculty, idx) => (
+   251→  7007→                    <tr key={idx}>
+   252→  7008→                      <td className="p-2 border">
+   253→  7009→                        <Input value={faculty.name} onChange={(e) => {
+   254→  7010→                          const newF = [...reportData.facultyDev]
+   255→  7011→                          newF[idx] = {...newF[idx], name: e.target.value}
+   256→  7012→                          setReportData(p => ({...p, facultyDev: newF}))
+   257→  7013→                        }} className="border-0 h-7 text-xs" placeholder={`Faculty ${idx + 1}`} />
+   258→  7014→                      </td>
+   259→  7015→                      <td className="p-1 border"><Input value={faculty.fdpsAttended.prev} onChange={(e) => updateFacultyDev(idx, 'fdpsAttended', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   260→  7016→                      <td className="p-1 border"><Input value={faculty.fdpsAttended.curr} onChange={(e) => updateFacultyDev(idx, 'fdpsAttended', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   261→  7017→                      <td className="p-1 border"><Input value={faculty.fdpsOrganized.prev} onChange={(e) => updateFacultyDev(idx, 'fdpsOrganized', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   262→  7018→                      <td className="p-1 border"><Input value={faculty.fdpsOrganized.curr} onChange={(e) => updateFacultyDev(idx, 'fdpsOrganized', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   263→  7019→                      <td className="p-1 border"><Input value={faculty.nptelCompleted.prev} onChange={(e) => updateFacultyDev(idx, 'nptelCompleted', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   264→  7020→                      <td className="p-1 border"><Input value={faculty.nptelCompleted.curr} onChange={(e) => updateFacultyDev(idx, 'nptelCompleted', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   265→  7021→                      <td className="p-1 border"><Input value={faculty.moocsCompleted.prev} onChange={(e) => updateFacultyDev(idx, 'moocsCompleted', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   266→  7022→                      <td className="p-1 border"><Input value={faculty.moocsCompleted.curr} onChange={(e) => updateFacultyDev(idx, 'moocsCompleted', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   267→  7023→                      <td className="p-1 border"><Input value={faculty.resourcePerson.prev} onChange={(e) => updateFacultyDev(idx, 'resourcePerson', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   268→  7024→                      <td className="p-1 border"><Input value={faculty.resourcePerson.curr} onChange={(e) => updateFacultyDev(idx, 'resourcePerson', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   269→  7025→                      <td className="p-1 border"></td>
+   270→  7026→                    </tr>
+   271→  7027→                  ))}
+   272→  7028→                </tbody>
+   273→  7029→              </table>
+   274→  7030→            </div>
+   275→  7031→
+   276→  7032→            {/* Cumulative Faculty Development */}
+   277→  7033→            <div className="mt-6">
+   278→  7034→              <h4 className="font-semibold text-amber-800 mb-3">Cumulative Faculty Contribution</h4>
+   279→  7035→              <div className="overflow-x-auto">
+   280→  7036→                <table className="w-full border-collapse border text-xs">
+   281→  7037→                  <thead>
+   282→  7038→                    <tr className="bg-amber-50">
+   283→  7039→                      <th className="p-2 border font-semibold text-amber-900" rowSpan={2}>As on (Month), 2026</th>
+   284→  7040→                      <th className="p-2 border font-semibold text-amber-900" colSpan={2}>FDPs / Workshops / Conf / Seminars Attended</th>
+   285→  7041→                      <th className="p-2 border font-semibold text-amber-900" colSpan={2}>FDPs / Workshops Organized</th>
+   286→  7042→                      <th className="p-2 border font-semibold text-amber-900" colSpan={2}>NPTEL Completed</th>
+   287→  7043→                      <th className="p-2 border font-semibold text-amber-900" colSpan={2}>MOOCs Completed</th>
+   288→  7044→                      <th className="p-2 border font-semibold text-amber-900" colSpan={2}>Resource Person Engagements</th>
+   289→  7045→                    </tr>
+   290→  7046→                    <tr className="bg-amber-50">
+   291→  7047→                      {[...Array(5)].map((_, i) => (
+   292→  7048→                        <React.Fragment key={i}>
+   293→  7049→                          <th className="p-1 border text-xs">Prev Total</th>
+   294→  7050→                          <th className="p-1 border text-xs">Cumulative</th>
+   295→  7051→                        </React.Fragment>
+   296→  7052→                      ))}
+   297→  7053→                    </tr>
+   298→  7054→                  </thead>
+   299→  7055→                  <tbody>
+   300→  7056→                    <tr>
+   301→  7057→                      <td className="p-2 border font-medium bg-orange-50"></td>
+   302→  7058→                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+   303→  7059→                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+   304→  7060→                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+   305→  7061→                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+   306→  7062→                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+   307→  7063→                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+   308→  7064→                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+   309→  7065→                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+   310→  7066→                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+   311→  7067→                      <td className="p-1 border"><Input className="border-0 h-6 w-14 text-center" /></td>
+   312→  7068→                    </tr>
+   313→  7069→                  </tbody>
+   314→  7070→                </table>
+   315→  7071→              </div>
+   316→  7072→            </div>
+   317→  7073→          </div>
+   318→  7074→        )}
+   319→  7075→
+   320→  7076→        {/* Section 6: E. Students Internship */}
+   321→  7077→        {activeSection === 6 && (
+   322→  7078→          <div className="p-6 space-y-6">
+   323→  7079→            <div className="bg-red-100 border border-red-300 rounded-t-xl p-3">
+   324→  7080→              <h3 className="font-bold text-red-900 text-lg">E. STUDENTS INTERNSHIP</h3>
+   325→  7081→              <p className="text-red-700 text-xs">(*Prev Months: Cumulative counting starts from 1st July)</p>
+   326→  7082→            </div>
+   327→  7083→
+   328→  7084→            <div className="overflow-x-auto">
+   329→  7085→              <table className="w-full border-collapse border">
+   330→  7086→                <thead>
+   331→  7087→                  <tr className="bg-red-50">
+   332→  7088→                    <th className="p-3 border font-semibold text-red-900" colSpan={2}>Internship Details</th>
+   333→  7089→                    <th className="p-3 border font-semibold text-red-900">Industry Internships (Paid)</th>
+   334→  7090→                    <th className="p-3 border font-semibold text-red-900">Industry Internships (Non-Paid)</th>
+   335→  7091→                    <th className="p-3 border font-semibold text-red-900">Virtual Internships</th>
+   336→  7092→                    <th className="p-3 border font-semibold text-red-900">No. of Students Not Availed Internship</th>
+   337→  7093→                  </tr>
+   338→  7094→                </thead>
+   339→  7095→                <tbody>
+   340→  7096→                  <tr>
+   341→  7097→                    <td className="p-3 border font-medium bg-pink-50" colSpan={2}>Previous Months</td>
+   342→  7098→                    <td className="p-3 border"><Input value={reportData.internship.previous.paid} onChange={(e) => updateInternship('previous', 'paid', e.target.value)} className="border-0" /></td>
+   343→  7099→                    <td className="p-3 border"><Input value={reportData.internship.previous.nonPaid} onChange={(e) => updateInternship('previous', 'nonPaid', e.target.value)} className="border-0" /></td>
+   344→  7100→                    <td className="p-3 border"><Input value={reportData.internship.previous.virtual} onChange={(e) => updateInternship('previous', 'virtual', e.target.value)} className="border-0" /></td>
+   345→  7101→                    <td className="p-3 border"><Input value={reportData.internship.previous.notAvailed} onChange={(e) => updateInternship('previous', 'notAvailed', e.target.value)} className="border-0" /></td>
+   346→  7102→                  </tr>
+   347→  7103→                  <tr>
+   348→  7104→                    <td className="p-3 border font-medium bg-blue-50" colSpan={2}>Current Month</td>
+   349→  7105→                    <td className="p-3 border"><Input value={reportData.internship.current.paid} onChange={(e) => updateInternship('current', 'paid', e.target.value)} className="border-0" /></td>
+   350→  7106→                    <td className="p-3 border"><Input value={reportData.internship.current.nonPaid} onChange={(e) => updateInternship('current', 'nonPaid', e.target.value)} className="border-0" /></td>
+   351→  7107→                    <td className="p-3 border"><Input value={reportData.internship.current.virtual} onChange={(e) => updateInternship('current', 'virtual', e.target.value)} className="border-0" /></td>
+   352→  7108→                    <td className="p-3 border"><Input value={reportData.internship.current.notAvailed} onChange={(e) => updateInternship('current', 'notAvailed', e.target.value)} className="border-0" /></td>
+   353→  7109→                  </tr>
+   354→  7110→                  <tr>
+   355→  7111→                    <td className="p-3 border font-bold bg-green-50" colSpan={2}>Total (Cumulative)</td>
+   356→  7112→                    <td className="p-3 border bg-green-50"><Input value={reportData.internship.total.paid} onChange={(e) => updateInternship('total', 'paid', e.target.value)} className="border-0 bg-transparent font-semibold" /></td>
+   357→  7113→                    <td className="p-3 border bg-green-50"><Input value={reportData.internship.total.nonPaid} onChange={(e) => updateInternship('total', 'nonPaid', e.target.value)} className="border-0 bg-transparent font-semibold" /></td>
+   358→  7114→                    <td className="p-3 border bg-green-50"><Input value={reportData.internship.total.virtual} onChange={(e) => updateInternship('total', 'virtual', e.target.value)} className="border-0 bg-transparent font-semibold" /></td>
+   359→  7115→                    <td className="p-3 border bg-green-50"><Input value={reportData.internship.total.notAvailed} onChange={(e) => updateInternship('total', 'notAvailed', e.target.value)} className="border-0 bg-transparent font-semibold" /></td>
+   360→  7116→                  </tr>
+   361→  7117→                </tbody>
+   362→  7118→              </table>
+   363→  7119→            </div>
+   364→  7120→          </div>
+   365→  7121→        )}
+   366→  7122→
+   367→  7123→        {/* Section 7: F. Faculty-Industry Interaction */}
+   368→  7124→        {activeSection === 7 && (
+   369→  7125→          <div className="p-6 space-y-6">
+   370→  7126→            <div className="bg-cyan-100 border border-cyan-300 rounded-t-xl p-3">
+   371→  7127→              <h3 className="font-bold text-cyan-900 text-lg">F. FACULTY - INDUSTRY INTERACTION</h3>
+   372→  7128→              <p className="text-cyan-700 text-xs">(*Prev months: Cumulative counting starts from 1st July)</p>
+   373→  7129→            </div>
+   374→  7130→
+   375→  7131→            <div className="overflow-x-auto">
+   376→  7132→              <table className="w-full border-collapse border text-xs">
+   377→  7133→                <thead>
+   378→  7134→                  <tr className="bg-cyan-50">
+   379→  7135→                    <th className="p-2 border font-semibold text-cyan-900" rowSpan={2}>Faculty Name / Designation</th>
+   380→  7136→                    <th className="p-2 border font-semibold text-cyan-900" colSpan={2}>MoUs Signed</th>
+   381→  7137→                    <th className="p-2 border font-semibold text-cyan-900" colSpan={2}>Industry Visits</th>
+   382→  7138→                    <th className="p-2 border font-semibold text-cyan-900" colSpan={2}>Experts Invited</th>
+   383→  7139→                    <th className="p-2 border font-semibold text-cyan-900" colSpan={2}>Collaborative Activities</th>
+   384→  7140→                    <th className="p-2 border font-semibold text-cyan-900" colSpan={2}>Consultancy Services</th>
+   385→  7141→                  </tr>
+   386→  7142→                  <tr className="bg-cyan-50">
+   387→  7143→                    {[...Array(5)].map((_, i) => (
+   388→  7144→                      <React.Fragment key={i}>
+   389→  7145→                        <th className="p-1 border text-xs">Prev Months</th>
+   390→  7146→                        <th className="p-1 border text-xs">Curr Month</th>
+   391→  7147→                      </React.Fragment>
+   392→  7148→                    ))}
+   393→  7149→                  </tr>
+   394→  7150→                </thead>
+   395→  7151→                <tbody>
+   396→  7152→                  {reportData.industryInteraction.map((faculty, idx) => (
+   397→  7153→                    <tr key={idx}>
+   398→  7154→                      <td className="p-2 border">
+   399→  7155→                        <Input value={faculty.name} onChange={(e) => {
+   400→  7156→                          const newData = [...reportData.industryInteraction]
+   401→  7157→                          newData[idx] = {...newData[idx], name: e.target.value}
+   402→  7158→                          setReportData(p => ({...p, industryInteraction: newData}))
+   403→  7159→                        }} className="border-0 h-7 text-xs" placeholder={`Faculty ${idx + 1}`} />
+   404→  7160→                      </td>
+   405→  7161→                      <td className="p-1 border"><Input value={faculty.mousSigned.prev} onChange={(e) => updateIndustryInteraction(idx, 'mousSigned', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   406→  7162→                      <td className="p-1 border"><Input value={faculty.mousSigned.curr} onChange={(e) => updateIndustryInteraction(idx, 'mousSigned', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   407→  7163→                      <td className="p-1 border"><Input value={faculty.industryVisits.prev} onChange={(e) => updateIndustryInteraction(idx, 'industryVisits', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   408→  7164→                      <td className="p-1 border"><Input value={faculty.industryVisits.curr} onChange={(e) => updateIndustryInteraction(idx, 'industryVisits', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   409→  7165→                      <td className="p-1 border"><Input value={faculty.expertsInvited.prev} onChange={(e) => updateIndustryInteraction(idx, 'expertsInvited', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   410→  7166→                      <td className="p-1 border"><Input value={faculty.expertsInvited.curr} onChange={(e) => updateIndustryInteraction(idx, 'expertsInvited', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   411→  7167→                      <td className="p-1 border"><Input value={faculty.collaborativeActivities.prev} onChange={(e) => updateIndustryInteraction(idx, 'collaborativeActivities', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   412→  7168→                      <td className="p-1 border"><Input value={faculty.collaborativeActivities.curr} onChange={(e) => updateIndustryInteraction(idx, 'collaborativeActivities', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   413→  7169→                      <td className="p-1 border"><Input value={faculty.consultancyServices.prev} onChange={(e) => updateIndustryInteraction(idx, 'consultancyServices', 'prev', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   414→  7170→                      <td className="p-1 border"><Input value={faculty.consultancyServices.curr} onChange={(e) => updateIndustryInteraction(idx, 'consultancyServices', 'curr', e.target.value)} className="border-0 h-6 w-12 text-center text-xs" /></td>
+   415→  7171→                    </tr>
+   416→  7172→                  ))}
+   417→  7173→                  <tr>
+   418→  7174→                    <td className="p-2 border font-bold bg-green-50">As on _____, 20... (Cumulative)</td>
+   419→  7175→                    {[...Array(10)].map((_, i) => <td key={i} className="p-1 border bg-green-50"></td>)}
+   420→  7176→                  </tr>
+   421→  7177→                </tbody>
+   422→  7178→              </table>
+   423→  7179→            </div>
+   424→  7180→          </div>
+   425→  7181→        )}
+   426→  7182→
+   427→  7183→        {/* Section 8: G. Quality Assurance Activities */}
+   428→  7184→        {activeSection === 8 && (
+   429→  7185→          <div className="p-6 space-y-6">
+   430→  7186→            <div className="bg-lime-100 border border-lime-300 rounded-t-xl p-3">
+   431→  7187→              <h3 className="font-bold text-lime-900 text-lg">G. QUALITY ASSURANCE ACTIVITIES</h3>
+   432→  7188→              <p className="text-lime-700 text-xs">(Documents and supporting evidence shall be maintained and kept ready for Academic Audit)</p>
+   433→  7189→            </div>
+   434→  7190→
+   435→  7191→            <div className="overflow-x-auto">
+   436→  7192→              <table className="w-full border-collapse border">
+   437→  7193→                <thead>
+   438→  7194→                  <tr className="bg-lime-50">
+   439→  7195→                    <th className="p-3 border font-semibold text-lime-900">Particulars</th>
+   440→  7196→                    <th className="p-3 border font-semibold text-lime-900">Status</th>
+   441→  7197→                    <th className="p-3 border font-semibold text-lime-900">Remarks</th>
+   442→  7198→                  </tr>
+   443→  7199→                </thead>
+   444→  7200→                <tbody>
+   445→  7201→                  {reportData.qaActivities.map((item, idx) => (
+   446→  7202→                    <tr key={idx}>
+   447→  7203→                      <td className="p-3 border font-medium">{item.particular}</td>
+   448→  7204→                      <td className="p-3 border">
+   449→  7205→                        <Input 
+   450→  7206→                          value={item.status} 
+   451→  7207→                          onChange={(e) => updateQAActivity(idx, 'status', e.target.value)}
+   452→  7208→                          className="border-0" 
+   453→  7209→                        />
+   454→  7210→                      </td>
+   455→  7211→                      <td className="p-3 border">
+   456→  7212→                        <Input 
+   457→  7213→                          value={item.remarks} 
+   458→  7214→                          onChange={(e) => updateQAActivity(idx, 'remarks', e.target.value)}
+   459→  7215→                          className="border-0" 
+   460→  7216→                          placeholder="Add remarks..."
+   461→  7217→                        />
+   462→  7218→                      </td>
+   463→  7219→                    </tr>
+   464→  7220→                  ))}
+   465→  7221→                </tbody>
+   466→  7222→              </table>
+   467→  7223→            </div>
+   468→  7224→          </div>
+   469→  7225→        )}
+   470→  7226→
+   471→  7227→        {/* Section 9: H. Documents to be Attached */}
+   472→  7228→        {activeSection === 9 && (
+   473→  7229→          <div className="p-6 space-y-6">
+   474→  7230→            <div className="bg-indigo-100 border border-indigo-300 rounded-t-xl p-3">
+   475→  7231→              <h3 className="font-bold text-indigo-900 text-lg">H. DOCUMENTS TO BE ATTACHED</h3>
+   476→  7232→            </div>
+   477→  7233→
+   478→  7234→            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   479→  7235→              {[
+   480→  7236→                { key: 'eventReports', label: 'Event Reports' },
+   481→  7237→                { key: 'workshopCertificates', label: 'Workshop / FDP / Conference etc. participation Certificates' },
+   482→  7238→                { key: 'publicationProofs', label: 'Publication Proofs' },
+   483→  7239→                { key: 'placementDetails', label: 'Placement Details' },
+   484→  7240→                { key: 'internshipDetails', label: 'Internship Details' },
+   485→  7241→                { key: 'studentAchievementProofs', label: 'Student Achievement Proofs' },
+   486→  7242→                { key: 'sdgExtensionReports', label: 'SDG / Extension Activity Reports' },
+   487→  7243→                { key: 'mouIndustryDocuments', label: 'MoU / Industry Interaction Documents' }
+   488→  7244→              ].map((doc) => (
+   489→  7245→                <label key={doc.key} className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+   490→  7246→                  <input 
+   491→  7247→                    type="checkbox" 
+   492→  7248→                    checked={reportData.documents[doc.key as keyof typeof reportData.documents]}
+   493→  7249→                    onChange={(e) => updateDocuments(doc.key, e.target.checked)}
+   494→  7250→                    className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+   495→  7251→                  />
+   496→  7252→                  <span className="text-sm text-gray-700">{doc.label}</span>
+   497→  7253→                </label>
+   498→  7254→              ))}
+   499→  7255→            </div>
+   500→  7256→
+   501→  7257→            {/* Signature Section */}
+   502→  7258→            <div className="mt-8 pt-6 border-t">
+   503→  7259→              <h4 className="font-semibold text-gray-900 mb-4">Approval Signatures</h4>
+   504→  7260→              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+   505→  7261→                {['HoD', 'School Dean / Director', 'Head-IQAC', 'Vice-Principal', 'Principal'].map((role) => (
+   506→  7262→                  <div key={role} className="text-center p-4 border rounded-lg">
+   507→  7263→                    <div className="h-16 border-b-2 border-dashed mb-2 flex items-end justify-center">
+   508→  7264→                      <span className="text-xs text-gray-400">Signature</span>
+   509→  7265→                    </div>
+   510→  7266→                    <p className="font-semibold text-sm text-gray-900">{role}</p>
+   511→  7267→                    <p className="text-xs text-gray-500">Date: _________</p>
+   512→  7268→                  </div>
+   513→  7269→                ))}
+   514→  7270→              </div>
+   515→  7271→            </div>
+   516→  7272→
+   517→  7273→            {/* Copy Submitted To */}
+   518→  7274→            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+   519→  7275→              <h4 className="font-semibold text-gray-900 mb-3">Copy submitted to</h4>
+   520→  7276→              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   521→  7277→                <div className="flex items-start gap-3">
+   522→  7278→                  <span className="font-medium">1.</span>
+   523→  7279→                  <div>
+   524→  7280→                    <p className="font-medium">AO / HR / Principal office</p>
+   525→  7281→                    <div className="flex gap-4 mt-1 text-sm text-gray-600">
+   526→  7282→                      <span>Submitted on: ___________</span>
+   527→  7283→                      <span>Received by: ___________</span>
+   528→  7284→                    </div>
+   529→  7285→                  </div>
+   530→  7286→                </div>
+   531→  7287→                <div className="flex items-start gap-3">
+   532→  7288→                  <span className="font-medium">2.</span>
+   533→  7289→                  <div>
+   534→  7290→                    <p className="font-medium">IQAC</p>
+   535→  7291→                    <div className="flex gap-4 mt-1 text-sm text-gray-600">
+   536→  7292→                      <span>Submitted on: ___________</span>
+   537→  7293→                      <span>Received by: ___________</span>
+   538→  7294→                    </div>
+   539→  7295→                  </div>
+   540→  7296→                </div>
+   541→  7297→              </div>
+   542→  7298→            </div>
+   543→  7299→          </div>
+   544→  7300→        )}
+   545→  7301→      </div>
+   546→  7302→    </div>
+   547→  7303→  )
+   548→  7304→}
+   549→  7305→
+   550→  7306→function AnalyticsPage() {
+   551→  7307→  return (
+   552→  7308→    <div className="space-y-6">
+   553→  7309→      <div>
+   554→  7310→        <h2 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h2>
+   555→  7311→        <p className="text-gray-500">Institutional performance metrics</p>
+   556→  7312→      </div>
+   557→  7313→      
+   558→  7314→      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+   559→  7315→        <StatCard title="Placement Rate" value="92%" icon={TrendingUp} color="green" trend="+5% from last year" />
+   560→  7316→        <StatCard title="Pass Percentage" value="94%" icon={CheckCircle} color="blue" />
+   561→  7317→        <StatCard title="Industry Connect" value="45" icon={HeartHandshake} color="purple" />
+   562→  7318→        <StatCell title="Accreditation Score" value="A+" icon={Star} color="orange" />
+   563→  7319→      </div>
+   564→  7320→      
+   565→  7321→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+   566→  7322→        <Card className="p-6 border border-gray-200">
+   567→  7323→          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+   568→  7324→            <BarChart3 className="w-5 h-5 text-blue-500" /> Department-wise Results
+   569→  7325→          </h3>
+   570→  7326→          <div className="space-y-4">
+   571→  7327→            {[
+   572→  7328→              { dept: 'CSE', result: 92, color: 'from-blue-500 to-blue-600' },
+   573→  7329→              { dept: 'ECE', result: 89, color: 'from-purple-500 to-purple-600' },
+   574→  7330→              { dept: 'EEE', result: 87, color: 'from-green-500 to-green-600' },
+   575→  7331→              { dept: 'MECH', result: 91, color: 'from-orange-500 to-orange-600' },
+   576→  7332→              { dept: 'CIVIL', result: 85, color: 'from-pink-500 to-pink-600' },
+   577→  7333→            ].map(item => (
+   578→  7334→              <div key={item.dept}>
+   579→  7335→                <div className="flex justify-between text-sm mb-1">
+   580→  7336→                  <span className="font-medium text-gray-700">{item.dept}</span>
+   581→  7337→                  <span className="text-gray-500">{item.result}%</span>
+   582→  7338→                </div>
+   583→  7339→                <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+   584→  7340→                  <div className={`h-full bg-gradient-to-r ${item.color} rounded-full transition-all duration-500`} style={{ width: `${item.result}%` }} />
+   585→  7341→                </div>
+   586→  7342→              </div>
+   587→  7343→            ))}
+   588→  7344→          </div>
+   589→  7345→        </Card>
+   590→  7346→        
+   591→  7347→        <Card className="p-6 border border-gray-200">
+   592→  7348→          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+   593→  7349→            <PieChartIcon className="w-5 h-5 text-purple-500" /> Activity Distribution
+   594→  7350→          </h3>
+   595→  7351→          <div className="grid grid-cols-2 gap-4">
+   596→  7352→            {[
+   597→  7353→              { label: 'Workshops', value: 35, color: 'bg-blue-500' },
+   598→  7354→              { label: 'Seminars', value: 28, color: 'bg-purple-500' },
+   599→  7355→              { label: 'FDPs', value: 18, color: 'bg-green-500' },
+   600→  7356→              { label: 'Events', value: 19, color: 'bg-orange-500' },
+   601→
+   602→[showing lines 6757-7356 of 11905; use offset=7357 with limit to continue reading]
