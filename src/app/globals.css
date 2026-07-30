@@ -162,3 +162,26 @@ html {
 .animate-pulse-subtle {
   animation: pulse-subtle 2s ease-in-out infinite;
 }
+
+/* Scrollbar Hide Utility - for responsive horizontal scrolling */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Responsive Breakpoint for Extra Small screens */
+@media (max-width: 375px) {
+  .xs\:inline {
+    display: none;
+  }
+}
+
+@media (min-width: 376px) {
+  .xs\:hidden {
+    display: none;
+  }
+}

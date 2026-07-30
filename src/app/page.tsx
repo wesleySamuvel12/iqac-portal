@@ -5222,45 +5222,49 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
   ]
 
   return (
-    <div className="space-y-6">
-      {/* Header with Gradient */}
-      <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 rounded-2xl p-8 text-white relative overflow-hidden">
-        {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+    <div className="space-y-4 lg:space-y-6 min-w-0">
+      {/* Header with Gradient - Responsive */}
+      <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 rounded-xl lg:rounded-2xl p-4 sm:p-6 lg:p-8 text-white relative overflow-hidden">
+        {/* Decorative elements - hidden on small screens */}
+        <div className="absolute top-0 right-0 w-40 h-40 sm:w-64 sm:h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 hidden sm:block" />
+        <div className="absolute bottom-0 left-0 w-32 h-32 sm:w-48 sm:h-48 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2 hidden sm:block" />
         
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h2 className="text-3xl font-bold mb-2">📊 Department Analytics</h2>
-            <p className="text-violet-100 text-lg">{user.departmentName} • Achievement Analysis & Reports</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Badge className="bg-white/20 text-white border-white/30 px-4 py-2 text-sm">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Department-Specific View
-            </Badge>
-            <Badge className="bg-emerald-400/20 text-white border-emerald-300/30 px-4 py-2 text-sm">
-              {totalAllAchievements} Total Records
-            </Badge>
+        <div className="relative z-10 flex flex-col gap-3 sm:gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2">📊 Department Analytics</h2>
+              <p className="text-violet-100 text-sm sm:text-lg">{user.departmentName} • Achievement Analysis & Reports</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <Badge className="bg-white/20 text-white border-white/30 px-3 py-1.5 text-xs sm:text-sm">
+                <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Department-Specific View</span>
+                <span className="xs:hidden">Dept View</span>
+              </Badge>
+              <Badge className="bg-emerald-400/20 text-white border-emerald-300/30 px-3 py-1.5 text-xs sm:text-sm">
+                {totalAllAchievements} Records
+              </Badge>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Summary Cards - Enhanced Design */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Summary Cards - Responsive Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
         <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all group">
           <div className="h-1 bg-gradient-to-r from-blue-500 to-cyan-400" />
-          <CardContent className="p-5">
+          <CardContent className="p-3 sm:p-5">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 font-medium">Student Records</p>
-                <p className="text-4xl font-bold text-gray-800 mt-1">{totalStudentAchievements}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-500 font-medium truncate">Student Records</p>
+                <p className="text-2xl sm:text-4xl font-bold text-gray-800 mt-1">{totalStudentAchievements}</p>
                 <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                  <TrendingUp className="w-3 h-3" /> {Object.keys(ACHIEVEMENT_TYPES).length} types available
+                  <TrendingUp className="w-3 h-3" /> <span className="hidden sm:inline">{Object.keys(ACHIEVEMENT_TYPES).length} types available</span>
+                  <span className="sm:hidden">{Object.keys(ACHIEVEMENT_TYPES).length} types</span>
                 </p>
               </div>
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform">
-                <GraduationCap className="w-7 h-7 text-white" />
+              <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform flex-shrink-0">
+                <GraduationCap className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
               </div>
             </div>
           </CardContent>
@@ -5268,17 +5272,18 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
 
         <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all group">
           <div className="h-1 bg-gradient-to-r from-emerald-500 to-teal-400" />
-          <CardContent className="p-5">
+          <CardContent className="p-3 sm:p-5">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 font-medium">Staff Records</p>
-                <p className="text-4xl font-bold text-gray-800 mt-1">{totalStaffAchievements}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-500 font-medium truncate">Staff Records</p>
+                <p className="text-2xl sm:text-4xl font-bold text-gray-800 mt-1">{totalStaffAchievements}</p>
                 <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                  <TrendingUp className="w-3 h-3" /> {Object.keys(STAFF_ACHIEVEMENT_TYPES).length} types available
+                  <TrendingUp className="w-3 h-3" /> <span className="hidden sm:inline">{Object.keys(STAFF_ACHIEVEMENT_TYPES).length} types available</span>
+                  <span className="sm:hidden">{Object.keys(STAFF_ACHIEVEMENT_TYPES).length} types</span>
                 </p>
               </div>
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-200 group-hover:scale-110 transition-transform">
-                <Users className="w-7 h-7 text-white" />
+              <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-200 group-hover:scale-110 transition-transform flex-shrink-0">
+                <Users className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
               </div>
             </div>
           </CardContent>
@@ -5286,17 +5291,18 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
 
         <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all group">
           <div className="h-1 bg-gradient-to-r from-amber-500 to-orange-400" />
-          <CardContent className="p-5">
+          <CardContent className="p-3 sm:p-5">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 font-medium">Pending Review</p>
-                <p className="text-4xl font-bold text-gray-800 mt-1">{studentStatusBreakdown.pending + staffStatusBreakdown.pending}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-500 font-medium truncate">Pending Review</p>
+                <p className="text-2xl sm:text-4xl font-bold text-gray-800 mt-1">{studentStatusBreakdown.pending + staffStatusBreakdown.pending}</p>
                 <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                  <Clock className="w-3 h-3" /> Requires attention
+                  <Clock className="w-3 h-3" /> <span className="hidden sm:inline">Requires attention</span>
+                  <span className="sm:inline">Attention</span>
                 </p>
               </div>
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-400 flex items-center justify-center shadow-lg shadow-amber-200 group-hover:scale-110 transition-transform">
-                <Clock className="w-7 h-7 text-white" />
+              <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-amber-500 to-orange-400 flex items-center justify-center shadow-lg shadow-amber-200 group-hover:scale-110 transition-transform flex-shrink-0">
+                <Clock className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
               </div>
             </div>
           </CardContent>
@@ -5304,116 +5310,120 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
 
         <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all group">
           <div className="h-1 bg-gradient-to-r from-green-500 to-emerald-400" />
-          <CardContent className="p-5">
+          <CardContent className="p-3 sm:p-5">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 font-medium">Approved</p>
-                <p className="text-4xl font-bold text-gray-800 mt-1">{studentStatusBreakdown.approved + staffStatusBreakdown.approved}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-500 font-medium truncate">Approved</p>
+                <p className="text-2xl sm:text-4xl font-bold text-gray-800 mt-1">{studentStatusBreakdown.approved + staffStatusBreakdown.approved}</p>
                 <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3" /> Verified records
+                  <CheckCircle className="w-3 h-3" /> <span className="hidden sm:inline">Verified records</span>
+                  <span className="sm:inline">Verified</span>
                 </p>
               </div>
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-green-200 group-hover:scale-110 transition-transform">
-                <CheckCircle className="w-7 h-7 text-white" />
+              <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-green-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-green-200 group-hover:scale-110 transition-transform flex-shrink-0">
+                <CheckCircle className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Section Toggle & Chart View Toggle */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex gap-2 bg-gray-100 p-1.5 rounded-xl">
+      {/* Section Toggle & Chart View Toggle - Responsive */}
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center justify-between">
+        <div className="flex gap-1.5 bg-gray-100 p-1.5 rounded-xl overflow-x-auto scrollbar-hide">
           <button
             onClick={() => setActiveSection('overview')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ${
               activeSection === 'overview'
                 ? 'bg-white text-violet-700 shadow-md'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
             }`}
           >
-            <PieChartIcon className="w-4 h-4" />
+            <PieChartIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             Overview
           </button>
           <button
             onClick={() => setActiveSection('students')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ${
               activeSection === 'students'
                 ? 'bg-white text-blue-700 shadow-md'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
             }`}
           >
-            <GraduationCap className="w-4 h-4" />
+            <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             Students
-            <span className={`px-2 py-0.5 rounded-full text-xs ${
+            <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-xs ${
               activeSection === 'students' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'
             }`}>{totalStudentAchievements}</span>
           </button>
           <button
             onClick={() => setActiveSection('staff')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ${
               activeSection === 'staff'
                 ? 'bg-white text-emerald-700 shadow-md'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
             }`}
           >
-            <Users className="w-4 h-4" />
+            <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             Staff
-            <span className={`px-2 py-0.5 rounded-full text-xs ${
+            <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-xs ${
               activeSection === 'staff' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'
             }`}>{totalStaffAchievements}</span>
           </button>
         </div>
 
         {(activeSection === 'students' || activeSection === 'staff') && (
-          <div className="flex gap-2 bg-gray-100 p-1.5 rounded-xl">
+          <div className="flex gap-1.5 bg-gray-100 p-1.5 rounded-xl overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setChartView('bar')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
+              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ${
                 chartView === 'bar' ? 'bg-white shadow-md text-violet-700' : 'text-gray-600 hover:bg-white/50'
               }`}
               title="Bar Chart"
             >
-              <BarChart3 className="w-4 h-4" />
+              <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">Bar</span>
             </button>
             <button
               onClick={() => setChartView('horizontal')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
+              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ${
                 chartView === 'horizontal' ? 'bg-white shadow-md text-violet-700' : 'text-gray-600 hover:bg-white/50'
               }`}
               title="Horizontal Bar"
             >
-              <BarChart3 className="w-4 h-4 rotate-90" />
+              <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 rotate-90" />
+              <span className="hidden xs:inline">Horizontal</span>
             </button>
             <button
               onClick={() => setChartView('donut')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
+              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ${
                 chartView === 'donut' ? 'bg-white shadow-md text-violet-700' : 'text-gray-600 hover:bg-white/50'
               }`}
               title="Donut Chart"
             >
-              <PieChartIcon className="w-4 h-4" />
+              <PieChartIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">Donut</span>
             </button>
           </div>
         )}
       </div>
 
-      {/* ==================== OVERVIEW SECTION ==================== */}
+      {/* ==================== OVERVIEW SECTION - Responsive ==================== */}
       {activeSection === 'overview' && (
-        <div className="space-y-6">
-          {/* Charts Row 1: Status Distribution Donuts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Student Status Donut */}
+        <div className="space-y-4 lg:space-y-6">
+          {/* Charts Row 1: Status Distribution Donuts - Responsive */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6">
+            {/* Student Status Donut - Responsive */}
             <Card className="border-0 shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4">
-                <h3 className="font-semibold text-white flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5" /> Student Achievement Status
+              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-3 sm:p-4">
+                <h3 className="font-semibold text-white flex items-center gap-2 text-sm sm:text-base">
+                  <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5" /> Student Achievement Status
                 </h3>
               </div>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-center gap-8">
-                  {/* Donut Chart CSS */}
-                  <div className="relative w-40 h-40">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 lg:gap-8">
+                  {/* Donut Chart CSS - Responsive Size */}
+                  <div className="relative w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0">
                     <svg viewBox="0 0 100 100" className="transform -rotate-90">
                       <circle cx="50" cy="50" r="40" fill="none" stroke="#E5E7EB" strokeWidth="12" />
                       {totalStudentAchievements > 0 && (
@@ -5444,42 +5454,42 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-gray-800">{totalStudentAchievements}</p>
+                        <p className="text-xl sm:text-2xl font-bold text-gray-800">{totalStudentAchievements}</p>
                         <p className="text-xs text-gray-500">Total</p>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Legend */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 rounded-full bg-green-500" />
-                      <span className="text-sm text-gray-600">Approved</span>
-                      <span className="ml-auto font-bold text-green-600">{studentStatusBreakdown.approved}</span>
+                  {/* Legend - Responsive */}
+                  <div className="space-y-2 sm:space-y-3 w-full sm:w-auto">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-green-500 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm text-gray-600">Approved</span>
+                      <span className="ml-auto font-bold text-green-600 text-sm">{studentStatusBreakdown.approved}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 rounded-full bg-amber-500" />
-                      <span className="text-sm text-gray-600">Pending</span>
-                      <span className="ml-auto font-bold text-amber-600">{studentStatusBreakdown.pending}</span>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-amber-500 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm text-gray-600">Pending</span>
+                      <span className="ml-auto font-bold text-amber-600 text-sm">{studentStatusBreakdown.pending}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 rounded-full bg-red-500" />
-                      <span className="text-sm text-gray-600">Rejected</span>
-                      <span className="ml-auto font-bold text-red-600">{studentStatusBreakdown.rejected}</span>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-red-500 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm text-gray-600">Rejected</span>
+                      <span className="ml-auto font-bold text-red-600 text-sm">{studentStatusBreakdown.rejected}</span>
                     </div>
                   </div>
                 </div>
                 
                 {/* Progress Bars */}
-                <div className="mt-6 space-y-3">
+                <div className="mt-4 sm:mt-6 space-y-2 sm:space-y-3">
                   <div>
-                    <div className="flex justify-between text-sm mb-1">
+                    <div className="flex justify-between text-xs sm:text-sm mb-1">
                       <span className="text-gray-600">Approval Rate</span>
                       <span className="font-semibold text-green-600">
                         {totalStudentAchievements > 0 ? Math.round((studentStatusBreakdown.approved / totalStudentAchievements) * 100) : 0}%
                       </span>
                     </div>
-                    <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-2 sm:h-2.5 bg-gray-200 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all duration-1000"
                         style={{ width: `${totalStudentAchievements > 0 ? (studentStatusBreakdown.approved / totalStudentAchievements) * 100 : 0}%` }}
@@ -5490,17 +5500,17 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
               </CardContent>
             </Card>
 
-            {/* Staff Status Donut */}
+            {/* Staff Status Donut - Responsive */}
             <Card className="border-0 shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-emerald-500 to-teal-600 p-4">
-                <h3 className="font-semibold text-white flex items-center gap-2">
-                  <Users className="w-5 h-5" /> Staff Achievement Status
+              <div className="bg-gradient-to-r from-emerald-500 to-teal-600 p-3 sm:p-4">
+                <h3 className="font-semibold text-white flex items-center gap-2 text-sm sm:text-base">
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5" /> Staff Achievement Status
                 </h3>
               </div>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-center gap-8">
-                  {/* Donut Chart CSS */}
-                  <div className="relative w-40 h-40">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 lg:gap-8">
+                  {/* Donut Chart CSS - Responsive Size */}
+                  <div className="relative w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0">
                     <svg viewBox="0 0 100 100" className="transform -rotate-90">
                       <circle cx="50" cy="50" r="40" fill="none" stroke="#E5E7EB" strokeWidth="12" />
                       {totalStaffAchievements > 0 && (
@@ -5531,42 +5541,42 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-gray-800">{totalStaffAchievements}</p>
+                        <p className="text-xl sm:text-2xl font-bold text-gray-800">{totalStaffAchievements}</p>
                         <p className="text-xs text-gray-500">Total</p>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Legend */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 rounded-full bg-green-500" />
-                      <span className="text-sm text-gray-600">Approved</span>
-                      <span className="ml-auto font-bold text-green-600">{staffStatusBreakdown.approved}</span>
+                  {/* Legend - Responsive */}
+                  <div className="space-y-2 sm:space-y-3 w-full sm:w-auto">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-green-500 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm text-gray-600">Approved</span>
+                      <span className="ml-auto font-bold text-green-600 text-sm">{staffStatusBreakdown.approved}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 rounded-full bg-amber-500" />
-                      <span className="text-sm text-gray-600">Pending</span>
-                      <span className="ml-auto font-bold text-amber-600">{staffStatusBreakdown.pending}</span>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-amber-500 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm text-gray-600">Pending</span>
+                      <span className="ml-auto font-bold text-amber-600 text-sm">{staffStatusBreakdown.pending}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 rounded-full bg-red-500" />
-                      <span className="text-sm text-gray-600">Rejected</span>
-                      <span className="ml-auto font-bold text-red-600">{staffStatusBreakdown.rejected}</span>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-red-500 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm text-gray-600">Rejected</span>
+                      <span className="ml-auto font-bold text-red-600 text-sm">{staffStatusBreakdown.rejected}</span>
                     </div>
                   </div>
                 </div>
                 
                 {/* Progress Bars */}
-                <div className="mt-6 space-y-3">
+                <div className="mt-4 sm:mt-6 space-y-2 sm:space-y-3">
                   <div>
-                    <div className="flex justify-between text-sm mb-1">
+                    <div className="flex justify-between text-xs sm:text-sm mb-1">
                       <span className="text-gray-600">Approval Rate</span>
                       <span className="font-semibold text-green-600">
                         {totalStaffAchievements > 0 ? Math.round((staffStatusBreakdown.approved / totalStaffAchievements) * 100) : 0}%
                       </span>
                     </div>
-                    <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-2 sm:h-2.5 bg-gray-200 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all duration-1000"
                         style={{ width: `${totalStaffAchievements > 0 ? (staffStatusBreakdown.approved / totalStaffAchievements) * 100 : 0}%` }}
@@ -5734,11 +5744,11 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
         </div>
       )}
 
-      {/* ==================== STUDENT ANALYTICS SECTION WITH CHARTS ==================== */}
+      {/* ==================== STUDENT ANALYTICS SECTION WITH CHARTS - Responsive ==================== */}
       {activeSection === 'students' && (
-        <div className="space-y-6">
-          {/* Status Cards Row */}
-          <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-4 lg:space-y-6">
+          {/* Status Cards Row - Responsive */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
             <Card className="border-0 shadow-md overflow-hidden">
               <div className="h-1 bg-green-500" />
               <CardContent className="p-4 flex items-center gap-4">
@@ -5988,11 +5998,11 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
         </div>
       )}
 
-      {/* ==================== STAFF ANALYTICS SECTION WITH CHARTS ==================== */}
+      {/* ==================== STAFF ANALYTICS SECTION WITH CHARTS - Responsive ==================== */}
       {activeSection === 'staff' && (
-        <div className="space-y-6">
-          {/* Status Cards Row */}
-          <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-4 lg:space-y-6">
+          {/* Status Cards Row - Responsive */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
             <Card className="border-0 shadow-md overflow-hidden">
               <div className="h-1 bg-green-500" />
               <CardContent className="p-4 flex items-center gap-4">
