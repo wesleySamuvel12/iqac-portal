@@ -5130,6 +5130,578 @@ function ApprovalsPage() {
 }
 
 // ============ ANALYTICS PAGE ============
+// ============ HOD DEPARTMENT ANALYTICS PAGE ============
+function HODDepartmentAnalyticsPage({ user }: { user: User }) {
+  const [studentAchievements, setStudentAchievements] = useState<any[]>([])
+  const [staffAchievements, setStaffAchievements] = useState<any[]>([])
+  const [expandedStudentType, setExpandedStudentType] = useState<string | null>(null)
+  const [expandedStaffType, setExpandedStaffType] = useState<string | null>(null)
+  const [activeSection, setActiveSection] = useState<'students' | 'staff'>('students')
+
+  // Load achievements from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedStudent = localStorage.getItem('student_achievements')
+      if (savedStudent) {
+        const parsed = JSON.parse(savedStudent)
+        // Filter for current department only
+        const deptStudent = parsed.filter((a: any) => a.dept === user.departmentName || a.department === user.departmentName)
+        setStudentAchievements(deptStudent)
+      }
+      
+      const savedStaff = localStorage.getItem('staff_achievements')
+      if (savedStaff) {
+        const parsed = JSON.parse(savedStaff)
+        // Filter for current department only
+        const deptStaff = parsed.filter((a: any) => a.dept === user.departmentName || a.department === user.departmentName)
+        setStaffAchievements(deptStaff)
+      }
+    } catch (e) {
+      console.error('Failed to parse achievements:', e)
+    }
+  }, [user.departmentName])
+
+  // Student achievement counts by type
+  const getStudentTypeCount = (typeKey: string) => {
+    return studentAchievements.filter(a => a.type === typeKey).length
+  }
+
+  // Staff achievement counts by type
+  const getStaffTypeCount = (typeKey: string) => {
+    return staffAchievements.filter(a => a.type === typeKey).length
+  }
+
+  // Get achievements for a specific type
+  const getStudentAchievementsByType = (typeKey: string) => {
+    return studentAchievements.filter(a => a.type === typeKey)
+  }
+
+  const getStaffAchievementsByType = (typeKey: string) => {
+    return staffAchievements.filter(a => a.type === typeKey)
+  }
+
+  // Calculate totals
+  const totalStudentAchievements = studentAchievements.length
+  const totalStaffAchievements = staffAchievements.length
+  const totalTypesWithStudentData = Object.keys(ACHIEVEMENT_TYPES).filter(k => getStudentTypeCount(k) > 0).length
+  const totalTypesWithStaffData = Object.keys(STAFF_ACHIEVEMENT_TYPES).filter(k => getStaffTypeCount(k) > 0).length
+
+  // Status breakdown
+  const studentStatusBreakdown = {
+    approved: studentAchievements.filter(a => a.status?.includes('approved')).length,
+    pending: studentAchievements.filter(a => a.status?.includes('pending')).length,
+    rejected: studentAchievements.filter(a => a.status?.includes('rejected')).length,
+  }
+  
+  const staffStatusBreakdown = {
+    approved: staffAchievements.filter(a => a.status?.includes('approved')).length,
+    pending: staffAchievements.filter(a => a.status?.includes('pending')).length,
+    rejected: staffAchievements.filter(a => a.status?.includes('rejected')).length,
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 rounded-2xl p-8 text-white">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold mb-2">Department Analytics</h2>
+            <p className="text-violet-100">{user.departmentName} • Achievement Analysis & Reports</p>
+          </div>
+          <Badge className="bg-white/20 text-white border-white/30 px-4 py-2">
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Department-Specific View
+          </Badge>
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-l-4 border-l-blue-500 bg-blue-50/50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <GraduationCap className="w-8 h-8 text-blue-500" />
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{totalStudentAchievements}</p>
+                <p className="text-xs text-gray-500">Student Records</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-emerald-500 bg-emerald-50/50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Users className="w-8 h-8 text-emerald-500" />
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{totalStaffAchievements}</p>
+                <p className="text-xs text-gray-500">Staff Records</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-amber-500 bg-amber-50/50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Clock className="w-8 h-8 text-amber-500" />
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{studentStatusBreakdown.pending + staffStatusBreakdown.pending}</p>
+                <p className="text-xs text-gray-500">Pending Review</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-green-500 bg-green-50/50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-8 h-8 text-green-500" />
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{studentStatusBreakdown.approved + staffStatusBreakdown.approved}</p>
+                <p className="text-xs text-gray-500">Approved</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Section Toggle */}
+      <div className="flex gap-2 bg-gray-100 p-1 rounded-xl w-fit">
+        <button
+          onClick={() => setActiveSection('students')}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
+            activeSection === 'students'
+              ? 'bg-white text-blue-700 shadow-md'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+          }`}
+        >
+          <GraduationCap className="w-4 h-4" />
+          Student Analytics
+          <span className={`px-2 py-0.5 rounded-full text-xs ${
+            activeSection === 'students' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'
+          }`}>
+            {totalStudentAchievements}
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveSection('staff')}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
+            activeSection === 'staff'
+              ? 'bg-white text-emerald-700 shadow-md'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          Staff Analytics
+          <span className={`px-2 py-0.5 rounded-full text-xs ${
+            activeSection === 'staff' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'
+          }`}>
+            {totalStaffAchievements}
+          </span>
+        </button>
+      </div>
+
+      {/* STUDENT ANALYTICS SECTION */}
+      {activeSection === 'students' && (
+        <div className="space-y-6">
+          {/* Status Overview */}
+          <div className="grid grid-cols-3 gap-4">
+            <Card className="p-4 bg-green-50 border-green-200">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="w-8 h-8 text-green-600" />
+                <div>
+                  <p className="text-2xl font-bold text-green-700">{studentStatusBreakdown.approved}</p>
+                  <p className="text-xs text-green-600">Approved</p>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-4 bg-amber-50 border-amber-200">
+              <div className="flex items-center gap-3">
+                <Clock className="w-8 h-8 text-amber-600" />
+                <div>
+                  <p className="text-2xl font-bold text-amber-700">{studentStatusBreakdown.pending}</p>
+                  <p className="text-xs text-amber-600">Pending</p>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-4 bg-red-50 border-red-200">
+              <div className="flex items-center gap-3">
+                <XCircle className="w-8 h-8 text-red-600" />
+                <div>
+                  <p className="text-2xl font-bold text-red-700">{studentStatusBreakdown.rejected}</p>
+                  <p className="text-xs text-red-600">Rejected</p>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Student Achievement Types - Expandable List */}
+          <Card className="border border-gray-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-blue-500" /> 
+                Student Achievement Types ({Object.keys(ACHIEVEMENT_TYPES).length} Types Available)
+              </CardTitle>
+              <p className="text-sm text-gray-500">Click on any type to view individual submissions</p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                {Object.entries(ACHIEVEMENT_TYPES).map(([key, type]) => {
+                  const count = getStudentTypeCount(key)
+                  const Icon = type.icon
+                  const isExpanded = expandedStudentType === key
+                  const achievementsForType = getStudentAchievementsByType(key)
+
+                  return (
+                    <div key={key} className="border border-gray-200 rounded-xl overflow-hidden bg-white hover:shadow-md transition-shadow">
+                      {/* Type Header - Clickable */}
+                      <button
+                        onClick={() => setExpandedStudentType(isExpanded ? null : key)}
+                        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors text-left"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${type.color} flex items-center justify-center`}>
+                            <Icon className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-800 text-sm">{type.label}</p>
+                            <p className="text-xs text-gray-500">{count} submission{count !== 1 ? 's' : ''}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {count > 0 && (
+                            <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-bold">
+                              {count}
+                            </span>
+                          )}
+                          <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                        </div>
+                      </button>
+
+                      {/* Expanded Content - Individual Achievements */}
+                      {isExpanded && (
+                        <div className="border-t border-gray-200 bg-gray-50 p-4 max-h-[400px] overflow-y-auto">
+                          {achievementsForType.length > 0 ? (
+                            <div className="space-y-3">
+                              <p className="text-sm font-medium text-gray-600 mb-3">
+                                {count} {type.label}{count !== 1 ? 's' : ''} submitted
+                              </p>
+                              {achievementsForType.map((achievement, idx) => (
+                                <div key={idx} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div className="flex-1">
+                                      <p className="font-semibold text-gray-800 text-sm">
+                                        {achievement.data?.name || achievement.studentName || 'Unknown Student'}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        Reg: {achievement.data?.reg || achievement.regNo || 'N/A'} • 
+                                        Year: {achievement.data?.year || achievement.year || 'N/A'}
+                                      </p>
+                                    </div>
+                                    <Badge className={
+                                      achievement.status?.includes('approved') ? 'bg-green-100 text-green-700' :
+                                      achievement.status?.includes('pending') ? 'bg-amber-100 text-amber-700' :
+                                      'bg-gray-100 text-gray-600'
+                                    }>
+                                      {achievement.status?.replace('_', ' ') || 'Pending'}
+                                    </Badge>
+                                  </div>
+                                  {/* Key Details based on type */}
+                                  <div className="mt-2 space-y-1">
+                                    {key === 'journal' && (
+                                      <>
+                                        <p className="text-xs text-gray-600"><strong>Paper:</strong> {achievement.data?.title || 'N/A'}</p>
+                                        <p className="text-xs text-gray-600"><strong>Journal:</strong> {achievement.data?.journal || 'N/A'}</p>
+                                      </>
+                                    )}
+                                    {key === 'conference' && (
+                                      <>
+                                        <p className="text-xs text-gray-600"><strong>Paper:</strong> {achievement.data?.title || 'N/A'}</p>
+                                        <p className="text-xs text-gray-600"><strong>Conference:</strong> {achievement.data?.conf || 'N/A'}</p>
+                                      </>
+                                    )}
+                                    {key === 'patent' && (
+                                      <>
+                                        <p className="text-xs text-gray-600"><strong>Invention:</strong> {achievement.data?.title || 'N/A'}</p>
+                                        <p className="text-xs text-gray-600"><strong>Status:</strong> {achievement.data?.status_pub || 'N/A'}</p>
+                                      </>
+                                    )}
+                                    {key === 'nptel' && (
+                                      <>
+                                        <p className="text-xs text-gray-600"><strong>Course:</strong> {achievement.data?.course || 'N/A'}</p>
+                                        <p className="text-xs text-gray-600"><strong>Grade:</strong> {achievement.data?.grade || 'N/A'}</p>
+                                      </>
+                                    )}
+                                    {key === 'seminar' && (
+                                      <>
+                                        <p className="text-xs text-gray-600"><strong>Event:</strong> {achievement.data?.title || 'N/A'}</p>
+                                        <p className="text-xs text-gray-600"><strong>Type:</strong> {achievement.data?.type_sem || 'N/A'}</p>
+                                      </>
+                                    )}
+                                    {key === 'internship' && (
+                                      <>
+                                        <p className="text-xs text-gray-600"><strong>Company:</strong> {achievement.data?.org_name || 'N/A'}</p>
+                                        <p className="text-xs text-gray-600"><strong>Role:</strong> {achievement.data?.role || 'N/A'}</p>
+                                      </>
+                                    )}
+                                    {key === 'award' && (
+                                      <>
+                                        <p className="text-xs text-gray-600"><strong>Award:</strong> {achievement.data?.award_name || 'N/A'}</p>
+                                        <p className="text-xs text-gray-600"><strong>Level:</strong> {achievement.data?.level || 'N/A'}</p>
+                                      </>
+                                    )}
+                                    {key === 'placement' && (
+                                      <>
+                                        <p className="text-xs text-gray-600"><strong>Company:</strong> {achievement.data?.company || 'N/A'}</p>
+                                        <p className="text-xs text-gray-600"><strong>Package:</strong> {achievement.data?.package || 'N/A'} LPA</p>
+                                      </>
+                                    )}
+                                    {key === 'hackathon' && (
+                                      <>
+                                        <p className="text-xs text-gray-600"><strong>Title:</strong> {achievement.data?.title || 'N/A'}</p>
+                                        <p className="text-xs text-gray-600"><strong>Stage:</strong> {achievement.data?.stage || 'N/A'}</p>
+                                      </>
+                                    )}
+                                    {key === 'startup' && (
+                                      <>
+                                        <p className="text-xs text-gray-600"><strong>Idea:</strong> {achievement.data?.title || 'N/A'}</p>
+                                        <p className="text-xs text-gray-600"><strong>Stage:</strong> {achievement.data?.stage || 'N/A'}</p>
+                                      </>
+                                    )}
+                                    {!['journal', 'conference', 'patent', 'nptel', 'seminar', 'internship', 'award', 'placement', 'hackathon', 'startup'].includes(key) && (
+                                      <p className="text-xs text-gray-600">
+                                        <strong>Title:</strong> {achievement.data?.title || achievement.data?.event_name || achievement.data?.award_name || achievement.data?.prog_name || 'N/A'}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-400 mt-2">
+                                    Submitted: {achievement.submittedAt ? new Date(achievement.submittedAt).toLocaleDateString() : 'N/A'}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8">
+                              <Icon className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                              <p className="text-gray-500 font-medium">No submissions yet</p>
+                              <p className="text-sm text-gray-400 mt-1">Students haven't submitted any {type.label.toLowerCase()} records</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              
+              {/* Empty State */}
+              {totalStudentAchievements === 0 && (
+                <div className="text-center py-12">
+                  <GraduationCap className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                  <p className="text-gray-500 font-medium text-lg">No student achievements yet</p>
+                  <p className="text-sm text-gray-400 mt-2">When students submit achievements, they will appear here</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* STAFF ANALYTICS SECTION */}
+      {activeSection === 'staff' && (
+        <div className="space-y-6">
+          {/* Status Overview */}
+          <div className="grid grid-cols-3 gap-4">
+            <Card className="p-4 bg-green-50 border-green-200">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="w-8 h-8 text-green-600" />
+                <div>
+                  <p className="text-2xl font-bold text-green-700">{staffStatusBreakdown.approved}</p>
+                  <p className="text-xs text-green-600">Approved</p>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-4 bg-amber-50 border-amber-200">
+              <div className="flex items-center gap-3">
+                <Clock className="w-8 h-8 text-amber-600" />
+                <div>
+                  <p className="text-2xl font-bold text-amber-700">{staffStatusBreakdown.pending}</p>
+                  <p className="text-xs text-amber-600">Pending</p>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-4 bg-red-50 border-red-200">
+              <div className="flex items-center gap-3">
+                <XCircle className="w-8 h-8 text-red-600" />
+                <div>
+                  <p className="text-2xl font-bold text-red-700">{staffStatusBreakdown.rejected}</p>
+                  <p className="text-xs text-red-600">Rejected</p>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Staff Achievement Types - Expandable List */}
+          <Card className="border border-gray-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-emerald-500" /> 
+                Staff Achievement Types ({Object.keys(STAFF_ACHIEVEMENT_TYPES).length} Types Available)
+              </CardTitle>
+              <p className="text-sm text-gray-500">Click on any type to view individual submissions</p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                {Object.entries(STAFF_ACHIEVEMENT_TYPES).map(([key, type]) => {
+                  const count = getStaffTypeCount(key)
+                  const Icon = type.icon
+                  const isExpanded = expandedStaffType === key
+                  const achievementsForType = getStaffAchievementsByType(key)
+
+                  return (
+                    <div key={key} className="border border-gray-200 rounded-xl overflow-hidden bg-white hover:shadow-md transition-shadow">
+                      {/* Type Header - Clickable */}
+                      <button
+                        onClick={() => setExpandedStaffType(isExpanded ? null : key)}
+                        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors text-left"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${type.color} flex items-center justify-center`}>
+                            <Icon className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-800 text-sm">{type.label}</p>
+                            <p className="text-xs text-gray-500">{count} submission{count !== 1 ? 's' : ''}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {count > 0 && (
+                            <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-sm font-bold">
+                              {count}
+                            </span>
+                          )}
+                          <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                        </div>
+                      </button>
+
+                      {/* Expanded Content - Individual Achievements */}
+                      {isExpanded && (
+                        <div className="border-t border-gray-200 bg-gray-50 p-4 max-h-[400px] overflow-y-auto">
+                          {achievementsForType.length > 0 ? (
+                            <div className="space-y-3">
+                              <p className="text-sm font-medium text-gray-600 mb-3">
+                                {count} {type.label}{count !== 1 ? 's' : ''} submitted
+                              </p>
+                              {achievementsForType.map((achievement, idx) => (
+                                <div key={idx} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div className="flex-1">
+                                      <p className="font-semibold text-gray-800 text-sm">
+                                        {achievement.data?.faculty_name || achievement.submittedBy || 'Unknown Faculty'}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        Designation: {achievement.data?.designation || 'N/A'}
+                                      </p>
+                                    </div>
+                                    <Badge className={
+                                      achievement.status?.includes('approved') ? 'bg-green-100 text-green-700' :
+                                      achievement.status?.includes('pending') ? 'bg-amber-100 text-amber-700' :
+                                      'bg-gray-100 text-gray-600'
+                                    }>
+                                      {achievement.status?.replace('_', ' ') || 'Pending'}
+                                    </Badge>
+                                  </div>
+                                  {/* Key Details based on type */}
+                                  <div className="mt-2 space-y-1">
+                                    {key === 'industry_interaction' && (
+                                      <>
+                                        <p className="text-xs text-gray-600"><strong>Company:</strong> {achievement.data?.company_name || 'N/A'}</p>
+                                        <p className="text-xs text-gray-600"><strong>Nature:</strong> {achievement.data?.nature || 'N/A'}</p>
+                                      </>
+                                    )}
+                                    {key === 'award_record' && (
+                                      <>
+                                        <p className="text-xs text-gray-600"><strong>Award:</strong> {achievement.data?.award_name || 'N/A'}</p>
+                                        <p className="text-xs text-gray-600"><strong>Level:</strong> {achievement.data?.level || 'N/A'}</p>
+                                      </>
+                                    )}
+                                    {key === 'event_organized' && (
+                                      <>
+                                        <p className="text-xs text-gray-600"><strong>Event:</strong> {achievement.data?.event_title || 'N/A'}</p>
+                                        <p className="text-xs text-gray-600"><strong>Type:</strong> {achievement.data?.event_type || 'N/A'}</p>
+                                      </>
+                                    )}
+                                    {key === 'fdp_sttp' && (
+                                      <>
+                                        <p className="text-xs text-gray-600"><strong>Course:</strong> {achievement.data?.course_name || 'N/A'}</p>
+                                        <p className="text-xs text-gray-600"><strong>Platform:</strong> {achievement.data?.platform || 'N/A'}</p>
+                                      </>
+                                    )}
+                                    {key === 'grant' && (
+                                      <>
+                                        <p className="text-xs text-gray-600"><strong>Project:</strong> {achievement.data?.project_title || 'N/A'}</p>
+                                        <p className="text-xs text-gray-600"><strong>Amount:</strong> ₹{achievement.data?.amount || 'N/A'}</p>
+                                      </>
+                                    )}
+                                    {key === 'publication' && (
+                                      <>
+                                        <p className="text-xs text-gray-600"><strong>Paper:</strong> {achievement.data?.paper_title || 'N/A'}</p>
+                                        <p className="text-xs text-gray-600"><strong>Conference:</strong> {achievement.data?.conference_name || 'N/A'}</p>
+                                      </>
+                                    )}
+                                    {key === 'chapter' && (
+                                      <>
+                                        <p className="text-xs text-gray-600"><strong>Chapter:</strong> {achievement.data?.chapter_title || 'N/A'}</p>
+                                        <p className="text-xs text-gray-600"><strong>Book:</strong> {achievement.data?.book_name || 'N/A'}</p>
+                                      </>
+                                    )}
+                                    {key === 'resource_person' && (
+                                      <>
+                                        <p className="text-xs text-gray-600"><strong>Event:</strong> {achievement.data?.event_title || 'N/A'}</p>
+                                        <p className="text-xs text-gray-600"><strong>Type:</strong> {achievement.data?.event_type || 'N/A'}</p>
+                                      </>
+                                    )}
+                                    {!['industry_interaction', 'award_record', 'event_organized', 'fdp_sttp', 'grant', 'publication', 'chapter', 'resource_person'].includes(key) && (
+                                      <p className="text-xs text-gray-600">
+                                        Type: {type.label}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-400 mt-2">
+                                    Submitted: {achievement.submittedAt ? new Date(achievement.submittedAt).toLocaleDateString() : 'N/A'}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8">
+                              <Icon className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                              <p className="text-gray-500 font-medium">No submissions yet</p>
+                              <p className="text-sm text-gray-400 mt-1">Faculty members haven't submitted any {type.label.toLowerCase()} records</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              
+              {/* Empty State */}
+              {totalStaffAchievements === 0 && (
+                <div className="text-center py-12">
+                  <Users className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                  <p className="text-gray-500 font-medium text-lg">No staff achievements yet</p>
+                  <p className="text-sm text-gray-400 mt-2">When faculty submit achievements, they will appear here</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ============ ANALYTICS PAGE (Admin/General) ============
 function AnalyticsPage() {
   return (
     <div className="space-y-6">
@@ -9369,7 +9941,7 @@ export default function IQACPortal() {
       case 'activities': return <ActivitiesPage />
       case 'research': return <ResearchPage />
       case 'approvals': return <ApprovalsPage />
-      case 'analytics': return <AnalyticsPage />
+      case 'analytics': return user?.role === 'HOD' ? <HODDepartmentAnalyticsPage user={user} /> : <AnalyticsPage />
       case 'documents': return <DocumentsPage />
       case 'settings': return <SettingsPage user={user} />
       case 'achievements': return user?.role === 'STUDENT' 
