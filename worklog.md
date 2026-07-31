@@ -124,3 +124,52 @@ Stage Summary:
   - Staff tab: Shows existing faculty with edit/delete actions
   - Batches tab: Shows create form and expandable batch cards
 - Demo credentials for HOD: hod_cse@niet.ac.in / hod123
+
+---
+Task ID: 4
+Agent: Main Developer (Z.ai Code)
+Task: Add Bulk Import functionality for Students and Staff in HOD Management Portal
+
+Work Log:
+- Created /api/students/bulk-import/route.ts - POST endpoint for bulk student import
+  - Accepts CSV file upload via FormData
+  - Parses CSV with flexible column mapping (registerNumber, name, email, phone, semester, section, cgpa, admissionYear)
+  - Handles quoted CSV values properly
+  - Validates for duplicate register numbers
+  - Creates both User and Student records
+  - Returns detailed results (created, skipped, failed counts with error reasons)
+- Created /api/faculty/bulk-import/route.ts - POST endpoint for bulk staff import
+  - Similar CSV parsing and validation
+  - Flexible column mapping (employeeId, name, email, phone, designation, qualification, specialization, experience, researchArea, isHOD)
+  - Creates both User and Faculty records
+  - Supports isHOD flag from CSV (true/yes/1/hod)
+  - Returns detailed import results
+- Updated StudentManagementSection component:
+  - Added state variables: showImportModal, importing, importResults, importFile, importBatchId
+  - Added handleImport function to call API and process results
+  - Added closeImportModal to reset state
+  - Added downloadSampleCSV to generate template file
+  - Added "Bulk Import" button in toolbar (blue themed, next to Add Student)
+  - Added comprehensive import modal with:
+    - Drag & drop file upload area
+    - Batch assignment dropdown (optional)
+    - Sample CSV template download button
+    - Import/Cancel buttons with loading state
+    - Results view showing created/skipped/failed counts
+    - Error details table for failed rows
+- Updated StaffManagementSection component similarly:
+  - Added same import state and functions
+  - Added "Bulk Import" button (purple themed to match staff section)
+  - Added import modal with staff-specific sample CSV template
+- Fixed JSX syntax error (missing closing div tag)
+
+Stage Summary:
+- Bulk Import fully implemented for both Students and Staff
+- CSV upload with drag & drop interface
+- Flexible column mapping supports various column name formats
+- Sample CSV templates available for download
+- Import results show success/failure counts with error details
+- Duplicate detection prevents re-importing existing records
+- Browser testing confirmed both import modals working correctly
+- Supported CSV columns for students: registerNumber, name, email, phone, semester, section, cgpa, admissionYear
+- Supported CSV columns for staff: employeeId, name, email, phone, designation, qualification, specialization, experience, researchArea, isHOD

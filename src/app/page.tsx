@@ -6512,6 +6512,11 @@ function StudentManagementSection({
   const [batches, setBatches] = useState<any[]>([])
   const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 0 })
   const [selectedBatch, setSelectedBatch] = useState<string>('')
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importResults, setImportResults] = useState<any>(null)
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importBatchId, setImportBatchId] = useState<string>('')
   const [formData, setFormData] = useState({
     registerNumber: '',
     name: '',
@@ -6642,6 +6647,56 @@ function StudentManagementSection({
     }
   }
 
+  const handleImport = async () => {
+    if (!importFile) return
+    setImporting(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', importFile)
+      formData.append('departmentId', user.departmentId || '')
+      if (importBatchId) formData.append('batchId', importBatchId)
+
+      const res = await fetch('/api/students/bulk-import', {
+        method: 'POST',
+        body: formData,
+      })
+      const data = await res.json()
+      
+      if (data.success) {
+        setImportResults(data.results)
+        fetchStudents()
+      }
+    } catch (error) {
+      console.error('Error importing students:', error)
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  const closeImportModal = () => {
+    setShowImportModal(false)
+    setImportResults(null)
+    setImportFile(null)
+    setImportBatchId('')
+  }
+
+  // Generate sample CSV for download
+  const downloadSampleCSV = () => {
+    const csvContent = `registerNumber,name,email,phone,semester,section,cgpa,admissionYear
+2024CS001,John Smith,john@niet.edu,9876543210,1,A,8.5,2024
+2024CS002,Jane Doe,jane@niet.edu,9876543211,1,A,9.0,2024
+2024CS03,Bob Wilson,bob@niet.edu,9876543212,1,B,8.0,2024`
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'students_sample.csv'
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+  }
+
   return (
     <div className="space-y-4">
       {/* Toolbar */}
@@ -6667,9 +6722,14 @@ function StudentManagementSection({
             ))}
           </select>
         </div>
-        <Button onClick={openCreateForm} className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700">
-          <Plus className="w-4 h-4 mr-2" /> Add Student
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowImportModal(true)} variant="outline" className="border-blue-300 text-blue-600 hover:bg-blue-50">
+            <Upload className="w-4 h-4 mr-2" /> Bulk Import
+          </Button>
+          <Button onClick={openCreateForm} className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700">
+            <Plus className="w-4 h-4 mr-2" /> Add Student
+          </Button>
+        </div>
       </div>
 
       {/* Form Modal */}
@@ -6757,6 +6817,127 @@ function StudentManagementSection({
                 </Button>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Bulk Import Modal */}
+      {showImportModal && (
+        <Card className="border-2 border-blue-200 shadow-lg">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Upload className="w-5 h-5 text-blue-600" />
+                {importResults ? 'Import Results' : 'Bulk Import Students'}
+              </CardTitle>
+              <Button variant="ghost" size="sm" onClick={closeImportModal}>
+                <XCircle className="w-5 h-5" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {!importResults ? (
+              <div className="space-y-4">
+                {/* File Upload */}
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors">
+                  <input
+                    type="file"
+                    accept=".csv,.xlsx,.xls"
+                    onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                    className="hidden"
+                    id="student-import-file"
+                  />
+                  <label htmlFor="student-import-file" className="cursor-pointer">
+                    <Upload className="w-10 h-10 mx-auto text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
+                    <p className="text-xs text-gray-400 mt-1">CSV files only</p>
+                  </label>
+                  {importFile && (
+                    <p className="text-sm text-green-600 mt-2 font-medium">✓ {importFile.name}</p>
+                  )}
+                </div>
+
+                {/* Batch Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Assign to Batch (Optional)</label>
+                  <select
+                    value={importBatchId}
+                    onChange={(e) => setImportBatchId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                  >
+                    <option value="">No Batch</option>
+                    {batches.map((b: any) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Sample Download */}
+                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium text-blue-800">Need a template?</p>
+                    <p className="text-xs text-blue-600">Download sample CSV format</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={downloadSampleCSV} className="text-blue-600 border-blue-300 hover:bg-blue-100">
+                    <Download className="w-4 h-4 mr-1" /> Download Template
+                  </Button>
+                </div>
+
+                {/* Import Button */}
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" onClick={closeImportModal}>Cancel</Button>
+                  <Button onClick={handleImport} disabled={!importFile || importing} className="bg-gradient-to-r from-blue-500 to-blue-600">
+                    {importing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    {importing ? 'Importing...' : 'Import Students'}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              /* Results View */
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-green-50 rounded-lg p-3 text-center">
+                    <p className="text-2xl font-bold text-green-600">{importResults.created}</p>
+                    <p className="text-xs text-green-700">Created</p>
+                  </div>
+                  <div className="bg-yellow-50 rounded-lg p-3 text-center">
+                    <p className="text-2xl font-bold text-yellow-600">{importResults.skipped}</p>
+                    <p className="text-xs text-yellow-700">Skipped</p>
+                  </div>
+                  <div className="bg-red-50 rounded-lg p-3 text-center">
+                    <p className="text-2xl font-bold text-red-600">{importResults.failed}</p>
+                    <p className="text-xs text-red-700">Failed</p>
+                  </div>
+                </div>
+
+                {importResults.errors.length > 0 && (
+                  <div className="max-h-48 overflow-y-auto border rounded-lg">
+                    <table className="w-full text-sm">
+                      <thead className="bg-red-50 sticky top-0">
+                        <tr>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-red-700">Row</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-red-700">ID</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-red-700">Reason</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-red-100">
+                        {importResults.errors.map((err: any, idx: number) => (
+                          <tr key={idx} className="text-red-600">
+                            <td className="px-3 py-1.5">{err.row}</td>
+                            <td className="px-3 py-1.5 font-mono">{err.registerNumber || err.employeeId}</td>
+                            <td className="px-3 py-1.5">{err.reason}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button onClick={closeImportModal} className="bg-gradient-to-r from-blue-500 to-blue-600">Done</Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -6876,6 +7057,10 @@ function StaffManagementSection({
 }) {
   const [staff, setStaff] = useState<any[]>([])
   const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 0 })
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importResults, setImportResults] = useState<any>(null)
+  const [importFile, setImportFile] = useState<File | null>(null)
   const [formData, setFormData] = useState({
     employeeId: '',
     name: '',
@@ -6997,6 +7182,54 @@ function StaffManagementSection({
     }
   }
 
+  const handleImport = async () => {
+    if (!importFile) return
+    setImporting(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', importFile)
+      formData.append('departmentId', user.departmentId || '')
+
+      const res = await fetch('/api/faculty/bulk-import', {
+        method: 'POST',
+        body: formData,
+      })
+      const data = await res.json()
+      
+      if (data.success) {
+        setImportResults(data.results)
+        fetchStaff()
+      }
+    } catch (error) {
+      console.error('Error importing staff:', error)
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  const closeImportModal = () => {
+    setShowImportModal(false)
+    setImportResults(null)
+    setImportFile(null)
+  }
+
+  // Generate sample CSV for download
+  const downloadSampleCSV = () => {
+    const csvContent = `employeeId,name,email,phone,designation,qualification,specialization,experience,researchArea,isHOD
+EMP1001,John Smith,john@niet.edu,9876543210,Assistant Professor,M.Tech,Computer Science,5,AI/ML,false
+EMP1002,Jane Doe,jane@niet.edu,9876543211,Senior Lecturer,M.Sc.,Data Science,8,Big Data,false
+EMP1003,Bob Wilson,bob@niet.edu,9876543212,Professor,Ph.D.,Machine Learning,15,Deep Learning,true`
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'staff_sample.csv'
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+  }
+
   return (
     <div className="space-y-4">
       {/* Toolbar */}
@@ -7005,9 +7238,14 @@ function StaffManagementSection({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input placeholder="Search staff..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
         </div>
-        <Button onClick={openCreateForm} className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700">
-          <Plus className="w-4 h-4 mr-2" /> Add Staff
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowImportModal(true)} variant="outline" className="border-purple-300 text-purple-600 hover:bg-purple-50">
+            <Upload className="w-4 h-4 mr-2" /> Bulk Import
+          </Button>
+          <Button onClick={openCreateForm} className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700">
+            <Plus className="w-4 h-4 mr-2" /> Add Staff
+          </Button>
+        </div>
       </div>
 
       {/* Form Modal */}
@@ -7092,6 +7330,112 @@ function StaffManagementSection({
                 </Button>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Bulk Import Modal */}
+      {showImportModal && (
+        <Card className="border-2 border-purple-200 shadow-lg">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Upload className="w-5 h-5 text-purple-600" />
+                {importResults ? 'Import Results' : 'Bulk Import Staff'}
+              </CardTitle>
+              <Button variant="ghost" size="sm" onClick={closeImportModal}>
+                <XCircle className="w-5 h-5" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {!importResults ? (
+              <div className="space-y-4">
+                {/* File Upload */}
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-purple-400 transition-colors">
+                  <input
+                    type="file"
+                    accept=".csv,.xlsx,.xls"
+                    onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                    className="hidden"
+                    id="staff-import-file"
+                  />
+                  <label htmlFor="staff-import-file" className="cursor-pointer">
+                    <Upload className="w-10 h-10 mx-auto text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
+                    <p className="text-xs text-gray-400 mt-1">CSV files only</p>
+                  </label>
+                  {importFile && (
+                    <p className="text-sm text-green-600 mt-2 font-medium">✓ {importFile.name}</p>
+                  )}
+                </div>
+
+                {/* Sample Download */}
+                <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium text-purple-800">Need a template?</p>
+                    <p className="text-xs text-purple-600">Download sample CSV format</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={downloadSampleCSV} className="text-purple-600 border-purple-300 hover:bg-purple-100">
+                    <Download className="w-4 h-4 mr-1" /> Download Template
+                  </Button>
+                </div>
+
+                {/* Import Button */}
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" onClick={closeImportModal}>Cancel</Button>
+                  <Button onClick={handleImport} disabled={!importFile || importing} className="bg-gradient-to-r from-purple-500 to-purple-600">
+                    {importing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    {importing ? 'Importing...' : 'Import Staff'}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              /* Results View */
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-green-50 rounded-lg p-3 text-center">
+                    <p className="text-2xl font-bold text-green-600">{importResults.created}</p>
+                    <p className="text-xs text-green-700">Created</p>
+                  </div>
+                  <div className="bg-yellow-50 rounded-lg p-3 text-center">
+                    <p className="text-2xl font-bold text-yellow-600">{importResults.skipped}</p>
+                    <p className="text-xs text-yellow-700">Skipped</p>
+                  </div>
+                  <div className="bg-red-50 rounded-lg p-3 text-center">
+                    <p className="text-2xl font-bold text-red-600">{importResults.failed}</p>
+                    <p className="text-xs text-red-700">Failed</p>
+                  </div>
+                </div>
+
+                {importResults.errors.length > 0 && (
+                  <div className="max-h-48 overflow-y-auto border rounded-lg">
+                    <table className="w-full text-sm">
+                      <thead className="bg-red-50 sticky top-0">
+                        <tr>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-red-700">Row</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-red-700">ID</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-red-700">Reason</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-red-100">
+                        {importResults.errors.map((err: any, idx: number) => (
+                          <tr key={idx} className="text-red-600">
+                            <td className="px-3 py-1.5">{err.row}</td>
+                            <td className="px-3 py-1.5 font-mono">{err.employeeId || err.registerNumber}</td>
+                            <td className="px-3 py-1.5">{err.reason}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button onClick={closeImportModal} className="bg-gradient-to-r from-purple-500 to-purple-600">Done</Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
