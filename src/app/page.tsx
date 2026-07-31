@@ -10782,9 +10782,10 @@ function AdminAnalyticsPage() {
 // ============ REPORT GENERATOR PAGE ============
 function ReportGeneratorPage() {
   const [generating, setGenerating] = useState(false)
+  const [downloading, setDownloading] = useState(false)
   const [reportData, setReportData] = useState<any>(null)
   const [reportType, setReportType] = useState<'weekly' | 'monthly' | 'yearly'>('monthly')
-  const [format, setFormat] = useState<'json' | 'csv' | 'summary'>('summary')
+  const [format, setFormat] = useState<'json' | 'csv' | 'xlsx' | 'pdf' | 'summary'>('summary')
   const [selectedDept, setSelectedDept] = useState<string>('')
   const [category, setCategory] = useState<string>('all')
   const [departments, setDepartments] = useState<any[]>([])
@@ -10810,38 +10811,120 @@ function ReportGeneratorPage() {
       setGenerating(true)
       const params = new URLSearchParams()
       params.set('type', reportType)
-      params.set('format', format)
-      if (selectedDept) params.set('departmentId', selectedDept)
-      if (category !== 'all') params.set('category', category)
+      
+      if (format === 'summary' || format === 'json') {
+        params.set('format', 'json')
+        if (selectedDept) params.set('departmentId', selectedDept)
+        if (category !== 'all') params.set('category', category)
 
-      if (format === 'csv') {
-        // Download CSV directly
-        window.open(`/api/admin/reports?${params.toString()}`, '_blank')
-        setGenerating(false)
-        return
-      }
-
-      const res = await fetch(`/api/admin/reports?${params.toString()}`)
-      const json = await res.json()
-      if (json.success) {
-        setReportData(json.data)
+        const res = await fetch(`/api/admin/reports?${params.toString()}`)
+        const json = await res.json()
+        if (json.success) {
+          if (format === 'json') {
+            // Download JSON file
+            downloadFile(
+              JSON.stringify(json.data, null, 2),
+              `iqac-report-${reportType}-${new Date().toISOString().split('T')[0]}.json`,
+              'application/json'
+            )
+          } else {
+            setReportData(json.data)
+          }
+        }
+      } else {
+        // For CSV, XLSX, PDF - direct download
+        params.set('format', format)
+        if (selectedDept) params.set('departmentId', selectedDept)
+        if (category !== 'all') params.set('category', category)
+        
+        await downloadReport(`/api/admin/reports?${params.toString()}`, format, reportType)
       }
     } catch (error) {
       console.error('Error generating report:', error)
+      alert('Failed to generate report. Please try again.')
     } finally {
       setGenerating(false)
     }
   }
 
-  const downloadJSON = () => {
-    if (!reportData) return
-    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' })
+  const downloadReport = async (url: string, fmt: string, type: string) => {
+    setDownloading(true)
+    try {
+      const response = await fetch(url)
+      if (!response.ok) throw new Error('Download failed')
+      
+      const blob = await response.blob()
+      const contentDisposition = response.headers.get('Content-Disposition') || ''
+      let filename = `iqac-report-${type}-${new Date().toISOString().split('T')[0]}.${fmt}`
+      
+      // Extract filename from Content-Disposition if available
+      const match = contentDisposition.match(/filename="?([^";]+)"?/)
+      if (match) filename = match[1]
+      
+      downloadFile(blob, filename, blob.type || getMimeType(fmt))
+    } catch (error) {
+      console.error('Download error:', error)
+      alert('Failed to download report. Please try again.')
+    } finally {
+      setDownloading(false)
+    }
+  }
+
+  const downloadFile = (data: Blob | string, filename: string, mimeType: string) => {
+    const blob = typeof data === 'string' ? new Blob([data], { type: mimeType }) : data
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `iqac-report-${reportType}-${new Date().toISOString().split('T')[0]}.json`
+    a.download = filename
+    document.body.appendChild(a)
     a.click()
+    document.body.removeChild(a)
     URL.revokeObjectURL(url)
+  }
+
+  const getMimeType = (fmt: string): string => {
+    switch (fmt) {
+      case 'csv': return 'text/csv'
+      case 'xlsx': return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      case 'pdf': return 'application/pdf'
+      default: return 'application/octet-stream'
+    }
+  }
+
+  const downloadJSON = () => {
+    if (!reportData) return
+    downloadFile(
+      JSON.stringify(reportData, null, 2),
+      `iqac-report-${reportType}-${new Date().toISOString().split('T')[0]}.json`,
+      'application/json'
+    )
+  }
+
+  const downloadCSV = async () => {
+    const params = new URLSearchParams()
+    params.set('type', reportType)
+    params.set('format', 'csv')
+    if (selectedDept) params.set('departmentId', selectedDept)
+    if (category !== 'all') params.set('category', category)
+    await downloadReport(`/api/admin/reports?${params.toString()}`, 'csv', reportType)
+  }
+
+  const downloadExcel = async () => {
+    const params = new URLSearchParams()
+    params.set('type', reportType)
+    params.set('format', 'xlsx')
+    if (selectedDept) params.set('departmentId', selectedDept)
+    if (category !== 'all') params.set('category', category)
+    await downloadReport(`/api/admin/reports?${params.toString()}`, 'xlsx', reportType)
+  }
+
+  const downloadPDF = async () => {
+    const params = new URLSearchParams()
+    params.set('type', reportType)
+    params.set('format', 'pdf')
+    if (selectedDept) params.set('departmentId', selectedDept)
+    if (category !== 'all') params.set('category', category)
+    await downloadReport(`/api/admin/reports?${params.toString()}`, 'pdf', reportType)
   }
 
   return (
@@ -10896,26 +10979,28 @@ function ReportGeneratorPage() {
           {/* Format Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">Export Format</label>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-5 gap-3">
               {[
-                { value: 'summary', label: 'Summary View', desc: 'Interactive dashboard', icon: BarChart3 },
-                { value: 'json', label: 'JSON Format', desc: 'Machine-readable data', icon: Code },
-                { value: 'csv', label: 'CSV Format', desc: 'Spreadsheet compatible', icon: FileSpreadsheet },
+                { value: 'summary', label: 'Summary View', desc: 'View Dashboard', icon: BarChart3, color: 'blue' },
+                { value: 'json', label: 'JSON', desc: 'Data Export', icon: Code, color: 'purple' },
+                { value: 'csv', label: 'CSV', desc: 'Spreadsheet', icon: FileSpreadsheet, color: 'green' },
+                { value: 'xlsx', label: 'Excel', desc: '.xlsx File', icon: FileText, color: 'emerald' },
+                { value: 'pdf', label: 'PDF', desc: 'Print Ready', icon: FileText, color: 'red' },
               ].map(fmt => (
                 <button
                   key={fmt.value}
                   onClick={() => setFormat(fmt.value as any)}
-                  className={`p-4 rounded-xl border-2 text-left transition-all ${
+                  className={`p-3 rounded-xl border-2 text-left transition-all ${
                     format === fmt.value
-                      ? 'border-blue-500 bg-blue-50 shadow-md'
-                      : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                      ? `border-${fmt.color}-500 bg-${fmt.color}-50 shadow-md`
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  <fmt.icon className={`w-6 h-6 mb-2 ${format === fmt.value ? 'text-blue-600' : 'text-gray-400'}`} />
-                  <p className={`font-semibold ${format === fmt.value ? 'text-blue-900' : 'text-gray-900'}`}>
+                  <fmt.icon className={`w-5 h-5 mb-1 mx-auto ${format === fmt.value ? `text-${fmt.color}-600` : 'text-gray-400'}`} />
+                  <p className={`font-semibold text-sm text-center ${format === fmt.value ? `text-${fmt.color}-900` : 'text-gray-900'}`}>
                     {fmt.label}
                   </p>
-                  <p className="text-xs text-gray-500">{fmt.desc}</p>
+                  <p className="text-xs text-gray-500 text-center">{fmt.desc}</p>
                 </button>
               ))}
             </div>
@@ -10953,22 +11038,34 @@ function ReportGeneratorPage() {
             </div>
           </div>
 
-          {/* Generate Button */}
-          <Button
-            onClick={generateReport}
-            disabled={generating}
-            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-3 text-lg"
-          >
-            {generating ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Generating Report...
-              </>
+          {/* Generate/Download Buttons */}
+          <div className="flex gap-3">
+            {(format === 'summary' || format === 'json') ? (
+              <Button
+                onClick={generateReport}
+                disabled={generating}
+                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-3 text-lg"
+              >
+                {generating ? (
+                  <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Generating...</>
+                ) : (
+                  <>{format === 'summary' ? <BarChart3 className="w-5 h-5 mr-2" /> : <Download className="w-5 h-5 mr-2" />} {format === 'summary' ? 'View Report' : 'Download JSON'}</>
+                )}
+              </Button>
             ) : (
-              <>
-                <Download className="w-5 h-5 mr-2" /> Generate Report
-              </>
+              <Button
+                onClick={generateReport}
+                disabled={generating || downloading}
+                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-3 text-lg"
+              >
+                {generating || downloading ? (
+                  <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Downloading...</>
+                ) : (
+                  <><Download className="w-5 h-5 mr-2" /> Download {format.toUpperCase()}</>
+                )}
+              </Button>
             )}
-          </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -10982,9 +11079,20 @@ function ReportGeneratorPage() {
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="w-5 h-5" /> Executive Summary
                 </CardTitle>
-                <Button onClick={downloadJSON} variant="secondary" size="sm" className="gap-1 bg-white/10 hover:bg-white/20 text-white border-white/20">
-                  <Download className="w-4 h-4" /> Download JSON
-                </Button>
+                <div className="flex gap-2 flex-wrap">
+                  <Button onClick={downloadJSON} variant="secondary" size="sm" className="gap-1 bg-white/10 hover:bg-white/20 text-white border-white/20">
+                    <Code className="w-4 h-4" /> JSON
+                  </Button>
+                  <Button onClick={downloadCSV} variant="secondary" size="sm" className="gap-1 bg-white/10 hover:bg-white/20 text-white border-white/20">
+                    <FileSpreadsheet className="w-4 h-4" /> CSV
+                  </Button>
+                  <Button onClick={downloadExcel} variant="secondary" size="sm" className="gap-1 bg-white/10 hover:bg-white/20 text-white border-white/20">
+                    <FileText className="w-4 h-4" /> Excel
+                  </Button>
+                  <Button onClick={downloadPDF} variant="secondary" size="sm" className="gap-1 bg-white/10 hover:bg-white/20 text-white border-white/20">
+                    <FileText className="w-4 h-4" /> PDF
+                  </Button>
+                </div>
               </div>
               <p className="text-sm text-gray-300 mt-1">{reportData.metadata.periodLabel}</p>
             </CardHeader>
