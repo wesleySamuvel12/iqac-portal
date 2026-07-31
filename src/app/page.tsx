@@ -5203,8 +5203,25 @@ function DepartmentsPage() {
   const [departmentStaff, setDepartmentStaff] = useState<any[]>([])
   const [departmentStudents, setDepartmentStudents] = useState<any[]>([])
   const [loadingDetails, setLoadingDetails] = useState(false)
+  
+  // Add Department Modal State
+  const [showAddDeptModal, setShowAddDeptModal] = useState(false)
+  const [addingDept, setAddingDept] = useState(false)
+  const [deptForm, setDeptForm] = useState({ name: '', code: '', description: '', vision: '', mission: '' })
+  
+  // Bulk Import States
+  const [showStaffImport, setShowStaffImport] = useState(false)
+  const [showStudentImport, setShowStudentImport] = useState(false)
+  const [staffFile, setStaffFile] = useState<File | null>(null)
+  const [studentFile, setStudentFile] = useState<File | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [importResults, setImportResults] = useState<any>(null)
 
   useEffect(() => {
+    fetchDepartments()
+  }, [])
+
+  const fetchDepartments = () => {
     fetch('/api/departments')
       .then(res => res.json())
       .then(data => {
@@ -5215,14 +5232,14 @@ function DepartmentsPage() {
             id: d.id,
             name: d.name,
             code: d.code,
-            facultyCount: d._count?.faculty || 0,
-            studentCount: d._count?.students || 0,
-            activityCount: d._count?.activities || 0
+            facultyCount: d._count?.faculty || d.facultyCount || 0,
+            studentCount: d._count?.students || d.studentCount || 0,
+            activityCount: d._count?.activities || d.activityCount || 0
           })))
         }
       })
       .finally(() => setLoading(false))
-  }, [])
+  }
 
   // Fetch department details (staff & students) when a department is selected
   useEffect(() => {
@@ -5241,10 +5258,136 @@ function DepartmentsPage() {
         setDepartmentStaff(facultyData.faculty || [])
       }
       if (studentData.success) {
-        setStudentData(studentData.students || [])
+        setDepartmentStudents(studentData.students || [])
       }
     }).finally(() => setLoadingDetails(false))
   }, [selectedDepartment])
+
+  // Handle Add Department
+  const handleAddDepartment = async () => {
+    if (!deptForm.name.trim() || !deptForm.code.trim()) return
+    
+    setAddingDept(true)
+    try {
+      const res = await fetch('/api/departments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: deptForm.name,
+          code: deptForm.code.toUpperCase(),
+          description: deptForm.description,
+          vision: deptForm.vision,
+          mission: deptForm.mission
+        })
+      })
+      const data = await res.json()
+      if (data.success) {
+        setShowAddDeptModal(false)
+        setDeptForm({ name: '', code: '', description: '', vision: '', mission: '' })
+        fetchDepartments()
+      } else {
+        alert(data.error || 'Failed to add department')
+      }
+    } catch (error) {
+      console.error('Error adding department:', error)
+      alert('Failed to add department')
+    } finally {
+      setAddingDept(false)
+    }
+  }
+
+  // Handle Staff Bulk Import
+  const handleStaffImport = async () => {
+    if (!staffFile || !selectedDepartment) return
+    setImporting(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', staffFile)
+      formData.append('departmentId', selectedDepartment.id)
+
+      const res = await fetch('/api/faculty/bulk-import', {
+        method: 'POST',
+        body: formData
+      })
+      const data = await res.json()
+      if (data.success) {
+        setImportResults(data.results || data)
+        // Refresh staff list
+        const facultyRes = await fetch(`/api/faculty?departmentId=${selectedDepartment.id}`)
+        const facultyData = await facultyRes.json()
+        if (facultyData.success) {
+          setDepartmentStaff(facultyData.faculty || [])
+        }
+      } else {
+        alert(data.error || 'Import failed')
+      }
+    } catch (error) {
+      console.error('Error importing staff:', error)
+      alert('Import failed')
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  // Handle Student Bulk Import
+  const handleStudentImport = async () => {
+    if (!studentFile || !selectedDepartment) return
+    setImporting(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', studentFile)
+      formData.append('departmentId', selectedDepartment.id)
+
+      const res = await fetch('/api/students/bulk-import', {
+        method: 'POST',
+        body: formData
+      })
+      const data = await res.json()
+      if (data.success) {
+        setImportResults(data.results || data)
+        // Refresh student list
+        const studentRes = await fetch(`/api/students?departmentId=${selectedDepartment.id}`)
+        const studentData = await studentRes.json()
+        if (studentData.success) {
+          setDepartmentStudents(studentData.students || [])
+        }
+      } else {
+        alert(data.error || 'Import failed')
+      }
+    } catch (error) {
+      console.error('Error importing students:', error)
+      alert('Import failed')
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  // Download sample CSV templates
+  const downloadStaffTemplate = () => {
+    const csv = `employeeId,name,email,password,phone,designation,qualification,specialization,experience,dateOfJoining,isHOD
+EMP001,John Smith,john@niet.edu,pass123,9876543210,Assistant Professor,M.Tech,Computer Science,5,2024-01-15,false
+EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020-06-01,false`
+    downloadCSV(csv, 'staff_template.csv')
+  }
+
+  const downloadStudentTemplate = () => {
+    const csv = `registerNumber,name,email,phone,semester,section,cgpa,admissionYear,batch
+2024CS001,John Smith,john@niet.edu,9876543210,1,A,8.5,2024,2024-2028
+2024CS002,Jane Doe,jane@niet.edu,9876543211,1,A,9.0,2024,2024-2028`
+    downloadCSV(csv, 'students_template.csv')
+  }
+
+  const downloadCSV = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+  }
 
   if (loading) {
     return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
@@ -5254,14 +5397,32 @@ function DepartmentsPage() {
   if (selectedDepartment) {
     return (
       <div className="space-y-6">
-        {/* Back Button */}
-        <Button 
-          variant="outline" 
-          onClick={() => setSelectedDepartment(null)}
-          className="gap-2"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to All Departments
-        </Button>
+        {/* Back Button & Actions */}
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <Button 
+            variant="outline" 
+            onClick={() => setSelectedDepartment(null)}
+            className="gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to All Departments
+          </Button>
+          <div className="flex gap-3 flex-wrap">
+            <Button 
+              onClick={() => { setShowStaffImport(true); setImportResults(null); setStaffFile(null); }}
+              variant="outline" 
+              className="gap-2 border-green-300 text-green-700 hover:bg-green-50"
+            >
+              <Upload className="w-4 h-4" /> Import Staff
+            </Button>
+            <Button 
+              onClick={() => { setShowStudentImport(true); setImportResults(null); setStudentFile(null); }}
+              variant="outline" 
+              className="gap-2 border-purple-300 text-purple-700 hover:bg-purple-50"
+            >
+              <Upload className="w-4 h-4" /> Import Students
+            </Button>
+          </div>
+        </div>
 
         {/* Department Header */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white">
@@ -5271,11 +5432,11 @@ function DepartmentsPage() {
               <p className="text-blue-100 mt-1">Code: {selectedDepartment.code}</p>
               <div className="flex gap-6 mt-4">
                 <div className="text-center">
-                  <p className="text-2xl font-bold">{selectedDepartment.facultyCount}</p>
+                  <p className="text-2xl font-bold">{departmentStaff.length}</p>
                   <p className="text-xs text-blue-200">Faculty</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold">{selectedDepartment.studentCount}</p>
+                  <p className="text-2xl font-bold">{departmentStudents.length}</p>
                   <p className="text-xs text-blue-200">Students</p>
                 </div>
                 <div className="text-center">
@@ -5296,14 +5457,33 @@ function DepartmentsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Staff Section */}
             <Card className="border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4 text-white">
+              <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4 text-white flex items-center justify-between">
                 <h3 className="font-bold flex items-center gap-2">
                   <Users className="w-5 h-5" /> Faculty Members ({departmentStaff.length})
                 </h3>
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  className="bg-white/20 hover:bg-white/30 text-white border-0 gap-1"
+                  onClick={() => { setShowStaffImport(true); setImportResults(null); setStaffFile(null); }}
+                >
+                  <Plus className="w-3 h-3" /> Import
+                </Button>
               </div>
-              <div className="p-4 max-h-96 overflow-y-auto">
+              <div className="p-4 max-h-[400px] overflow-y-auto">
                 {departmentStaff.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">No faculty members found</p>
+                  <div className="text-center py-8">
+                    <Users className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                    <p className="text-gray-500 mb-4">No faculty members found</p>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="gap-2"
+                      onClick={() => { setShowStaffImport(true); setImportResults(null); setStaffFile(null); }}
+                    >
+                      <Upload className="w-4 h-4" /> Import Staff (Bulk)
+                    </Button>
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     {departmentStaff.map((staff: any) => (
@@ -5327,14 +5507,33 @@ function DepartmentsPage() {
 
             {/* Students Section */}
             <Card className="border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-purple-500 to-violet-600 p-4 text-white">
+              <div className="bg-gradient-to-r from-purple-500 to-violet-600 p-4 text-white flex items-center justify-between">
                 <h3 className="font-bold flex items-center gap-2">
                   <GraduationCap className="w-5 h-5" /> Students ({departmentStudents.length})
                 </h3>
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  className="bg-white/20 hover:bg-white/30 text-white border-0 gap-1"
+                  onClick={() => { setShowStudentImport(true); setImportResults(null); setStudentFile(null); }}
+                >
+                  <Plus className="w-3 h-3" /> Import
+                </Button>
               </div>
-              <div className="p-4 max-h-96 overflow-y-auto">
+              <div className="p-4 max-h-[400px] overflow-y-auto">
                 {departmentStudents.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">No students found</p>
+                  <div className="text-center py-8">
+                    <GraduationCap className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                    <p className="text-gray-500 mb-4">No students found</p>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="gap-2"
+                      onClick={() => { setShowStudentImport(true); setImportResults(null); setStudentFile(null); }}
+                    >
+                      <Upload className="w-4 h-4" /> Import Students (Bulk)
+                    </Button>
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     {departmentStudents.map((student: any) => (
@@ -5359,6 +5558,170 @@ function DepartmentsPage() {
             </Card>
           </div>
         )}
+
+        {/* Staff Bulk Import Modal */}
+        {showStaffImport && (
+          <Card className="border-2 border-green-200 shadow-xl">
+            <CardHeader className="bg-gradient-to-r from-green-500 to-emerald-600 text-white pb-4">
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Upload className="w-5 h-5" /> {importResults ? 'Import Results' : 'Bulk Import Staff'}
+                </span>
+                <Button size="sm" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-0" onClick={() => setShowStaffImport(false)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {importResults ? (
+                <div className="space-y-4">
+                  <div className={`p-4 rounded-lg ${importResults.errors?.length > 0 ? 'bg-yellow-50' : 'bg-green-50'}`}>
+                    <p className="font-semibold text-gray-900">
+                      ✓ Import Completed!
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Successfully imported: <strong>{importResults.imported || importResults.successCount || 0}</strong> records
+                      {importResults.errors?.length > 0 && <> • Failed: <strong>{importResults.errors.length}</strong></>}
+                    </p>
+                  </div>
+                  {importResults.errors?.length > 0 && (
+                    <div className="max-h-40 overflow-y-auto bg-red-50 p-3 rounded-lg">
+                      <p className="text-sm font-medium text-red-800 mb-2">Errors:</p>
+                      {importResults.errors.slice(0, 10).map((err: string, i: number) => (
+                        <p key={i} className="text-xs text-red-600">{err}</p>
+                      ))}
+                      {importResults.errors.length > 10 && (
+                        <p className="text-xs text-red-400">...and {importResults.errors.length - 10} more</p>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex gap-3">
+                    <Button onClick={() => { setShowStaffImport(false); setImportResults(null); }}>
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="border-2 border-dashed border-green-300 rounded-xl p-8 text-center hover:border-green-400 transition-colors">
+                    <Upload className="w-12 h-12 mx-auto text-green-400 mb-3" />
+                    <p className="text-gray-700 font-medium">Upload CSV file with staff data</p>
+                    <p className="text-sm text-gray-500 mt-1">Drag & drop or click to browse</p>
+                    <Input
+                      type="file"
+                      accept=".csv,.xlsx,.xls"
+                      onChange={(e) => setStaffFile(e.target.files?.[0] || null)}
+                      className="mt-4 cursor-pointer"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Download className="w-4 h-4" />
+                    <button onClick={downloadStaffTemplate} className="text-green-600 hover:underline font-medium">
+                      Download sample CSV template
+                    </button>
+                  </div>
+
+                  {staffFile && (
+                    <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                      <FileText className="w-5 h-5 text-green-600" />
+                      <span className="text-sm text-green-700 flex-1 truncate">{staffFile.name}</span>
+                      <Button size="sm" onClick={handleStaffImport} disabled={importing}>
+                        {importing ? <><Loader2 className="w-4 h-4 animate-spin mr-1" /> Importing...</> : 'Start Import'}
+                      </Button>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-3 pt-2">
+                    <Button variant="outline" onClick={() => setShowStaffImport(false)}>Cancel</Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Student Bulk Import Modal */}
+        {showStudentImport && (
+          <Card className="border-2 border-purple-200 shadow-xl">
+            <CardHeader className="bg-gradient-to-r from-purple-500 to-violet-600 text-white pb-4">
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Upload className="w-5 h-5" /> {importResults ? 'Import Results' : 'Bulk Import Students'}
+                </span>
+                <Button size="sm" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-0" onClick={() => setShowStudentImport(false)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {importResults ? (
+                <div className="space-y-4">
+                  <div className={`p-4 rounded-lg ${importResults.errors?.length > 0 ? 'bg-yellow-50' : 'bg-green-50'}`}>
+                    <p className="font-semibold text-gray-900">
+                      ✓ Import Completed!
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Successfully imported: <strong>{importResults.imported || importResults.successCount || 0}</strong> records
+                      {importResults.errors?.length > 0 && <> • Failed: <strong>{importResults.errors.length}</strong></>}
+                    </p>
+                  </div>
+                  {importResults.errors?.length > 0 && (
+                    <div className="max-h-40 overflow-y-auto bg-red-50 p-3 rounded-lg">
+                      <p className="text-sm font-medium text-red-800 mb-2">Errors:</p>
+                      {importResults.errors.slice(0, 10).map((err: string, i: number) => (
+                        <p key={i} className="text-xs text-red-600">{err}</p>
+                      ))}
+                      {importResults.errors.length > 10 && (
+                        <p className="text-xs text-red-400">...and {importResults.errors.length - 10} more</p>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex gap-3">
+                    <Button onClick={() => { setShowStudentImport(false); setImportResults(null); }}>
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="border-2 border-dashed border-purple-300 rounded-xl p-8 text-center hover:border-purple-400 transition-colors">
+                    <Upload className="w-12 h-12 mx-auto text-purple-400 mb-3" />
+                    <p className="text-gray-700 font-medium">Upload CSV file with student data</p>
+                    <p className="text-sm text-gray-500 mt-1">Drag & drop or click to browse</p>
+                    <Input
+                      type="file"
+                      accept=".csv,.xlsx,.xls"
+                      onChange={(e) => setStudentFile(e.target.files?.[0] || null)}
+                      className="mt-4 cursor-pointer"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Download className="w-4 h-4" />
+                    <button onClick={downloadStudentTemplate} className="text-purple-600 hover:underline font-medium">
+                      Download sample CSV template
+                    </button>
+                  </div>
+
+                  {studentFile && (
+                    <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
+                      <FileText className="w-5 h-5 text-purple-600" />
+                      <span className="text-sm text-purple-700 flex-1 truncate">{studentFile.name}</span>
+                      <Button size="sm" onClick={handleStudentImport} disabled={importing}>
+                        {importing ? <><Loader2 className="w-4 h-4 animate-spin mr-1" /> Importing...</> : 'Start Import'}
+                      </Button>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-3 pt-2">
+                    <Button variant="outline" onClick={() => setShowStudentImport(false)}>Cancel</Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     )
   }
@@ -5369,12 +5732,94 @@ function DepartmentsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Departments</h2>
-          <p className="text-gray-500">Click on a department to view its faculty and students</p>
+          <p className="text-gray-500">Click on a department to view its faculty and students, or add a new department</p>
         </div>
-        <Button className="gap-2 bg-gradient-to-r from-blue-500 to-indigo-600">
+        <Button 
+          onClick={() => setShowAddDeptModal(true)}
+          className="gap-2 bg-gradient-to-r from-blue-500 to-indigo-600"
+        >
           <Plus className="w-4 h-4" /> Add Department
         </Button>
       </div>
+      
+      {/* Add Department Modal */}
+      {showAddDeptModal && (
+        <Card className="border-2 border-blue-200 shadow-xl">
+          <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white pb-4">
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Building2 className="w-5 h-5" /> Add New Department
+              </span>
+              <Button size="sm" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-0" onClick={() => setShowAddDeptModal(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <form onSubmit={(e) => { e.preventDefault(); handleAddDepartment(); }} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Department Name *</label>
+                  <Input
+                    value={deptForm.name}
+                    onChange={(e) => setDeptForm(p => ({ ...p, name: e.target.value }))}
+                    placeholder="e.g., Computer Science & Engineering"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Department Code *</label>
+                  <Input
+                    value={deptForm.code}
+                    onChange={(e) => setDeptForm(p => ({ ...p, code: e.target.value.toUpperCase() }))}
+                    placeholder="e.g., CSE"
+                    maxLength={10}
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={deptForm.description}
+                  onChange={(e) => setDeptForm(p => ({ ...p, description: e.target.value }))}
+                  placeholder="Brief description of the department..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Vision</label>
+                  <textarea
+                    value={deptForm.vision}
+                    onChange={(e) => setDeptForm(p => ({ ...p, vision: e.target.value }))}
+                    placeholder="Department vision statement..."
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Mission</label>
+                  <textarea
+                    value={deptForm.mission}
+                    onChange={(e) => setDeptForm(p => ({ ...p, mission: e.target.value }))}
+                    placeholder="Department mission statement..."
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <Button type="button" variant="outline" onClick={() => setShowAddDeptModal(false)}>Cancel</Button>
+                <Button type="submit" disabled={addingDept || !deptForm.name.trim() || !deptForm.code.trim()} className="bg-gradient-to-r from-blue-500 to-indigo-600">
+                  {addingDept ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Adding...</> : <><Plus className="w-4 h-4 mr-2" /> Add Department</>}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {departments.map(dept => (
