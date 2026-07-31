@@ -24,7 +24,7 @@ import {
   Newspaper, Handshake, Circle,
   DollarSign, Paperclip, Inbox, Tag, XCircle, ArrowLeft,
   Save, Sparkles, PanelLeft, PanelLeftClose,
-  GripVertical, FileSpreadsheet
+  GripVertical, FileSpreadsheet, Wifi
 } from 'lucide-react'
 
 // ============ TYPES ============
@@ -62,7 +62,7 @@ type TabType = 'dashboard' | 'departments' | 'faculty' | 'students' | 'activitie
   | 'approvals' | 'analytics' | 'documents' | 'settings' | 'achievements' | 'feedback'
   | 'staff_achievement' | 'student_achievement_view'
   | 'hod_student_approval' | 'hod_staff_approval' | 'my_achievement'
-  | 'report_generator' | 'hod_management'
+  | 'report_generator' | 'hod_management' | 'showcase' | 'department_results'
 
 // ============ ACHIEVEMENT TYPES DEFINITION (13 Types - Student Focused) ============
 const ACHIEVEMENT_TYPES: Record<string, {
@@ -9090,77 +9090,1511 @@ function DocumentsPage() {
   )
 }
 
-// ============ SETTINGS PAGE ============
-function SettingsPage({ user }: { user: User }) {
-  const [darkMode, setDarkMode] = useState(false)
+// ============ ADMIN DEPARTMENT RESULTS PAGE ============
+function AdminDepartmentResultsPage() {
+  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState<any>(null)
+  const [selectedDept, setSelectedDept] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+
+  useEffect(() => {
+    fetchDepartmentResults()
+  }, [])
+
+  const fetchDepartmentResults = async () => {
+    try {
+      setLoading(true)
+      const res = await fetch('/api/admin/department-results')
+      const json = await res.json()
+      if (json.success) {
+        setData(json.data)
+      }
+    } catch (error) {
+      console.error('Error fetching department results:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+      </div>
+    )
+  }
+
+  const filteredDepartments = data?.departments?.filter((dept: any) =>
+    dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    dept.code.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || []
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
-        <p className="text-gray-500">Manage your account settings</p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Department Results Overview</h2>
+          <p className="text-gray-500 mt-1">Comprehensive analytics for all departments</p>
+        </div>
+        <Button onClick={fetchDepartmentResults} variant="outline" className="gap-2">
+          <RefreshCw className="w-4 h-4" /> Refresh
+        </Button>
       </div>
-      
-      <Card className="p-6 border border-gray-200">
-        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Users className="w-5 h-5 text-blue-500" /> Profile Information
-        </h3>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Full Name</label>
-              <Input defaultValue={user.name} className="mt-1 bg-white/80" />
+
+      {/* Institution-wide Stats */}
+      {data?.totals && (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <Card className="p-4 border border-gray-200 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{data.totals.totalDepartments}</p>
+                <p className="text-xs text-gray-500">Departments</p>
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Email</label>
-              <Input defaultValue={user.email} className="mt-1 bg-white/80" disabled />
+          </Card>
+          <Card className="p-4 border border-gray-200 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                <Users className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{data.totals.totalFaculty}</p>
+                <p className="text-xs text-gray-500">Faculty</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 border border-gray-200 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                <GraduationCap className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{data.totals.totalStudents}</p>
+                <p className="text-xs text-gray-500">Students</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 border border-gray-200 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
+                <Award className="w-5 h-5 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{data.totals.totalResearch}</p>
+                <p className="text-xs text-gray-500">Research</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 border border-gray-200 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-pink-100 flex items-center justify-center">
+                <Trophy className="w-5 h-5 text-pink-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{data.totals.totalPlacements}</p>
+                <p className="text-xs text-gray-500">Placements</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <Input
+          placeholder="Search departments..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {/* Department Cards Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {filteredDepartments.map((dept: any) => (
+          <Card key={dept.id} className="border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+            {/* Card Header */}
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-4 text-white">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="font-bold text-lg">{dept.name}</h3>
+                  <p className="text-amber-100 text-sm">{dept.code} • Est. {dept.establishedYear || 'N/A'}</p>
+                </div>
+                <Badge className="bg-white/20 text-white border-0">
+                  {dept.hod?.name ? dept.hod.name.split(' ')[0] : 'No HOD'}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Card Body */}
+            <div className="p-4 space-y-4">
+              {/* Quick Stats */}
+              <div className="grid grid-cols-4 gap-3">
+                <div className="text-center p-2 bg-blue-50 rounded-lg">
+                  <p className="text-xl font-bold text-blue-700">{dept.stats.totalFaculty}</p>
+                  <p className="text-[10px] text-blue-600">Faculty</p>
+                </div>
+                <div className="text-center p-2 bg-green-50 rounded-lg">
+                  <p className="text-xl font-bold text-green-700">{dept.stats.totalStudents}</p>
+                  <p className="text-[10px] text-green-600">Students</p>
+                </div>
+                <div className="text-center p-2 bg-purple-50 rounded-lg">
+                  <p className="text-xl font-bold text-purple-700">{dept.stats.totalActivities}</p>
+                  <p className="text-[10px] text-purple-600">Activities</p>
+                </div>
+                <div className="text-center p-2 bg-orange-50 rounded-lg">
+                  <p className="text-xl font-bold text-orange-700">{dept.stats.totalResearch}</p>
+                  <p className="text-[10px] text-orange-600">Research</p>
+                </div>
+              </div>
+
+              {/* Additional Metrics */}
+              <div className="grid grid-cols-3 gap-3 text-sm">
+                <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                  <Trophy className="w-4 h-4 text-yellow-500" />
+                  <span className="text-gray-700">{dept.stats.achievements} Achievements</span>
+                </div>
+                <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                  <Briefcase className="w-4 h-4 text-emerald-500" />
+                  <span className="text-gray-700">{dept.stats.placements} Placements</span>
+                </div>
+                <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                  <Award className="w-4 h-4 text-pink-500" />
+                  <span className="text-gray-700">{dept.stats.certifications} Certs</span>
+                </div>
+              </div>
+
+              {/* Faculty Breakdown */}
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-2">Faculty Breakdown</p>
+                <div className="flex gap-2 flex-wrap">
+                  <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+                    Professors: {dept.facultyBreakdown.professors}
+                  </Badge>
+                  <Badge variant="secondary" className="bg-teal-100 text-teal-700">
+                    Assoc. Prof: {dept.facultyBreakdown.associateProfessors}
+                  </Badge>
+                  <Badge variant="secondary" className="bg-cyan-100 text-cyan-700">
+                    Asst. Prof: {dept.facultyBreakdown.assistantProfessors}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Batches */}
+              {dept.batches && dept.batches.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Batches</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {dept.batches.map((batch: any) => (
+                      <Badge key={batch.id} variant="outline" className="border-gray-300">
+                        {batch.name}: {batch.actualStudents} students
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Expand Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                onClick={() => setSelectedDept(selectedDept === dept.id ? null : dept.id)}
+              >
+                {selectedDept === dept.id ? 'Hide Details' : 'View Full Details'}
+                <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${selectedDept === dept.id ? 'rotate-180' : ''}`} />
+              </Button>
+
+              {/* Expanded Details */}
+              {selectedDept === dept.id && (
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Vision & Mission</p>
+                    <p className="text-sm text-gray-600 mt-1">{dept.vision || 'Not specified'}</p>
+                    <p className="text-sm text-gray-600 mt-2">{dept.mission || 'Not specified'}</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="font-medium text-gray-700">HOD Email</p>
+                      <p className="text-gray-600">{dept.hod?.email || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-700">Total Batches</p>
+                      <p className="text-gray-600">{dept.stats.totalBatches}</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-700">Completed Activities</p>
+                      <p className="text-gray-600">{dept.stats.completedActivities}</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-700">Ongoing Activities</p>
+                      <p className="text-gray-600">{dept.stats.ongoingActivities}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {filteredDepartments.length === 0 && (
+        <div className="text-center py-12">
+          <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">No departments found matching your search.</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ============ ADMIN SHOWCASE PAGE ============
+function AdminShowcasePage() {
+  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState<any>(null)
+
+  useEffect(() => {
+    fetchShowcaseData()
+  }, [])
+
+  const fetchShowcaseData = async () => {
+    try {
+      setLoading(true)
+      const res = await fetch('/api/admin/showcase')
+      const json = await res.json()
+      if (json.success) {
+        setData(json.data)
+      }
+    } catch (error) {
+      console.error('Error fetching showcase data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Hero Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 p-8 text-white">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl" />
+        
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-2">
+            <Star className="w-8 h-8" />
+            <h1 className="text-3xl md:text-4xl font-bold">Institution Showcase</h1>
+          </div>
+          <p className="text-amber-100 text-lg max-w-2xl">
+            {data?.institution?.name || 'Nehru Institute of Engineering and Technology'} - 
+            Highlighting Excellence in Education, Research, and Innovation
+          </p>
+          <div className="flex flex-wrap gap-4 mt-6">
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3 border border-white/10">
+              <p className="text-2xl font-bold">{data?.highlights?.totalDepartments || 0}</p>
+              <p className="text-sm text-amber-100">Departments</p>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3 border border-white/10">
+              <p className="text-2xl font-bold">{data?.highlights?.totalStudents || 0}</p>
+              <p className="text-sm text-amber-100">Students</p>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3 border border-white/10">
+              <p className="text-2xl font-bold">{data?.highlights?.facultyWithPhd || 0}</p>
+              <p className="text-sm text-amber-100">PhD Faculty</p>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3 border border-white/10">
+              <p className="text-2xl font-bold">{data?.highlights?.placementRate || 0}%</p>
+              <p className="text-sm text-amber-100">Placement Rate</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Role</label>
-              <Input defaultValue={user.role} className="mt-1 bg-white/80" disabled />
+        </div>
+      </div>
+
+      {/* Key Highlights Grid */}
+      <div>
+        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <Zap className="w-5 h-5 text-amber-500" /> Key Highlights
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <Card className="p-4 border border-gray-200 text-center hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-2">
+              <Users className="w-6 h-6 text-blue-600" />
             </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Department</label>
-              <Input defaultValue={user.departmentName || ''} className="mt-1 bg-white/80" disabled />
+            <p className="text-2xl font-bold text-gray-900">{data?.highlights?.totalFaculty || 0}</p>
+            <p className="text-sm text-gray-500">Total Faculty</p>
+          </Card>
+          <Card className="p-4 border border-gray-200 text-center hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-2">
+              <GraduationCap className="w-6 h-6 text-green-600" />
             </div>
+            <p className="text-2xl font-bold text-gray-900">{data?.highlights?.totalStudents || 0}</p>
+            <p className="text-sm text-gray-500">Total Students</p>
+          </Card>
+          <Card className="p-4 border border-gray-200 text-center hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-2">
+              <Activity className="w-6 h-6 text-purple-600" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{data?.highlights?.totalActivities || 0}</p>
+            <p className="text-sm text-gray-500">Activities</p>
+          </Card>
+          <Card className="p-4 border border-gray-200 text-center hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-2">
+              <Award className="w-6 h-6 text-orange-600" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{data?.highlights?.totalResearch || 0}</p>
+            <p className="text-sm text-gray-500">Research Papers</p>
+          </Card>
+          <Card className="p-4 border border-gray-200 text-center hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center mx-auto mb-2">
+              <Trophy className="w-6 h-6 text-pink-600" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{data?.highlights?.totalAchievements || 0}</p>
+            <p className="text-sm text-gray-500">Achievements</p>
+          </Card>
+          <Card className="p-4 border border-gray-200 text-center hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-2">
+              <Briefcase className="w-6 h-6 text-emerald-600" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{data?.highlights?.totalPlacements || 0}</p>
+            <p className="text-sm text-gray-500">Placements</p>
+          </Card>
+          <Card className="p-4 border border-gray-200 text-center hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-full bg-cyan-100 flex items-center justify-center mx-auto mb-2">
+              <FileText className="w-6 h-6 text-cyan-600" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{data?.highlights?.totalCertifications || 0}</p>
+            <p className="text-sm text-gray-500">Certifications</p>
+          </Card>
+          <Card className="p-4 border border-gray-200 text-center hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-2">
+              <Lightbulb className="w-6 h-6 text-red-600" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{data?.highlights?.totalPatents || 0}</p>
+            <p className="text-sm text-gray-500">Patents</p>
+          </Card>
+          <Card className="p-4 border border-gray-200 text-center hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-2">
+              <Rocket className="w-6 h-6 text-indigo-600" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{data?.highlights?.totalProjects || 0}</p>
+            <p className="text-sm text-gray-500">Projects</p>
+          </Card>
+          <Card className="p-4 border border-gray-200 text-center hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-2">
+              <Target className="w-6 h-6 text-amber-600" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{data?.highlights?.phdPercentage || 0}%</p>
+            <p className="text-sm text-gray-500">PhD Faculty %</p>
+          </Card>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Top Performing Departments */}
+        <Card className="border border-gray-200 p-6">
+          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-green-500" /> Top Departments
+          </h3>
+          <div className="space-y-3">
+            {data?.departments?.slice(0, 5).map((dept: any, idx: number) => (
+              <div key={dept.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                  idx === 0 ? 'bg-yellow-400 text-yellow-900' :
+                  idx === 1 ? 'bg-gray-300 text-gray-700' :
+                  idx === 2 ? 'bg-amber-600 text-white' :
+                  'bg-gray-200 text-gray-600'
+                }`}>
+                  {idx + 1}
+                </span>
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">{dept.name}</p>
+                  <p className="text-sm text-gray-500">{dept.code} • {dept._count.faculty} faculty</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-green-600">{dept.performance.score} pts</p>
+                  <p className="text-xs text-gray-500">Score</p>
+                </div>
+              </div>
+            ))}
           </div>
-          <Button className="bg-gradient-to-r from-blue-500 to-indigo-600">Save Changes</Button>
-        </div>
-      </Card>
-      
-      <Card className="p-6 border border-gray-200">
-        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Sun className="w-5 h-5 text-amber-500" /> Appearance
-        </h3>
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-          <div className="flex items-center gap-3">
-            {darkMode ? <Moon className="w-5 h-5 text-indigo-500" /> : <Sun className="w-5 h-5 text-amber-500" />}
-            <span className="font-medium text-gray-700">Dark Mode</span>
+        </Card>
+
+        {/* Recent Achievements */}
+        <Card className="border border-gray-200 p-6">
+          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-amber-500" /> Recent Achievements
+          </h3>
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {data?.recentAchievements?.map((ach: any) => (
+              <div key={ach.id} className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg">
+                <div className="w-8 h-8 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
+                  <Star className="w-4 h-4 text-amber-700" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 truncate">{ach.title}</p>
+                  <p className="text-sm text-gray-500">{ach.studentName} • {ach.department}</p>
+                  <div className="flex gap-2 mt-1">
+                    <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700">
+                      {ach.type}
+                    </Badge>
+                    {ach.position && (
+                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                        {ach.position}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )) || (
+              <p className="text-gray-500 text-center py-4">No achievements yet</p>
+            )}
           </div>
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className={`relative w-12 h-6 rounded-full transition-colors ${darkMode ? 'bg-indigo-500' : 'bg-gray-300'}`}
-          >
-            <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${darkMode ? 'translate-x-6' : ''}`} />
-          </button>
+        </Card>
+
+        {/* Recent Placements */}
+        <Card className="border border-gray-200 p-6">
+          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Briefcase className="w-5 h-5 text-emerald-500" /> Recent Placements
+          </h3>
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {data?.recentPlacements?.map((place: any) => (
+              <div key={place.id} className="flex items-start gap-3 p-3 bg-emerald-50 rounded-lg">
+                <div className="w-8 h-8 rounded-full bg-emerald-200 flex items-center justify-center flex-shrink-0">
+                  <DollarSign className="w-4 h-4 text-emerald-700" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900">{place.company}</p>
+                  <p className="text-sm text-gray-500">{place.studentName} • {place.designation}</p>
+                  {place.packageLPA && (
+                    <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700 mt-1">
+                      ₹{place.packageLPA} LPA
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )) || (
+              <p className="text-gray-500 text-center py-4">No placements yet</p>
+            )}
+          </div>
+        </Card>
+
+        {/* Upcoming Activities */}
+        <Card className="border border-gray-200 p-6">
+          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-blue-500" /> Upcoming Activities
+          </h3>
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {data?.upcomingActivities?.map((act: any) => (
+              <div key={act.id} className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                <div className="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center flex-shrink-0">
+                  <Calendar className="w-4 h-4 text-blue-700" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 truncate">{act.title}</p>
+                  <p className="text-sm text-gray-500">{act.department} • {act.type.replace(/_/g, ' ')}</p>
+                  {act.startDate && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      {new Date(act.startDate).toLocaleDateString('en-IN', { 
+                        day: 'numeric', month: 'short', year: 'numeric' 
+                      })}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )) || (
+              <p className="text-gray-500 text-center py-4">No upcoming activities</p>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* Research & Activity Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="border border-gray-200 p-6">
+          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-purple-500" /> Research by Type
+          </h3>
+          <div className="space-y-3">
+            {data?.researchBreakdown?.map((r: any, idx: number) => (
+              <div key={idx} className="flex items-center gap-3">
+                <span className="text-sm text-gray-600 w-32 truncate">{r.type}</span>
+                <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+                    style={{ width: `${Math.min(100, (r.count / (data?.highlights?.totalResearch || 1)) * 100)}%` }}
+                  />
+                </div>
+                <span className="text-sm font-medium text-gray-900 w-10 text-right">{r.count}</span>
+              </div>
+            )) || (
+              <p className="text-gray-500 text-center py-4">No research data</p>
+            )}
+          </div>
+        </Card>
+
+        <Card className="border border-gray-200 p-6">
+          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Activity className="w-5 h-5 text-orange-500" /> Activities This Year
+          </h3>
+          <div className="space-y-3">
+            {data?.activityBreakdown?.map((a: any, idx: number) => (
+              <div key={idx} className="flex items-center gap-3">
+                <span className="text-sm text-gray-600 w-32 truncate">{a.type}</span>
+                <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full"
+                    style={{ width: `${Math.min(100, (a.count / (data?.highlights?.totalActivities || 1)) * 100)}%` }}
+                  />
+                </div>
+                <span className="text-sm font-medium text-gray-900 w-10 text-right">{a.count}</span>
+              </div>
+            )) || (
+              <p className="text-gray-500 text-center py-4">No activity data</p>
+            )}
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ============ SETTINGS PAGE (COMPREHENSIVE ADMIN) ============
+function SettingsPage({ user }: { user: User }) {
+  const [darkMode, setDarkMode] = useState(false)
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'general' | 'domain' | 'database' | 'network' | 'email' | 'academic' | 'security' | 'storage'>('general')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [institutionData, setInstitutionData] = useState<any>(null)
+  const [settings, setSettings] = useState<Record<string, any>>({})
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  // Form states for different sections
+  const [domainForm, setDomainForm] = useState({
+    primary: '',
+    aliases: '',
+    sslEnabled: true,
+    forceWww: false,
+  })
+  const [databaseForm, setDatabaseForm] = useState({
+    host: '',
+    port: '5432',
+    name: '',
+    type: 'SQLite',
+    maxConnections: '100',
+    backupEnabled: true,
+    backupFrequency: 'daily',
+  })
+  const [networkForm, setNetworkForm] = useState({
+    ipWhitelist: '',
+    rateLimit: '100',
+    corsOrigins: '',
+    maintenanceMode: false,
+    apiTimeout: '30',
+  })
+  const [emailForm, setEmailForm] = useState({
+    fromAddress: '',
+    smtpHost: '',
+    smtpPort: '587',
+    smtpUser: '',
+    notificationEmails: true,
+    approvalAlerts: true,
+  })
+  const [academicForm, setAcademicForm] = useState({
+    currentYear: '',
+    currentSemester: 'Odd',
+    startDate: '',
+    endDate: '',
+  })
+  const [securityForm, setSecurityForm] = useState({
+    sessionTimeout: '30',
+    maxLoginAttempts: '5',
+    passwordMinLength: '8',
+    twoFactorAuth: false,
+    auditLogging: true,
+  })
+  const [storageForm, setStorageForm] = useState({
+    maxSize: '10',
+    allowedTypes: '',
+    uploadPath: '/uploads',
+    retentionDays: '365',
+  })
+
+  useEffect(() => {
+    fetchSettings()
+  }, [])
+
+  const fetchSettings = async () => {
+    try {
+      setLoading(true)
+      const res = await fetch('/api/admin/institution')
+      const json = await res.json()
+      if (json.success) {
+        setInstitutionData(json.data.institution)
+        
+        // Map settings to form state
+        const settingsMap: Record<string, any> = {}
+        if (json.data.settings) {
+          Object.entries(json.data.settings).forEach(([category, items]: [string, any]) => {
+            ;(items as Array<any>).forEach((item: any) => {
+              settingsMap[item.key] = item.value
+            })
+          })
+        }
+        setSettings(settingsMap)
+
+        // Populate forms with existing values
+        setDomainForm({
+          primary: settingsMap.domain_primary || 'https://niet.edu.in',
+          aliases: settingsMap.domain_alias || '',
+          sslEnabled: settingsMap.domain_ssl === 'true',
+          forceWww: settingsMap.domain_force_www === 'true',
+        })
+        setDatabaseForm({
+          host: settingsMap.database_host || 'localhost',
+          port: settingsMap.database_port || '5432',
+          name: settingsMap.database_name || 'iqac_erp',
+          type: settingsMap.database_type || 'SQLite',
+          maxConnections: settingsMap.database_max_connections || '100',
+          backupEnabled: settingsMap.database_backup === 'true',
+          backupFrequency: settingsMap.database_backup_frequency || 'daily',
+        })
+        setNetworkForm({
+          ipWhitelist: settingsMap.ip_whitelist || '',
+          rateLimit: settingsMap.ip_api_rate_limit || '100',
+          corsOrigins: settingsMap.ip_cors_origins || '*',
+          maintenanceMode: settingsMap.site_maintenance === 'true',
+          apiTimeout: settingsMap.ip_api_timeout || '30',
+        })
+        setEmailForm({
+          fromAddress: settingsMap.email_from || 'admin@niet.edu.in',
+          smtpHost: settingsMap.email_smtp_host || 'smtp.gmail.com',
+          smtpPort: settingsMap.email_smtp_port || '587',
+          smtpUser: settingsMap.email_smtp_user || '',
+          notificationEmails: settingsMap.email_notifications === 'true',
+          approvalAlerts: settingsMap.email_approval_alerts === 'true',
+        })
+        setAcademicForm({
+          currentYear: settingsMap.academic_current_year || '2024-25',
+          currentSemester: settingsMap.academic_current_semester || 'Odd',
+          startDate: settingsMap.academic_start_date || '',
+          endDate: settingsMap.academic_end_date || '',
+        })
+        setSecurityForm({
+          sessionTimeout: settingsMap.security_session_timeout || '30',
+          maxLoginAttempts: settingsMap.security_max_login_attempts || '5',
+          passwordMinLength: settingsMap.security_password_min_length || '8',
+          twoFactorAuth: settingsMap.security_2fa === 'true',
+          auditLogging: settingsMap.security_audit_logging !== 'false',
+        })
+        setStorageForm({
+          maxSize: settingsMap.upload_max_file_size || '10',
+          allowedTypes: settingsMap.upload_allowed_types || 'pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,png,gif',
+          uploadPath: settingsMap.upload_path || '/uploads',
+          retentionDays: settingsMap.upload_retention_days || '365',
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching settings:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSaveSection = async (section: string) => {
+    try {
+      setSaving(true)
+      setSaveMessage(null)
+
+      let dataToUpdate: Record<string, any> = {}
+
+      switch (section) {
+        case 'domain':
+          dataToUpdate = {
+            domain_primary: domainForm.primary,
+            domain_alias: domainForm.aliases,
+            domain_ssl: String(domainForm.sslEnabled),
+            domain_force_www: String(domainForm.forceWww),
+          }
+          break
+        case 'database':
+          dataToUpdate = {
+            database_host: databaseForm.host,
+            database_port: databaseForm.port,
+            database_name: databaseForm.name,
+            database_type: databaseForm.type,
+            database_max_connections: databaseForm.maxConnections,
+            database_backup: String(databaseForm.backupEnabled),
+            database_backup_frequency: databaseForm.backupFrequency,
+          }
+          break
+        case 'network':
+          dataToUpdate = {
+            ip_whitelist: networkForm.ipWhitelist,
+            ip_api_rate_limit: networkForm.rateLimit,
+            ip_cors_origins: networkForm.corsOrigins,
+            site_maintenance: String(networkForm.maintenanceMode),
+            ip_api_timeout: networkForm.apiTimeout,
+          }
+          break
+        case 'email':
+          dataToUpdate = {
+            email_from: emailForm.fromAddress,
+            email_smtp_host: emailForm.smtpHost,
+            email_smtp_port: emailForm.smtpPort,
+            email_smtp_user: emailForm.smtpUser,
+            email_notifications: String(emailForm.notificationEmails),
+            email_approval_alerts: String(emailForm.approvalAlerts),
+          }
+          break
+        case 'academic':
+          dataToUpdate = {
+            academic_current_year: academicForm.currentYear,
+            academic_current_semester: academicForm.currentSemester,
+            academic_start_date: academicForm.startDate,
+            academic_end_date: academicForm.endDate,
+          }
+          break
+        case 'security':
+          dataToUpdate = {
+            security_session_timeout: securityForm.sessionTimeout,
+            security_max_login_attempts: securityForm.maxLoginAttempts,
+            security_password_min_length: securityForm.passwordMinLength,
+            security_2fa: String(securityForm.twoFactorAuth),
+            security_audit_logging: String(securityForm.auditLogging),
+          }
+          break
+        case 'storage':
+          dataToUpdate = {
+            upload_max_file_size: storageForm.maxSize,
+            upload_allowed_types: storageForm.allowedTypes,
+            upload_path: storageForm.uploadPath,
+            upload_retention_days: storageForm.retentionDays,
+          }
+          break
+      }
+
+      const res = await fetch('/api/admin/institution', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ section: 'settings', ...dataToUpdate }),
+      })
+
+      const json = await res.json()
+      if (json.success) {
+        setSaveMessage({ type: 'success', message: `${section.charAt(0).toUpperCase() + section.slice(1)} settings saved successfully!` })
+      } else {
+        setSaveMessage({ type: 'error', message: json.error || 'Failed to save settings' })
+      }
+    } catch (error) {
+      setSaveMessage({ type: 'error', message: 'Network error. Please try again.' })
+    } finally {
+      setSaving(false)
+      setTimeout(() => setSaveMessage(null), 3000)
+    }
+  }
+
+  const tabs = [
+    { id: 'general', label: 'General', icon: Settings },
+    { id: 'domain', label: 'Domain', icon: Globe },
+    { id: 'database', label: 'Database', icon: Database },
+    { id: 'network', label: 'Network/IP', icon: Wifi },
+    { id: 'email', label: 'Email', icon: Mail },
+    { id: 'academic', label: 'Academic', icon: GraduationCap },
+    { id: 'security', label: 'Security', icon: Shield },
+    { id: 'storage', label: 'Storage', icon: FolderOpen },
+  ] as const
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">System Settings</h2>
+          <p className="text-gray-500 mt-1">Configure and manage all system settings</p>
         </div>
-      </Card>
-      
-      <Card className="p-6 border border-gray-200">
-        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Lock className="w-5 h-5 text-red-500" /> Security
-        </h3>
-        <div className="space-y-4">
-          <Button variant="outline" className="gap-2">
-            <Lock className="w-4 h-4" /> Change Password
-          </Button>
-          <Button variant="outline" className="gap-2 text-red-500 border-red-200 hover:bg-red-50">
-            <LogOut className="w-4 h-4" /> Sign Out
-          </Button>
-        </div>
-      </Card>
+        {saveMessage && (
+          <div className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+            saveMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          }`}>
+            {saveMessage.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+            {saveMessage.message}
+          </div>
+        )}
+      </div>
+
+      {/* Settings Tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-2 border-b border-gray-200">
+        {tabs.map((tab) => {
+          const Icon = tab.icon
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveSettingsTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg font-medium text-sm whitespace-nowrap transition-colors ${
+                activeSettingsTab === tab.id
+                  ? 'bg-amber-500 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Settings Content */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        {/* General / Institution Info */}
+        {activeSettingsTab === 'general' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-blue-500" /> Institution Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Institution Name</label>
+                <Input defaultValue={institutionData?.name || ''} className="mt-1" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Short Name</label>
+                <Input defaultValue={institutionData?.shortName || ''} className="mt-1" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Type</label>
+                <Input defaultValue={institutionData?.type || ''} className="mt-1" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Established Year</label>
+                <Input type="number" defaultValue={institutionData?.establishedYear || ''} className="mt-1" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium text-gray-700">Address</label>
+                <Input defaultValue={institutionData?.address || ''} className="mt-1" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">City</label>
+                <Input defaultValue={institutionData?.city || ''} className="mt-1" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">State</label>
+                <Input defaultValue={institutionData?.state || ''} className="mt-1" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Pincode</label>
+                <Input defaultValue={institutionData?.pincode || ''} className="mt-1" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Phone</label>
+                <Input defaultValue={institutionData?.phone || ''} className="mt-1" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Email</label>
+                <Input type="email" defaultValue={institutionData?.email || ''} className="mt-1" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Website</label>
+                <Input defaultValue={institutionData?.website || ''} className="mt-1" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Accreditation</label>
+                <Input defaultValue={institutionData?.accreditation || ''} className="mt-1" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Accreditation Grade</label>
+                <Input defaultValue={institutionData?.accreditationGrade || ''} className="mt-1" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Affiliation</label>
+                <Input defaultValue={institutionData?.affiliation || ''} className="mt-1" />
+              </div>
+            </div>
+
+            <h3 className="text-lg font-semibold text-gray-900 pt-4 border-t flex items-center gap-2">
+              <Sun className="w-5 h-5 text-amber-500" /> Appearance
+            </h3>
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+              <div className="flex items-center gap-3">
+                {darkMode ? <Moon className="w-5 h-5 text-indigo-500" /> : <Sun className="w-5 h-5 text-amber-500" />}
+                <span className="font-medium text-gray-700">Dark Mode</span>
+              </div>
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className={`relative w-12 h-6 rounded-full transition-colors ${darkMode ? 'bg-indigo-500' : 'bg-gray-300'}`}
+              >
+                <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${darkMode ? 'translate-x-6' : ''}`} />
+              </button>
+            </div>
+
+            <Button 
+              onClick={() => handleSaveSection('general')} 
+              disabled={saving}
+              className="bg-gradient-to-r from-blue-500 to-indigo-600"
+            >
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Saving...</> : 'Save Changes'}
+            </Button>
+          </div>
+        )}
+
+        {/* Domain Setup */}
+        {activeSettingsTab === 'domain' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Globe className="w-5 h-5 text-green-500" /> Domain Configuration
+            </h3>
+            <p className="text-sm text-gray-500">Configure your application's domain settings</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium text-gray-700">Primary Domain *</label>
+                <Input 
+                  value={domainForm.primary}
+                  onChange={(e) => setDomainForm({...domainForm, primary: e.target.value})}
+                  placeholder="https://your-institution.edu.in"
+                  className="mt-1"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium text-gray-700">Domain Aliases (comma-separated)</label>
+                <Input 
+                  value={domainForm.aliases}
+                  onChange={(e) => setDomainForm({...domainForm, aliases: e.target.value})}
+                  placeholder="www.your-institution.edu.in, app.your-institution.edu.in"
+                  className="mt-1"
+                />
+              </div>
+              <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                <div>
+                  <p className="font-medium text-gray-900">SSL/HTTPS Enabled</p>
+                  <p className="text-sm text-gray-500">Enable secure connections</p>
+                </div>
+                <button
+                  onClick={() => setDomainForm({...domainForm, sslEnabled: !domainForm.sslEnabled})}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${domainForm.sslEnabled ? 'bg-green-500' : 'bg-gray-300'}`}
+                >
+                  <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${domainForm.sslEnabled ? 'translate-x-6' : ''}`} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div>
+                  <p className="font-medium text-gray-900">Force WWW</p>
+                  <p className="text-sm text-gray-500">Redirect to www version</p>
+                </div>
+                <button
+                  onClick={() => setDomainForm({...domainForm, forceWww: !domainForm.forceWww})}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${domainForm.forceWww ? 'bg-blue-500' : 'bg-gray-300'}`}
+                >
+                  <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${domainForm.forceWww ? 'translate-x-6' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+              <p className="text-sm text-amber-800">
+                <strong>Note:</strong> DNS changes may take up to 24-48 hours to propagate worldwide.
+              </p>
+            </div>
+
+            <Button 
+              onClick={() => handleSaveSection('domain')} 
+              disabled={saving}
+              className="bg-gradient-to-r from-green-500 to-emerald-600"
+            >
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Saving...</> : 'Save Domain Settings'}
+            </Button>
+          </div>
+        )}
+
+        {/* Database Setup */}
+        {activeSettingsTab === 'database' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Database className="w-5 h-5 text-purple-500" /> Database Configuration
+            </h3>
+            <p className="text-sm text-gray-500">Manage your database connection settings</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Database Type</label>
+                <select 
+                  value={databaseForm.type}
+                  onChange={(e) => setDatabaseForm({...databaseForm, type: e.target.value})}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="SQLite">SQLite</option>
+                  <option value="PostgreSQL">PostgreSQL</option>
+                  <option value="MySQL">MySQL</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Host / Server</label>
+                <Input 
+                  value={databaseForm.host}
+                  onChange={(e) => setDatabaseForm({...databaseForm, host: e.target.value})}
+                  placeholder="localhost or IP address"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Port</label>
+                <Input 
+                  value={databaseForm.port}
+                  onChange={(e) => setDatabaseForm({...databaseForm, port: e.target.value})}
+                  placeholder="5432, 3306, etc."
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Database Name</label>
+                <Input 
+                  value={databaseForm.name}
+                  onChange={(e) => setDatabaseForm({...databaseForm, name: e.target.value})}
+                  placeholder="iqac_erp"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Max Connections</label>
+                <Input 
+                  value={databaseForm.maxConnections}
+                  onChange={(e) => setDatabaseForm({...databaseForm, maxConnections: e.target.value})}
+                  placeholder="100"
+                  className="mt-1"
+                />
+              </div>
+              <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <div>
+                  <p className="font-medium text-gray-900">Auto Backup</p>
+                  <p className="text-sm text-gray-500">Enable automatic backups</p>
+                </div>
+                <button
+                  onClick={() => setDatabaseForm({...databaseForm, backupEnabled: !databaseForm.backupEnabled})}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${databaseForm.backupEnabled ? 'bg-purple-500' : 'bg-gray-300'}`}
+                >
+                  <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${databaseForm.backupEnabled ? 'translate-x-6' : ''}`} />
+                </button>
+              </div>
+              {databaseForm.backupEnabled && (
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Backup Frequency</label>
+                  <select 
+                    value={databaseForm.backupFrequency}
+                    onChange={(e) => setDatabaseForm({...databaseForm, backupFrequency: e.target.value})}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  >
+                    <option value="hourly">Hourly</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+              <p className="text-sm text-red-800">
+                <strong>Warning:</strong> Changing database configuration requires server restart. Ensure you have a backup before making changes.
+              </p>
+            </div>
+
+            <Button 
+              onClick={() => handleSaveSection('database')} 
+              disabled={saving}
+              className="bg-gradient-to-r from-purple-500 to-violet-600"
+            >
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Saving...</> : 'Save Database Settings'}
+            </Button>
+          </div>
+        )}
+
+        {/* Network / IP Setup */}
+        {activeSettingsTab === 'network' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Wifi className="w-5 h-5 text-cyan-500" /> Network & IP Configuration
+            </h3>
+            <p className="text-sm text-gray-500">Configure network access and security settings</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium text-gray-700">IP Whitelist (comma-separated)</label>
+                <textarea 
+                  value={networkForm.ipWhitelist}
+                  onChange={(e) => setNetworkForm({...networkForm, ipWhitelist: e.target.value})}
+                  placeholder="192.168.1.0/24, 10.0.0.1, 203.0.113.50"
+                  rows={3}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none"
+                />
+                <p className="text-xs text-gray-500 mt-1">Leave empty to allow all IPs</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">API Rate Limit (requests/min)</label>
+                <Input 
+                  type="number"
+                  value={networkForm.rateLimit}
+                  onChange={(e) => setNetworkForm({...networkForm, rateLimit: e.target.value})}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">API Timeout (seconds)</label>
+                <Input 
+                  type="number"
+                  value={networkForm.apiTimeout}
+                  onChange={(e) => setNetworkForm({...networkForm, apiTimeout: e.target.value})}
+                  className="mt-1"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium text-gray-700">CORS Allowed Origins</label>
+                <Input 
+                  value={networkForm.corsOrigins}
+                  onChange={(e) => setNetworkForm({...networkForm, corsOrigins: e.target.value})}
+                  placeholder="* or specific domains separated by commas"
+                  className="mt-1"
+                />
+              </div>
+              <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200 md:col-span-2">
+                <div>
+                  <p className="font-medium text-gray-900">Maintenance Mode</p>
+                  <p className="text-sm text-gray-500">Temporarily disable public access</p>
+                </div>
+                <button
+                  onClick={() => setNetworkForm({...networkForm, maintenanceMode: !networkForm.maintenanceMode})}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${networkForm.maintenanceMode ? 'bg-orange-500' : 'bg-gray-300'}`}
+                >
+                  <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${networkForm.maintenanceMode ? 'translate-x-6' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 bg-cyan-50 rounded-lg border border-cyan-200">
+              <p className="text-sm text-cyan-800">
+                <strong>Info:</strong> IP whitelist restrictions apply only to admin panel access. Public pages remain accessible.
+              </p>
+            </div>
+
+            <Button 
+              onClick={() => handleSaveSection('network')} 
+              disabled={saving}
+              className="bg-gradient-to-r from-cyan-500 to-blue-600"
+            >
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Saving...</> : 'Save Network Settings'}
+            </Button>
+          </div>
+        )}
+
+        {/* Email Settings */}
+        {activeSettingsTab === 'email' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Mail className="w-5 h-5 text-red-500" /> Email Configuration
+            </h3>
+            <p className="text-sm text-gray-500">Configure SMTP and notification email settings</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium text-gray-700">From Email Address</label>
+                <Input 
+                  type="email"
+                  value={emailForm.fromAddress}
+                  onChange={(e) => setEmailForm({...emailForm, fromAddress: e.target.value})}
+                  placeholder="noreply@your-institution.edu.in"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">SMTP Host</label>
+                <Input 
+                  value={emailForm.smtpHost}
+                  onChange={(e) => setEmailForm({...emailForm, smtpHost: e.target.value})}
+                  placeholder="smtp.gmail.com"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">SMTP Port</label>
+                <Input 
+                  value={emailForm.smtpPort}
+                  onChange={(e) => setEmailForm({...emailForm, smtpPort: e.target.value})}
+                  placeholder="587, 465, 25"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">SMTP Username</label>
+                <Input 
+                  value={emailForm.smtpUser}
+                  onChange={(e) => setEmailForm({...emailForm, smtpUser: e.target.value})}
+                  placeholder="username or email"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">SMTP Password</label>
+                <Input 
+                  type="password"
+                  placeholder="••••••••"
+                  className="mt-1"
+                />
+              </div>
+              <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
+                <div>
+                  <p className="font-medium text-gray-900">Email Notifications</p>
+                  <p className="text-sm text-gray-500">Send system notifications via email</p>
+                </div>
+                <button
+                  onClick={() => setEmailForm({...emailForm, notificationEmails: !emailForm.notificationEmails})}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${emailForm.notificationEmails ? 'bg-red-500' : 'bg-gray-300'}`}
+                >
+                  <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${emailForm.notificationEmails ? 'translate-x-6' : ''}`} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-pink-50 rounded-lg border border-pink-200">
+                <div>
+                  <p className="font-medium text-gray-900">Approval Alerts</p>
+                  <p className="text-sm text-gray-500">Email on new approvals required</p>
+                </div>
+                <button
+                  onClick={() => setEmailForm({...emailForm, approvalAlerts: !emailForm.approvalAlerts})}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${emailForm.approvalAlerts ? 'bg-pink-500' : 'bg-gray-300'}`}
+                >
+                  <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${emailForm.approvalAlerts ? 'translate-x-6' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            <Button 
+              onClick={() => handleSaveSection('email')} 
+              disabled={saving}
+              className="bg-gradient-to-r from-red-500 to-pink-600"
+            >
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Saving...</> : 'Save Email Settings'}
+            </Button>
+          </div>
+        )}
+
+        {/* Academic Settings */}
+        {activeSettingsTab === 'academic' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <GraduationCap className="w-5 h-5 text-indigo-500" /> Academic Settings
+            </h3>
+            <p className="text-sm text-gray-500">Configure academic year and semester information</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Current Academic Year</label>
+                <Input 
+                  value={academicForm.currentYear}
+                  onChange={(e) => setAcademicForm({...academicForm, currentYear: e.target.value})}
+                  placeholder="2024-25"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Current Semester</label>
+                <select 
+                  value={academicForm.currentSemester}
+                  onChange={(e) => setAcademicForm({...academicForm, currentSemester: e.target.value})}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="Odd">Odd Semester</option>
+                  <option value="Even">Even Semester</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Semester Start Date</label>
+                <Input 
+                  type="date"
+                  value={academicForm.startDate}
+                  onChange={(e) => setAcademicForm({...academicForm, startDate: e.target.value})}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Semester End Date</label>
+                <Input 
+                  type="date"
+                  value={academicForm.endDate}
+                  onChange={(e) => setAcademicForm({...academicForm, endDate: e.target.value})}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            <Button 
+              onClick={() => handleSaveSection('academic')} 
+              disabled={saving}
+              className="bg-gradient-to-r from-indigo-500 to-violet-600"
+            >
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Saving...</> : 'Save Academic Settings'}
+            </Button>
+          </div>
+        )}
+
+        {/* Security Settings */}
+        {activeSettingsTab === 'security' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-red-600" /> Security Settings
+            </h3>
+            <p className="text-sm text-gray-500">Manage authentication and security policies</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Session Timeout (minutes)</label>
+                <Input 
+                  type="number"
+                  value={securityForm.sessionTimeout}
+                  onChange={(e) => setSecurityForm({...securityForm, sessionTimeout: e.target.value})}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Max Login Attempts</label>
+                <Input 
+                  type="number"
+                  value={securityForm.maxLoginAttempts}
+                  onChange={(e) => setSecurityForm({...securityForm, maxLoginAttempts: e.target.value})}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Min Password Length</label>
+                <Input 
+                  type="number"
+                  value={securityForm.passwordMinLength}
+                  onChange={(e) => setSecurityForm({...securityForm, passwordMinLength: e.target.value})}
+                  className="mt-1"
+                />
+              </div>
+              <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
+                <div>
+                  <p className="font-medium text-gray-900">Two-Factor Auth</p>
+                  <p className="text-sm text-gray-500">Require 2FA for admin accounts</p>
+                </div>
+                <button
+                  onClick={() => setSecurityForm({...securityForm, twoFactorAuth: !securityForm.twoFactorAuth})}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${securityForm.twoFactorAuth ? 'bg-red-600' : 'bg-gray-300'}`}
+                >
+                  <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${securityForm.twoFactorAuth ? 'translate-x-6' : ''}`} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 md:col-span-2">
+                <div>
+                  <p className="font-medium text-gray-900">Audit Logging</p>
+                  <p className="text-sm text-gray-500">Log all administrative actions</p>
+                </div>
+                <button
+                  onClick={() => setSecurityForm({...securityForm, auditLogging: !securityForm.auditLogging})}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${securityForm.auditLogging ? 'bg-gray-700' : 'bg-gray-300'}`}
+                >
+                  <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${securityForm.auditLogging ? 'translate-x-6' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+              <p className="text-sm text-yellow-800">
+                <strong>Important:</strong> Security changes take effect immediately for new sessions. Active users will be affected on next login.
+              </p>
+            </div>
+
+            <Button 
+              onClick={() => handleSaveSection('security')} 
+              disabled={saving}
+              className="bg-gradient-to-r from-red-600 to-rose-600"
+            >
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Saving...</> : 'Save Security Settings'}
+            </Button>
+          </div>
+        )}
+
+        {/* Storage Settings */}
+        {activeSettingsTab === 'storage' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <FolderOpen className="w-5 h-5 text-emerald-500" /> File Storage Settings
+            </h3>
+            <p className="text-sm text-gray-500">Configure file upload and storage options</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Max File Size (MB)</label>
+                <Input 
+                  type="number"
+                  value={storageForm.maxSize}
+                  onChange={(e) => setStorageForm({...storageForm, maxSize: e.target.value})}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Upload Path</label>
+                <Input 
+                  value={storageForm.uploadPath}
+                  onChange={(e) => setStorageForm({...storageForm, uploadPath: e.target.value})}
+                  placeholder="/var/www/uploads"
+                  className="mt-1"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium text-gray-700">Allowed File Types (comma-separated)</label>
+                <Input 
+                  value={storageForm.allowedTypes}
+                  onChange={(e) => setStorageForm({...storageForm, allowedTypes: e.target.value})}
+                  placeholder="pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,png,gif"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">File Retention (days)</label>
+                <Input 
+                  type="number"
+                  value={storageForm.retentionDays}
+                  onChange={(e) => setStorageForm({...storageForm, retentionDays: e.target.value})}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+              <p className="text-sm text-emerald-800">
+                <strong>Storage Tip:</strong> Regular cleanup of old files helps maintain optimal system performance.
+              </p>
+            </div>
+
+            <Button 
+              onClick={() => handleSaveSection('storage')} 
+              disabled={saving}
+              className="bg-gradient-to-r from-emerald-500 to-teal-600"
+            >
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Saving...</> : 'Save Storage Settings'}
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -9301,6 +10735,8 @@ const ROLE_SIDEBAR_CONFIG = {
     roleIcon: Shield,
     menuItems: [
       { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'System Overview' },
+      { id: 'department_results', icon: BarChart3, label: 'Dept Results', badge: 'Live', description: 'All department analytics' },
+      { id: 'showcase', icon: Star, label: 'Showcase', badge: 'New', description: 'Institution highlights' },
       { id: 'departments', icon: Building2, label: 'Departments', description: 'Manage departments' },
       { id: 'faculty', icon: Users, label: 'Faculty', description: 'Faculty management' },
       { id: 'students', icon: GraduationCap, label: 'Students', description: 'Student records' },
@@ -9311,7 +10747,7 @@ const ROLE_SIDEBAR_CONFIG = {
       { id: 'analytics', icon: BarChart3, label: 'Analytics', description: 'Reports & Insights' },
       { id: 'documents', icon: FolderOpen, label: 'Documents', description: 'File management' },
       { id: 'feedback', icon: MessageSquare, label: 'Feedback', description: 'User feedback' },
-      { id: 'settings', icon: Settings, label: 'Settings', description: 'System settings' },
+      { id: 'settings', icon: Settings, label: 'Settings', badge: 'Full', description: 'System configuration' },
     ] as MenuItem[],
   }
 }
@@ -13209,6 +14645,8 @@ export default function IQACPortal() {
         : <FeedbackModule user={user} feedbackEnabled={feedbackEnabled} setFeedbackEnabled={setFeedbackEnabled} />
       case 'report_generator': return <HODReportGeneratorPage user={user} />
       case 'hod_management': return <HODManagementPage user={user} />
+      case 'department_results': return <AdminDepartmentResultsPage />
+      case 'showcase': return <AdminShowcasePage />
       default: return <DashboardContent user={user} setActiveTab={setActiveTab} />
     }
   }
