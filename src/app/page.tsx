@@ -9509,6 +9509,1175 @@ function AnalyticsPage() {
   )
 }
 
+// ============ ADMIN ACHIEVEMENTS PAGE ============
+function AdminAchievementsPage() {
+  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState<any>(null)
+  const [activeFilter, setActiveFilter] = useState<'all' | 'student' | 'staff' | 'hod'>('all')
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [expandedItem, setExpandedItem] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchAchievements()
+  }, [activeFilter, selectedDepartment])
+
+  const fetchAchievements = async () => {
+    try {
+      setLoading(true)
+      const params = new URLSearchParams()
+      if (activeFilter !== 'all') params.set('type', activeFilter)
+      if (selectedDepartment) params.set('departmentId', selectedDepartment)
+      
+      const res = await fetch(`/api/admin/achievements?${params.toString()}`)
+      const json = await res.json()
+      if (json.success) {
+        setData(json.data)
+      }
+    } catch (error) {
+      console.error('Error fetching achievements:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getAchievementIcon = (type: string) => {
+    switch (type) {
+      case 'award': return Trophy
+      case 'certification': return Award
+      case 'patent': return Lightbulb
+      case 'research': return Newspaper
+      case 'project': return Rocket
+      case 'book': return BookOpen
+      case 'fdp': return GraduationCap
+      case 'consultancy': return Briefcase
+      default: return Star
+    }
+  }
+
+  const getAchievementColor = (type: string) => {
+    switch (type) {
+      case 'award': return 'from-amber-500 to-orange-500'
+      case 'certification': return 'from-green-500 to-emerald-500'
+      case 'patent': return 'from-purple-500 to-violet-500'
+      case 'research': return 'from-blue-500 to-cyan-500'
+      case 'project': return 'from-rose-500 to-pink-500'
+      case 'book': return 'from-indigo-500 to-purple-500'
+      case 'fdp': return 'from-teal-500 to-green-500'
+      case 'consultancy': return 'from-cyan-500 to-blue-500'
+      default: return 'from-gray-500 to-gray-600'
+    }
+  }
+
+  const getStatusBadge = (status: string) => {
+    switch (status?.toUpperCase()) {
+      case 'APPROVED':
+        return <Badge className="bg-green-100 text-green-700 border-green-200">Approved</Badge>
+      case 'PENDING':
+        return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">Pending</Badge>
+      case 'REJECTED':
+        return <Badge className="bg-red-100 text-red-700 border-red-200">Rejected</Badge>
+      default:
+        return <Badge variant="outline">{status || 'N/A'}</Badge>
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+      </div>
+    )
+  }
+
+  // Combine all achievements based on filter
+  let allAchievements: any[] = []
+  if (activeFilter === 'all' || activeFilter === 'student') {
+    allAchievements = [...allAchievements, ...((data?.studentAchievements || []).map((a: any) => ({ ...a, category: 'student' })))]
+  }
+  if (activeFilter === 'all' || activeFilter === 'staff') {
+    allAchievements = [...allAchievements, ...((data?.staffAchievements || []).map((a: any) => ({ ...a, category: 'staff' })))]
+  }
+  if (activeFilter === 'all' || activeFilter === 'hod') {
+    allAchievements = [...allAchievements, ...((data?.hodAchievements || []).map((a: any) => ({ ...a, category: 'hod' })))]
+  }
+
+  // Apply search filter
+  if (searchTerm) {
+    allAchievements = allAchievements.filter((a: any) =>
+      a.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.studentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.staffName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.organizedBy?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <Trophy className="w-7 h-7 text-amber-500" />
+            Achievements Review
+          </h2>
+          <p className="text-gray-500 mt-1">View and manage all achievements across the institution</p>
+        </div>
+        <Button onClick={fetchAchievements} variant="outline" className="gap-2">
+          <RefreshCw className="w-4 h-4" /> Refresh
+        </Button>
+      </div>
+
+      {/* Summary Cards */}
+      {data?.summary && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className={`p-4 border-2 cursor-pointer transition-all ${activeFilter === 'all' ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-amber-300'}`}
+                onClick={() => setActiveFilter('all')}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500">
+                <Star className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {(data.summary.totalStudentAchievements || 0) + 
+                   (data.summary.totalStaffAchievements || 0) + 
+                   (data.summary.totalHODAchievements || 0)}
+                </p>
+                <p className="text-xs text-gray-500">Total Achievements</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className={`p-4 border-2 cursor-pointer transition-all ${activeFilter === 'student' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
+                onClick={() => setActiveFilter('student')}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500">
+                <GraduationCap className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{data.summary.totalStudentAchievements || 0}</p>
+                <p className="text-xs text-gray-500">Student Achievements</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className={`p-4 border-2 cursor-pointer transition-all ${activeFilter === 'staff' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300'}`}
+                onClick={() => setActiveFilter('staff')}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500">
+                <Users className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{data.summary.totalStaffAchievements || 0}</p>
+                <p className="text-xs text-gray-500">Staff Achievements</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className={`p-4 border-2 cursor-pointer transition-all ${activeFilter === 'hod' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}`}
+                onClick={() => setActiveFilter('hod')}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-violet-500">
+                <Shield className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{data.summary.totalHODAchievements || 0}</p>
+                <p className="text-xs text-gray-500">HOD Achievements</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input
+            placeholder="Search achievements..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        
+        <select
+          value={selectedDepartment}
+          onChange={(e) => setSelectedDepartment(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+        >
+          <option value="">All Departments</option>
+          {(data?.departments || []).map((dept: any) => (
+            <option key={dept.id} value={dept.id}>{dept.name} ({dept.code})</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Student Achievements Section */}
+      {(activeFilter === 'all' || activeFilter === 'student') && data?.studentAchievements?.length > 0 && (
+        <Card className="border border-gray-200 overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white pb-4">
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <GraduationCap className="w-5 h-5" /> Student Achievements
+              </span>
+              <Badge className="bg-white/20 text-white border-white/30">
+                {data.studentAchievements.length} records
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
+              {data.studentAchievements.map((achievement: any, idx: number) => (
+                <div key={achievement.id || idx} className="p-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3 flex-1">
+                      <div className={`p-2 rounded-lg bg-gradient-to-br ${
+                        achievement.type === 'SPORTS' ? 'from-green-500 to-emerald-500' :
+                        achievement.type === 'CULTURAL' ? 'from-pink-500 to-rose-500' :
+                        achievement.type === 'TECHNICAL' ? 'from-blue-500 to-cyan-500' :
+                        achievement.type === 'ACADEMIC' ? 'from-purple-500 to-violet-500' :
+                        'from-gray-500 to-gray-600'
+                      }`}>
+                        <Trophy className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-semibold text-gray-900 truncate">{achievement.title}</h4>
+                          <Badge variant="outline" className="text-xs">{achievement.type}</Badge>
+                          {getStatusBadge(achievement.approvalStatus)}
+                        </div>
+                        <div className="mt-1 flex items-center gap-4 text-sm text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            {achievement.student?.user?.name || 'Unknown Student'}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Building2 className="w-3 h-3" />
+                            {achievement.student?.department?.name || 'N/A'}
+                          </span>
+                          {achievement.level && (
+                            <span className="flex items-center gap-1">
+                              <Target className="w-3 h-3" />
+                                      Level: {achievement.level}
+                                    </span>
+                                  )}
+                                </div>
+                                {achievement.description && expandedItem === `student-${idx}` && (
+                                  <p className="mt-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                                    {achievement.description}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setExpandedItem(expandedItem === `student-${idx}` ? null : `student-${idx}`)}
+                            >
+                              {expandedItem === `student-${idx}` ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Staff Achievements Section */}
+              {(activeFilter === 'all' || activeFilter === 'staff') && data?.staffAchievements?.length > 0 && (
+                <Card className="border border-gray-200 overflow-hidden">
+                  <CardHeader className="bg-gradient-to-r from-green-500 to-emerald-600 text-white pb-4">
+                    <CardTitle className="flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Users className="w-5 h-5" /> Staff Achievements
+                      </span>
+                      <Badge className="bg-white/20 text-white border-white/30">
+                        {data.staffAchievements.length} records
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
+                      {data.staffAchievements.map((achievement: any, idx: number) => {
+                        const IconComponent = getAchievementIcon(achievement.achievementType)
+                        return (
+                          <div key={`${achievement.achievementType}-${achievement.id}-${idx}`} className="p-4 hover:bg-gray-50 transition-colors">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex items-start gap-3 flex-1">
+                                <div className={`p-2 rounded-lg bg-gradient-to-br ${getAchievementColor(achievement.achievementType)}`}>
+                                  <IconComponent className="w-4 h-4 text-white" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <h4 className="font-semibold text-gray-900 truncate">
+                                      {achievement.title || achievement.achievementType}
+                                    </h4>
+                                    <Badge variant="outline" className="text-xs capitalize">
+                                      {achievement.achievementType}
+                                    </Badge>
+                                  </div>
+                                  <div className="mt-1 flex items-center gap-4 text-sm text-gray-500">
+                                    <span className="flex items-center gap-1">
+                                      <Users className="w-3 h-3" />
+                                      {achievement.faculty?.user?.name || 'Unknown Staff'}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <Building2 className="w-3 h-3" />
+                                      {achievement.faculty?.department?.name || achievement.department?.name || 'N/A'}
+                                    </span>
+                                    {achievement.designation && (
+                                      <span>{achievement.designation}</span>
+                                    )}
+                                  </div>
+                                  {achievement.description && expandedItem === `staff-${idx}` && (
+                                    <p className="mt-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                                      {achievement.description}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setExpandedItem(expandedItem === `staff-${idx}` ? null : `staff-${idx}`)}
+                              >
+                                {expandedItem === `staff-${idx}` ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                              </Button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* HOD Achievements Section */}
+              {(activeFilter === 'all' || activeFilter === 'hod') && data?.hodAchievements?.length > 0 && (
+                <Card className="border border-gray-200 overflow-hidden">
+                  <CardHeader className="bg-gradient-to-r from-purple-500 to-violet-600 text-white pb-4">
+                    <CardTitle className="flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Shield className="w-5 h-5" /> HOD Achievements
+                      </span>
+                      <Badge className="bg-white/20 text-white border-white/30">
+                        {data.hodAchievements.length} records
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="divide-y divide-gray-100 max-h-[400px] overflow-y-auto">
+                      {data.hodAchievements.map((achievement: any, idx: number) => {
+                        const IconComponent = getAchievementIcon(achievement.achievementType)
+                        return (
+                          <div key={`hod-${achievement.achievementType}-${achievement.id}-${idx}`} className="p-4 hover:bg-gray-50 transition-colors">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex items-start gap-3 flex-1">
+                                <div className={`p-2 rounded-lg bg-gradient-to-br from-purple-500 to-violet-500`}>
+                                  <IconComponent className="w-4 h-4 text-white" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <h4 className="font-semibold text-gray-900 truncate">
+                                      {achievement.title || achievement.achievementType}
+                                    </h4>
+                                    <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-xs capitalize">
+                                      HOD • {achievement.achievementType}
+                                    </Badge>
+                                  </div>
+                                  <div className="mt-1 flex items-center gap-4 text-sm text-gray-500">
+                                    <span className="flex items-center gap-1">
+                                      <Shield className="w-3 h-3" />
+                                      {achievement.faculty?.user?.name || 'Unknown HOD'}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <Building2 className="w-3 h-3" />
+                                      {achievement.department?.name || 'N/A'}
+                                    </span>
+                                  </div>
+                                  {achievement.description && expandedItem === `hod-${idx}` && (
+                                    <p className="mt-2 text-sm text-gray-600 bg-purple-50 p-3 rounded-lg">
+                                      {achievement.description}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setExpandedItem(expandedItem === `hod-${idx}` ? null : `hod-${idx}`)}
+                              >
+                                {expandedItem === `hod-${idx}` ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                              </Button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Empty State */}
+              {allAchievements.length === 0 && (
+                <Card className="p-12 border border-dashed border-gray-300">
+                  <div className="text-center">
+                    <Trophy className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Achievements Found</h3>
+                    <p className="text-gray-500">
+                      {searchTerm ? 'Try adjusting your search or filters' : 'No achievements have been recorded yet'}
+                    </p>
+                  </div>
+                </Card>
+              )}
+            </div>
+          )
+        }
+
+// ============ ADMIN ANALYTICS PAGE ============
+function AdminAnalyticsPage() {
+  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState<any>(null)
+  const [period, setPeriod] = useState<'week' | 'month' | 'year' | 'all'>('month')
+  const [selectedDept, setSelectedDept] = useState<string>('')
+
+  useEffect(() => {
+    fetchAnalytics()
+  }, [period, selectedDept])
+
+  const fetchAnalytics = async () => {
+    try {
+      setLoading(true)
+      const params = new URLSearchParams()
+      params.set('period', period)
+      if (selectedDept) params.set('departmentId', selectedDept)
+
+      const res = await fetch(`/api/admin/analytics?${params.toString()}`)
+      const json = await res.json()
+      if (json.success) {
+        setData(json.data)
+      }
+    } catch (error) {
+      console.error('Error fetching analytics:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <BarChart3 className="w-7 h-7 text-blue-500" />
+            Analytics Dashboard
+          </h2>
+          <p className="text-gray-500 mt-1">Department-wise achievement analytics and insights</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            value={selectedDept}
+            onChange={(e) => setSelectedDept(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">All Departments</option>
+            {(data?.departments || []).map((d: any) => (
+              <option key={d.id} value={d.id}>{d.name}</option>
+            ))}
+          </select>
+          <Button onClick={fetchAnalytics} variant="outline" size="sm" className="gap-1">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </Button>
+        </div>
+      </div>
+
+      {/* Period Selector */}
+      <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl w-fit">
+        {[
+          { value: 'week', label: 'This Week' },
+          { value: 'month', label: 'This Month' },
+          { value: 'year', label: 'This Year' },
+          { value: 'all', label: 'All Time' },
+        ].map(p => (
+          <button
+            key={p.value}
+            onClick={() => setPeriod(p.value as any)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              period === p.value
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Overall Stats */}
+      {data?.overall && (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <Card className="p-4 border border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-100">
+                <GraduationCap className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-gray-900">{data.overall.students}</p>
+                <p className="text-xs text-gray-500">Students</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 border border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-100">
+                <Users className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-gray-900">{data.overall.faculty}</p>
+                <p className="text-xs text-gray-500">Faculty</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 border border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-100">
+                <Trophy className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-gray-900">{data.overall.studentAchievements}</p>
+                <p className="text-xs text-gray-500">Student Ach.</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 border border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-100">
+                <Award className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-gray-900">{data.overall.staffAwards}</p>
+                <p className="text-xs text-gray-500">Staff Awards</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 border border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-cyan-100">
+                <Newspaper className="w-5 h-5 text-cyan-600" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-gray-900">{data.overall.papers}</p>
+                <p className="text-xs text-gray-500">Research Papers</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 border border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-rose-100">
+                <Lightbulb className="w-5 h-5 text-rose-600" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-gray-900">{data.overall.patents}</p>
+                <p className="text-xs text-gray-500">Patents</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Achievement by Role Chart */}
+      {data?.achievementByRole && (
+        <Card className="p-6 border border-gray-200">
+          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <PieChartIcon className="w-5 h-5 text-purple-500" /> Achievement Distribution by Role
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center p-6 bg-blue-50 rounded-xl">
+              <div className="w-24 h-24 mx-auto mb-4 relative">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#E5E7EB"
+                    strokeWidth="3"
+                  />
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#3B82F6"
+                    strokeWidth="3"
+                    strokeDasharray={`${(data.achievementByRole.student / (data.achievementByRole.student + data.achievementByRole.staff + data.achievementByRole.hod || 1)) * 100}, 100`}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-blue-600">{data.achievementByRole.student}</span>
+                </div>
+              </div>
+              <h4 className="font-semibold text-gray-900">Student Achievements</h4>
+              <p className="text-sm text-gray-500">Sports, Cultural, Technical, Academic</p>
+            </div>
+            
+            <div className="text-center p-6 bg-green-50 rounded-xl">
+              <div className="w-24 h-24 mx-auto mb-4 relative">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#E5E7EB"
+                    strokeWidth="3"
+                  />
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#10B981"
+                    strokeWidth="3"
+                    strokeDasharray={`${(data.achievementByRole.staff / (data.achievementByRole.student + data.achievementByRole.staff + data.achievementByRole.hod || 1)) * 100}, 100`}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-green-600">{data.achievementByRole.staff}</span>
+                </div>
+              </div>
+              <h4 className="font-semibold text-gray-900">Staff Achievements</h4>
+              <p className="text-sm text-gray-500">Awards, Certifications, Publications</p>
+            </div>
+            
+            <div className="text-center p-6 bg-purple-50 rounded-xl">
+              <div className="w-24 h-24 mx-auto mb-4 relative">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#E5E7EB"
+                    strokeWidth="3"
+                  />
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#8B5CF6"
+                    strokeWidth="3"
+                    strokeDasharray={`${(data.achievementByRole.hod / (data.achievementByRole.student + data.achievementByRole.staff + data.achievementByRole.hod || 1)) * 100}, 100`}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-purple-600">{data.achievementByRole.hod}</span>
+                </div>
+              </div>
+              <h4 className="font-semibold text-gray-900">HOD Achievements</h4>
+              <p className="text-sm text-gray-500">Leadership & Research Excellence</p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Department-wise Analytics Table */}
+      {data?.departments && (
+        <Card className="border border-gray-200 overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-900 text-white">
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5" /> Department-wise Achievement Analytics
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Department</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Students</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Faculty</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-blue-600 uppercase tracking-wider">Student Ach.</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-green-600 uppercase tracking-wider">Staff Awards</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-purple-600 uppercase tracking-wider">Certifications</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-cyan-600 uppercase tracking-wider">Research</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-amber-600 uppercase tracking-wider">Patents</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-rose-600 uppercase tracking-wider">Projects</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-900 uppercase tracking-wider">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {data.departments.map((dept: any, idx: number) => (
+                    <tr key={dept.id} className={`hover:bg-gray-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-white text-xs font-bold">
+                            {dept.code.slice(0, 2)}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{dept.name}</p>
+                            <p className="text-xs text-gray-500">{dept.code}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center text-gray-700">{dept.stats.students}</td>
+                      <td className="px-4 py-3 text-center text-gray-700">{dept.stats.faculty}</td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                          {dept.achievements.studentAchievements}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                          {dept.achievements.staffAwards}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                          {dept.achievements.staffCertifications}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-cyan-100 text-cyan-700">
+                          {dept.achievements.researchPapers}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                          {dept.achievements.patents}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-700">
+                          {dept.achievements.projects}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-slate-800 to-slate-900 text-white">
+                          {dept.achievements.totalAchievements}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Top Performing Departments */}
+      {data?.topDepartments && data.topDepartments.length > 0 && (
+        <Card className="p-6 border border-gray-200">
+          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-green-500" /> Top Performing Departments
+          </h3>
+          <div className="space-y-4">
+            {data.topDepartments.map((dept: any, idx: number) => (
+              <div key={dept.id} className="flex items-center gap-4">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                  idx === 0 ? 'bg-amber-500 text-white' :
+                  idx === 1 ? 'bg-gray-400 text-white' :
+                  idx === 2 ? 'bg-amber-700 text-white' :
+                  'bg-gray-200 text-gray-600'
+                }`}>
+                  {idx + 1}
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-medium text-gray-900">{dept.name}</span>
+                    <span className="text-sm font-semibold text-gray-700">{dept.achievements.totalAchievements} achievements</span>
+                  </div>
+                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-500"
+                      style={{ width: `${(dept.achievements.totalAchievements / (data.topDepartments[0]?.achievements.totalAchievements || 1)) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Monthly Trend */}
+      {data?.monthlyTrend && (
+        <Card className="p-6 border border-gray-200">
+          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Activity className="w-5 h-5 text-blue-500" /> Monthly Achievement Trend
+          </h3>
+          <div className="flex items-end gap-2 h-48">
+            {data.monthlyTrend.map((month: any, idx: number) => {
+              const maxValue = Math.max(...data.monthlyTrend.map((m: any) => m.total), 1)
+              const height = (month.total / maxValue) * 100
+              return (
+                <div key={idx} className="flex-1 flex flex-col items-center gap-1">
+                  <div className="w-full relative group">
+                    <div
+                      className="w-full bg-gradient-to-t from-blue-500 to-cyan-400 rounded-t-lg transition-all duration-300 hover:from-blue-600 hover:to-cyan-500"
+                      style={{ height: `${Math.max(height, 2)}%`, minHeight: '4px' }}
+                    >
+                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                        {month.total} total
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-gray-500 text-center leading-tight">{month.month}</span>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+// ============ REPORT GENERATOR PAGE ============
+function ReportGeneratorPage() {
+  const [generating, setGenerating] = useState(false)
+  const [reportData, setReportData] = useState<any>(null)
+  const [reportType, setReportType] = useState<'weekly' | 'monthly' | 'yearly'>('monthly')
+  const [format, setFormat] = useState<'json' | 'csv' | 'summary'>('summary')
+  const [selectedDept, setSelectedDept] = useState<string>('')
+  const [category, setCategory] = useState<string>('all')
+  const [departments, setDepartments] = useState<any[]>([])
+
+  useEffect(() => {
+    fetchDepartments()
+  }, [])
+
+  const fetchDepartments = async () => {
+    try {
+      const res = await fetch('/api/departments')
+      const json = await res.json()
+      if (json.success) {
+        setDepartments(json.data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching departments:', error)
+    }
+  }
+
+  const generateReport = async () => {
+    try {
+      setGenerating(true)
+      const params = new URLSearchParams()
+      params.set('type', reportType)
+      params.set('format', format)
+      if (selectedDept) params.set('departmentId', selectedDept)
+      if (category !== 'all') params.set('category', category)
+
+      if (format === 'csv') {
+        // Download CSV directly
+        window.open(`/api/admin/reports?${params.toString()}`, '_blank')
+        setGenerating(false)
+        return
+      }
+
+      const res = await fetch(`/api/admin/reports?${params.toString()}`)
+      const json = await res.json()
+      if (json.success) {
+        setReportData(json.data)
+      }
+    } catch (error) {
+      console.error('Error generating report:', error)
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  const downloadJSON = () => {
+    if (!reportData) return
+    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `iqac-report-${reportType}-${new Date().toISOString().split('T')[0]}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <FileSpreadsheet className="w-7 h-7 text-green-500" />
+            Report Generator
+          </h2>
+          <p className="text-gray-500 mt-1">Generate comprehensive reports in multiple formats</p>
+        </div>
+      </div>
+
+      {/* Report Configuration Card */}
+      <Card className="border border-gray-200 overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-green-500 to-emerald-600 text-white">
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="w-5 h-5" /> Report Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6 space-y-6">
+          {/* Report Type Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">Report Period</label>
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { value: 'weekly', label: 'Weekly Report', desc: 'Last 7 days', icon: Calendar },
+                { value: 'monthly', label: 'Monthly Report', desc: 'Current month', icon: Calendar },
+                { value: 'yearly', label: 'Yearly Report', desc: 'Current year', icon: Calendar },
+              ].map(type => (
+                <button
+                  key={type.value}
+                  onClick={() => setReportType(type.value as any)}
+                  className={`p-4 rounded-xl border-2 text-left transition-all ${
+                    reportType === type.value
+                      ? 'border-green-500 bg-green-50 shadow-md'
+                      : 'border-gray-200 hover:border-green-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <type.icon className={`w-6 h-6 mb-2 ${reportType === type.value ? 'text-green-600' : 'text-gray-400'}`} />
+                  <p className={`font-semibold ${reportType === type.value ? 'text-green-900' : 'text-gray-900'}`}>
+                    {type.label}
+                  </p>
+                  <p className="text-xs text-gray-500">{type.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Format Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">Export Format</label>
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { value: 'summary', label: 'Summary View', desc: 'Interactive dashboard', icon: BarChart3 },
+                { value: 'json', label: 'JSON Format', desc: 'Machine-readable data', icon: Code },
+                { value: 'csv', label: 'CSV Format', desc: 'Spreadsheet compatible', icon: FileSpreadsheet },
+              ].map(fmt => (
+                <button
+                  key={fmt.value}
+                  onClick={() => setFormat(fmt.value as any)}
+                  className={`p-4 rounded-xl border-2 text-left transition-all ${
+                    format === fmt.value
+                      ? 'border-blue-500 bg-blue-50 shadow-md'
+                      : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <fmt.icon className={`w-6 h-6 mb-2 ${format === fmt.value ? 'text-blue-600' : 'text-gray-400'}`} />
+                  <p className={`font-semibold ${format === fmt.value ? 'text-blue-900' : 'text-gray-900'}`}>
+                    {fmt.label}
+                  </p>
+                  <p className="text-xs text-gray-500">{fmt.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Department (Optional)</label>
+              <select
+                value={selectedDept}
+                onChange={(e) => setSelectedDept(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">All Departments</option>
+                {departments.map(dept => (
+                  <option key={dept.id} value={dept.id}>{dept.name} ({dept.code})</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category Filter</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="all">All Categories</option>
+                <option value="student">Student Only</option>
+                <option value="staff">Staff Only</option>
+                <option value="hod">HOD Only</option>
+                <option value="achievement">Achievements Only</option>
+                <option value="activity">Activities Only</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Generate Button */}
+          <Button
+            onClick={generateReport}
+            disabled={generating}
+            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-3 text-lg"
+          >
+            {generating ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Generating Report...
+              </>
+            ) : (
+              <>
+                <Download className="w-5 h-5 mr-2" /> Generate Report
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Report Results */}
+      {reportData && format === 'summary' && (
+        <div className="space-y-6">
+          {/* Executive Summary */}
+          <Card className="border border-gray-200 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-900 text-white">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5" /> Executive Summary
+                </CardTitle>
+                <Button onClick={downloadJSON} variant="secondary" size="sm" className="gap-1 bg-white/10 hover:bg-white/20 text-white border-white/20">
+                  <Download className="w-4 h-4" /> Download JSON
+                </Button>
+              </div>
+              <p className="text-sm text-gray-300 mt-1">{reportData.metadata.periodLabel}</p>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div className="text-center p-4 bg-blue-50 rounded-xl">
+                  <p className="text-3xl font-bold text-blue-600">{reportData.executiveSummary.totalStudents}</p>
+                  <p className="text-sm text-gray-600">Total Students</p>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-xl">
+                  <p className="text-3xl font-bold text-green-600">{reportData.executiveSummary.totalFaculty}</p>
+                  <p className="text-sm text-gray-600">Total Faculty</p>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-xl">
+                  <p className="text-3xl font-bold text-purple-600">{reportData.executiveSummary.totalHODs}</p>
+                  <p className="text-sm text-gray-600">Total HODs</p>
+                </div>
+                <div className="text-center p-4 bg-amber-50 rounded-xl">
+                  <p className="text-3xl font-bold text-amber-600">{reportData.executiveSummary.totalActivities || 0}</p>
+                  <p className="text-sm text-gray-600">Activities</p>
+                </div>
+                <div className="text-center p-4 bg-cyan-50 rounded-xl">
+                  <p className="text-3xl font-bold text-cyan-600">{reportData.executiveSummary.totalResearch || 0}</p>
+                  <p className="text-sm text-gray-600">Research Papers</p>
+                </div>
+                <div className="text-center p-4 bg-rose-50 rounded-xl">
+                  <p className="text-3xl font-bold text-rose-600">{reportData.executiveSummary.totalAchievements || 0}</p>
+                  <p className="text-sm text-gray-600">Total Achievements</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Department Reports */}
+          <Card className="border border-gray-200 overflow-hidden">
+            <CardHeader className="bg-gray-50 border-b">
+              <CardTitle className="flex items-center gap-2 text-gray-900">
+                <Building2 className="w-5 h-5" /> Department-wise Reports
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Department</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Students</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Faculty</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-blue-600 uppercase">Student Ach.</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-green-600 uppercase">Staff Ach.</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-purple-600 uppercase">HOD Ach.</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-900 uppercase">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {reportData.departmentReports?.map((dept: any, idx: number) => (
+                      <tr key={dept.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 font-medium text-gray-900">{dept.name}</td>
+                        <td className="px-4 py-3 text-center text-gray-700">{dept.summary.students}</td>
+                        <td className="px-4 py-3 text-center text-gray-700">{dept.summary.faculty}</td>
+                        <td className="px-4 py-3 text-center">
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                            {dept.achievements.student.count}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            {dept.achievements.staff.count}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                            {dept.achievements.hod.count}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <Badge className="bg-gray-900 text-white">
+                            {dept.achievements.total}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Rankings */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="p-6 border border-gray-200">
+              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-amber-500" /> Top by Total Achievements
+              </h3>
+              <div className="space-y-3">
+                {reportData.rankings?.byTotalAchievements?.slice(0, 5).map((dept: any, idx: number) => (
+                  <div key={dept.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                        idx === 0 ? 'bg-amber-500' : idx === 1 ? 'bg-gray-500' : idx === 2 ? 'bg-amber-700' : 'bg-gray-400'
+                      }`}>
+                        {idx + 1}
+                      </span>
+                      <span className="font-medium text-gray-900">{dept.name}</span>
+                    </div>
+                    <span className="font-bold text-gray-700">{dept.total}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card className="p-6 border border-gray-200">
+              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-green-500" /> Placement Rate Ranking
+              </h3>
+              <div className="space-y-3">
+                {reportData.rankings?.byPlacementRate?.slice(0, 5).map((dept: any, idx: number) => (
+                  <div key={dept.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                        idx === 0 ? 'bg-green-500' : idx === 1 ? 'bg-green-600' : idx === 2 ? 'bg-green-700' : 'bg-gray-400'
+                      }`}>
+                        {idx + 1}
+                      </span>
+                      <span className="font-medium text-gray-900">{dept.name}</span>
+                    </div>
+                    <span className="font-bold text-green-600">{dept.rate}%</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Helper components
 function StatCell({ title, value, icon: Icon, color }: { title: string; value: string; icon: React.ElementType; color: string }) {
   return (
@@ -11226,6 +12395,7 @@ const ROLE_SIDEBAR_CONFIG = {
       { id: 'achievements', icon: Trophy, label: 'Achievements', badge: 'All', description: 'All achievements' },
       { id: 'approvals', icon: CheckCircle, label: 'Approvals', badge: '12', description: 'Pending approvals' },
       { id: 'analytics', icon: BarChart3, label: 'Analytics', description: 'Reports & Insights' },
+      { id: 'report_generator', icon: FileSpreadsheet, label: 'Reports', badge: 'New', description: 'Generate reports' },
       { id: 'documents', icon: FolderOpen, label: 'Documents', description: 'File management' },
       { id: 'feedback', icon: MessageSquare, label: 'Feedback', description: 'User feedback' },
       { id: 'settings', icon: Settings, label: 'Settings', badge: 'Full', description: 'System configuration' },
@@ -15108,12 +16278,21 @@ export default function IQACPortal() {
       case 'activities': return <ActivitiesPage />
       case 'research': return <ResearchPage />
       case 'approvals': return <ApprovalsPage />
-      case 'analytics': return user?.role === 'HOD' ? <HODDepartmentAnalyticsPage user={user} /> : <AnalyticsPage />
+      case 'analytics': return user?.role === 'ADMIN' 
+        ? <AdminAnalyticsPage /> 
+        : user?.role === 'HOD' 
+          ? <HODDepartmentAnalyticsPage user={user} /> 
+          : <AnalyticsPage />
       case 'documents': return <DocumentsPage />
       case 'settings': return <SettingsPage user={user} />
-      case 'achievements': return user?.role === 'STUDENT' 
-        ? <StudentAchievementsPage user={user} />
-        : <AchievementForm user={user} onBack={() => setActiveTab('dashboard')} />
+      case 'achievements': return user?.role === 'ADMIN'
+        ? <AdminAchievementsPage />
+        : user?.role === 'STUDENT' 
+          ? <StudentAchievementsPage user={user} />
+          : <AchievementForm user={user} onBack={() => setActiveTab('dashboard')} />
+      case 'report_generator': return user?.role === 'ADMIN'
+        ? <ReportGeneratorPage />
+        : <HODReportGeneratorPage user={user} />
       case 'staff_achievement': return <StaffAchievementPage user={user} />
       case 'student_achievement_view': return user?.role === 'STUDENT' 
         ? <StudentAchievementsPage user={user} />
