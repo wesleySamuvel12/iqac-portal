@@ -62,7 +62,7 @@ type TabType = 'dashboard' | 'departments' | 'faculty' | 'students' | 'activitie
   | 'approvals' | 'analytics' | 'documents' | 'settings' | 'achievements' | 'feedback'
   | 'staff_achievement' | 'student_achievement_view'
   | 'hod_student_approval' | 'hod_staff_approval' | 'my_achievement'
-  | 'report_generator' | 'hod_management' | 'showcase' | 'department_results'
+  | 'report_generator' | 'hod_management' | 'showcase'
 
 // ============ ACHIEVEMENT TYPES DEFINITION (13 Types - Student Focused) ============
 const ACHIEVEMENT_TYPES: Record<string, {
@@ -2998,8 +2998,154 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
     )
   }
 
-  // Admin Dashboard
+  // Admin Dashboard - With Departments Overview
   if (user.role === 'ADMIN') {
+    return <AdminDashboardContent user={user} setActiveTab={setActiveTab} stats={stats} />
+  }
+
+  // ============ ADMIN DASHBOARD COMPONENT ============
+  function AdminDashboardContent({ user, setActiveTab, stats }: { user: User; setActiveTab: (tab: TabType) => void; stats: DashboardStats }) {
+    const [departments, setDepartments] = useState<any[]>([])
+    const [selectedDept, setSelectedDept] = useState<any>(null)
+    const [deptDetails, setDeptDetails] = useState<any>(null)
+    const [loadingDepts, setLoadingDepts] = useState(true)
+
+    useEffect(() => {
+      fetch('/api/departments')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setDepartments(data.departments || data.data || [])
+          }
+        })
+        .finally(() => setLoadingDepts(false))
+    }, [])
+
+    useEffect(() => {
+      if (!selectedDept) {
+        setDeptDetails(null)
+        return
+      }
+
+      Promise.all([
+        fetch(`/api/faculty?departmentId=${selectedDept.id}`).then(r => r.json()),
+        fetch(`/api/students?departmentId=${selectedDept.id}`).then(r => r.json()),
+      ]).then(([facultyRes, studentRes]) => {
+        setDeptDetails({
+          faculty: facultyRes.faculty || [],
+          students: studentRes.students || [],
+        })
+      })
+    }, [selectedDept])
+
+    // Show department detail view
+    if (selectedDept) {
+      return (
+        <div className="space-y-6">
+          <Button 
+            variant="outline" 
+            onClick={() => setSelectedDept(null)}
+            className="gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+          </Button>
+
+          {/* Department Header */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 p-6 text-white">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl" />
+            <div className="relative z-10">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-3xl font-bold">{selectedDept.name}</h2>
+                  <p className="text-amber-100 mt-1">{selectedDept.code} • Click departments to explore</p>
+                </div>
+                <Building2 className="w-12 h-12 opacity-50" />
+              </div>
+              <div className="flex gap-6 mt-4">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2">
+                  <p className="text-xl font-bold">{selectedDept._count?.faculty || 0}</p>
+                  <p className="text-xs text-amber-100">Faculty</p>
+                </div>
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2">
+                  <p className="text-xl font-bold">{selectedDept._count?.students || 0}</p>
+                  <p className="text-xs text-amber-100">Students</p>
+                </div>
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2">
+                  <p className="text-xl font-bold">{selectedDept._count?.activities || 0}</p>
+                  <p className="text-xs text-amber-100">Activities</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {deptDetails ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Faculty List */}
+              <Card className="border border-gray-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4 text-white">
+                  <h3 className="font-bold flex items-center gap-2">
+                    <Users className="w-5 h-5" /> Faculty ({deptDetails.faculty.length})
+                  </h3>
+                </div>
+                <div className="p-4 max-h-80 overflow-y-auto space-y-2">
+                  {deptDetails.faculty.length === 0 ? (
+                    <p className="text-gray-500 text-center py-8">No faculty members</p>
+                  ) : (
+                    deptDetails.faculty.map((f: any) => (
+                      <div key={f.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-semibold text-sm">
+                          {(f.user?.name || 'U').charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm text-gray-900 truncate">{f.user?.name}</p>
+                          <p className="text-xs text-gray-500">{f.designation}</p>
+                        </div>
+                        {f.isHOD && <Badge className="bg-amber-100 text-amber-700 text-xs">HOD</Badge>}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </Card>
+
+              {/* Students List */}
+              <Card className="border border-gray-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-purple-500 to-violet-600 p-4 text-white">
+                  <h3 className="font-bold flex items-center gap-2">
+                    <GraduationCap className="w-5 h-5" /> Students ({deptDetails.students.length})
+                  </h3>
+                </div>
+                <div className="p-4 max-h-80 overflow-y-auto space-y-2">
+                  {deptDetails.students.length === 0 ? (
+                    <p className="text-gray-500 text-center py-8">No students</p>
+                  ) : (
+                    deptDetails.students.slice(0, 20).map((s: any) => (
+                      <div key={s.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-semibold text-sm">
+                          {(s.user?.name || 'S').charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm text-gray-900 truncate">{s.user?.name}</p>
+                          <p className="text-xs text-gray-500">{s.registerNumber}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  {deptDetails.students.length > 20 && (
+                    <p className="text-sm text-gray-500 text-center pt-2">
+                      ...and {deptDetails.students.length - 20} more students
+                    </p>
+                  )}
+                </div>
+              </Card>
+            </div>
+          ) : (
+            <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
+          )}
+        </div>
+      )
+    }
+
+    // Default Admin Dashboard with Departments Grid
     return (
       <div className="space-y-6">
         {/* Welcome Banner */}
@@ -3037,6 +3183,66 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
           <StatCard title="Pending" value={stats.pendingApprovals} icon={Clock} color="red" trend="Needs attention" />
         </div>
 
+        {/* Departments Grid - Click to View Details */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-blue-500" /> All Departments
+            </h3>
+            <Button variant="outline" size="sm" onClick={() => setActiveTab('departments')}>
+              Manage Departments <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+          
+          {loadingDepts ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {departments.map((dept: any) => (
+                <Card 
+                  key={dept.id}
+                  className="border border-gray-200 hover:shadow-lg cursor-pointer transition-all hover:-translate-y-1 overflow-hidden"
+                  onClick={() => setSelectedDept(dept)}
+                >
+                  <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 text-white">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold truncate">{dept.name}</h4>
+                      <Building2 className="w-6 h-6 opacity-50" />
+                    </div>
+                    <p className="text-blue-100 text-sm mt-1">{dept.code}</p>
+                  </div>
+                  <div className="p-3">
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div>
+                        <p className="text-lg font-bold text-gray-900">{dept._count?.faculty || 0}</p>
+                        <p className="text-[10px] text-gray-500">Faculty</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold text-gray-900">{dept._count?.students || 0}</p>
+                        <p className="text-[10px] text-gray-500">Students</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold text-gray-900">{dept._count?.activities || 0}</p>
+                        <p className="text-[10px] text-gray-500">Activities</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-blue-600 mt-2 text-center font-medium">
+                      Click to view →
+                    </p>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {departments.length === 0 && !loadingDepts && (
+            <div className="text-center py-8 bg-gray-50 rounded-xl">
+              <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+              <p className="text-gray-500">No departments found.</p>
+            </div>
+          )}
+        </div>
+
         {/* Quick Actions */}
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
@@ -3070,25 +3276,6 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
               onClick={() => setActiveTab('analytics')}
             />
           </div>
-        </div>
-
-        {/* Recent Activity Table */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">System Overview</h3>
-            <Button variant="outline" size="sm" onClick={() => setActiveTab('departments')}>
-              View All Departments <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
-          <DataTable 
-            data={[
-              { module: 'User Management', status: 'Active', lastUpdate: 'Today', records: stats.totalFaculty + stats.totalStudents },
-              { module: 'Academic Programs', status: 'Active', lastUpdate: 'Today', records: stats.totalDepartments },
-              { module: 'Research Activities', status: 'Active', lastUpdate: 'This Week', records: stats.totalResearch },
-              { module: 'Quality Initiatives', status: 'Active', lastUpdate: 'This Month', records: stats.totalActivities },
-            ]} 
-            columns={[{ key: 'module', label: 'Module' }, { key: 'status', label: 'Status' }, { key: 'lastUpdate', label: 'Last Update' }, { key: 'records', label: 'Records' }]} 
-          />
         </div>
       </div>
     )
@@ -5012,13 +5199,19 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
 function DepartmentsPage() {
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null)
+  const [departmentStaff, setDepartmentStaff] = useState<any[]>([])
+  const [departmentStudents, setDepartmentStudents] = useState<any[]>([])
+  const [loadingDetails, setLoadingDetails] = useState(false)
 
   useEffect(() => {
     fetch('/api/departments')
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          setDepartments(data.data.map((d: any) => ({
+          // API returns data.departments array
+          const deptArray = data.departments || data.data || []
+          setDepartments(deptArray.map((d: any) => ({
             id: d.id,
             name: d.name,
             code: d.code,
@@ -5031,16 +5224,152 @@ function DepartmentsPage() {
       .finally(() => setLoading(false))
   }, [])
 
+  // Fetch department details (staff & students) when a department is selected
+  useEffect(() => {
+    if (!selectedDepartment) {
+      setDepartmentStaff([])
+      setDepartmentStudents([])
+      return
+    }
+
+    setLoadingDetails(true)
+    Promise.all([
+      fetch(`/api/faculty?departmentId=${selectedDepartment.id}`).then(res => res.json()),
+      fetch(`/api/students?departmentId=${selectedDepartment.id}`).then(res => res.json())
+    ]).then(([facultyData, studentData]) => {
+      if (facultyData.success) {
+        setDepartmentStaff(facultyData.faculty || [])
+      }
+      if (studentData.success) {
+        setStudentData(studentData.students || [])
+      }
+    }).finally(() => setLoadingDetails(false))
+  }, [selectedDepartment])
+
   if (loading) {
     return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
   }
 
+  // Show department detail view with staff and students
+  if (selectedDepartment) {
+    return (
+      <div className="space-y-6">
+        {/* Back Button */}
+        <Button 
+          variant="outline" 
+          onClick={() => setSelectedDepartment(null)}
+          className="gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to All Departments
+        </Button>
+
+        {/* Department Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white">
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-3xl font-bold">{selectedDepartment.name}</h2>
+              <p className="text-blue-100 mt-1">Code: {selectedDepartment.code}</p>
+              <div className="flex gap-6 mt-4">
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{selectedDepartment.facultyCount}</p>
+                  <p className="text-xs text-blue-200">Faculty</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{selectedDepartment.studentCount}</p>
+                  <p className="text-xs text-blue-200">Students</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{selectedDepartment.activityCount}</p>
+                  <p className="text-xs text-blue-200">Activities</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white/20 rounded-xl p-3">
+              <Building2 className="w-10 h-10" />
+            </div>
+          </div>
+        </div>
+
+        {loadingDetails ? (
+          <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Staff Section */}
+            <Card className="border border-gray-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4 text-white">
+                <h3 className="font-bold flex items-center gap-2">
+                  <Users className="w-5 h-5" /> Faculty Members ({departmentStaff.length})
+                </h3>
+              </div>
+              <div className="p-4 max-h-96 overflow-y-auto">
+                {departmentStaff.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">No faculty members found</p>
+                ) : (
+                  <div className="space-y-3">
+                    {departmentStaff.map((staff: any) => (
+                      <div key={staff.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                          <Users className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate">{staff.user?.name || staff.name}</p>
+                          <p className="text-sm text-gray-500">{staff.designation || 'Faculty'}</p>
+                        </div>
+                        {staff.isHOD && (
+                          <Badge className="bg-amber-100 text-amber-700">HOD</Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            {/* Students Section */}
+            <Card className="border border-gray-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-purple-500 to-violet-600 p-4 text-white">
+                <h3 className="font-bold flex items-center gap-2">
+                  <GraduationCap className="w-5 h-5" /> Students ({departmentStudents.length})
+                </h3>
+              </div>
+              <div className="p-4 max-h-96 overflow-y-auto">
+                {departmentStudents.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">No students found</p>
+                ) : (
+                  <div className="space-y-3">
+                    {departmentStudents.map((student: any) => (
+                      <div key={student.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                          <GraduationCap className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate">{student.user?.name || student.name}</p>
+                          <p className="text-sm text-gray-500">{student.registerNumber} • Sem {student.semester || '-'}</p>
+                        </div>
+                        {student.cgpa && (
+                          <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+                            CGPA: {student.cgpa}
+                          </Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Default view - show all departments
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Departments</h2>
-          <p className="text-gray-500">Manage all academic departments</p>
+          <p className="text-gray-500">Click on a department to view its faculty and students</p>
         </div>
         <Button className="gap-2 bg-gradient-to-r from-blue-500 to-indigo-600">
           <Plus className="w-4 h-4" /> Add Department
@@ -5049,45 +5378,198 @@ function DepartmentsPage() {
       
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {departments.map(dept => (
-          <DeptCard key={dept.id} dept={dept} />
+          <Card 
+            key={dept.id} 
+            className="border border-gray-200 hover:shadow-lg cursor-pointer transition-all hover:-translate-y-1 overflow-hidden"
+            onClick={() => setSelectedDepartment(dept)}
+          >
+            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 text-white">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-lg">{dept.name}</h3>
+                <Building2 className="w-8 h-8 opacity-50" />
+              </div>
+              <p className="text-blue-100 text-sm mt-1">{dept.code}</p>
+            </div>
+            <div className="p-4">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <p className="text-xl font-bold text-gray-900">{dept.facultyCount}</p>
+                  <p className="text-xs text-gray-500">Faculty</p>
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-gray-900">{dept.studentCount}</p>
+                  <p className="text-xs text-gray-500">Students</p>
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-gray-900">{dept.activityCount}</p>
+                  <p className="text-xs text-gray-500">Activities</p>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-sm text-blue-600 font-medium flex items-center gap-1">
+                  Click to view details <ChevronRight className="w-4 h-4" />
+                </p>
+              </div>
+            </div>
+          </Card>
         ))}
       </div>
+
+      {departments.length === 0 && (
+        <div className="text-center py-12">
+          <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">No departments found.</p>
+        </div>
+      )}
     </div>
   )
 }
 
-// ============ FACULTY PAGE ============
+// ============ FACULTY PAGE (Department-First Navigation) ============
 function FacultyPage() {
+  const [departments, setDepartments] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedDept, setSelectedDept] = useState<string | null>(null)
+  const [facultyList, setFacultyList] = useState<any[]>([])
+  const [loadingFaculty, setLoadingFaculty] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/departments')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setDepartments(data.departments || data.data || [])
+        }
+      })
+      .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    if (!selectedDept) {
+      setFacultyList([])
+      return
+    }
+
+    setLoadingFaculty(true)
+    fetch(`/api/faculty?departmentId=${selectedDept}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setFacultyList(data.faculty || [])
+        }
+      })
+      .finally(() => setLoadingFaculty(false))
+  }, [selectedDept])
+
+  if (loading) {
+    return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
+  }
+
+  // Show faculty list for selected department
+  if (selectedDept) {
+    const dept = departments.find((d: any) => d.id === selectedDept)
+    
+    return (
+      <div className="space-y-6">
+        <Button 
+          variant="outline" 
+          onClick={() => setSelectedDept(null)}
+          className="gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Departments
+        </Button>
+
+        <div className="bg-gradient-to-r from-green-600 to-emerald-700 rounded-2xl p-6 text-white">
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-3xl font-bold">{dept?.name || 'Department'}</h2>
+              <p className="text-green-100 mt-1">Faculty Members ({facultyList.length})</p>
+            </div>
+            <div className="bg-white/20 rounded-xl p-3">
+              <Users className="w-10 h-10" />
+            </div>
+          </div>
+        </div>
+
+        {loadingFaculty ? (
+          <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
+        ) : (
+          <Card className="border border-gray-200 p-6">
+            {facultyList.length === 0 ? (
+              <div className="text-center py-12">
+                <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">No faculty members found in this department.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {facultyList.map((faculty: any) => (
+                  <div key={faculty.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white font-bold text-lg">
+                      {(faculty.user?.name || faculty.name || '?').charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900">{faculty.user?.name || faculty.name}</p>
+                      <p className="text-sm text-gray-500">{faculty.designation || 'Faculty Member'}</p>
+                      <p className="text-xs text-gray-400 mt-1">{faculty.user?.email || ''}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      {faculty.isHOD && <Badge className="bg-amber-100 text-amber-700">HOD</Badge>}
+                      {faculty.qualification && (
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                          {faculty.qualification.split(' ')[0]}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        )}
+      </div>
+    )
+  }
+
+  // Default view - show departments
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Faculty Management</h2>
-          <p className="text-gray-500">View and manage faculty members</p>
+          <p className="text-gray-500">Select a department to view its faculty members</p>
         </div>
-        <Button className="gap-2 bg-gradient-to-r from-blue-500 to-indigo-600"><Plus className="w-4 h-4" /> Add Faculty</Button>
+        <Button className="gap-2 bg-gradient-to-r from-blue-500 to-indigo-600">
+          <Plus className="w-4 h-4" /> Add Faculty
+        </Button>
       </div>
-      
-      <Card className="p-6 border border-gray-200">
-        <div className="flex gap-4 mb-6">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <Input placeholder="Search faculty..." className="pl-10 bg-white/80" />
-          </div>
-          <select className="border rounded-lg px-4 bg-white">
-            <option>All Departments</option>
-          </select>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {departments.map((dept: any) => (
+          <Card 
+            key={dept.id}
+            className="border border-gray-200 hover:shadow-lg cursor-pointer transition-all hover:-translate-y-1 overflow-hidden"
+            onClick={() => setSelectedDept(dept.id)}
+          >
+            <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-4 text-white">
+              <h3 className="font-bold truncate">{dept.name}</h3>
+              <p className="text-green-100 text-sm">{dept.code}</p>
+            </div>
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-500">{dept._count?.faculty || 0} Faculty</span>
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {departments.length === 0 && (
+        <div className="text-center py-12">
+          <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">No departments found.</p>
         </div>
-        <DataTable 
-          data={[
-            { name: 'Dr. R. Kumar', email: 'rkumar@niet.ac.in', department: 'CSE', designation: 'Professor', status: 'Active' },
-            { name: 'Dr. S. Devi', email: 'sdevi@niet.ac.in', department: 'ECE', designation: 'Associate Professor', status: 'Active' },
-            { name: 'Prof. M. Rajan', email: 'mrajan@niet.ac.in', department: 'EEE', designation: 'Assistant Professor', status: 'Active' },
-            { name: 'Dr. K. Singh', email: 'ksingh@niet.ac.in', department: 'MECH', designation: 'Professor', status: 'On Leave' },
-          ]}
-          columns={[{ key: 'name', label: 'Name' }, { key: 'email', label: 'Email' }, { key: 'department', label: 'Department' }, { key: 'designation', label: 'Designation' }, { key: 'status', label: 'Status' }]}
-        />
-      </Card>
+      )}
     </div>
   )
 }
@@ -10735,10 +11217,9 @@ const ROLE_SIDEBAR_CONFIG = {
     roleIcon: Shield,
     menuItems: [
       { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'System Overview' },
-      { id: 'department_results', icon: BarChart3, label: 'Dept Results', badge: 'Live', description: 'All department analytics' },
       { id: 'showcase', icon: Star, label: 'Showcase', badge: 'New', description: 'Institution highlights' },
-      { id: 'departments', icon: Building2, label: 'Departments', description: 'Manage departments' },
-      { id: 'faculty', icon: Users, label: 'Faculty', description: 'Faculty management' },
+      { id: 'departments', icon: Building2, label: 'Departments', description: 'Manage departments & view staff' },
+      { id: 'faculty', icon: Users, label: 'Faculty', description: 'Faculty management by dept' },
       { id: 'students', icon: GraduationCap, label: 'Students', description: 'Student records' },
       { id: 'activities', icon: Activity, label: 'Activities', description: 'Events & Programs' },
       { id: 'research', icon: Award, label: 'Research', description: 'Research papers' },
@@ -14645,7 +15126,6 @@ export default function IQACPortal() {
         : <FeedbackModule user={user} feedbackEnabled={feedbackEnabled} setFeedbackEnabled={setFeedbackEnabled} />
       case 'report_generator': return <HODReportGeneratorPage user={user} />
       case 'hod_management': return <HODManagementPage user={user} />
-      case 'department_results': return <AdminDepartmentResultsPage />
       case 'showcase': return <AdminShowcasePage />
       default: return <DashboardContent user={user} setActiveTab={setActiveTab} />
     }
