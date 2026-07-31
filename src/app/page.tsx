@@ -3531,7 +3531,8 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
   const [deleteConfirm, setDeleteConfirm] = useState<{type: 'student' | 'staff', id: number} | null>(null)
 
   // Form States
-  const [studentForm, setStudentForm] = useState({ name: '', regNo: '', year: 'I Year', email: '', status: 'active' })
+  const [studentForm, setStudentForm] = useState({ name: '', regNo: '', year: 'I Year', batch: '2024 Batch', email: '', status: 'active' })
+  const [selectedBatch, setSelectedBatch] = useState<string>('all')
   const [staffForm, setStaffForm] = useState({ name: '', designation: '', email: '', status: 'active', phone: '' })
 
   // Load achievements from localStorage on mount
@@ -3573,15 +3574,18 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
     }
 
     // Default demo data - in real app this would come from API/database filtered by department
+    // Students organized by Batch Year (2021-2025)
     const demoStudents = [
-      { id: 1, name: 'Bhavani S', regNo: 'CSE001', year: 'III Year', email: 'bhavani@niet.ac.in', status: 'active' },
-      { id: 2, name: 'Arun Kumar', regNo: 'CSE002', year: 'IV Year', email: 'arun@niet.ac.in', status: 'active' },
-      { id: 3, name: 'Priya R', regNo: 'CSE003', year: 'II Year', email: 'priya@niet.ac.in', status: 'active' },
-      { id: 4, name: 'Karthik M', regNo: 'CSE004', year: 'I Year', email: 'karthik@niet.ac.in', status: 'inactive' },
-      { id: 5, name: 'Deepa L', regNo: 'CSE005', year: 'III Year', email: 'deepa@niet.ac.in', status: 'active' },
-      { id: 6, name: 'Rahul V', regNo: 'CSE006', year: 'IV Year', email: 'rahul@niet.ac.in', status: 'active' },
-      { id: 7, name: 'Sneha K', regNo: 'CSE007', year: 'II Year', email: 'sneha@niet.ac.in', status: 'active' },
-      { id: 8, name: 'Vijay S', regNo: 'CSE008', year: 'I Year', email: 'vijay@niet.ac.in', status: 'active' },
+      { id: 1, name: 'Arun Kumar', regNo: 'CSE001', year: 'IV Year', batch: '2021 Batch', email: 'arun@niet.ac.in', status: 'active' },
+      { id: 2, name: 'Rahul V', regNo: 'CSE002', year: 'IV Year', batch: '2021 Batch', email: 'rahul@niet.ac.in', status: 'active' },
+      { id: 3, name: 'Bhavani S', regNo: 'CSE003', year: 'III Year', batch: '2022 Batch', email: 'bhavani@niet.ac.in', status: 'active' },
+      { id: 4, name: 'Deepa L', regNo: 'CSE004', year: 'III Year', batch: '2022 Batch', email: 'deepa@niet.ac.in', status: 'active' },
+      { id: 5, name: 'Priya R', regNo: 'CSE005', year: 'II Year', batch: '2023 Batch', email: 'priya@niet.ac.in', status: 'active' },
+      { id: 6, name: 'Sneha K', regNo: 'CSE006', year: 'II Year', batch: '2023 Batch', email: 'sneha@niet.ac.in', status: 'active' },
+      { id: 7, name: 'Karthik M', regNo: 'CSE007', year: 'I Year', batch: '2024 Batch', email: 'karthik@niet.ac.in', status: 'inactive' },
+      { id: 8, name: 'Vijay S', regNo: 'CSE008', year: 'I Year', batch: '2024 Batch', email: 'vijay@niet.ac.in', status: 'active' },
+      { id: 9, name: 'Divya P', regNo: 'CSE009', year: 'I Year', batch: '2025 Batch', email: 'divya@niet.ac.in', status: 'active' },
+      { id: 10, name: 'Manoj T', regNo: 'CSE010', year: 'I Year', batch: '2025 Batch', email: 'manoj@niet.ac.in', status: 'active' },
     ]
     
     const demoStaff = [
@@ -3610,7 +3614,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
   // ==================== STUDENT CRUD OPERATIONS ====================
   const handleAddStudent = () => {
     setEditingStudent(null)
-    setStudentForm({ name: '', regNo: '', year: 'I Year', email: '', status: 'active' })
+    setStudentForm({ name: '', regNo: '', year: 'I Year', batch: '2024 Batch', email: '', status: 'active' })
     setShowStudentModal(true)
   }
 
@@ -3619,7 +3623,8 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
     setStudentForm({ 
       name: student.name, 
       regNo: student.regNo, 
-      year: student.year, 
+      year: student.year,
+      batch: student.batch || '2024 Batch',
       email: student.email, 
       status: student.status 
     })
@@ -3735,11 +3740,14 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
     ? staffAchievements
     : staffAchievements.filter(a => (a.data?.year_pub || a.year) === selectedYear)
 
-  // Filter users by search
-  const filteredStudents = departmentStudents.filter(s => 
-    s.name.toLowerCase().includes(searchUser.toLowerCase()) ||
-    s.regNo.toLowerCase().includes(searchUser.toLowerCase())
-  )
+  // Filter users by search, batch, and year
+  const filteredStudents = departmentStudents.filter(s => {
+    const matchesSearch = s.name.toLowerCase().includes(searchUser.toLowerCase()) ||
+      s.regNo.toLowerCase().includes(searchUser.toLowerCase())
+    const matchesBatch = selectedBatch === 'all' || (s.batch || 'Unassigned') === selectedBatch
+    const matchesYear = selectedYear === 'all' || s.year === selectedYear
+    return matchesSearch && matchesBatch && matchesYear
+  })
   const filteredStaffList = departmentStaff.filter(s =>
     s.name.toLowerCase().includes(searchUser.toLowerCase()) ||
     s.designation.toLowerCase().includes(searchUser.toLowerCase())
@@ -3974,7 +3982,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
         </>
       )}
 
-      {/* STUDENTS TAB - User Management with CRUD */}
+      {/* STUDENTS TAB - User Management with Batch-wise Organization */}
       {activeTab === 'students' && (
         <div className="space-y-6">
           {/* Search, Filter and Add Button */}
@@ -3990,9 +3998,22 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
               />
             </div>
             <select
+              value={selectedBatch}
+              onChange={(e) => setSelectedBatch(e.target.value)}
+              className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none bg-white"
+            >
+              <option value="all">All Batches</option>
+              <option value="2025 Batch">2025 Batch</option>
+              <option value="2024 Batch">2024 Batch</option>
+              <option value="2023 Batch">2023 Batch</option>
+              <option value="2022 Batch">2022 Batch</option>
+              <option value="2021 Batch">2021 Batch</option>
+              <option value="2020 Batch">2020 Batch</option>
+            </select>
+            <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
+              className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none bg-white"
             >
               <option value="all">All Years</option>
               <option value="I Year">I Year</option>
@@ -4009,86 +4030,165 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
             </Button>
           </div>
 
+          {/* Batch-wise Statistics Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {(() => {
+              // Get unique batches and count students per batch
+              const batchCounts = departmentStudents.reduce((acc, s) => {
+                const batch = s.batch || 'Unassigned'
+                acc[batch] = (acc[batch] || 0) + 1
+                return acc
+              }, {} as Record<string, number>)
+              
+              const batches = Object.entries(batchCounts).sort((a, b) => parseInt(b[0]) - parseInt(a[0]))
+              
+              // Color palette for batches
+              const batchColors = [
+                'from-blue-500 to-blue-400',
+                'from-purple-500 to-purple-400',
+                'from-emerald-500 to-emerald-400',
+                'from-orange-500 to-orange-400',
+                'from-pink-500 to-pink-400',
+                'from-cyan-500 to-cyan-400',
+              ]
+              
+              return batches.map(([batch, count], idx) => (
+                <button
+                  key={batch}
+                  onClick={() => setSelectedBatch(selectedBatch === batch ? 'all' : batch)}
+                  className={`p-3 rounded-xl bg-gradient-to-br ${batchColors[idx % batchColors.length]} text-white text-left transition-all hover:shadow-lg ${selectedBatch === batch ? 'ring-2 ring-offset-2 ring-gray-800' : ''}`}
+                >
+                  <p className="text-[10px] opacity-90 font-medium">{batch}</p>
+                  <p className="text-xl font-bold">{count}</p>
+                  <p className="text-[10px] opacity-80">students</p>
+                </button>
+              ))
+            })()}
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Students List */}
+            {/* Students List - Organized by Batch */}
             <Card className="border border-gray-200 lg:col-span-2">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
                     <GraduationCap className="w-5 h-5 text-blue-500" /> 
                     Department Students ({filteredStudents.length})
+                    {selectedBatch !== 'all' && (
+                      <Badge className="bg-violet-100 text-violet-700 ml-2">{selectedBatch}</Badge>
+                    )}
                   </CardTitle>
                   <Badge variant="outline" className="text-xs">{user.departmentName}</Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-200 bg-gray-50">
-                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Reg No</th>
-                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Name</th>
-                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Year</th>
-                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                        <th className="text-right py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredStudents.map(student => {
-                        const studentAchievementCount = studentAchievements.filter(
-                          a => a.studentName === student.name || a.reg === student.regNo
-                        ).length
-                        return (
-                          <tr key={student.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                            <td className="py-3 px-4 text-sm font-mono text-gray-700">{student.regNo}</td>
-                            <td className="py-3 px-4">
-                              <div>
-                                <p className="text-sm font-medium text-gray-800">{student.name}</p>
-                                <p className="text-xs text-gray-500">{student.email}</p>
-                              </div>
-                            </td>
-                            <td className="py-3 px-4 text-sm text-gray-600">{student.year}</td>
-                            <td className="py-3 px-4">
-                              <Badge className={
-                                student.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                              }>
-                                {student.status}
-                              </Badge>
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="flex items-center justify-end gap-2">
-                                <span className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium mr-2">
-                                  <Trophy className="w-3 h-3" />
-                                  {studentAchievementCount}
-                                </span>
-                                <button
-                                  onClick={() => handleEditStudent(student)}
-                                  className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                  title="Edit Student"
-                                >
-                                  <Edit3 className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteStudent(student.id)}
-                                  className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                  title="Delete Student"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                  {filteredStudents.length === 0 && (
-                    <div className="text-center py-12">
-                      <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500 font-medium">No students found</p>
-                      <p className="text-sm text-gray-400 mt-1">Add students to your department or adjust your search</p>
-                    </div>
-                  )}
+                <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1">
+                  {/* Group students by batch */}
+                  {(() => {
+                    // Group filtered students by batch
+                    const groupedByBatch = filteredStudents.reduce((acc, student) => {
+                      const batch = student.batch || 'Unassigned'
+                      if (!acc[batch]) acc[batch] = []
+                      acc[batch].push(student)
+                      return acc
+                    }, {} as Record<string, typeof filteredStudents>)
+                    
+                    // Sort batches (newest first)
+                    const sortedBatches = Object.keys(groupedByBatch).sort((a, b) => {
+                      const numA = parseInt(a)
+                      const numB = parseInt(b)
+                      if (!isNaN(numA) && !isNaN(numB)) return numB - numA
+                      return b.localeCompare(a)
+                    })
+                    
+                    if (sortedBatches.length === 0) {
+                      return (
+                        <div className="text-center py-12">
+                          <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                          <p className="text-gray-500 font-medium">No students found</p>
+                          <p className="text-sm text-gray-400 mt-1">Add students to your department or adjust your filters</p>
+                        </div>
+                      )
+                    }
+                    
+                    return sortedBatches.map(batch => (
+                      <div key={batch} className="border border-gray-200 rounded-lg overflow-hidden">
+                        {/* Batch Header */}
+                        <div className="bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-2.5 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-white" />
+                            <span className="font-bold text-white text-sm">{batch}</span>
+                          </div>
+                          <Badge className="bg-white/20 text-white border-0 text-xs">
+                            {groupedByBatch[batch].length} Students
+                          </Badge>
+                        </div>
+                        
+                        {/* Students Table for this batch */}
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="border-b border-gray-100 bg-gray-50">
+                                <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Reg No</th>
+                                <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Name</th>
+                                <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Year</th>
+                                <th className="text-center py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Status</th>
+                                <th className="text-right py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {groupedByBatch[batch].map(student => {
+                                const studentAchievementCount = studentAchievements.filter(
+                                  a => a.studentName === student.name || a.reg === student.regNo
+                                ).length
+                                return (
+                                  <tr key={student.id} className="border-b border-gray-50 hover:bg-violet-50/30 transition-colors">
+                                    <td className="py-2 px-3 text-xs font-mono text-gray-700">{student.regNo}</td>
+                                    <td className="py-2 px-3">
+                                      <div>
+                                        <p className="text-xs font-medium text-gray-800">{student.name}</p>
+                                        <p className="text-[10px] text-gray-400">{student.email}</p>
+                                      </div>
+                                    </td>
+                                    <td className="py-2 px-3 text-xs text-gray-600">{student.year}</td>
+                                    <td className="py-2 px-3 text-center">
+                                      <Badge className={
+                                        student.status === 'active' ? 'bg-green-100 text-green-700 text-[10px]' : 'bg-gray-100 text-gray-600 text-[10px]'
+                                      }>
+                                        {student.status}
+                                      </Badge>
+                                    </td>
+                                    <td className="py-2 px-3">
+                                      <div className="flex items-center justify-end gap-1">
+                                        <span className="inline-flex items-center gap-0.5 text-[10px] text-blue-600 font-medium">
+                                          <Trophy className="w-3 h-3" />
+                                          {studentAchievementCount}
+                                        </span>
+                                        <button
+                                          onClick={() => handleEditStudent(student)}
+                                          className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                          title="Edit Student"
+                                        >
+                                          <Edit3 className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteStudent(student.id)}
+                                          className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                          title="Delete Student"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ))
+                  })()}
                 </div>
               </CardContent>
             </Card>
@@ -4356,14 +4456,19 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Batch Year *</label>
                   <select
-                    value={studentForm.status}
-                    onChange={(e) => setStudentForm({...studentForm, status: e.target.value})}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                    value={studentForm.batch}
+                    onChange={(e) => setStudentForm({...studentForm, batch: e.target.value})}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none bg-white"
                   >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="2025 Batch">2025 Batch</option>
+                    <option value="2024 Batch">2024 Batch</option>
+                    <option value="2023 Batch">2023 Batch</option>
+                    <option value="2022 Batch">2022 Batch</option>
+                    <option value="2021 Batch">2021 Batch</option>
+                    <option value="2020 Batch">2020 Batch</option>
+                    <option value="2019 Batch">2019 Batch</option>
                   </select>
                 </div>
               </div>
@@ -4376,6 +4481,17 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                   placeholder="student@niet.ac.in"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={studentForm.status}
+                  onChange={(e) => setStudentForm({...studentForm, status: e.target.value})}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
               </div>
             </div>
             <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
