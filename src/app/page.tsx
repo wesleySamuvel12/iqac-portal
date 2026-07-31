@@ -24,7 +24,7 @@ import {
   Newspaper, Handshake, Circle,
   DollarSign, Paperclip, Inbox, Tag, XCircle, ArrowLeft,
   Save, Sparkles, PanelLeft, PanelLeftClose,
-  GripVertical
+  GripVertical, FileSpreadsheet
 } from 'lucide-react'
 
 // ============ TYPES ============
@@ -6544,30 +6544,78 @@ function HODReportGeneratorPage({ user }: { user: User }) {
     }
   }
 
+  // Generate PDF file
+  const generatePDF = async () => {
+    setGenerating(true)
+    try {
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportData, department: user.departmentName })
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        
+        // Create a new window for printing
+        const printWindow = window.open('', '_blank')
+        if (printWindow) {
+          printWindow.document.write(result.html)
+          printWindow.document.close()
+          
+          // Wait for content to load then trigger print
+          printWindow.onload = () => {
+            setTimeout(() => {
+              printWindow.print()
+              setGenerated(true)
+              setTimeout(() => setGenerated(false), 3000)
+            }, 500)
+          }
+        }
+      } else {
+        alert('Error generating PDF')
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      alert('Error generating PDF')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   return (
-    <div className="h-[calc(100vh-120px)] flex flex-col gap-2 p-3 overflow-hidden bg-gray-50">
-      {/* Header - Ultra Compact */}
+    <div className="h-[calc(100vh-110px)] flex flex-col gap-1.5 p-2.5 overflow-hidden bg-gray-50">
+      {/* Header - Ultra Compact with Export Buttons */}
       <div className="flex items-center justify-between gap-2 flex-shrink-0">
-        <div>
-          <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-tight">
+        <div className="min-w-0">
+          <h2 className="text-base font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-tight truncate">
             📋 Report Generator
           </h2>
-          <p className="text-gray-500 text-xs">NIET Monthly Department Report</p>
+          <p className="text-gray-500 text-[10px]">NIET Monthly Department Report</p>
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex gap-1 flex-shrink-0">
           <Button 
             onClick={generateExcel} 
             disabled={generating}
             variant="outline"
-            className="bg-green-50 hover:bg-green-100 border-green-300 text-green-700 px-3 h-8 text-xs"
+            className="bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-700 px-2.5 h-7 text-[10px] font-medium"
           >
-            <Download className="w-3 h-3 mr-1" />
+            <FileSpreadsheet className="w-3 h-3 mr-1" />
             Excel
+          </Button>
+          <Button 
+            onClick={generatePDF} 
+            disabled={generating}
+            variant="outline"
+            className="bg-red-50 hover:bg-red-100 border-red-300 text-red-700 px-2.5 h-7 text-[10px] font-medium"
+          >
+            <FileText className="w-3 h-3 mr-1" />
+            PDF
           </Button>
           <Button 
             onClick={generateReport} 
             disabled={generating}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-3 h-8 text-xs shadow-md"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-2.5 h-7 text-[10px] font-medium shadow-md"
           >
             {generating ? (
               <><Loader2 className="w-3 h-3 mr-1 animate-spin" />...</>
@@ -6579,77 +6627,77 @@ function HODReportGeneratorPage({ user }: { user: User }) {
       </div>
 
       {generated && (
-        <div className="bg-green-100 border border-green-300 rounded px-2 py-1.5 flex items-center gap-1.5 flex-shrink-0">
-          <CheckCircle className="w-3.5 h-3.5 text-green-600" />
-          <span className="text-green-700 font-medium text-xs">Report generated!</span>
+        <div className="bg-green-100 border border-green-300 rounded px-2 py-1 flex items-center gap-1.5 flex-shrink-0">
+          <CheckCircle className="w-3 h-3 text-green-600" />
+          <span className="text-green-700 font-medium text-[10px]">Report generated successfully!</span>
         </div>
       )}
 
-      {/* Section Navigation - Single Row, No Scroll */}
-      <div className="bg-white rounded-lg border border-gray-200 p-1 flex-shrink-0">
+      {/* Section Navigation - Single Row, Ultra Compact */}
+      <div className="bg-white rounded-lg border border-gray-200 p-0.5 flex-shrink-0">
         <div className="flex gap-0.5 justify-center flex-wrap">
           {sections.map((section) => (
             <button
               key={section.id}
               onClick={() => setActiveSection(section.id)}
-              className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-all ${
+              className={`flex items-center gap-1 px-1.5 py-[3px] rounded-[4px] text-[9px] transition-all ${
                 activeSection === section.id
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-sm'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              <section.icon className="w-3 h-3" />
-              <span className="hidden lg:inline">{section.title}</span>
-              <span className="lg:hidden">{section.title.split(' ')[0]}</span>
+              <section.icon className="w-2.5 h-2.5" />
+              <span className="hidden md:inline">{section.title}</span>
+              <span className="md:hidden">{section.title.split(' ')[0]}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Section Content - No Scroll, Fits Screen */}
+      {/* Section Content - No Scroll, Fits Screen Perfectly */}
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex-1 min-h-0 overflow-hidden">
         {/* Section 0: Header Information - Ultra Compact */}
         {activeSection === 0 && (
-          <div className="p-3 space-y-3 h-full flex flex-col">
-            <div className="border-b pb-2">
-              <h3 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-blue-500" />
+          <div className="p-2.5 space-y-2 h-full flex flex-col overflow-hidden">
+            <div className="border-b pb-1.5">
+              <h3 className="text-xs font-bold text-gray-900 flex items-center gap-1">
+                <FileText className="w-3 h-3 text-blue-500" />
                 Header Information
               </h3>
             </div>
             
             {/* NIET Header - Ultra Compact */}
-            <div className="bg-gradient-to-r from-slate-800 to-blue-900 rounded-lg p-3 text-white">
+            <div className="bg-gradient-to-r from-slate-800 to-blue-900 rounded-md p-2 text-white">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-sm font-bold leading-tight">NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY</h1>
-                  <p className="text-blue-200 text-xs">(AUTONOMOUS) – ISO Certified | NAAC "A+" | NBA</p>
+                  <h1 className="text-[11px] font-bold leading-tight">NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY</h1>
+                  <p className="text-blue-200 text-[9px]">(AUTONOMOUS) – ISO Certified | NAAC "A+" | NBA</p>
                 </div>
-                <GraduationCap className="w-8 h-8 text-white/50 hidden sm:block" />
+                <GraduationCap className="w-6 h-6 text-white/50 hidden sm:block" />
               </div>
             </div>
 
-            <div className="bg-blue-50 rounded p-2 border border-blue-200">
-              <span className="font-bold text-blue-900 text-xs">MONTHLY DEPARTMENT REPORT - {reportData.academicYear}</span>
+            <div className="bg-blue-50 rounded px-2 py-1 border border-blue-200">
+              <span className="font-bold text-blue-900 text-[10px]">MONTHLY DEPARTMENT REPORT - {reportData.academicYear}</span>
             </div>
 
             <div className="grid grid-cols-3 gap-2">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600">School *</label>
-                <Input value={reportData.schoolName} onChange={(e) => updateField('schoolName', e.target.value)} placeholder="School of..." className="border-gray-300 h-7 text-xs" />
+              <div className="space-y-0.5">
+                <label className="text-[9px] font-medium text-gray-600">School *</label>
+                <Input value={reportData.schoolName} onChange={(e) => updateField('schoolName', e.target.value)} placeholder="School of..." className="border-gray-300 h-6 text-[10px]" />
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600">Department *</label>
-                <Input value={reportData.department} onChange={(e) => updateField('department', e.target.value)} placeholder="Dept Name" className="border-gray-300 h-7 text-xs" />
+              <div className="space-y-0.5">
+                <label className="text-[9px] font-medium text-gray-600">Department *</label>
+                <Input value={reportData.department} onChange={(e) => updateField('department', e.target.value)} placeholder="Dept Name" className="border-gray-300 h-6 text-[10px]" />
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600">Month / Year *</label>
+              <div className="space-y-0.5">
+                <label className="text-[9px] font-medium text-gray-600">Month / Year *</label>
                 <div className="flex gap-1">
-                  <select value={reportData.reportingMonth} onChange={(e) => updateField('reportingMonth', e.target.value)} className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs h-7">
+                  <select value={reportData.reportingMonth} onChange={(e) => updateField('reportingMonth', e.target.value)} className="flex-1 px-1.5 py-0 border border-gray-300 rounded text-[10px] h-6">
                     <option value="">Select</option>
                     {['January','February','March','April','May','June','July','August','September','October','November','December'].map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
-                  <Input value={reportData.reportingYear} onChange={(e) => updateField('reportingYear', e.target.value)} className="w-16 border-gray-300 h-7 text-xs" />
+                  <Input value={reportData.reportingYear} onChange={(e) => updateField('reportingYear', e.target.value)} className="w-14 border-gray-300 h-6 text-[10px]" />
                 </div>
               </div>
             </div>
@@ -6658,51 +6706,51 @@ function HODReportGeneratorPage({ user }: { user: User }) {
 
         {/* Section 1: Dept. Basic Information - Ultra Compact */}
         {activeSection === 1 && (
-          <div className="p-3 space-y-3 h-full flex flex-col">
-            <div className="border-b pb-2">
-              <h3 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-green-500" />
+          <div className="p-2.5 space-y-2 h-full flex flex-col overflow-hidden">
+            <div className="border-b pb-1.5">
+              <h3 className="text-xs font-bold text-gray-900 flex items-center gap-1">
+                <Users className="w-3 h-3 text-green-500" />
                 DEPT. BASIC INFORMATION
               </h3>
             </div>
 
-            <div className="overflow-x-auto flex-1">
-              <table className="w-full border-collapse text-xs">
+            <div className="flex-1 overflow-auto">
+              <table className="w-full border-collapse text-[10px]">
                 <tbody>
                   <tr className="border-b">
-                    <td className="p-1.5 bg-teal-50 font-semibold text-teal-900 w-24">Faculty</td>
-                    <td className="p-0.5 border"><Input value={reportData.facultyCount} onChange={(e) => updateField('facultyCount', e.target.value)} className="border-0 h-6 text-xs px-1" /></td>
-                    <td className="p-1.5 bg-teal-50 font-semibold text-teal-900">Prof</td>
-                    <td className="p-0.5 border"><Input value={reportData.profCount} onChange={(e) => updateField('profCount', e.target.value)} className="border-0 h-6 text-xs px-1" /></td>
-                    <td className="p-1.5 bg-teal-50 font-semibold text-teal-900">AsP</td>
-                    <td className="p-0.5 border"><Input value={reportData.aspCount} onChange={(e) => updateField('aspCount', e.target.value)} className="border-0 h-6 text-xs px-1" /></td>
-                    <td className="p-1.5 bg-teal-50 font-semibold text-teal-900">AP</td>
-                    <td className="p-0.5 border"><Input value={reportData.apCount} onChange={(e) => updateField('apCount', e.target.value)} className="border-0 h-6 text-xs px-1" /></td>
+                    <td className="p-1 bg-teal-50 font-semibold text-teal-900 w-20">Faculty</td>
+                    <td className="p-0.5 border"><Input value={reportData.facultyCount} onChange={(e) => updateField('facultyCount', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">Prof</td>
+                    <td className="p-0.5 border"><Input value={reportData.profCount} onChange={(e) => updateField('profCount', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">AsP</td>
+                    <td className="p-0.5 border"><Input value={reportData.aspCount} onChange={(e) => updateField('aspCount', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">AP</td>
+                    <td className="p-0.5 border"><Input value={reportData.apCount} onChange={(e) => updateField('apCount', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
                   </tr>
                   <tr className="border-b">
-                    <td className="p-1.5 bg-teal-50 font-semibold text-teal-900">PhD Holders</td>
-                    <td className="p-0.5 border" colSpan={2}><Input value={reportData.phdHolders} onChange={(e) => updateField('phdHolders', e.target.value)} className="border-0 h-6 text-xs px-1" /></td>
-                    <td className="p-1.5 bg-teal-50 font-semibold text-teal-900">PhD</td>
-                    <td className="p-0.5 border"><Input value={reportData.phdCount} onChange={(e) => updateField('phdCount', e.target.value)} className="border-0 h-6 text-xs px-1" /></td>
-                    <td className="p-1.5 bg-teal-50 font-semibold text-teal-900">Pursuing</td>
-                    <td className="p-0.5 border"><Input value={reportData.pursuingPhd} onChange={(e) => updateField('pursuingPhd', e.target.value)} className="border-0 h-6 text-xs px-1" /></td>
-                    <td className="p-1.5 bg-teal-50 font-semibold text-teal-900">Not Reg.</td>
-                    <td className="p-0.5 border"><Input value={reportData.notRegistered} onChange={(e) => updateField('notRegistered', e.target.value)} className="border-0 h-6 text-xs px-1" /></td>
+                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">PhD Holders</td>
+                    <td className="p-0.5 border" colSpan={2}><Input value={reportData.phdHolders} onChange={(e) => updateField('phdHolders', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">PhD</td>
+                    <td className="p-0.5 border"><Input value={reportData.phdCount} onChange={(e) => updateField('phdCount', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">Pursuing</td>
+                    <td className="p-0.5 border"><Input value={reportData.pursuingPhd} onChange={(e) => updateField('pursuingPhd', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">Not Reg.</td>
+                    <td className="p-0.5 border"><Input value={reportData.notRegistered} onChange={(e) => updateField('notRegistered', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
                   </tr>
                   <tr>
-                    <td className="p-1.5 bg-teal-50 font-semibold text-teal-900">Students</td>
-                    <td className="p-0.5 border"><Input value={reportData.totalStudents} onChange={(e) => updateField('totalStudents', e.target.value)} className="border-0 h-6 text-xs px-1" placeholder="Total" /></td>
-                    <td className="p-1.5 bg-teal-50 font-semibold text-teal-900">I Yr</td>
-                    <td className="p-0.5 border"><Input value={reportData.year1Students} onChange={(e) => updateField('year1Students', e.target.value)} className="border-0 h-6 text-xs px-1" /></td>
-                    <td className="p-1.5 bg-teal-50 font-semibold text-teal-900">II Yr</td>
-                    <td className="p-0.5 border"><Input value={reportData.year2Students} onChange={(e) => updateField('year2Students', e.target.value)} className="border-0 h-6 text-xs px-1" /></td>
-                    <td className="p-1.5 bg-teal-50 font-semibold text-teal-900">III Yr</td>
-                    <td className="p-0.5 border"><Input value={reportData.year3Students} onChange={(e) => updateField('year3Students', e.target.value)} className="border-0 h-6 text-xs px-1" /></td>
+                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">Students</td>
+                    <td className="p-0.5 border"><Input value={reportData.totalStudents} onChange={(e) => updateField('totalStudents', e.target.value)} className="border-0 h-5 text-[10px] px-1" placeholder="Total" /></td>
+                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">I Yr</td>
+                    <td className="p-0.5 border"><Input value={reportData.year1Students} onChange={(e) => updateField('year1Students', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">II Yr</td>
+                    <td className="p-0.5 border"><Input value={reportData.year2Students} onChange={(e) => updateField('year2Students', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">III Yr</td>
+                    <td className="p-0.5 border"><Input value={reportData.year3Students} onChange={(e) => updateField('year3Students', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
                   </tr>
                   <tr>
-                    <td className="p-1.5 bg-gray-50"></td><td className="p-0.5 border"></td>
-                    <td className="p-1.5 bg-teal-50 font-semibold text-teal-900">IV Yr</td>
-                    <td className="p-0.5 border" colSpan={5}><Input value={reportData.year4Students} onChange={(e) => updateField('year4Students', e.target.value)} className="border-0 h-6 text-xs px-1" /></td>
+                    <td className="p-1 bg-gray-50"></td><td className="p-0.5 border"></td>
+                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">IV Yr</td>
+                    <td className="p-0.5 border" colSpan={5}><Input value={reportData.year4Students} onChange={(e) => updateField('year4Students', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
                   </tr>
                 </tbody>
               </table>
@@ -6712,20 +6760,20 @@ function HODReportGeneratorPage({ user }: { user: User }) {
 
         {/* Section 2: A. Academic Activities - Ultra Compact */}
         {activeSection === 2 && (
-          <div className="p-3 space-y-2 h-full flex flex-col">
-            <div className="bg-green-100 border border-green-300 rounded-t-lg p-1.5">
-              <h3 className="font-bold text-green-900 text-xs">A. ACADEMIC ACTIVITIES</h3>
+          <div className="p-2.5 space-y-1.5 h-full flex flex-col overflow-hidden">
+            <div className="bg-green-100 border border-green-300 rounded-t px-2 py-1">
+              <h3 className="font-bold text-green-900 text-[10px]">A. ACADEMIC ACTIVITIES</h3>
             </div>
-            <div className="overflow-x-auto flex-1">
-              <table className="w-full border-collapse border text-xs">
-                <thead><tr className="bg-green-50"><th className="p-1 border font-semibold w-32">Particulars</th><th className="p-1 border font-semibold w-20">Theory</th><th className="p-1 border font-semibold w-20">Lab</th></tr></thead>
+            <div className="flex-1 overflow-auto">
+              <table className="w-full border-collapse border text-[10px]">
+                <thead><tr className="bg-green-50"><th className="p-1 border font-semibold w-28">Particulars</th><th className="p-1 border font-semibold w-16">Theory</th><th className="p-1 border font-semibold w-16">Lab</th></tr></thead>
                 <tbody>
-                  <tr><td className="p-1 border">Syllabus Coverage</td><td className="p-0 border"><Input value={reportData.syllabusCoverageTheory} onChange={(e) => updateField('syllabusCoverageTheory', e.target.value)} className="border-0 h-6 text-xs px-1" /></td><td className="p-0 border"><Input value={reportData.syllabusCoverageLab} onChange={(e) => updateField('syllabusCoverageLab', e.target.value)} className="border-0 h-6 text-xs px-1" /></td></tr>
-                  <tr><td className="p-1 border">Lesson Plan</td><td className="p-0 border"><select value={reportData.lessonPlanTheory} onChange={(e) => updateField('lessonPlanTheory', e.target.value)} className="w-full border-0 bg-transparent text-xs h-6"><option>Y/N</option><option>Yes</option><option>No</option></select></td><td className="p-0 border"><select value={reportData.lessonPlanLab} onChange={(e) => updateField('lessonPlanLab', e.target.value)} className="w-full border-0 bg-transparent text-xs h-6"><option>Y/N</option><option>Yes</option><option>No</option></select></td></tr>
-                  <tr><td className="p-1 border">CIA Conducted</td><td className="p-0 border"><select value={reportData.ciaConducted} onChange={(e) => updateField('ciaConducted', e.target.value)} className="w-full border-0 bg-transparent text-xs h-6"><option>Y/N</option><option>Yes</option><option>No</option></select></td><td className="p-0 border text-gray-400 text-center">NA</td></tr>
-                  <tr><td className="p-1 border">Attendance Report</td><td className="p-0 border" colSpan={2}><select value={reportData.attendanceReport} onChange={(e) => updateField('attendanceReport', e.target.value)} className="w-full border-0 bg-transparent text-xs h-6"><option>Y/N</option><option>Yes</option><option>No</option></select></td></tr>
-                  <tr><td className="p-1 border">Remedial Classes</td><td className="p-0 border"><Input value={reportData.remedialClasses} onChange={(e) => updateField('remedialClasses', e.target.value)} className="border-0 h-6 text-xs px-1" /></td><td className="p-0 border text-gray-400 text-center">NA</td></tr>
-                  <tr><td className="p-1 border">Mentoring Sessions</td><td className="p-0 border"><Input value={reportData.mentoringSessions} onChange={(e) => updateField('mentoringSessions', e.target.value)} className="border-0 h-6 text-xs px-1" /></td><td className="p-0 border text-gray-400 text-center">NA</td></tr>
+                  <tr><td className="p-1 border">Syllabus Coverage</td><td className="p-0 border"><Input value={reportData.syllabusCoverageTheory} onChange={(e) => updateField('syllabusCoverageTheory', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td><td className="p-0 border"><Input value={reportData.syllabusCoverageLab} onChange={(e) => updateField('syllabusCoverageLab', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td></tr>
+                  <tr><td className="p-1 border">Lesson Plan</td><td className="p-0 border"><select value={reportData.lessonPlanTheory} onChange={(e) => updateField('lessonPlanTheory', e.target.value)} className="w-full border-0 bg-transparent text-[10px] h-5"><option>Y/N</option><option>Yes</option><option>No</option></select></td><td className="p-0 border"><select value={reportData.lessonPlanLab} onChange={(e) => updateField('lessonPlanLab', e.target.value)} className="w-full border-0 bg-transparent text-[10px] h-5"><option>Y/N</option><option>Yes</option><option>No</option></select></td></tr>
+                  <tr><td className="p-1 border">CIA Conducted</td><td className="p-0 border"><select value={reportData.ciaConducted} onChange={(e) => updateField('ciaConducted', e.target.value)} className="w-full border-0 bg-transparent text-[10px] h-5"><option>Y/N</option><option>Yes</option><option>No</option></select></td><td className="p-0 border text-gray-400 text-center">NA</td></tr>
+                  <tr><td className="p-1 border">Attendance Report</td><td className="p-0 border" colSpan={2}><select value={reportData.attendanceReport} onChange={(e) => updateField('attendanceReport', e.target.value)} className="w-full border-0 bg-transparent text-[10px] h-5"><option>Y/N</option><option>Yes</option><option>No</option></select></td></tr>
+                  <tr><td className="p-1 border">Remedial Classes</td><td className="p-0 border"><Input value={reportData.remedialClasses} onChange={(e) => updateField('remedialClasses', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td><td className="p-0 border text-gray-400 text-center">NA</td></tr>
+                  <tr><td className="p-1 border">Mentoring Sessions</td><td className="p-0 border"><Input value={reportData.mentoringSessions} onChange={(e) => updateField('mentoringSessions', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td><td className="p-0 border text-gray-400 text-center">NA</td></tr>
                 </tbody>
               </table>
             </div>
