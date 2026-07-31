@@ -1,19 +1,134 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { execSync } from 'child_process'
+import { writeFileSync, unlinkSync, readFileSync, mkdirSync, existsSync } from 'fs'
+import { join } from 'path'
 
 export async function POST(request: NextRequest) {
+  let tempHtmlPath = ''
+  let tempPdfPath = ''
+  
   try {
     const { reportData, department } = await request.json()
 
     // Generate HTML content for the PDF
     const htmlContent = generateReportHTML(reportData, department)
 
-    // Return HTML as response - client will handle PDF conversion
-    return new NextResponse(JSON.stringify({ html: htmlContent }), {
-      headers: { 'Content-Type': 'application/json' },
+    // Create temp directory if not exists
+    const tempDir = join(process.cwd(), 'temp')
+    if (!existsSync(tempDir)) {
+      mkdirSync(tempDir, { recursive: true })
+    }
+
+    // Write HTML to temp file
+    const timestamp = Date.now()
+    tempHtmlPath = join(tempDir, `report_${timestamp}.html`)
+    tempPdfPath = join(tempDir, `report_${timestamp}.pdf`)
+    
+    writeFileSync(tempHtmlPath, htmlContent)
+
+    // Find the PDF skill directory
+    const pdfSkillDir = findPdfSkillDir()
+    
+    if (pdfSkillDir) {
+      // Use html2pdf-next.js for proper PDF generation
+      const html2pdfScript = join(pdfSkillDir, 'scripts', 'html2pdf-next.js')
+      
+      try {
+        execSync(`node "${html2pdfScript}" "${tempHtmlPath}" --output "${tempPdfPath}" --width 210mm --height 297mm`, {
+          timeout: 30000,
+          stdio: 'pipe'
+        })
+      } catch (execError) {
+        console.error('html2pdf-next.js failed, trying alternative:', execError)
+        // Fallback: use direct Playwright approach
+        await generateWithPlaywright(htmlContent, tempPdfPath)
+      }
+    } else {
+      // No PDF skill available, use direct Playwright
+      await generateWithPlaywright(htmlContent, tempPdfPath)
+    }
+
+    // Check if PDF was created
+    if (!existsSync(tempPdfPath)) {
+      throw new Error('PDF file was not generated')
+    }
+
+    // Read the generated PDF
+    const pdfBuffer = readFileSync(tempPdfPath)
+
+    // Clean up temp files
+    try {
+      if (existsSync(tempHtmlPath)) unlinkSync(tempHtmlPath)
+      if (existsSync(tempPdfPath)) unlinkSync(tempPdfPath)
+    } catch (e) {
+      console.error('Cleanup error:', e)
+    }
+
+    // Return PDF as downloadable file
+    return new NextResponse(pdfBuffer, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="Monthly_Department_Report_${department || 'NIET'}_${reportData?.reportingMonth || 'Report'}_${reportData?.reportingYear || new Date().getFullYear()}.pdf"`,
+        'Content-Length': pdfBuffer.length.toString(),
+      },
     })
   } catch (error) {
     console.error('PDF generation error:', error)
-    return NextResponse.json({ error: 'Failed to generate PDF' }, { status: 500 })
+    
+    // Cleanup on error
+    try {
+      if (tempHtmlPath && existsSync(tempHtmlPath)) unlinkSync(tempHtmlPath)
+      if (tempPdfPath && existsSync(tempPdfPath)) unlinkSync(tempPdfPath)
+    } catch (e) {}
+    
+    return NextResponse.json({ error: 'Failed to generate PDF: ' + (error as Error).message }, { status: 500 })
+  }
+}
+
+function findPdfSkillDir(): string | null {
+  const possiblePaths = [
+    '/home/z/.claude/skills/pdf',
+    '/home/z/skills/pdf',
+    join(process.cwd(), '..', '.claude', 'skills', 'pdf'),
+  ]
+  
+  for (const path of possiblePaths) {
+    if (existsSync(join(path, 'scripts', 'html2pdf-next.js'))) {
+      return path
+    }
+  }
+  return null
+}
+
+async function generateWithPlaywright(htmlContent: string, outputPath: string): Promise<void> {
+  // Dynamic import for playwright
+  const { chromium } = await import('playwright')
+  
+  const browser = await chromium.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  })
+  
+  try {
+    const page = await browser.newPage()
+    await page.setContent(htmlContent, { waitUntil: 'networkidle' })
+    
+    await page.pdf({
+      path: outputPath,
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '12mm',
+        bottom: '12mm',
+        left: '12mm',
+        right: '12mm'
+      },
+      displayHeaderFooter: true,
+      headerTemplate: '<div></div>',
+      footerTemplate: '<div style="font-size: 8px; text-align: center; width: 100%; color: #9ca3af;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>'
+    })
+  } finally {
+    await browser.close()
   }
 }
 

@@ -6544,7 +6544,7 @@ function HODReportGeneratorPage({ user }: { user: User }) {
     }
   }
 
-  // Generate PDF file
+  // Generate PDF file - Downloads actual PDF
   const generatePDF = async () => {
     setGenerating(true)
     try {
@@ -6555,29 +6555,30 @@ function HODReportGeneratorPage({ user }: { user: User }) {
       })
       
       if (response.ok) {
-        const result = await response.json()
+        // Get the PDF as a blob
+        const blob = await response.blob()
         
-        // Create a new window for printing
-        const printWindow = window.open('', '_blank')
-        if (printWindow) {
-          printWindow.document.write(result.html)
-          printWindow.document.close()
-          
-          // Wait for content to load then trigger print
-          printWindow.onload = () => {
-            setTimeout(() => {
-              printWindow.print()
-              setGenerated(true)
-              setTimeout(() => setGenerated(false), 3000)
-            }, 500)
-          }
-        }
+        // Create download link
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `Monthly_Department_Report_${user.departmentName}_${reportData.reportingMonth || 'Report'}_${reportData.reportingYear || new Date().getFullYear()}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        
+        // Cleanup
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+        
+        setGenerated(true)
+        setTimeout(() => setGenerated(false), 3000)
       } else {
-        alert('Error generating PDF')
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        alert('Error generating PDF: ' + (errorData.error || 'Server error'))
       }
     } catch (error) {
       console.error('Error:', error)
-      alert('Error generating PDF')
+      alert('Error generating PDF. Please try again.')
     } finally {
       setGenerating(false)
     }
