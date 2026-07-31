@@ -18,7 +18,7 @@ import {
   ArrowRight, RefreshCw, Upload, FolderOpen,
   Target, Lightbulb, HeartHandshake, Trophy,
   MessageSquare, ThumbsUp, ThumbsDown,
-  Sun, Moon, ChevronDown, ChevronLeft,
+  Sun, Moon, ChevronDown, ChevronLeft, ChevronUp,
   ClipboardList, Flag, Mic, Presentation,
   Briefcase, Wrench, Rocket, Code, PlusCircle,
   Newspaper, Handshake, Circle,
@@ -62,7 +62,7 @@ type TabType = 'dashboard' | 'departments' | 'faculty' | 'students' | 'activitie
   | 'approvals' | 'analytics' | 'documents' | 'settings' | 'achievements' | 'feedback'
   | 'staff_achievement' | 'student_achievement_view'
   | 'hod_student_approval' | 'hod_staff_approval' | 'my_achievement'
-  | 'report_generator'
+  | 'report_generator' | 'hod_management'
 
 // ============ ACHIEVEMENT TYPES DEFINITION (13 Types - Student Focused) ============
 const ACHIEVEMENT_TYPES: Record<string, {
@@ -6369,6 +6369,1188 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
     </div>
   )
 }
+
+// ============ HOD MANAGEMENT PAGE (Full CRUD for Students/Staff/Batches) ============
+function HODManagementPage({ user }: { user: User }) {
+  const [activeTab, setActiveTab] = useState<'students' | 'staff' | 'batches'>('students')
+  const [loading, setLoading] = useState(true)
+  
+  // Common state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showForm, setShowForm] = useState(false)
+  const [editingItem, setEditingItem] = useState<any>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<any>(null)
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
+              <Database className="w-5 h-5 text-white" />
+            </div>
+            Department Management
+          </h2>
+          <p className="text-gray-500 mt-1 text-sm">Manage Students, Staff & Batches</p>
+        </div>
+        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 px-3 py-1">
+          {user.departmentName}
+        </Badge>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="flex gap-2 p-1 bg-gray-100 rounded-xl w-fit">
+        {[
+          { id: 'students' as const, label: 'Students', icon: GraduationCap, color: 'from-blue-500 to-blue-600' },
+          { id: 'staff' as const, label: 'Staff', icon: Users, color: 'from-purple-500 to-purple-600' },
+          { id: 'batches' as const, label: 'Batches', icon: FolderOpen, color: 'from-amber-500 to-orange-600' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => { setActiveTab(tab.id); setShowForm(false); setEditingItem(null); }}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ${
+              activeTab === tab.id 
+                ? 'bg-white text-gray-900 shadow-md' 
+                : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+            }`}
+          >
+            <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-' + tab.color.split('-')[1] : ''}`} />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'students' && (
+        <StudentManagementSection 
+          user={user} 
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          showForm={showForm}
+          setShowForm={setShowForm}
+          editingItem={editingItem}
+          setEditingItem={setEditingItem}
+          submitting={submitting}
+          setSubmitting={setSubmitting}
+          deleteConfirm={deleteConfirm}
+          setDeleteConfirm={setDeleteConfirm}
+          loading={loading}
+          setLoading={setLoading}
+        />
+      )}
+      {activeTab === 'staff' && (
+        <StaffManagementSection 
+          user={user} 
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          showForm={showForm}
+          setShowForm={setShowForm}
+          editingItem={editingItem}
+          setEditingItem={setEditingItem}
+          submitting={submitting}
+          setSubmitting={setSubmitting}
+          deleteConfirm={deleteConfirm}
+          setDeleteConfirm={setDeleteConfirm}
+          loading={loading}
+          setLoading={setLoading}
+        />
+      )}
+      {activeTab === 'batches' && (
+        <BatchManagementSection 
+          user={user} 
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          showForm={showForm}
+          setShowForm={setShowForm}
+          editingItem={editingItem}
+          setEditingItem={setEditingItem}
+          submitting={submitting}
+          setSubmitting={setSubmitting}
+          deleteConfirm={deleteConfirm}
+          setDeleteConfirm={setDeleteConfirm}
+          loading={loading}
+          setLoading={setLoading}
+        />
+      )}
+    </div>
+  )
+}
+
+// ============ STUDENT MANAGEMENT SECTION ============
+function StudentManagementSection({
+  user,
+  searchQuery,
+  setSearchQuery,
+  showForm,
+  setShowForm,
+  editingItem,
+  setEditingItem,
+  submitting,
+  setSubmitting,
+  deleteConfirm,
+  setDeleteConfirm,
+  loading,
+  setLoading
+}: {
+  user: User
+  searchQuery: string
+  setSearchQuery: (q: string) => void
+  showForm: boolean
+  setShowForm: (s: boolean) => void
+  editingItem: any
+  setEditingItem: (i: any) => void
+  submitting: boolean
+  setSubmitting: (s: boolean) => void
+  deleteConfirm: any
+  setDeleteConfirm: (i: any) => void
+  loading: boolean
+  setLoading: (l: boolean) => void
+}) {
+  const [students, setStudents] = useState<any[]>([])
+  const [batches, setBatches] = useState<any[]>([])
+  const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 0 })
+  const [selectedBatch, setSelectedBatch] = useState<string>('')
+  const [formData, setFormData] = useState({
+    registerNumber: '',
+    name: '',
+    email: '',
+    phone: '',
+    semester: '',
+    section: '',
+    batchId: '',
+    cgpa: '',
+    admissionYear: '',
+  })
+
+  const fetchStudents = useCallback(async () => {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams({
+        departmentId: user.departmentId || '',
+        page: pagination.page.toString(),
+        limit: '20',
+        ...(searchQuery && { search: searchQuery }),
+        ...(selectedBatch && { batchId: selectedBatch }),
+      })
+      const res = await fetch(`/api/students?${params}`)
+      const data = await res.json()
+      if (data.success) {
+        setStudents(data.students)
+        setPagination(prev => ({ ...prev, total: data.pagination.total, pages: data.pagination.pages }))
+      }
+    } catch (error) {
+      console.error('Error fetching students:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [user.departmentId, pagination.page, searchQuery, selectedBatch])
+
+  const fetchBatches = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/batches?departmentId=${user.departmentId}&limit=100`)
+      const data = await res.json()
+      if (data.success) setBatches(data.batches)
+    } catch (error) {
+      console.error('Error fetching batches:', error)
+    }
+  }, [user.departmentId])
+
+  useEffect(() => { fetchStudents() }, [fetchStudents])
+  useEffect(() => { fetchBatches() }, [fetchBatches])
+
+  const openCreateForm = () => {
+    setEditingItem(null)
+    setFormData({
+      registerNumber: '', name: '', email: '', phone: '',
+      semester: '', section: '', batchId: '', cgpa: '', admissionYear: '',
+    })
+    setShowForm(true)
+  }
+
+  const openEditForm = (student: any) => {
+    setEditingItem(student)
+    setFormData({
+      registerNumber: student.registerNumber,
+      name: student.user?.name || '',
+      email: student.user?.email || '',
+      phone: student.user?.phone || '',
+      semester: student.semester?.toString() || '',
+      section: student.section || '',
+      batchId: student.batchId || '',
+      cgpa: student.cgpa?.toString() || '',
+      admissionYear: student.admissionYear?.toString() || '',
+    })
+    setShowForm(true)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
+    try {
+      if (editingItem) {
+        const res = await fetch(`/api/students/${editingItem.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            departmentId: user.departmentId,
+          }),
+        })
+        const data = await res.json()
+        if (data.success) {
+          setShowForm(false)
+          fetchStudents()
+        }
+      } else {
+        const res = await fetch('/api/students', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            departmentId: user.departmentId,
+          }),
+        })
+        const data = await res.json()
+        if (data.success) {
+          setShowForm(false)
+          fetchStudents()
+        }
+      }
+    } catch (error) {
+      console.error('Error saving student:', error)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deleteConfirm) return
+    setSubmitting(true)
+    try {
+      const res = await fetch(`/api/students/${deleteConfirm.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (data.success) {
+        setDeleteConfirm(null)
+        fetchStudents()
+      }
+    } catch (error) {
+      console.error('Error deleting student:', error)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+        <div className="flex gap-3 flex-1 w-full sm:w-auto">
+          <div className="relative flex-1 sm:max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              placeholder="Search students..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <select
+            value={selectedBatch}
+            onChange={(e) => setSelectedBatch(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
+          >
+            <option value="">All Batches</option>
+            {batches.map((b: any) => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
+        </div>
+        <Button onClick={openCreateForm} className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700">
+          <Plus className="w-4 h-4 mr-2" /> Add Student
+        </Button>
+      </div>
+
+      {/* Form Modal */}
+      {showForm && (
+        <Card className="border-2 border-blue-200 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">{editingItem ? 'Edit Student' : 'Add New Student'}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Register Number *</label>
+                <Input value={formData.registerNumber} onChange={(e) => setFormData(p => ({...p, registerNumber: e.target.value}))} required disabled={!!editingItem} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <Input value={formData.name} onChange={(e) => setFormData(p => ({...p, name: e.target.value}))} required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <Input type="email" value={formData.email} onChange={(e) => setFormData(p => ({...p, email: e.target.value}))} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <Input value={formData.phone} onChange={(e) => setFormData(p => ({...p, phone: e.target.value}))} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Semester</label>
+                <select value={formData.semester} onChange={(e) => setFormData(p => ({...p, semester: e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                  <option value="">Select</option>
+                  {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>Semester {s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
+                <select value={formData.section} onChange={(e) => setFormData(p => ({...p, section: e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                  <option value="">Select</option>
+                  {['A','B','C','D'].map(s => <option key={s} value={s}>Section {s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Batch</label>
+                <select value={formData.batchId} onChange={(e) => setFormData(p => ({...p, batchId: e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                  <option value="">Select Batch</option>
+                  {batches.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">CGPA</label>
+                <Input type="number" step="0.01" min="0" max="10" value={formData.cgpa} onChange={(e) => setFormData(p => ({...p, cgpa: e.target.value}))} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Admission Year</label>
+                <Input type="number" min="2000" max="2030" value={formData.admissionYear} onChange={(e) => setFormData(p => ({...p, admissionYear: e.target.value}))} />
+              </div>
+              <div className="md:col-span-2 lg:col-span-3 flex justify-end gap-3 mt-2">
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button type="submit" disabled={submitting} className="bg-gradient-to-r from-blue-500 to-blue-600">
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  {editingItem ? 'Update Student' : 'Create Student'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <Card className="border-2 border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-4">
+              <div className="w-12 h-12 mx-auto rounded-full bg-red-100 flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900">Delete Student?</h3>
+              <p className="text-sm text-gray-600">
+                Are you sure you want to delete <strong>{deleteConfirm.user?.name || deleteConfirm.registerNumber}</strong>? This action cannot be undone.
+              </p>
+              <div className="flex justify-center gap-3">
+                <Button variant="outline" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
+                <Button variant="destructive" onClick={handleDelete} disabled={submitting}>
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Students Table */}
+      <Card>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            </div>
+          ) : students.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <GraduationCap className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p>No students found</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Reg No</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden sm:table-cell">Email</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden md:table-cell">Batch</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden md:table-cell">Sem</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden lg:table-cell">CGPA</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {students.map((student) => (
+                    <tr key={student.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 font-mono text-sm font-medium text-blue-600">{student.registerNumber}</td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-gray-900">{student.user?.name || '-'}</div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{student.user?.email || '-'}</td>
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        {student.batchInfo && (
+                          <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200">
+                            {student.batchInfo.name}
+                          </Badge>
+                        )}
+                        {!student.batchInfo && <span className="text-gray-400 text-sm">-</span>}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 hidden md:table-cell">{student.semester || '-'}</td>
+                      <td className="px-4 py-3 text-sm font-medium hidden lg:table-cell">{student.cgpa?.toFixed(2) || '-'}</td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end gap-1">
+                          <button onClick={() => openEditForm(student)} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors" title="Edit">
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => setDeleteConfirm(student)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition-colors" title="Delete">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          
+          {/* Pagination */}
+          {pagination.pages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t">
+              <p className="text-sm text-gray-500">
+                Showing {students.length} of {pagination.total} students
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={pagination.page <= 1} onClick={() => setPagination(p => ({...p, page: p.page - 1}))}>
+                  Previous
+                </Button>
+                <Button variant="outline" size="sm" disabled={pagination.page >= pagination.pages} onClick={() => setPagination(p => ({...p, page: p.page + 1}))}>
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ============ STAFF MANAGEMENT SECTION ============
+function StaffManagementSection({
+  user,
+  searchQuery,
+  setSearchQuery,
+  showForm,
+  setShowForm,
+  editingItem,
+  setEditingItem,
+  submitting,
+  setSubmitting,
+  deleteConfirm,
+  setDeleteConfirm,
+  loading,
+  setLoading
+}: {
+  user: User
+  searchQuery: string
+  setSearchQuery: (q: string) => void
+  showForm: boolean
+  setShowForm: (s: boolean) => void
+  editingItem: any
+  setEditingItem: (i: any) => void
+  submitting: boolean
+  setSubmitting: (s: boolean) => void
+  deleteConfirm: any
+  setDeleteConfirm: (i: any) => void
+  loading: boolean
+  setLoading: (l: boolean) => void
+}) {
+  const [staff, setStaff] = useState<any[]>([])
+  const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 0 })
+  const [formData, setFormData] = useState({
+    employeeId: '',
+    name: '',
+    email: '',
+    phone: '',
+    designation: '',
+    qualification: '',
+    specialization: '',
+    experience: '',
+    researchArea: '',
+    isHOD: false,
+  })
+
+  const fetchStaff = useCallback(async () => {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams({
+        departmentId: user.departmentId || '',
+        page: pagination.page.toString(),
+        limit: '20',
+        ...(searchQuery && { search: searchQuery }),
+      })
+      const res = await fetch(`/api/faculty?${params}`)
+      const data = await res.json()
+      if (data.success) {
+        setStaff(data.faculty)
+        setPagination(prev => ({ ...prev, total: data.pagination.total, pages: data.pagination.pages }))
+      }
+    } catch (error) {
+      console.error('Error fetching staff:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [user.departmentId, pagination.page, searchQuery])
+
+  useEffect(() => { fetchStaff() }, [fetchStaff])
+
+  const openCreateForm = () => {
+    setEditingItem(null)
+    setFormData({
+      employeeId: '', name: '', email: '', phone: '',
+      designation: '', qualification: '', specialization: '',
+      experience: '', researchArea: '', isHOD: false,
+    })
+    setShowForm(true)
+  }
+
+  const openEditForm = (member: any) => {
+    setEditingItem(member)
+    setFormData({
+      employeeId: member.employeeId,
+      name: member.user?.name || '',
+      email: member.user?.email || '',
+      phone: member.user?.phone || '',
+      designation: member.designation || '',
+      qualification: member.qualification || '',
+      specialization: member.specialization || '',
+      experience: member.experience?.toString() || '',
+      researchArea: member.researchArea || '',
+      isHOD: member.isHOD || false,
+    })
+    setShowForm(true)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
+    try {
+      if (editingItem) {
+        const res = await fetch(`/api/faculty/${editingItem.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            departmentId: user.departmentId,
+          }),
+        })
+        const data = await res.json()
+        if (data.success) {
+          setShowForm(false)
+          fetchStaff()
+        }
+      } else {
+        const res = await fetch('/api/faculty', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            departmentId: user.departmentId,
+          }),
+        })
+        const data = await res.json()
+        if (data.success) {
+          setShowForm(false)
+          fetchStaff()
+        }
+      }
+    } catch (error) {
+      console.error('Error saving staff:', error)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deleteConfirm) return
+    setSubmitting(true)
+    try {
+      const res = await fetch(`/api/faculty/${deleteConfirm.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (data.success) {
+        setDeleteConfirm(null)
+        fetchStaff()
+      }
+    } catch (error) {
+      console.error('Error deleting staff:', error)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+        <div className="relative flex-1 w-full sm:max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input placeholder="Search staff..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
+        </div>
+        <Button onClick={openCreateForm} className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700">
+          <Plus className="w-4 h-4 mr-2" /> Add Staff
+        </Button>
+      </div>
+
+      {/* Form Modal */}
+      {showForm && (
+        <Card className="border-2 border-purple-200 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">{editingItem ? 'Edit Staff Member' : 'Add New Staff'}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Employee ID *</label>
+                <Input value={formData.employeeId} onChange={(e) => setFormData(p => ({...p, employeeId: e.target.value}))} required disabled={!!editingItem} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <Input value={formData.name} onChange={(e) => setFormData(p => ({...p, name: e.target.value}))} required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <Input type="email" value={formData.email} onChange={(e) => setFormData(p => ({...p, email: e.target.value}))} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <Input value={formData.phone} onChange={(e) => setFormData(p => ({...p, phone: e.target.value}))} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
+                <Input value={formData.designation} onChange={(e) => setFormData(p => ({...p, designation: e.target.value}))} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Qualification</label>
+                <Input value={formData.qualification} onChange={(e) => setFormData(p => ({...p, qualification: e.target.value}))} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Specialization</label>
+                <Input value={formData.specialization} onChange={(e) => setFormData(p => ({...p, specialization: e.target.value}))} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Experience (years)</label>
+                <Input type="number" step="0.5" min="0" value={formData.experience} onChange={(e) => setFormData(p => ({...p, experience: e.target.value}))} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Research Area</label>
+                <Input value={formData.researchArea} onChange={(e) => setFormData(p => ({...p, researchArea: e.target.value}))} />
+              </div>
+              <div className="flex items-end pb-1">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={formData.isHOD} onChange={(e) => setFormData(p => ({...p, isHOD: e.target.checked}))} className="rounded" />
+                  <span className="text-sm font-medium text-gray-700">Is HOD?</span>
+                </label>
+              </div>
+              <div className="md:col-span-2 lg:col-span-3 flex justify-end gap-3 mt-2">
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button type="submit" disabled={submitting} className="bg-gradient-to-r from-purple-500 to-purple-600">
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  {editingItem ? 'Update Staff' : 'Create Staff'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <Card className="border-2 border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-4">
+              <div className="w-12 h-12 mx-auto rounded-full bg-red-100 flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900">Delete Staff Member?</h3>
+              <p className="text-sm text-gray-600">
+                Are you sure you want to delete <strong>{deleteConfirm.user?.name || deleteConfirm.employeeId}</strong>? This action cannot be undone.
+              </p>
+              <div className="flex justify-center gap-3">
+                <Button variant="outline" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
+                <Button variant="destructive" onClick={handleDelete} disabled={submitting}>
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Staff Table */}
+      <Card>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+            </div>
+          ) : staff.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p>No staff members found</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Emp ID</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden sm:table-cell">Designation</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden md:table-cell">Email</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden lg:table-cell">Qualification</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {staff.map((member) => (
+                    <tr key={member.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 font-mono text-sm font-medium text-purple-600">{member.employeeId}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="font-medium text-gray-900">{member.user?.name || '-'}</div>
+                          {member.isHOD && <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] px-1.5">HOD</Badge>}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 hidden sm:table-cell">{member.designation || '-'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500 hidden md:table-cell">{member.user?.email || '-'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 hidden lg:table-cell">{member.qualification || '-'}</td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end gap-1">
+                          <button onClick={() => openEditForm(member)} className="p-1.5 rounded-lg hover:bg-purple-50 text-purple-600 transition-colors" title="Edit">
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => setDeleteConfirm(member)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition-colors" title="Delete">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          
+          {/* Pagination */}
+          {pagination.pages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t">
+              <p className="text-sm text-gray-500">
+                Showing {staff.length} of {pagination.total} staff
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={pagination.page <= 1} onClick={() => setPagination(p => ({...p, page: p.page - 1}))}>
+                  Previous
+                </Button>
+                <Button variant="outline" size="sm" disabled={pagination.page >= pagination.pages} onClick={() => setPagination(p => ({...p, page: p.page + 1}))}>
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ============ BATCH MANAGEMENT SECTION ============
+function BatchManagementSection({
+  user,
+  searchQuery,
+  setSearchQuery,
+  showForm,
+  setShowForm,
+  editingItem,
+  setEditingItem,
+  submitting,
+  setSubmitting,
+  deleteConfirm,
+  setDeleteConfirm,
+  loading,
+  setLoading
+}: {
+  user: User
+  searchQuery: string
+  setSearchQuery: (q: string) => void
+  showForm: boolean
+  setShowForm: (s: boolean) => void
+  editingItem: any
+  setEditingItem: (i: any) => void
+  submitting: boolean
+  setSubmitting: (s: boolean) => void
+  deleteConfirm: any
+  setDeleteConfirm: (i: any) => void
+  loading: boolean
+  setLoading: (l: boolean) => void
+}) {
+  const [batches, setBatches] = useState<any[]>([])
+  const [faculty, setFaculty] = useState<any[]>([])
+  const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 0 })
+  const [expandedBatch, setExpandedBatch] = useState<string | null>(null)
+  const [batchStudents, setBatchStudents] = useState<any[]>({})
+  const [formData, setFormData] = useState({
+    name: '',
+    year: new Date().getFullYear().toString(),
+    section: '',
+    strength: '',
+    advisorId: '',
+    description: '',
+  })
+
+  const fetchBatches = useCallback(async () => {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams({
+        departmentId: user.departmentId || '',
+        page: pagination.page.toString(),
+        limit: '20',
+        ...(searchQuery && { search: searchQuery }),
+      })
+      const res = await fetch(`/api/batches?${params}`)
+      const data = await res.json()
+      if (data.success) {
+        setBatches(data.batches)
+        setPagination(prev => ({ ...prev, total: data.pagination.total, pages: data.pagination.pages }))
+      }
+    } catch (error) {
+      console.error('Error fetching batches:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [user.departmentId, pagination.page, searchQuery])
+
+  const fetchFaculty = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/faculty?departmentId=${user.departmentId}&limit=100`)
+      const data = await res.json()
+      if (data.success) setFaculty(data.faculty)
+    } catch (error) {
+      console.error('Error fetching faculty:', error)
+    }
+  }, [user.departmentId])
+
+  useEffect(() => { fetchBatches() }, [fetchBatches])
+  useEffect(() => { fetchFaculty() }, [fetchFaculty])
+
+  const toggleBatchExpand = async (batchId: string) => {
+    if (expandedBatch === batchId) {
+      setExpandedBatch(null)
+      return
+    }
+    
+    setExpandedBatch(batchId)
+    
+    // Fetch students for this batch if not already loaded
+    if (!batchStudents[batchId]) {
+      try {
+        const res = await fetch(`/api/batches/${batchId}`)
+        const data = await res.json()
+        if (data.success) {
+          setBatchStudents(prev => ({ ...prev, [batchId]: data.batch.students || [] }))
+        }
+      } catch (error) {
+        console.error('Error fetching batch students:', error)
+      }
+    }
+  }
+
+  const openCreateForm = () => {
+    setEditingItem(null)
+    setFormData({
+      name: '',
+      year: new Date().getFullYear().toString(),
+      section: '',
+      strength: '',
+      advisorId: '',
+      description: '',
+    })
+    setShowForm(true)
+  }
+
+  const openEditForm = (batch: any) => {
+    setEditingItem(batch)
+    setFormData({
+      name: batch.name,
+      year: batch.year.toString(),
+      section: batch.section || '',
+      strength: batch.strength?.toString() || '',
+      advisorId: batch.advisorId || '',
+      description: batch.description || '',
+    })
+    setShowForm(true)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
+    try {
+      if (editingItem) {
+        const res = await fetch(`/api/batches/${editingItem.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            departmentId: user.departmentId,
+          }),
+        })
+        const data = await res.json()
+        if (data.success) {
+          setShowForm(false)
+          fetchBatches()
+        }
+      } else {
+        const res = await fetch('/api/batches', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            departmentId: user.departmentId,
+          }),
+        })
+        const data = await res.json()
+        if (data.success) {
+          setShowForm(false)
+          fetchBatches()
+        }
+      }
+    } catch (error) {
+      console.error('Error saving batch:', error)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deleteConfirm) return
+    setSubmitting(true)
+    try {
+      const res = await fetch(`/api/batches/${deleteConfirm.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (data.success) {
+        setDeleteConfirm(null)
+        fetchBatches()
+      }
+    } catch (error) {
+      console.error('Error deleting batch:', error)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+        <div className="relative flex-1 w-full sm:max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input placeholder="Search batches..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
+        </div>
+        <Button onClick={openCreateForm} className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700">
+          <Plus className="w-4 h-4 mr-2" /> Create Batch
+        </Button>
+      </div>
+
+      {/* Form Modal */}
+      {showForm && (
+        <Card className="border-2 border-amber-200 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">{editingItem ? 'Edit Batch' : 'Create New Batch'}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Batch Name *</label>
+                <Input value={formData.name} onChange={(e) => setFormData(p => ({...p, name: e.target.value}))} placeholder="e.g., 2024 Batch" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Admission Year *</label>
+                <Input type="number" min="2000" max="2030" value={formData.year} onChange={(e) => setFormData(p => ({...p, year: e.target.value}))} required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
+                <select value={formData.section} onChange={(e) => setFormData(p => ({...p, section: e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                  <option value="">Select Section</option>
+                  {['A','B','C','D'].map(s => <option key={s} value={s}>Section {s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Strength</label>
+                <Input type="number" min="1" max="200" value={formData.strength} onChange={(e) => setFormData(p => ({...p, strength: e.target.value}))} placeholder="Number of students" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Advisor/Mentor</label>
+                <select value={formData.advisorId} onChange={(e) => setFormData(p => ({...p, advisorId: e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                  <option value="">Select Advisor</option>
+                  {faculty.map((f: any) => <option key={f.id} value={f.id}>{f.user?.name} ({f.designation || f.employeeId})</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <Input value={formData.description} onChange={(e) => setFormData(p => ({...p, description: e.target.value}))} placeholder="Optional notes" />
+              </div>
+              <div className="md:col-span-2 lg:col-span-3 flex justify-end gap-3 mt-2">
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button type="submit" disabled={submitting} className="bg-gradient-to-r from-amber-500 to-orange-600">
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  {editingItem ? 'Update Batch' : 'Create Batch'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <Card className="border-2 border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-4">
+              <div className="w-12 h-12 mx-auto rounded-full bg-red-100 flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900">Delete Batch?</h3>
+              <p className="text-sm text-gray-600">
+                Are you sure you want to delete <strong>{deleteConfirm.name}</strong>? 
+                Students in this batch will be unlinked but not deleted.
+              </p>
+              <div className="flex justify-center gap-3">
+                <Button variant="outline" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
+                <Button variant="destructive" onClick={handleDelete} disabled={submitting}>
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Batches Grid/List */}
+      <div className="grid gap-4">
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+          </div>
+        ) : batches.length === 0 ? (
+          <div className="text-center py-12 text-gray-500">
+            <FolderOpen className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p>No batches found</p>
+            <p className="text-sm mt-1">Create your first batch to organize students by admission year</p>
+          </div>
+        ) : (
+          batches.map((batch) => (
+            <Card key={batch.id} className={`transition-all duration-200 ${expandedBatch === batch.id ? 'ring-2 ring-amber-300' : 'hover:shadow-md'}`}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 cursor-pointer flex-1" onClick={() => toggleBatchExpand(batch.id)}>
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-bold shadow-lg">
+                      {batch.year.toString().slice(-2)}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{batch.name}</h3>
+                      <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {batch.year}
+                        </span>
+                        {batch.section && (
+                          <Badge variant="secondary" className="text-xs">Sec {batch.section}</Badge>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5" />
+                          {batch._count?.students || 0} students
+                        </span>
+                        {batch.advisor && (
+                          <span className="flex items-center gap-1 text-purple-600">
+                            <UserCheck className="w-3.5 h-3.5" />
+                            {batch.advisor.user?.name}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => openEditForm(batch)} className="p-2 rounded-lg hover:bg-amber-50 text-amber-600 transition-colors" title="Edit">
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => setDeleteConfirm(batch)} className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors" title="Delete">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => toggleBatchExpand(batch.id)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
+                      {expandedBatch === batch.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Expanded Students List */}
+                {expandedBatch === batch.id && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Students in this batch</h4>
+                    {(batchStudents[batch.id] && batchStudents[batch.id].length > 0) ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {batchStudents[batch.id].map((student: any) => (
+                          <div key={student.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg text-sm">
+                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-xs">
+                              {(student.user?.name || '?').charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-gray-900 truncate">{student.user?.name || '-'}</div>
+                              <div className="text-xs text-gray-500 font-mono">{student.registerNumber}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-400 text-center py-4">No students assigned to this batch yet</p>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Pagination */}
+      {pagination.pages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500">
+            Showing {batches.length} of {pagination.total} batches
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" disabled={pagination.page <= 1} onClick={() => setPagination(p => ({...p, page: p.page - 1}))}>
+              Previous
+            </Button>
+            <Button variant="outline" size="sm" disabled={pagination.page >= pagination.pages} onClick={() => setPagination(p => ({...p, page: p.page + 1}))}>
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ============ HOD REPORT GENERATOR PAGE (Monthly Department Report) ============
 function HODReportGeneratorPage({ user }: { user: User }) {
   const [generating, setGenerating] = useState(false)
@@ -7761,6 +8943,7 @@ const ROLE_SIDEBAR_CONFIG = {
       { id: 'hod_staff_approval', icon: BookOpen, label: 'Staff Approvals', badge: 'Pending', description: 'Review staff submissions' },
       { id: 'my_achievement', icon: Trophy, label: 'My Achievements', description: 'Personal achievements' },
       { id: 'analytics', icon: BarChart3, label: 'Department Analytics', description: 'Stats & Reports' },
+      { id: 'hod_management', icon: Database, label: 'Management', badge: 'CRUD', description: 'Students/Staff/Batches' },
       { id: 'report_generator', icon: FileText, label: 'Report Generator', badge: 'New', description: 'Monthly Reports' },
       { id: 'settings', icon: Settings, label: 'Settings', description: 'Preferences' },
     ] as MenuItem[],
@@ -11681,6 +12864,7 @@ export default function IQACPortal() {
         ? <StudentFeedbackPage user={user} feedbackEnabled={feedbackEnabled} />
         : <FeedbackModule user={user} feedbackEnabled={feedbackEnabled} setFeedbackEnabled={setFeedbackEnabled} />
       case 'report_generator': return <HODReportGeneratorPage user={user} />
+      case 'hod_management': return <HODManagementPage user={user} />
       default: return <DashboardContent user={user} setActiveTab={setActiveTab} />
     }
   }

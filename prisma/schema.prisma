@@ -67,6 +67,7 @@ model Department {
   users           User[]
   faculty         Faculty[]
   students        Student[]
+  batches         Batch[]
   activities      Activity[]
   research        Research[]
   
@@ -103,6 +104,7 @@ model Faculty {
   books              Book[]
   projects           Project[]
   fdpPrograms        FDPProgram[]
+  advisedBatches     Batch[]
   
   @@index([departmentId])
   @@index([employeeId])
@@ -117,6 +119,7 @@ model Student {
   rollNumber        String?
   userId            String    @unique
   departmentId      String
+  batchId           String?
   semester          Int?
   section           String?
   batch             String?
@@ -130,6 +133,7 @@ model Student {
   
   user              User      @relation(fields: [userId], references: [id])
   department        Department @relation(fields: [departmentId], references: [id])
+  batchInfo         Batch?    @relation(fields: [batchId], references: [id])
   activities        StudentActivity[]
   achievements      StudentAchievement[]
   internships       Internship[]
@@ -848,6 +852,30 @@ model Setting {
   
   @@index([key])
   @@index([category])
+}
+
+// ==================== BATCH MANAGEMENT ====================
+
+model Batch {
+  id              String     @id @default(cuid())
+  name            String                    // e.g., "2024 Batch", "2025 Batch"
+  year            Int                       // Admission year
+  departmentId    String
+  section         String?                   // e.g., "A", "B", "C"
+  strength        Int?                       // Total students
+  advisorId       String?                   // Faculty advisor/mentor
+  description     String?
+  isActive        Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  
+  department      Department @relation(fields: [departmentId], references: [id])
+  advisor         Faculty?   @relation(fields: [advisorId], references: [id])
+  students        Student[]
+  
+  @@index([departmentId])
+  @@index([year])
+  @@unique([name, departmentId])
 }
 
 // ==================== INSTITUTION INFO ====================

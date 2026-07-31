@@ -1,20 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
+// GET all faculty/staff or filter by department
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const departmentId = searchParams.get('departmentId')
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const limit = parseInt(searchParams.get('limit') || '50')
     const search = searchParams.get('search') || ''
 
     const where: any = {}
     if (departmentId) where.departmentId = departmentId
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' as const } },
         { employeeId: { contains: search, mode: 'insensitive' as const } },
+        { user: { name: { contains: search, mode: 'insensitive' as const } } },
+        { user: { email: { contains: search, mode: 'insensitive' as const } } },
+        { designation: { contains: search, mode: 'insensitive' as const } },
       ]
     }
 
@@ -22,7 +25,7 @@ export async function GET(request: NextRequest) {
       db.faculty.findMany({
         where,
         include: {
-          user: { select: { id: true, email: true, name: true, role: true } },
+          user: { select: { id: true, email: true, name: true, role: true, phone: true, isActive: true } },
           department: { select: { id: true, name: true, code: true } },
         },
         skip: (page - 1) * limit,
@@ -51,31 +54,61 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// POST - Create new faculty/staff
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
-    const { employeeId, userId, departmentId, designation, qualification, specialization, experience, dateOfJoining, researchArea } = data
+    const { 
+      employeeId, 
+      email, 
+      name, 
+      phone,
+      departmentId, 
+      designation, 
+      qualification, 
+      specialization, 
+      experience, 
+      dateOfJoining, 
+      researchArea,
+      isHOD = false,
+      password = 'faculty123'
+    } = data
 
-    if (!employeeId || !userId || !departmentId) {
+    if (!employeeId || !departmentId) {
       return NextResponse.json(
-        { success: false, error: 'Employee ID, User ID, and Department are required' },
+        { success: false, error: 'Employee ID and Department are required' },
         { status: 400 }
       )
     }
 
     // Check if employee ID already exists
-    const existingEmployee = await db.faculty.findUnique({ where: { employeeId } })
-    if (existingEmployee) {
+    const existingFaculty = await db.faculty.findUnique({ where: { employeeId } })
+    if (existingFaculty) {
       return NextResponse.json(
         { success: false, error: 'Employee ID already exists' },
         { status: 409 }
       )
     }
 
+    // Create user account for faculty
+    const userEmail = email || `${employeeId.toLowerCase()}@niet.edu`
+    const userName = name || `Faculty ${employeeId}`
+    
+    const user = await db.user.create({
+      data: {
+        email: userEmail,
+        password, // In production, hash this password
+        name: userName,
+        role: isHOD ? 'HOD' : 'STAFF',
+        phone: phone || null,
+        departmentId,
+      }
+    })
+
     const faculty = await db.faculty.create({
       data: {
         employeeId,
-        userId,
+        userId: user.id,
         departmentId,
         designation,
         qualification,
@@ -83,6 +116,7 @@ export async function POST(request: NextRequest) {
         experience: experience ? parseFloat(experience) : null,
         dateOfJoining: dateOfJoining ? new Date(dateOfJoining) : null,
         researchArea,
+        isHOD,
       },
       include: {
         user: { select: { id: true, email: true, name: true, role: true } },
