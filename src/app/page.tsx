@@ -5396,11 +5396,7 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
   const [loadingDetailData, setLoadingDetailData] = useState(false)
   const [expandedPerson, setExpandedPerson] = useState<string | null>(null)
 
-  if (loading) {
-    return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
-  }
-
-  // Fetch detailed department data when department is selected
+  // Fetch detailed department data when department is selected (MUST be before any conditional returns)
   useEffect(() => {
     if (!selectedDepartment) return
     
@@ -5415,6 +5411,10 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
       .catch(console.error)
       .finally(() => setLoadingDetailData(false))
   }, [selectedDepartment, detailFilter, achievementFilter])
+
+  if (loading) {
+    return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
+  }
 
   // Show department detail view with staff and students
   if (selectedDepartment) {
