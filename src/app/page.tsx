@@ -62,7 +62,7 @@ type TabType = 'dashboard' | 'departments' | 'faculty' | 'students' | 'activitie
   | 'approvals' | 'analytics' | 'documents' | 'settings' | 'achievements' | 'feedback'
   | 'staff_achievement' | 'student_achievement_view'
   | 'hod_student_approval' | 'hod_staff_approval' | 'my_achievement'
-  | 'report_generator' | 'hod_management' | 'showcase'
+  | 'report_generator' | 'hod_management' | 'showcase' | 'database'
 
 // ============ ACHIEVEMENT TYPES DEFINITION (13 Types - Student Focused) ============
 const ACHIEVEMENT_TYPES: Record<string, {
@@ -5389,9 +5389,32 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
     document.body.removeChild(a)
   }
 
+  // Enhanced Department Detail State (must be before any conditional returns)
+  const [detailFilter, setDetailFilter] = useState<'all' | 'students' | 'staff' | 'hod'>('all')
+  const [achievementFilter, setAchievementFilter] = useState<string>('all')
+  const [deptDetailData, setDeptDetailData] = useState<any>(null)
+  const [loadingDetailData, setLoadingDetailData] = useState(false)
+  const [expandedPerson, setExpandedPerson] = useState<string | null>(null)
+
   if (loading) {
     return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
   }
+
+  // Fetch detailed department data when department is selected
+  useEffect(() => {
+    if (!selectedDepartment) return
+    
+    setLoadingDetailData(true)
+    fetch(`/api/admin/departments/${selectedDepartment.id}?filter=${detailFilter}${achievementFilter !== 'all' ? `&achievementType=${achievementFilter}` : ''}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setDeptDetailData(data.data)
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoadingDetailData(false))
+  }, [selectedDepartment, detailFilter, achievementFilter])
 
   // Show department detail view with staff and students
   if (selectedDepartment) {
@@ -5432,16 +5455,20 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
               <p className="text-blue-100 mt-1">Code: {selectedDepartment.code}</p>
               <div className="flex gap-6 mt-4">
                 <div className="text-center">
-                  <p className="text-2xl font-bold">{departmentStaff.length}</p>
+                  <p className="text-2xl font-bold">{deptDetailData?.summary?.department?.faculty || departmentStaff.length}</p>
                   <p className="text-xs text-blue-200">Faculty</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold">{departmentStudents.length}</p>
+                  <p className="text-2xl font-bold">{deptDetailData?.summary?.department?.students || departmentStudents.length}</p>
                   <p className="text-xs text-blue-200">Students</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold">{selectedDepartment.activityCount}</p>
+                  <p className="text-2xl font-bold">{deptDetailData?.summary?.department?.activities || selectedDepartment.activityCount}</p>
                   <p className="text-xs text-blue-200">Activities</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{deptDetailData?.summary?.achievements?.total || 0}</p>
+                  <p className="text-xs text-blue-200">Achievements</p>
                 </div>
               </div>
             </div>
@@ -5451,112 +5478,307 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
           </div>
         </div>
 
-        {loadingDetails ? (
+        {/* Filter Tabs - Role Based */}
+        <Card className="border border-gray-200 overflow-hidden">
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div className="flex flex-wrap gap-2">
+                <span className="text-sm text-gray-500 mr-2 self-center">View:</span>
+                {[
+                  { id: 'all', label: 'All Members', icon: Users },
+                  { id: 'students', label: 'Students', icon: GraduationCap },
+                  { id: 'staff', label: 'Staff/Faculty', icon: UserCheck },
+                  { id: 'hod', label: 'HOD Only', icon: Shield },
+                ].map(tab => (
+                  <Button
+                    key={tab.id}
+                    size="sm"
+                    variant={detailFilter === tab.id ? 'default' : 'outline'}
+                    onClick={() => setDetailFilter(tab.id as any)}
+                    className={`gap-2 ${detailFilter === tab.id ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                  >
+                    <tab.icon className="w-4 h-4" /> {tab.label}
+                  </Button>
+                ))}
+              </div>
+              
+              {/* Achievement Type Filter */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">Achievement:</span>
+                <select
+                  value={achievementFilter}
+                  onChange={(e) => setAchievementFilter(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">All Types</option>
+                  <option value="award">Awards</option>
+                  <option value="certification">Certifications</option>
+                  <option value="patent">Patents</option>
+                  <option value="publication">Publications</option>
+                  <option value="project">Projects</option>
+                  <option value="book">Books</option>
+                  <option value="fdp">FDP Programs</option>
+                  <option value="consultancy">Consultancies</option>
+                  <option value="placement">Placements</option>
+                  <option value="internship">Internships</option>
+                  <option value="activity">Activities</option>
+                </select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Achievement Summary Cards */}
+        {deptDetailData?.summary?.achievements && (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {Object.entries(deptDetailData.summary.achievements)
+              .filter(([key]) => key !== 'total' && (deptDetailData.summary.achievements as any)[key] > 0)
+              .map(([key, count]: [string, any]) => (
+                <div key={key} className="bg-white border border-gray-200 rounded-xl p-4 text-center hover:shadow-md transition-shadow">
+                  <p className="text-2xl font-bold text-gray-900">{count}</p>
+                  <p className="text-xs text-gray-500 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</p>
+                </div>
+              ))}
+          </div>
+        )}
+
+        {loadingDetailData ? (
           <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Staff Section */}
-            <Card className="border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4 text-white flex items-center justify-between">
-                <h3 className="font-bold flex items-center gap-2">
-                  <Users className="w-5 h-5" /> Faculty Members ({departmentStaff.length})
-                </h3>
-                <Button 
-                  size="sm" 
-                  variant="secondary" 
-                  className="bg-white/20 hover:bg-white/30 text-white border-0 gap-1"
-                  onClick={() => { setShowStaffImport(true); setImportResults(null); setStaffFile(null); }}
-                >
-                  <Plus className="w-3 h-3" /> Import
-                </Button>
-              </div>
-              <div className="p-4 max-h-[400px] overflow-y-auto">
-                {departmentStaff.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Users className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                    <p className="text-gray-500 mb-4">No faculty members found</p>
+          <>
+            {/* Staff/Faculty List with Achievements */}
+            {(detailFilter === 'all' || detailFilter === 'staff' || detailFilter === 'hod') && 
+             deptDetailData?.faculty?.filter((f: any) => detailFilter !== 'hod' || f.isHOD).length > 0 && (
+              <Card className="border border-gray-200 overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-green-500 to-emerald-600 text-white pb-4">
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Users className="w-5 h-5" /> Faculty Members 
+                      <Badge className="bg-white/20 text-white border-0">
+                        {detailFilter === 'hod' 
+                          ? deptDetailData.faculty.filter((f: any) => f.isHOD).length
+                          : deptDetailData.faculty.length}
+                      </Badge>
+                    </span>
                     <Button 
                       size="sm" 
-                      variant="outline" 
-                      className="gap-2"
+                      variant="secondary" 
+                      className="bg-white/20 hover:bg-white/30 text-white border-0 gap-1"
                       onClick={() => { setShowStaffImport(true); setImportResults(null); setStaffFile(null); }}
                     >
-                      <Upload className="w-4 h-4" /> Import Staff (Bulk)
+                      <Plus className="w-3 h-3" /> Import Staff
                     </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="max-h-[600px] overflow-y-auto divide-y divide-gray-100">
+                    {deptDetailData.faculty
+                      .filter((f: any) => detailFilter !== 'hod' || f.isHOD)
+                      .map((faculty: any) => {
+                        const isExpanded = expandedPerson === `faculty-${faculty.id}`
+                        const totalAchievements = faculty.achievementCounts?.total || 0
+                        return (
+                          <div key={faculty.id} className="hover:bg-gray-50 transition-colors">
+                            <div 
+                              className="p-4 flex items-center gap-4 cursor-pointer"
+                              onClick={() => setExpandedPerson(isExpanded ? null : `faculty-${faculty.id}`)}
+                            >
+                              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                <Users className="w-6 h-6 text-green-600" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium text-gray-900 truncate">{faculty.user?.name || faculty.name}</p>
+                                  {faculty.isHOD && <Badge className="bg-amber-100 text-amber-700">HOD</Badge>}
+                                </div>
+                                <p className="text-sm text-gray-500">{faculty.designation || 'Faculty'} • {faculty.user?.email}</p>
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                <p className="text-lg font-bold text-green-600">{totalAchievements}</p>
+                                <p className="text-xs text-gray-400">Achievements</p>
+                              </div>
+                              <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                            </div>
+                            
+                            {/* Expanded Achievement Details */}
+                            {isExpanded && (
+                              <div className="px-4 pb-4 bg-gray-50 rounded-b-lg mx-2 mb-2">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                                  {[
+                                    { key: 'awards', label: 'Awards', icon: Trophy, color: 'text-amber-600 bg-amber-50' },
+                                    { key: 'certifications', label: 'Certifications', icon: Award, color: 'text-blue-600 bg-blue-50' },
+                                    { key: 'patents', label: 'Patents', icon: FileText, color: 'text-purple-600 bg-purple-50' },
+                                    { key: 'publications', label: 'Publications', icon: Newspaper, color: 'text-cyan-600 bg-cyan-50' },
+                                    { key: 'projects', label: 'Projects', icon: Briefcase, color: 'text-green-600 bg-green-50' },
+                                    { key: 'books', label: 'Books', icon: BookOpen, color: 'text-indigo-600 bg-indigo-50' },
+                                    { key: 'fdpPrograms', label: 'FDP', icon: GraduationCap, color: 'text-pink-600 bg-pink-50' },
+                                    { key: 'consultations', label: 'Consultancy', icon: Handshake, color: 'text-orange-600 bg-orange-50' },
+                                  ].map(ach => (
+                                    <div key={ach.key} className={`${ach.color} p-2 rounded-lg text-center`}>
+                                      <ach.icon className="w-4 h-4 mx-auto mb-1" />
+                                      <p className="text-lg font-bold">{faculty.achievementCounts?.[ach.key] || faculty[ach.key]?.length || 0}</p>
+                                      <p className="text-xs opacity-75">{ach.label}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                                
+                                {/* Recent Achievements List */}
+                                <div className="space-y-2 max-h-48 overflow-y-auto">
+                                  {faculty.awards?.slice(0, 3).map((a: any, i: number) => (
+                                    <div key={`award-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
+                                      <Trophy className="w-4 h-4 text-amber-500" />
+                                      <span className="truncate flex-1">{a.title}</span>
+                                      <Badge variant="outline" className="text-xs">Award</Badge>
+                                    </div>
+                                  ))}
+                                  {faculty.certifications?.slice(0, 3).map((c: any, i: number) => (
+                                    <div key={`cert-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
+                                      <Award className="w-4 h-4 text-blue-500" />
+                                      <span className="truncate flex-1">{c.title}</span>
+                                      <Badge variant="outline" className="text-xs">Cert</Badge>
+                                    </div>
+                                  ))}
+                                  {faculty.patents?.slice(0, 2).map((p: any, i: number) => (
+                                    <div key={`pat-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
+                                      <FileText className="w-4 h-4 text-purple-500" />
+                                      <span className="truncate flex-1">{p.title}</span>
+                                      <Badge variant="outline" className="text-xs">Patent</Badge>
+                                    </div>
+                                  ))}
+                                  {faculty.projects?.slice(0, 2).map((pr: any, i: number) => (
+                                    <div key={`proj-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
+                                      <Briefcase className="w-4 h-4 text-green-500" />
+                                      <span className="truncate flex-1">{pr.title}</span>
+                                      <Badge variant="outline" className="text-xs">Project</Badge>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    {departmentStaff.map((staff: any) => (
-                      <div key={staff.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                          <Users className="w-5 h-5 text-green-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">{staff.user?.name || staff.name}</p>
-                          <p className="text-sm text-gray-500">{staff.designation || 'Faculty'}</p>
-                        </div>
-                        {staff.isHOD && (
-                          <Badge className="bg-amber-100 text-amber-700">HOD</Badge>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Students Section */}
-            <Card className="border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-purple-500 to-violet-600 p-4 text-white flex items-center justify-between">
-                <h3 className="font-bold flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5" /> Students ({departmentStudents.length})
-                </h3>
-                <Button 
-                  size="sm" 
-                  variant="secondary" 
-                  className="bg-white/20 hover:bg-white/30 text-white border-0 gap-1"
-                  onClick={() => { setShowStudentImport(true); setImportResults(null); setStudentFile(null); }}
-                >
-                  <Plus className="w-3 h-3" /> Import
-                </Button>
-              </div>
-              <div className="p-4 max-h-[400px] overflow-y-auto">
-                {departmentStudents.length === 0 ? (
-                  <div className="text-center py-8">
-                    <GraduationCap className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                    <p className="text-gray-500 mb-4">No students found</p>
+            {/* Students List with Achievements */}
+            {(detailFilter === 'all' || detailFilter === 'students') && deptDetailData?.students?.length > 0 && (
+              <Card className="border border-gray-200 overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-purple-500 to-violet-600 text-white pb-4">
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <GraduationCap className="w-5 h-5" /> Students
+                      <Badge className="bg-white/20 text-white border-0">{deptDetailData.students.length}</Badge>
+                    </span>
                     <Button 
                       size="sm" 
-                      variant="outline" 
-                      className="gap-2"
+                      variant="secondary" 
+                      className="bg-white/20 hover:bg-white/30 text-white border-0 gap-1"
                       onClick={() => { setShowStudentImport(true); setImportResults(null); setStudentFile(null); }}
                     >
-                      <Upload className="w-4 h-4" /> Import Students (Bulk)
+                      <Plus className="w-3 h-3" /> Import Students
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="max-h-[600px] overflow-y-auto divide-y divide-gray-100">
+                    {deptDetailData.students.map((student: any) => {
+                      const isExpanded = expandedPerson === `student-${student.id}`
+                      const totalAchievements = student.achievementCounts?.total || 0
+                      return (
+                        <div key={student.id} className="hover:bg-gray-50 transition-colors">
+                          <div 
+                            className="p-4 flex items-center gap-4 cursor-pointer"
+                            onClick={() => setExpandedPerson(isExpanded ? null : `student-${student.id}`)}
+                          >
+                            <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                              <GraduationCap className="w-6 h-6 text-purple-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-gray-900 truncate">{student.user?.name || student.name}</p>
+                              <p className="text-sm text-gray-500">{student.registerNumber} • Sem {student.semester || '-'} • CGPA: {student.cgpa || '-'}</p>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <p className="text-lg font-bold text-purple-600">{totalAchievements}</p>
+                              <p className="text-xs text-gray-400">Achievements</p>
+                            </div>
+                            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                          </div>
+                          
+                          {/* Expanded Student Achievement Details */}
+                          {isExpanded && (
+                            <div className="px-4 pb-4 bg-gray-50 rounded-b-lg mx-2 mb-2">
+                              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+                                {[
+                                  { key: 'achievements', label: 'Achievements', icon: Star, color: 'text-amber-600 bg-amber-50' },
+                                  { key: 'certifications', label: 'Certifications', icon: Award, color: 'text-blue-600 bg-blue-50' },
+                                  { key: 'placements', label: 'Placements', icon: Briefcase, color: 'text-green-600 bg-green-50' },
+                                  { key: 'internships', label: 'Internships', icon: Wrench, color: 'text-orange-600 bg-orange-50' },
+                                  { key: 'npCourses', label: 'NP Courses', icon: BookOpen, color: 'text-indigo-600 bg-indigo-50' },
+                                ].map(ach => (
+                                  <div key={ach.key} className={`${ach.color} p-2 rounded-lg text-center`}>
+                                    <ach.icon className="w-4 h-4 mx-auto mb-1" />
+                                    <p className="text-lg font-bold">{student.achievementCounts?.[ach.key] || student[ach.key]?.length || 0}</p>
+                                    <p className="text-xs opacity-75">{ach.label}</p>
+                                  </div>
+                                ))}
+                              </div>
+                              
+                              {/* Student Achievements List */}
+                              <div className="space-y-2 max-h-48 overflow-y-auto">
+                                {student.achievements?.slice(0, 4).map((a: any, i: number) => (
+                                  <div key={`sa-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
+                                    <Star className="w-4 h-4 text-amber-500" />
+                                    <span className="truncate flex-1">{a.title}</span>
+                                    <Badge variant="outline" className="text-xs capitalize">{a.type}</Badge>
+                                  </div>
+                                ))}
+                                {student.placements?.slice(0, 2).map((p: any, i: number) => (
+                                  <div key={`sp-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
+                                    <Briefcase className="w-4 h-4 text-green-500" />
+                                    <span className="truncate flex-1">{p.company} - {p.designation}</span>
+                                    <Badge variant="outline" className="text-xs">Placement</Badge>
+                                  </div>
+                                ))}
+                                {student.internships?.slice(0, 2).map((intr: any, i: number) => (
+                                  <div key={`si-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
+                                    <Wrench className="w-4 h-4 text-orange-500" />
+                                    <span className="truncate flex-1">{intr.company} - {intr.domain}</span>
+                                    <Badge variant="outline" className="text-xs">Internship</Badge>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* No Results Message */}
+            {(!deptDetailData?.faculty?.length && !deptDetailData?.students?.length) && (
+              <Card className="border-dashed border-2 border-gray-300">
+                <CardContent className="p-12 text-center">
+                  <Database className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">No Data Found</h3>
+                  <p className="text-gray-500 mb-4">No members found for the selected filter.</p>
+                  <div className="flex gap-3 justify-center">
+                    <Button onClick={() => { setShowStaffImport(true); setImportResults(null); setStaffFile(null); }} variant="outline" className="gap-2">
+                      <Upload className="w-4 h-4" /> Import Staff
+                    </Button>
+                    <Button onClick={() => { setShowStudentImport(true); setImportResults(null); setStudentFile(null); }} variant="outline" className="gap-2">
+                      <Upload className="w-4 h-4" /> Import Students
                     </Button>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    {departmentStudents.map((student: any) => (
-                      <div key={student.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                          <GraduationCap className="w-5 h-5 text-purple-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">{student.user?.name || student.name}</p>
-                          <p className="text-sm text-gray-500">{student.registerNumber} • Sem {student.semester || '-'}</p>
-                        </div>
-                        {student.cgpa && (
-                          <Badge variant="secondary" className="bg-purple-100 text-purple-700">
-                            CGPA: {student.cgpa}
-                          </Badge>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </Card>
-          </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
         )}
 
         {/* Staff Bulk Import Modal */}
@@ -11250,6 +11472,323 @@ function StatCell({ title, value, icon: Icon, color }: { title: string; value: s
   )
 }
 
+// ============ DATABASE MANAGEMENT PAGE ============
+function DatabaseManagementPage() {
+  const [dbInfo, setDbInfo] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [actionResult, setActionResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  useEffect(() => {
+    fetchDatabaseInfo()
+  }, [])
+
+  const fetchDatabaseInfo = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/admin/database')
+      const json = await res.json()
+      if (json.success) {
+        setDbInfo(json.data)
+      }
+    } catch (error) {
+      console.error('Error fetching database info:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAction = async (action: string) => {
+    setActionLoading(action)
+    setActionResult(null)
+    try {
+      const res = await fetch('/api/admin/database', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+      })
+      const json = await res.json()
+      if (json.success) {
+        setActionResult({ type: 'success', message: json.message || `${action} completed successfully` })
+        if (action === 'cleanup' || action === 'stats') {
+          fetchDatabaseInfo()
+        }
+      } else {
+        setActionResult({ type: 'error', message: json.error || 'Action failed' })
+      }
+    } catch (error) {
+      setActionResult({ type: 'error', message: 'Network error' })
+    } finally {
+      setActionLoading(null)
+      setTimeout(() => setActionResult(null), 5000)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <Database className="w-7 h-7 text-purple-500" />
+            Database Management
+          </h2>
+          <p className="text-gray-500 mt-1">Monitor and manage your database</p>
+        </div>
+        <Button onClick={fetchDatabaseInfo} variant="outline" className="gap-2">
+          <RefreshCw className="w-4 h-4" /> Refresh
+        </Button>
+      </div>
+
+      {/* Action Result Alert */}
+      {actionResult && (
+        <div className={`p-4 rounded-xl flex items-center gap-3 ${
+          actionResult.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
+        }`}>
+          {actionResult.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+          <p>{actionResult.message}</p>
+        </div>
+      )}
+
+      {/* Database Health Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="border border-gray-200 overflow-hidden">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Total Tables</p>
+                <p className="text-3xl font-bold text-gray-900">{dbInfo?.summary?.totalTables || 0}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-blue-100">
+                <Database className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-gray-200 overflow-hidden">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Total Records</p>
+                <p className="text-3xl font-bold text-gray-900">{(dbInfo?.summary?.totalRecords || 0).toLocaleString()}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-green-100">
+                <Database className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-gray-200 overflow-hidden">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Database Size</p>
+                <p className="text-3xl font-bold text-gray-900">{dbInfo?.summary?.databaseSize || 'N/A'}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-purple-100">
+                <Database className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className={`border overflow-hidden ${
+          dbInfo?.health?.status === 'healthy' ? 'border-green-200 bg-green-50' :
+          dbInfo?.health?.status === 'warning' ? 'border-yellow-200 bg-yellow-50' :
+          'border-red-200 bg-red-50'
+        }`}>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Health Status</p>
+                <p className={`text-xl font-bold capitalize ${
+                  dbInfo?.health?.status === 'healthy' ? 'text-green-700' :
+                  dbInfo?.health?.status === 'warning' ? 'text-yellow-700' : 'text-red-700'
+                }`}>{dbInfo?.health?.status || 'Unknown'}</p>
+              </div>
+              <div className={`p-3 rounded-xl ${
+                dbInfo?.health?.status === 'healthy' ? 'bg-green-200' :
+                dbInfo?.health?.status === 'warning' ? 'bg-yellow-200' : 'bg-red-200'
+              }`}>
+                {dbInfo?.health?.status === 'healthy' ? <CheckCircle className="w-6 h-6 text-green-700" /> :
+                 dbInfo?.health?.status === 'warning' ? <AlertCircle className="w-6 h-6 text-yellow-700" /> :
+                 <XCircle className="w-6 h-6 text-red-700" />}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Quick Actions */}
+        <Card className="border border-gray-200 overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-purple-500 to-violet-600 text-white">
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5" /> Quick Actions
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <Button 
+                onClick={() => handleAction('backup')} 
+                disabled={actionLoading !== null}
+                variant="outline"
+                className="gap-2 p-4 h-auto flex-col"
+              >
+                {actionLoading === 'backup' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                <span>Backup</span>
+              </Button>
+              
+              <Button 
+                onClick={() => handleAction('stats')} 
+                disabled={actionLoading !== null}
+                variant="outline"
+                className="gap-2 p-4 h-auto flex-col"
+              >
+                {actionLoading === 'stats' ? <Loader2 className="w-5 h-5 animate-spin" /> : <BarChart3 className="w-5 h-5" />}
+                <span>Analyze</span>
+              </Button>
+              
+              <Button 
+                onClick={() => handleAction('seed')} 
+                disabled={actionLoading !== null}
+                variant="outline"
+                className="gap-2 p-4 h-auto flex-col"
+              >
+                {actionLoading === 'seed' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                <span>Seed Data</span>
+              </Button>
+              
+              <Button 
+                onClick={() => handleAction('cleanup')} 
+                disabled={actionLoading !== null}
+                variant="outline"
+                className="gap-2 p-4 h-auto flex-col"
+              >
+                {actionLoading === 'cleanup' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+                <span>Cleanup</span>
+              </Button>
+            </div>
+            
+            <div className="text-xs text-gray-500 space-y-1 pt-2 border-t">
+              <p><strong>Backup:</strong> Create a database backup file</p>
+              <p><strong>Analyze:</strong> Refresh database statistics</p>
+              <p><strong>Seed Data:</strong> Add sample data if empty</p>
+              <p><strong>Cleanup:</strong> Remove orphaned records</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Users by Role */}
+        <Card className="border border-gray-200 overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-indigo-500 to-blue-600 text-white">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" /> Users by Role
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {dbInfo?.usersByRole ? Object.entries(dbInfo.usersByRole).map(([role, count]: [string, any]) => (
+                <div key={role} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      role === 'ADMIN' ? 'bg-red-100' :
+                      role === 'HOD' ? 'bg-amber-100' :
+                      role === 'STAFF' ? 'bg-green-100' : 'bg-blue-100'
+                    }`}>
+                      <Users className={`w-5 h-5 ${
+                        role === 'ADMIN' ? 'text-red-600' :
+                        role === 'HOD' ? 'text-amber-600' :
+                        role === 'STAFF' ? 'text-green-600' : 'text-blue-600'
+                      }`} />
+                    </div>
+                    <span className="font-medium">{role}</span>
+                  </div>
+                  <Badge variant="secondary" className="text-lg px-3 py-1">{count}</Badge>
+                </div>
+              )) : <p className="text-gray-500 text-center py-4">No user data available</p>}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* All Tables */}
+      <Card className="border border-gray-200 overflow-hidden">
+        <CardHeader className="bg-gray-50 border-b">
+          <CardTitle className="flex items-center gap-2 text-gray-900">
+            <Database className="w-5 h-5" /> All Database Tables
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 sticky top-0">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Table Name</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Records</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Category</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {dbInfo?.tables?.map((table: any, idx: number) => (
+                  <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-gray-900 font-mono text-sm">{table.name}</td>
+                    <td className="px-4 py-3 text-center">
+                      <Badge variant={table.count > 0 ? 'default' : 'secondary'} className={
+                        table.count > 0 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+                      }>
+                        {table.count.toLocaleString()}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500">{table.category}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Pending Items */}
+      {(dbInfo?.pendingItems?.approvals > 0 || dbInfo?.pendingItems?.notifications > 0) && (
+        <Card className="border border-amber-200 bg-amber-50 overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5" /> Pending Items
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="flex gap-6">
+              {dbInfo.pendingItems.approvals > 0 && (
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-amber-600" />
+                  <span><strong>{dbInfo.pendingItems.approvals}</strong> pending approvals</span>
+                </div>
+              )}
+              {dbInfo.pendingItems.notifications > 0 && (
+                <div className="flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-amber-600" />
+                  <span><strong>{dbInfo.pendingItems.notifications}</strong> unread notifications</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}
+
 // ============ DOCUMENTS PAGE ============
 function DocumentsPage() {
   return (
@@ -12952,6 +13491,7 @@ const ROLE_SIDEBAR_CONFIG = {
       { id: 'documents', icon: FolderOpen, label: 'Documents', description: 'File management' },
       { id: 'feedback', icon: MessageSquare, label: 'Feedback', description: 'User feedback' },
       { id: 'settings', icon: Settings, label: 'Settings', badge: 'Full', description: 'System configuration' },
+      { id: 'database', icon: Database, label: 'Database', badge: 'New', description: 'Database management & info' },
     ] as MenuItem[],
   }
 }
@@ -16838,6 +17378,7 @@ export default function IQACPortal() {
           : <AnalyticsPage />
       case 'documents': return <DocumentsPage />
       case 'settings': return <SettingsPage user={user} />
+      case 'database': return <DatabaseManagementPage />
       case 'achievements': return user?.role === 'ADMIN'
         ? <AdminAchievementsPage />
         : user?.role === 'STUDENT' 
