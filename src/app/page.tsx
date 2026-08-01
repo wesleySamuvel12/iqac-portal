@@ -5624,31 +5624,31 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
                                 
                                 {/* Recent Achievements List */}
                                 <div className="space-y-2 max-h-48 overflow-y-auto">
-                                  {faculty.awards?.slice(0, 3).map((a: any, i: number) => (
+                                  {Array.isArray(faculty.awards) && faculty.awards.slice(0, 3).map((a: any, i: number) => (
                                     <div key={`award-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
                                       <Trophy className="w-4 h-4 text-amber-500" />
-                                      <span className="truncate flex-1">{a.title}</span>
+                                      <span className="truncate flex-1">{a.title || a.name || 'Award'}</span>
                                       <Badge variant="outline" className="text-xs">Award</Badge>
                                     </div>
                                   ))}
-                                  {faculty.certifications?.slice(0, 3).map((c: any, i: number) => (
+                                  {Array.isArray(faculty.certifications) && faculty.certifications.slice(0, 3).map((c: any, i: number) => (
                                     <div key={`cert-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
                                       <Award className="w-4 h-4 text-blue-500" />
-                                      <span className="truncate flex-1">{c.title}</span>
+                                      <span className="truncate flex-1">{c.title || c.name || 'Certification'}</span>
                                       <Badge variant="outline" className="text-xs">Cert</Badge>
                                     </div>
                                   ))}
-                                  {faculty.patents?.slice(0, 2).map((p: any, i: number) => (
+                                  {Array.isArray(faculty.patents) && faculty.patents.slice(0, 2).map((p: any, i: number) => (
                                     <div key={`pat-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
                                       <FileText className="w-4 h-4 text-purple-500" />
-                                      <span className="truncate flex-1">{p.title}</span>
+                                      <span className="truncate flex-1">{p.title || p.name || 'Patent'}</span>
                                       <Badge variant="outline" className="text-xs">Patent</Badge>
                                     </div>
                                   ))}
-                                  {faculty.projects?.slice(0, 2).map((pr: any, i: number) => (
+                                  {Array.isArray(faculty.projects) && faculty.projects.slice(0, 2).map((pr: any, i: number) => (
                                     <div key={`proj-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
                                       <Briefcase className="w-4 h-4 text-green-500" />
-                                      <span className="truncate flex-1">{pr.title}</span>
+                                      <span className="truncate flex-1">{pr.title || pr.name || 'Project'}</span>
                                       <Badge variant="outline" className="text-xs">Project</Badge>
                                     </div>
                                   ))}
@@ -5728,24 +5728,24 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
                               
                               {/* Student Achievements List */}
                               <div className="space-y-2 max-h-48 overflow-y-auto">
-                                {student.achievements?.slice(0, 4).map((a: any, i: number) => (
+                                {Array.isArray(student.achievements) && student.achievements.slice(0, 4).map((a: any, i: number) => (
                                   <div key={`sa-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
                                     <Star className="w-4 h-4 text-amber-500" />
-                                    <span className="truncate flex-1">{a.title}</span>
-                                    <Badge variant="outline" className="text-xs capitalize">{a.type}</Badge>
+                                    <span className="truncate flex-1">{a.title || a.name || 'Achievement'}</span>
+                                    <Badge variant="outline" className="text-xs capitalize">{a.type || 'Award'}</Badge>
                                   </div>
                                 ))}
-                                {student.placements?.slice(0, 2).map((p: any, i: number) => (
+                                {Array.isArray(student.placements) && student.placements.slice(0, 2).map((p: any, i: number) => (
                                   <div key={`sp-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
                                     <Briefcase className="w-4 h-4 text-green-500" />
-                                    <span className="truncate flex-1">{p.company} - {p.designation}</span>
+                                    <span className="truncate flex-1">{p.company || p.organization} - {p.designation || p.role}</span>
                                     <Badge variant="outline" className="text-xs">Placement</Badge>
                                   </div>
                                 ))}
-                                {student.internships?.slice(0, 2).map((intr: any, i: number) => (
+                                {Array.isArray(student.internships) && student.internships.slice(0, 2).map((intr: any, i: number) => (
                                   <div key={`si-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
                                     <Wrench className="w-4 h-4 text-orange-500" />
-                                    <span className="truncate flex-1">{intr.company} - {intr.domain}</span>
+                                    <span className="truncate flex-1">{intr.company || intr.organization} - {intr.domain || intr.role}</span>
                                     <Badge variant="outline" className="text-xs">Internship</Badge>
                                   </div>
                                 ))}
