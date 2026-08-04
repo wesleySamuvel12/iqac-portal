@@ -8,7 +8,9 @@ export async function POST(request: NextRequest) {
   let tempPdfPath = ''
   
   try {
-    const { reportData, department } = await request.json()
+    const body = await request.json()
+    const reportData = body.reportData || {}
+    const department = body.department || ''
 
     // Generate HTML content for the PDF
     const htmlContent = generateReportHTML(reportData, department)
@@ -26,26 +28,12 @@ export async function POST(request: NextRequest) {
     
     writeFileSync(tempHtmlPath, htmlContent)
 
-    // Find the PDF skill directory
-    const pdfSkillDir = findPdfSkillDir()
-    
-    if (pdfSkillDir) {
-      // Use html2pdf-next.js for proper PDF generation
-      const html2pdfScript = join(pdfSkillDir, 'scripts', 'html2pdf-next.js')
-      
-      try {
-        execSync(`node "${html2pdfScript}" "${tempHtmlPath}" --output "${tempPdfPath}" --width 210mm --height 297mm`, {
-          timeout: 30000,
-          stdio: 'pipe'
-        })
-      } catch (execError) {
-        console.error('html2pdf-next.js failed, trying alternative:', execError)
-        // Fallback: use direct Playwright approach
-        await generateWithPlaywright(htmlContent, tempPdfPath)
-      }
-    } else {
-      // No PDF skill available, use direct Playwright
+    // Try to generate PDF using Playwright (most reliable method)
+    try {
       await generateWithPlaywright(htmlContent, tempPdfPath)
+    } catch (playwrightError) {
+      console.error('Playwright failed:', playwrightError)
+      throw new Error('PDF generation failed: ' + (playwrightError as Error).message)
     }
 
     // Check if PDF was created
@@ -85,21 +73,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function findPdfSkillDir(): string | null {
-  const possiblePaths = [
-    '/home/z/.claude/skills/pdf',
-    '/home/z/skills/pdf',
-    join(process.cwd(), '..', '.claude', 'skills', 'pdf'),
-  ]
-  
-  for (const path of possiblePaths) {
-    if (existsSync(join(path, 'scripts', 'html2pdf-next.js'))) {
-      return path
-    }
-  }
-  return null
-}
-
 async function generateWithPlaywright(htmlContent: string, outputPath: string): Promise<void> {
   // Dynamic import for playwright
   const { chromium } = await import('playwright')
@@ -133,6 +106,15 @@ async function generateWithPlaywright(htmlContent: string, outputPath: string): 
 }
 
 function generateReportHTML(data: any, dept: string): string {
+  // Safely access all nested properties with fallbacks
+  const safeData = data || {}
+  const studentDev = safeData.studentDev || {}
+  const internship = safeData.internship || {}
+  const documents = safeData.documents || {}
+  const qaActivities = safeData.qaActivities || []
+  const researchFaculty = safeData.researchFaculty || []
+  const facultyDev = safeData.facultyDev || []
+  
   const currentDate = new Date().toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'long',
@@ -140,35 +122,57 @@ function generateReportHTML(data: any, dept: string): string {
   })
 
   // Helper to build research faculty rows
-  const researchRows = (data.researchFaculty || []).map((f: any, i: number) => `
+  const researchRows = researchFaculty.map((f: any, i: number) => {
+    if (!f) return ''
+    const journalPub = f.journalPub || {}
+    const conferencePapers = f.conferencePapers || {}
+    const book = f.book || {}
+    const bookChapters = f.bookChapters || {}
+    const patents = f.patents || {}
+    const fundedProjects = f.fundedProjects || {}
+    
+    return `
         <tr>
           <td class="text-left row-label">${f.name || `Faculty ${i + 1}`}</td>
-          <td>${f.journalPub?.prev || ''}</td><td>${f.journalPub?.curr || ''}</td>
-          <td>${f.conferencePapers?.prev || ''}</td><td>${f.conferencePapers?.curr || ''}</td>
-          <td>${f.book?.prev || ''}</td><td>${f.book?.curr || ''}</td>
-          <td>${f.bookChapters?.prev || ''}</td><td>${f.bookChapters?.curr || ''}</td>
-          <td>${f.patents?.prev || ''}</td><td>${f.patents?.curr || ''}</td>
-          <td>${f.fundedProjects?.prev || ''}</td><td>${f.fundedProjects?.curr || ''}</td>
-        </tr>`).join('')
+          <td>${journalPub.prev || ''}</td><td>${journalPub.curr || ''}</td>
+          <td>${conferencePapers.prev || ''}</td><td>${conferencePapers.curr || ''}</td>
+          <td>${book.prev || ''}</td><td>${book.curr || ''}</td>
+          <td>${bookChapters.prev || ''}</td><td>${bookChapters.curr || ''}</td>
+          <td>${patents.prev || ''}</td><td>${patents.curr || ''}</td>
+          <td>${fundedProjects.prev || ''}</td><td>${fundedProjects.curr || ''}</td>
+        </tr>`
+  }).join('') || '<tr><td colspan="13" style="text-align:center;color:#999;">No faculty data entered</td></tr>'
 
   // Helper to build faculty dev rows
-  const facultyDevRows = (data.facultyDev || []).map((f: any, i: number) => `
+  const facultyDevRows = facultyDev.map((f: any, i: number) => {
+    if (!f) return ''
+    const fdpsAttended = f.fdpsAttended || {}
+    const fdpsOrganized = f.fdpsOrganized || {}
+    const nptelCompleted = f.nptelCompleted || {}
+    const moocsCompleted = f.moocsCompleted || {}
+    const resourcePerson = f.resourcePerson || {}
+    
+    return `
         <tr>
           <td class="text-left row-label">${f.name || `Faculty ${i + 1}`}</td>
-          <td>${f.fdpsAttended?.prev || ''}</td><td>${f.fdpsAttended?.curr || ''}</td>
-          <td>${f.fdpsOrganized?.prev || ''}</td><td>${f.fdpsOrganized?.curr || ''}</td>
-          <td>${f.nptelCompleted?.prev || ''}</td><td>${f.nptelCompleted?.curr || ''}</td>
-          <td>${f.moocsCompleted?.prev || ''}</td><td>${f.moocsCompleted?.curr || ''}</td>
-          <td>${f.resourcePerson?.prev || ''}</td><td>${f.resourcePerson?.curr || ''}</td>
-        </tr>`).join('')
+          <td>${fdpsAttended.prev || ''}</td><td>${fdpsAttended.curr || ''}</td>
+          <td>${fdpsOrganized.prev || ''}</td><td>${fdpsOrganized.curr || ''}</td>
+          <td>${nptelCompleted.prev || ''}</td><td>${nptelCompleted.curr || ''}</td>
+          <td>${moocsCompleted.prev || ''}</td><td>${moocsCompleted.curr || ''}</td>
+          <td>${resourcePerson.prev || ''}</td><td>${resourcePerson.curr || ''}</td>
+        </tr>`
+  }).join('') || '<tr><td colspan="11" style="text-align:center;color:#999;">No faculty data entered</td></tr>'
 
   // Helper for QA activities rows
-  const qaRows = (data.qaActivities || []).map((item: any) => `
+  const qaRows = qaActivities.map((item: any) => {
+    if (!item) return ''
+    return `
         <tr>
-          <td class="text-left row-label">${item.particular}</td>
+          <td class="text-left row-label">${item.particular || ''}</td>
           <td>${item.status || '-'}</td>
           <td class="text-left">${item.remarks || '-'}</td>
-        </tr>`).join('')
+        </tr>`
+  }).join('') || '<tr><td colspan="3" style="text-align:center;color:#999;">No QA data entered</td></tr>'
 
   // Helper for documents checklist
   const docItems = [
@@ -182,9 +186,23 @@ function generateReportHTML(data: any, dept: string): string {
     { key: 'mouIndustryDocuments', label: 'MoU/Industry Documents' }
   ].map(doc => `
         <div class="checklist-item">
-          <span class="checkbox">${data.documents?.[doc.key] ? '&#10003;' : ''}</span>
+          <span class="checkbox">${documents[doc.key] ? '&#10003;' : ''}</span>
           <span>${doc.label}</span>
         </div>`).join('')
+
+  // Safely get student dev properties
+  const guestLectures = studentDev.guestLectures || {}
+  const workshops = studentDev.workshops || {}
+  const industrialVisits = studentDev.industrialVisits || {}
+  const valueAddedCourses = studentDev.valueAddedCourses || {}
+  const skillEnhancement = studentDev.skillEnhancement || {}
+  const handsOnTraining = studentDev.handsOnTraining || {}
+  const hackathon = studentDev.hackathon || {}
+
+  // Safely get internship properties
+  const prevIntern = internship.previous || {}
+  const currIntern = internship.current || {}
+  const totalIntern = internship.total || {}
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -409,12 +427,12 @@ function generateReportHTML(data: any, dept: string): string {
     <div class="institute-name">NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY</div>
     <div class="institute-subtitle">(AUTONOMOUS) | ISO Certified | NAAC "A+" | NBA Accredited</div>
     <div class="report-title">MONTHLY DEPARTMENT REPORT</div>
-    <div class="academic-year">Academic Year: ${data.academicYear || 'N/A'}</div>
+    <div class="academic-year">Academic Year: ${safeData.academicYear || 'N/A'}</div>
   </div>
 
   <table class="info-table">
-    <tr><td class="label">School</td><td>${data.schoolName || '-'}</td><td class="label">Department</td><td>${data.department || dept || '-'}</td></tr>
-    <tr><td class="label">Reporting Month/Year</td><td>${data.reportingMonth || '-'} / ${data.reportingYear || '-'}</td><td class="label">Date of Report</td><td>${currentDate}</td></tr>
+    <tr><td class="label">School</td><td>${safeData.schoolName || '-'}</td><td class="label">Department</td><td>${safeData.department || dept || '-'}</td></tr>
+    <tr><td class="label">Reporting Month/Year</td><td>${safeData.reportingMonth || '-'} / ${safeData.reportingYear || '-'}</td><td class="label">Date of Report</td><td>${currentDate}</td></tr>
   </table>
 
   <div class="section">
@@ -429,39 +447,39 @@ function generateReportHTML(data: any, dept: string): string {
           <th>Assoc. Prof</th>
         </tr>
         <tr>
-          <td>${data.facultyCount || '-'}</td>
-          <td>${data.profCount || '-'}</td>
-          <td>${data.aspCount || '-'}</td>
-          <td>${data.apCount || '-'}</td>
+          <td>${safeData.facultyCount || '-'}</td>
+          <td>${safeData.profCount || '-'}</td>
+          <td>${safeData.aspCount || '-'}</td>
+          <td>${safeData.apCount || '-'}</td>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td class="row-label">PhD Holders</td>
-          <td colspan="2">${data.phdHolders || '-'}</td>
+          <td colspan="2">${safeData.phdHolders || '-'}</td>
           <td class="row-label">PhD Pursuing</td>
-          <td>${data.pursuingPhd || '-'}</td>
+          <td>${safeData.pursuingPhd || '-'}</td>
         </tr>
         <tr>
           <td class="row-label">Total Students</td>
-          <td>${data.totalStudents || '-'}</td>
+          <td>${safeData.totalStudents || '-'}</td>
           <td class="row-label">I Year</td>
-          <td>${data.year1Students || '-'}</td>
+          <td>${safeData.year1Students || '-'}</td>
           <td class="row-label">II Year</td>
         </tr>
         <tr>
           <td></td>
           <td></td>
-          <td>${data.year2Students || '-'}</td>
+          <td>${safeData.year2Students || '-'}</td>
           <td class="row-label">III Year</td>
-          <td>${data.year3Students || '-'}</td>
+          <td>${safeData.year3Students || '-'}</td>
         </tr>
         <tr>
           <td></td>
           <td></td>
           <td></td>
           <td class="row-label">IV Year</td>
-          <td>${data.year4Students || '-'}</td>
+          <td>${safeData.year4Students || '-'}</td>
         </tr>
       </tbody>
     </table>
@@ -474,12 +492,12 @@ function generateReportHTML(data: any, dept: string): string {
         <tr><th>Particulars</th><th>Theory</th><th>Lab</th></tr>
       </thead>
       <tbody>
-        <tr><td class="row-label">Syllabus Coverage</td><td>${data.syllabusCoverageTheory || '-'}</td><td>${data.syllabusCoverageLab || '-'}</td></tr>
-        <tr><td class="row-label">Lesson Plan Update</td><td>${data.lessonPlanTheory || '-'}</td><td>${data.lessonPlanLab || '-'}</td></tr>
-        <tr><td class="row-label">CIA Conducted & Submitted</td><td>${data.ciaConducted || '-'}</td><td>NA</td></tr>
-        <tr><td class="row-label">Attendance Report Prepared</td><td colspan="2">${data.attendanceReport || '-'}</td></tr>
-        <tr><td class="row-label">Remedial Classes Conducted</td><td>${data.remedialClasses || '-'}</td><td>NA</td></tr>
-        <tr><td class="row-label">Mentoring Sessions Conducted</td><td>${data.mentoringSessions || '-'}</td><td>NA</td></tr>
+        <tr><td class="row-label">Syllabus Coverage</td><td>${safeData.syllabusCoverageTheory || '-'}</td><td>${safeData.syllabusCoverageLab || '-'}</td></tr>
+        <tr><td class="row-label">Lesson Plan Update</td><td>${safeData.lessonPlanTheory || '-'}</td><td>${safeData.lessonPlanLab || '-'}</td></tr>
+        <tr><td class="row-label">CIA Conducted & Submitted</td><td>${safeData.ciaConducted || '-'}</td><td>NA</td></tr>
+        <tr><td class="row-label">Attendance Report Prepared</td><td colspan="2">${safeData.attendanceReport || '-'}</td></tr>
+        <tr><td class="row-label">Remedial Classes Conducted</td><td>${safeData.remedialClasses || '-'}</td><td>NA</td></tr>
+        <tr><td class="row-label">Mentoring Sessions Conducted</td><td>${safeData.mentoringSessions || '-'}</td><td>NA</td></tr>
       </tbody>
     </table>
   </div>
@@ -513,39 +531,39 @@ function generateReportHTML(data: any, dept: string): string {
       <tbody>
         <tr>
           <td class="row-label">Prev Months*</td>
-          <td>${data.studentDev?.guestLectures?.prev || ''}</td>
-          <td>${data.studentDev?.guestLectures?.curr || ''}</td>
-          <td>${data.studentDev?.workshops?.prev || ''}</td>
-          <td>${data.studentDev?.workshops?.curr || ''}</td>
-          <td>${data.studentDev?.industrialVisits?.prev || ''}</td>
-          <td>${data.studentDev?.industrialVisits?.curr || ''}</td>
-          <td>${data.studentDev?.valueAddedCourses?.prev || ''}</td>
-          <td>${data.studentDev?.valueAddedCourses?.curr || ''}</td>
-          <td>${data.studentDev?.skillEnhancement?.prev || ''}</td>
-          <td>${data.studentDev?.skillEnhancement?.curr || ''}</td>
-          <td>${data.studentDev?.handsOnTraining?.prev || ''}</td>
-          <td>${data.studentDev?.handsOnTraining?.curr || ''}</td>
-          <td>${data.studentDev?.hackathon?.prev || ''}</td>
-          <td>${data.studentDev?.hackathon?.curr || ''}</td>
-          <td>${data.studentDev?.profSocietyActivities?.prev || ''}</td>
+          <td>${guestLectures.prev || ''}</td>
+          <td>${guestLectures.curr || ''}</td>
+          <td>${workshops.prev || ''}</td>
+          <td>${workshops.curr || ''}</td>
+          <td>${industrialVisits.prev || ''}</td>
+          <td>${industrialVisits.curr || ''}</td>
+          <td>${valueAddedCourses.prev || ''}</td>
+          <td>${valueAddedCourses.curr || ''}</td>
+          <td>${skillEnhancement.prev || ''}</td>
+          <td>${skillEnhancement.curr || ''}</td>
+          <td>${handsOnTraining.prev || ''}</td>
+          <td>${handsOnTraining.curr || ''}</td>
+          <td>${hackathon.prev || ''}</td>
+          <td>${hackathon.curr || ''}</td>
+          <td>${studentDev.profSocietyActivities?.prev || ''}</td>
         </tr>
         <tr>
           <td class="row-label">Current Month</td>
           <td>-</td>
-          <td>${data.studentDev?.guestLectures?.curr || ''}</td>
+          <td>${guestLectures.curr || ''}</td>
           <td>-</td>
-          <td>${data.studentDev?.workshops?.curr || ''}</td>
+          <td>${workshops.curr || ''}</td>
           <td>-</td>
-          <td>${data.studentDev?.industrialVisits?.curr || ''}</td>
+          <td>${industrialVisits.curr || ''}</td>
           <td>-</td>
-          <td>${data.studentDev?.valueAddedCourses?.curr || ''}</td>
+          <td>${valueAddedCourses.curr || ''}</td>
           <td>-</td>
-          <td>${data.studentDev?.skillEnhancement?.curr || ''}</td>
+          <td>${skillEnhancement.curr || ''}</td>
           <td>-</td>
-          <td>${data.studentDev?.handsOnTraining?.curr || ''}</td>
+          <td>${handsOnTraining.curr || ''}</td>
           <td>-</td>
-          <td>${data.studentDev?.hackathon?.curr || ''}</td>
-          <td>${data.studentDev?.profSocietyActivities?.curr || ''}</td>
+          <td>${hackathon.curr || ''}</td>
+          <td>${studentDev.profSocietyActivities?.curr || ''}</td>
         </tr>
       </tbody>
     </table>
@@ -612,9 +630,9 @@ function generateReportHTML(data: any, dept: string): string {
         <tr><th>Period</th><th>Paid</th><th>Non-Paid</th><th>Virtual</th><th>Not Availed</th></tr>
       </thead>
       <tbody>
-        <tr><td class="row-label">Previous Months</td><td>${data.internship?.previous?.paid || ''}</td><td>${data.internship?.previous?.nonPaid || ''}</td><td>${data.internship?.previous?.virtual || ''}</td><td>${data.internship?.previous?.notAvailed || ''}</td></tr>
-        <tr><td class="row-label">Current Month</td><td>${data.internship?.current?.paid || ''}</td><td>${data.internship?.current?.nonPaid || ''}</td><td>${data.internship?.current?.virtual || ''}</td><td>${data.internship?.current?.notAvailed || ''}</td></tr>
-        <tr><td class="row-label" style="background: #dbeafe;">Total (Cumulative)</td><td style="background: #dbeafe;">${data.internship?.total?.paid || ''}</td><td style="background: #dbeafe;">${data.internship?.total?.nonPaid || ''}</td><td style="background: #dbeafe;">${data.internship?.total?.virtual || ''}</td><td style="background: #dbeafe;">${data.internship?.total?.notAvailed || ''}</td></tr>
+        <tr><td class="row-label">Previous Months</td><td>${prevIntern.paid || ''}</td><td>${prevIntern.nonPaid || ''}</td><td>${prevIntern.virtual || ''}</td><td>${prevIntern.notAvailed || ''}</td></tr>
+        <tr><td class="row-label">Current Month</td><td>${currIntern.paid || ''}</td><td>${currIntern.nonPaid || ''}</td><td>${currIntern.virtual || ''}</td><td>${currIntern.notAvailed || ''}</td></tr>
+        <tr><td class="row-label" style="background: #dbeafe;">Total (Cumulative)</td><td style="background: #dbeafe;">${totalIntern.paid || ''}</td><td style="background: #dbeafe;">${totalIntern.nonPaid || ''}</td><td style="background: #dbeafe;">${totalIntern.virtual || ''}</td><td style="background: #dbeafe;">${totalIntern.notAvailed || ''}</td></tr>
       </tbody>
     </table>
   </div>

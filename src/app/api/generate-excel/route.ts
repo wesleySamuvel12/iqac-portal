@@ -5,6 +5,15 @@ export async function POST(request: NextRequest) {
   try {
     const { reportData, department } = await request.json()
 
+    // Safely access nested properties with fallbacks
+    const data = reportData || {}
+    const studentDev = data.studentDev || {}
+    const internship = data.internship || {}
+    const documents = data.documents || {}
+    const qaActivities = data.qaActivities || []
+    const researchFaculty = data.researchFaculty || []
+    const facultyDev = data.facultyDev || []
+
     // Create workbook
     const wb = XLSX.utils.book_new()
 
@@ -14,13 +23,13 @@ export async function POST(request: NextRequest) {
       ['ISO 9001:2015 & ISO 14001:2015 Certified | NAAC "A+" | NBA Accredited'],
       [''],
       ['MONTHLY DEPARTMENT REPORT'],
-      [`Academic Year: ${reportData.academicYear}`],
+      [`Academic Year: ${data.academicYear || ''}`],
       [''],
       ['SCHOOL/DEPARTMENT INFORMATION'],
-      ['Name of the School', reportData.schoolName || ''],
-      ['Department', reportData.department || ''],
-      ['Reporting Month', reportData.reportingMonth || ''],
-      ['Reporting Year', reportData.reportingYear || ''],
+      ['Name of the School', data.schoolName || ''],
+      ['Department', data.department || ''],
+      ['Reporting Month', data.reportingMonth || ''],
+      ['Reporting Year', data.reportingYear || ''],
     ]
     const ws1 = XLSX.utils.aoa_to_sheet(headerData)
     XLSX.utils.book_append_sheet(wb, ws1, 'Header')
@@ -29,11 +38,11 @@ export async function POST(request: NextRequest) {
     const deptData = [
       ['DEPT. BASIC INFORMATION'],
       [''],
-      ['Number of Faculty', reportData.facultyCount || '', 'No. of Prof', reportData.profCount || '', 'No. of AsP', reportData.aspCount || '', 'No. of AP', reportData.apCount || ''],
-      ['PhD Holders', reportData.phdHolders || '', 'No. of PhD', reportData.phdCount || '', 'Pursuing PhD', reportData.pursuingPhd || '', 'Not Registered', reportData.notRegistered || ''],
+      ['Number of Faculty', data.facultyCount || '', 'No. of Prof', data.profCount || '', 'No. of AsP', data.aspCount || '', 'No. of AP', data.apCount || ''],
+      ['PhD Holders', data.phdHolders || '', 'No. of PhD', data.phdCount || '', 'Pursuing PhD', data.pursuingPhd || '', 'Not Registered', data.notRegistered || ''],
       [''],
-      ['Number of Students', reportData.totalStudents || ''],
-      ['I Year', reportData.year1Students || '', 'II Year', reportData.year2Students || '', 'III Year', reportData.year3Students || '', 'IV Year', reportData.year4Students || ''],
+      ['Number of Students', data.totalStudents || ''],
+      ['I Year', data.year1Students || '', 'II Year', data.year2Students || '', 'III Year', data.year3Students || '', 'IV Year', data.year4Students || ''],
     ]
     const ws2 = XLSX.utils.aoa_to_sheet(deptData)
     XLSX.utils.book_append_sheet(wb, ws2, 'Dept Info')
@@ -43,36 +52,44 @@ export async function POST(request: NextRequest) {
       ['A. ACADEMIC ACTIVITIES'],
       [''],
       ['Particulars', 'Theory', 'Lab / Practical'],
-      ['Syllabus Coverage', reportData.syllabusCoverageTheory || '', reportData.syllabusCoverageLab || ''],
-      ['Lesson Plan Update', reportData.lessonPlanTheory || '', reportData.lessonPlanLab || ''],
-      ['CIA Conducted & Report Submitted', reportData.ciaConducted || '', 'NA'],
-      ['Student Attendance Report Prepared', reportData.attendanceReport || '', ''],
-      ['Remedial Classes Conducted', reportData.remedialClasses || '', 'NA'],
-      ['Mentoring Sessions Conducted', reportData.mentoringSessions || '', 'NA'],
+      ['Syllabus Coverage', data.syllabusCoverageTheory || '', data.syllabusCoverageLab || ''],
+      ['Lesson Plan Update', data.lessonPlanTheory || '', data.lessonPlanLab || ''],
+      ['CIA Conducted & Report Submitted', data.ciaConducted || '', 'NA'],
+      ['Student Attendance Report Prepared', data.attendanceReport || '', ''],
+      ['Remedial Classes Conducted', data.remedialClasses || '', 'NA'],
+      ['Mentoring Sessions Conducted', data.mentoringSessions || '', 'NA'],
     ]
     const ws3 = XLSX.utils.aoa_to_sheet(acadData)
     XLSX.utils.book_append_sheet(wb, ws3, 'Academic Activities')
 
     // Sheet 4: Student Development
+    const guestLectures = studentDev.guestLectures || {}
+    const workshops = studentDev.workshops || {}
+    const industrialVisits = studentDev.industrialVisits || {}
+    const valueAddedCourses = studentDev.valueAddedCourses || {}
+    const skillEnhancement = studentDev.skillEnhancement || {}
+    const handsOnTraining = studentDev.handsOnTraining || {}
+    const hackathon = studentDev.hackathon || {}
+
     const studentDevHeaders = ['B. STUDENT DEVELOPMENT ACTIVITIES', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
     const studentDevSubheaders = ['Particulars', 'Guest Lectures (P)', '(C)', 'Workshops (P)', '(C)', 'Ind. Visits (P)', '(C)', 'Value Added (P)', '(C)', 'Skill Enhance (P)', '(C)', 'Hands-on (P)', '(C)', 'Hackathon (P)', '(C)', 'Prof Society']
     const studentDevRow1 = ['Prev Months*', 
-      reportData.studentDev.guestLectures.prev || '', '',
-      reportData.studentDev.workshops.prev || '',
-      reportData.studentDev.industrialVisits.prev || '',
-      reportData.studentDev.valueAddedCourses.prev || '',
-      reportData.studentDev.skillEnhancement.prev || '',
-      reportData.studentDev.handsOnTraining.prev || '',
-      reportData.studentDev.hackathon.prev || '', ''
+      guestLectures.prev || '', '',
+      workshops.prev || '',
+      industrialVisits.prev || '',
+      valueAddedCourses.prev || '',
+      skillEnhancement.prev || '',
+      handsOnTraining.prev || '',
+      hackathon.prev || '', ''
     ]
     const studentDevRow2 = ['Current Month',
-      '', reportData.studentDev.guestLectures.curr || '',
-      '', reportData.studentDev.workshops.curr || '',
-      '', reportData.studentDev.industryVisits.curr || '',
-      '', reportData.studentDev.valueAddedCourses.curr || '',
-      '', reportData.studentDev.skillEnhancement.curr || '',
-      '', reportData.studentDev.handsOnTraining.curr || '',
-      '', reportData.studentDev.hackathon.curr || ''
+      '', guestLectures.curr || '',
+      '', workshops.curr || '',
+      '', industrialVisits.curr || '',
+      '', valueAddedCourses.curr || '',
+      '', skillEnhancement.curr || '',
+      '', handsOnTraining.curr || '',
+      '', hackathon.curr || ''
     ]
     
     const ws4 = XLSX.utils.aoa_to_sheet([studentDevHeaders, studentDevSubheaders, studentDevRow1, studentDevRow2])
@@ -82,17 +99,31 @@ export async function POST(request: NextRequest) {
     const researchHeaders = ['C. RESEARCH & INNOVATION - Faculty Wise', '', '', '', '', '', '', '', '', '', '', '', '', '']
     const researchSubheaders = ['Faculty Name', 'Journal Pub (P)', '(C)', 'Conf Papers (P)', '(C)', 'Book (P)', '(C)', 'Book Ch (P)', '(C)', 'Patents (P)', '(C)', 'Funded Proj (P)', '(C)']
     const researchRows: any[] = []
-    reportData.researchFaculty.forEach((f: any, i: number) => {
+    researchFaculty.forEach((f: any, i: number) => {
+      if (!f) return
+      const journalPub = f.journalPub || {}
+      const conferencePapers = f.conferencePapers || {}
+      const book = f.book || {}
+      const bookChapters = f.bookChapters || {}
+      const patents = f.patents || {}
+      const fundedProjects = f.fundedProjects || {}
+      
       researchRows.push([
         f.name || `Faculty ${i + 1}`,
-        f.journalPub.prev || '', f.journalPub.curr || '',
-        f.conferencePapers.prev || '', f.conferencePapers.curr || '',
-        f.book.prev || '', f.book.curr || '',
-        f.bookChapters.prev || '', f.bookChapters.curr || '',
-        f.patents.prev || '', f.patents.curr || '',
-        f.fundedProjects.prev || '', f.fundedProjects.curr || ''
+        journalPub.prev || '', journalPub.curr || '',
+        conferencePapers.prev || '', conferencePapers.curr || '',
+        book.prev || '', book.curr || '',
+        bookChapters.prev || '', bookChapters.curr || '',
+        patents.prev || '', patents.curr || '',
+        fundedProjects.prev || '', fundedProjects.curr || ''
       ])
     })
+    
+    // Ensure at least one row exists
+    if (researchRows.length === 0) {
+      researchRows.push(['(No faculty data)', '', '', '', '', '', '', '', '', '', '', '', ''])
+    }
+    
     const ws5 = XLSX.utils.aoa_to_sheet([researchHeaders, researchSubheaders, ...researchRows])
     XLSX.utils.book_append_sheet(wb, ws5, 'Research')
 
@@ -100,27 +131,44 @@ export async function POST(request: NextRequest) {
     const facultyDevHeaders = ['D. FACULTY DEVELOPMENT', '', '', '', '', '', '', '', '', '', '', '']
     const facultyDevSubheaders = ['Faculty Name', 'FDPs Attended (P)', '(C)', 'FDPs Organized (P)', '(C)', 'NPTEL (P)', '(C)', 'MOOCs (P)', '(C)', 'Resource Person (P)', '(C)']
     const facultyDevRows: any[] = []
-    reportData.facultyDev.forEach((f: any, i: number) => {
+    facultyDev.forEach((f: any, i: number) => {
+      if (!f) return
+      const fdpsAttended = f.fdpsAttended || {}
+      const fdpsOrganized = f.fdpsOrganized || {}
+      const nptelCompleted = f.nptelCompleted || {}
+      const moocsCompleted = f.moocsCompleted || {}
+      const resourcePerson = f.resourcePerson || {}
+      
       facultyDevRows.push([
         f.name || `Faculty ${i + 1}`,
-        f.fdpsAttended.prev || '', f.fdpsAttended.curr || '',
-        f.fdpsOrganized.prev || '', f.fdpsOrganized.curr || '',
-        f.nptelCompleted.prev || '', f.nptelCompleted.curr || '',
-        f.moocsCompleted.prev || '', f.moocsCompleted.curr || '',
-        f.resourcePerson.prev || '', f.resourcePerson.curr || ''
+        fdpsAttended.prev || '', fdpsAttended.curr || '',
+        fdpsOrganized.prev || '', fdpsOrganized.curr || '',
+        nptelCompleted.prev || '', nptelCompleted.curr || '',
+        moocsCompleted.prev || '', moocsCompleted.curr || '',
+        resourcePerson.prev || '', resourcePerson.curr || ''
       ])
     })
+    
+    // Ensure at least one row exists
+    if (facultyDevRows.length === 0) {
+      facultyDevRows.push(['(No faculty data)', '', '', '', '', '', '', '', '', '', ''])
+    }
+    
     const ws6 = XLSX.utils.aoa_to_sheet([facultyDevHeaders, facultyDevSubheaders, ...facultyDevRows])
     XLSX.utils.book_append_sheet(wb, ws6, 'Faculty Dev')
 
     // Sheet 7: Internship
+    const prevIntern = internship.previous || {}
+    const currIntern = internship.current || ''
+    const totalIntern = internship.total || ''
+
     const internData = [
       ['E. STUDENTS INTERNSHIP'],
       [''],
       ['Internship Details', 'Paid', 'Non-Paid', 'Virtual', 'Not Availed'],
-      ['Previous Months', reportData.internship.previous.paid || '', reportData.internship.previous.nonPaid || '', reportData.internship.previous.virtual || '', reportData.internship.previous.notAvailed || ''],
-      ['Current Month', reportData.internship.current.paid || '', reportData.internship.current.nonPaid || '', reportData.internship.current.virtual || '', reportData.internship.current.notAvailed || ''],
-      ['Total (Cumulative)', reportData.internship.total.paid || '', reportData.internship.total.nonPaid || '', reportData.internship.total.virtual || '', reportData.internship.total.notAvailed || ''],
+      ['Previous Months', prevIntern.paid || '', prevIntern.nonPaid || '', prevIntern.virtual || '', prevIntern.notAvailed || ''],
+      ['Current Month', currIntern.paid || '', currIntern.nonPaid || '', currIntern.virtual || '', currIntern.notAvailed || ''],
+      ['Total (Cumulative)', totalIntern.paid || '', totalIntern.nonPaid || '', totalIntern.virtual || '', totalIntern.notAvailed || ''],
     ]
     const ws7 = XLSX.utils.aoa_to_sheet(internData)
     XLSX.utils.book_append_sheet(wb, ws7, 'Internship')
@@ -131,8 +179,10 @@ export async function POST(request: NextRequest) {
       [''],
       ['Particulars', 'Status', 'Remarks'],
     ]
-    reportData.qaActivities.forEach((item: any) => {
-      qaData.push([item.particular, item.status, item.remarks])
+    qaActivities.forEach((item: any) => {
+      if (item) {
+        qaData.push([item.particular || '', item.status || '', item.remarks || ''])
+      }
     })
     const ws8 = XLSX.utils.aoa_to_sheet(qaData)
     XLSX.utils.book_append_sheet(wb, ws8, 'QA Activities')
@@ -142,14 +192,14 @@ export async function POST(request: NextRequest) {
       ['H. DOCUMENTS TO BE ATTACHED'],
       [''],
       ['Document', 'Attached'],
-      ['Event Reports', reportData.documents.eventReports ? '✓' : '☐'],
-      ['Workshop/FDP Certificates', reportData.documents.workshopCertificates ? '✓' : '☐'],
-      ['Publication Proofs', reportData.documents.publicationProofs ? '✓' : '☐'],
-      ['Placement Details', reportData.documents.placementDetails ? '✓' : '☐'],
-      ['Internship Details', reportData.documents.internshipDetails ? '✓' : '☐'],
-      ['Student Achievement Proofs', reportData.documents.studentAchievementProofs ? '✓' : '☐'],
-      ['SDG Extension Reports', reportData.documents.sdgExtensionReports ? '✓' : '☐'],
-      ['MoU/Industry Documents', reportData.documents.mouIndustryDocuments ? '✓' : '☐'],
+      ['Event Reports', documents.eventReports ? '✓' : '☐'],
+      ['Workshop/FDP Certificates', documents.workshopCertificates ? '✓' : '☐'],
+      ['Publication Proofs', documents.publicationProofs ? '✓' : '☐'],
+      ['Placement Details', documents.placementDetails ? '✓' : '☐'],
+      ['Internship Details', documents.internshipDetails ? '✓' : '☐'],
+      ['Student Achievement Proofs', documents.studentAchievementProofs ? '✓' : '☐'],
+      ['SDG Extension Reports', documents.sdgExtensionReports ? '✓' : '☐'],
+      ['MoU/Industry Documents', documents.mouIndustryDocuments ? '✓' : '☐'],
     ]
     const ws9 = XLSX.utils.aoa_to_sheet(docData)
     XLSX.utils.book_append_sheet(wb, ws9, 'Documents')
@@ -166,6 +216,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Excel generation error:', error)
-    return NextResponse.json({ error: 'Failed to generate Excel' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to generate Excel: ' + (error as Error).message }, { status: 500 })
   }
 }
