@@ -328,28 +328,19 @@ const ACHIEVEMENT_TYPES: Record<string, {
   }
 }
 
-// ============ DEPARTMENTS LIST FOR LOGIN ============
+// ============ DEPARTMENTS LIST FOR LOGIN (NIET Official Departments) ============
 const DEPARTMENTS_LIST = [
-  { code: 'CSE', name: 'Computer Science & Engineering', color: 'blue' },
-  { code: 'AI&DS', name: 'AI & Data Science', color: 'purple' },
+  { code: 'AERO', name: 'Aeronautical Engineering', color: 'sky' },
+  { code: 'AI&DS', name: 'Artificial Intelligence and Data Science', color: 'purple' },
+  { code: 'CSBS', name: 'Computer Science and Business Systems', color: 'blue' },
+  { code: 'CSE', name: 'Computer Science and Engineering', color: 'indigo' },
+  { code: 'ECE', name: 'Electronics and Communication Engineering', color: 'pink' },
+  { code: 'EEE', name: 'Electrical and Electronics Engineering', color: 'yellow' },
   { code: 'IT', name: 'Information Technology', color: 'cyan' },
-  { code: 'ECE', name: 'Electronics & Communication', color: 'pink' },
-  { code: 'EEE', name: 'Electrical & Electronics', color: 'yellow' },
+  { code: 'MCT', name: 'Mechatronics Engineering', color: 'zinc' },
   { code: 'MECH', name: 'Mechanical Engineering', color: 'orange' },
-  { code: 'CIVIL', name: 'Civil Engineering', color: 'emerald' },
-  { code: 'MATHS', name: 'Mathematics', color: 'indigo' },
-  { code: 'PHY', name: 'Physics', color: 'teal' },
-  { code: 'CHEM', name: 'Chemistry', color: 'rose' },
-  { code: 'ENG', name: 'English', color: 'sky' },
-  { code: 'MBA', name: 'MBA', color: 'violet' },
-  { code: 'MCA', name: 'MCA', color: 'fuchsia' },
-  { code: 'BIO', name: 'Biotechnology', color: 'lime' },
-  { code: 'AGRI', name: 'Agricultural Engg.', color: 'green' },
-  { code: 'BME', name: 'Biomedical Engg.', color: 'red' },
-  { code: 'R&A', name: 'Robotics & Automation', color: 'slate' },
-  { code: 'MECHT', name: 'Mechatronics', color: 'zinc' },
-  { code: 'CYBER', name: 'Cyber Security', color: 'amber' },
-  { code: 'DS', name: 'Data Science', color: 'stone' },
+  { code: 'MBA', name: 'Master of Business Administration', color: 'violet' },
+  { code: 'S&H', name: 'Science and Humanities', color: 'emerald' },
 ]
 
 const ROLE_COLORS: Record<string, { bg: string; border: string; text: string; icon: string }> = {
@@ -897,10 +888,10 @@ function LoginPage() {
                   </div>
                 )}
 
-                {/* Department Pills */}
+                {/* Department Pills - Official NIET Departments Only */}
                 {selectedRole !== 'ADMIN' && (
                   <div className="dept-pills-container">
-                    {['CSE', 'ECE', 'EEE', 'MECH', 'AI&DS', 'IT', 'AIDS', 'CIVIL'].map((code) => (
+                    {['AERO', 'AI&DS', 'CSBS', 'CSE', 'ECE', 'EEE', 'IT', 'MCT', 'MECH', 'MBA', 'S&H'].map((code) => (
                       <button
                         key={code}
                         type="button"
@@ -3717,10 +3708,15 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
   const [editingStaff, setEditingStaff] = useState<any>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<{type: 'student' | 'staff', id: number} | null>(null)
 
-  // Form States
-  const [studentForm, setStudentForm] = useState({ name: '', regNo: '', year: 'I Year', batch: '2024 Batch', email: '', status: 'active' })
+  // Form States - Updated with Year/Section/Batch hierarchy support
+  const [studentForm, setStudentForm] = useState({ name: '', regNo: '', year: '1st Year', section: 'A', batch: '2024-2028', email: '', status: 'active' })
   const [selectedBatch, setSelectedBatch] = useState<string>('all')
   const [staffForm, setStaffForm] = useState({ name: '', designation: '', email: '', status: 'active', phone: '' })
+  
+  // Student Navigation State for Year > Section > Batch Hierarchy
+  const [selectedStudentYear, setSelectedStudentYear] = useState<string>('all')
+  const [selectedSection, setSelectedSection] = useState<string>('all')
+  const [showInlineAnalytics, setShowInlineAnalytics] = useState(false)
 
   // Load achievements from localStorage on mount
   useEffect(() => {
@@ -3761,18 +3757,27 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
     }
 
     // Default demo data - in real app this would come from API/database filtered by department
-    // Students organized by Batch Year (2021-2025)
+    // Students organized with Year > Section > Batch Hierarchy
     const demoStudents = [
-      { id: 1, name: 'Arun Kumar', regNo: 'CSE001', year: 'IV Year', batch: '2021 Batch', email: 'arun@niet.ac.in', status: 'active' },
-      { id: 2, name: 'Rahul V', regNo: 'CSE002', year: 'IV Year', batch: '2021 Batch', email: 'rahul@niet.ac.in', status: 'active' },
-      { id: 3, name: 'Bhavani S', regNo: 'CSE003', year: 'III Year', batch: '2022 Batch', email: 'bhavani@niet.ac.in', status: 'active' },
-      { id: 4, name: 'Deepa L', regNo: 'CSE004', year: 'III Year', batch: '2022 Batch', email: 'deepa@niet.ac.in', status: 'active' },
-      { id: 5, name: 'Priya R', regNo: 'CSE005', year: 'II Year', batch: '2023 Batch', email: 'priya@niet.ac.in', status: 'active' },
-      { id: 6, name: 'Sneha K', regNo: 'CSE006', year: 'II Year', batch: '2023 Batch', email: 'sneha@niet.ac.in', status: 'active' },
-      { id: 7, name: 'Karthik M', regNo: 'CSE007', year: 'I Year', batch: '2024 Batch', email: 'karthik@niet.ac.in', status: 'inactive' },
-      { id: 8, name: 'Vijay S', regNo: 'CSE008', year: 'I Year', batch: '2024 Batch', email: 'vijay@niet.ac.in', status: 'active' },
-      { id: 9, name: 'Divya P', regNo: 'CSE009', year: 'I Year', batch: '2025 Batch', email: 'divya@niet.ac.in', status: 'active' },
-      { id: 10, name: 'Manoj T', regNo: 'CSE010', year: 'I Year', batch: '2025 Batch', email: 'manoj@niet.ac.in', status: 'active' },
+      // 4th Year Students (Batch 2021-2025)
+      { id: 1, name: 'Arun Kumar', regNo: 'CSE001', year: '4th Year', section: 'A', batch: '2021-2025', email: 'arun@niet.ac.in', status: 'active' },
+      { id: 2, name: 'Rahul V', regNo: 'CSE002', year: '4th Year', section: 'A', batch: '2021-2025', email: 'rahul@niet.ac.in', status: 'active' },
+      { id: 3, name: 'Bhavani S', regNo: 'CSE003', year: '4th Year', section: 'B', batch: '2021-2025', email: 'bhavani@niet.ac.in', status: 'active' },
+      // 3rd Year Students (Batch 2022-2026)
+      { id: 4, name: 'Deepa L', regNo: 'CSE004', year: '3rd Year', section: 'A', batch: '2022-2026', email: 'deepa@niet.ac.in', status: 'active' },
+      { id: 5, name: 'Priya R', regNo: 'CSE005', year: '3rd Year', section: 'A', batch: '2022-2026', email: 'priya@niet.ac.in', status: 'active' },
+      { id: 6, name: 'Sneha K', regNo: 'CSE006', year: '3rd Year', section: 'B', batch: '2022-2026', email: 'sneha@niet.ac.in', status: 'active' },
+      { id: 7, name: 'Karthik M', regNo: 'CSE007', year: '3rd Year', section: 'B', batch: '2022-2026', email: 'karthik@niet.ac.in', status: 'active' },
+      // 2nd Year Students (Batch 2023-2027)
+      { id: 8, name: 'Vijay S', regNo: 'CSE008', year: '2nd Year', section: 'A', batch: '2023-2027', email: 'vijay@niet.ac.in', status: 'active' },
+      { id: 9, name: 'Divya P', regNo: 'CSE009', year: '2nd Year', section: 'A', batch: '2023-2027', email: 'divya@niet.ac.in', status: 'active' },
+      { id: 10, name: 'Manoj T', regNo: 'CSE010', year: '2nd Year', section: 'B', batch: '2023-2027', email: 'manoj@niet.ac.in', status: 'active' },
+      { id: 11, name: 'Nisha R', regNo: 'CSE011', year: '2nd Year', section: 'B', batch: '2023-2027', email: 'nisha@niet.ac.in', status: 'active' },
+      // 1st Year Students (Batch 2024-2028)
+      { id: 12, name: 'Arjun K', regNo: 'CSE012', year: '1st Year', section: 'A', batch: '2024-2028', email: 'arjun@niet.ac.in', status: 'active' },
+      { id: 13, name: 'Kavya S', regNo: 'CSE013', year: '1st Year', section: 'A', batch: '2024-2028', email: 'kavya@niet.ac.in', status: 'active' },
+      { id: 14, name: 'Ramesh T', regNo: 'CSE014', year: '1st Year', section: 'B', batch: '2024-2028', email: 'ramesh@niet.ac.in', status: 'inactive' },
+      { id: 15, name: 'Lakshmi M', regNo: 'CSE015', year: '1st Year', section: 'B', batch: '2024-2028', email: 'lakshmi@niet.ac.in', status: 'active' },
     ]
     
     const demoStaff = [
@@ -3801,7 +3806,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
   // ==================== STUDENT CRUD OPERATIONS ====================
   const handleAddStudent = () => {
     setEditingStudent(null)
-    setStudentForm({ name: '', regNo: '', year: 'I Year', batch: '2024 Batch', email: '', status: 'active' })
+    setStudentForm({ name: '', regNo: '', year: '1st Year', section: 'A', batch: '2024-2028', email: '', status: 'active' })
     setShowStudentModal(true)
   }
 
@@ -3811,7 +3816,8 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
       name: student.name, 
       regNo: student.regNo, 
       year: student.year,
-      batch: student.batch || '2024 Batch',
+      section: student.section || 'A',
+      batch: student.batch || '2024-2028',
       email: student.email, 
       status: student.status 
     })
@@ -3950,28 +3956,61 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
     return filteredStaffAchievements.filter(a => a.type === typeKey).length
   }
 
-  // Student counts by year
+  // Student counts by year (for hierarchy navigation)
   const studentsByYear = departmentStudents.reduce((acc, s) => {
     const year = s.year || 'Unknown'
     acc[year] = (acc[year] || 0) + 1
     return acc
   }, {} as Record<string, number>)
+  
+  // Get unique active batches
+  const activeBatches = [...new Set(departmentStudents.map(s => s.batch).filter(Boolean))]
+  
+  // Students by section
+  const studentsBySection = departmentStudents.reduce((acc, s) => {
+    const section = s.section || 'A'
+    acc[section] = (acc[section] || 0) + 1
+    return acc
+  }, {} as Record<string, number>)
+  
+  // Achievement type breakdown for analytics
+  const achievementTypeBreakdown = Object.entries(ACHIEVEMENT_TYPES).map(([key, type]) => ({
+    key,
+    label: type.label,
+    icon: type.icon,
+    count: getStudentTypeCount(key) + getStaffTypeCount(key)
+  })).filter(t => t.count > 0).sort((a, b) => b.count - a.count)
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 rounded-2xl p-8 text-white">
+      {/* Professional Header with Department Info */}
+      <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 rounded-2xl p-8 text-white shadow-xl">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold mb-2">HOD Dashboard</h2>
-            <p className="text-violet-100">{user.departmentName || 'Your Department'} • Head of Department</p>
-            <p className="text-violet-200 text-sm mt-2">Welcome, {user.name}</p>
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <Building2 className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold mb-1">HOD Dashboard</h2>
+              <p className="text-violet-100 text-lg">{user.departmentName || 'Your Department'}</p>
+              <div className="flex items-center gap-3 mt-2">
+                <Badge className="bg-white/20 text-white border-white/30 px-3 py-1 text-xs">
+                  <Shield className="w-3 h-3 mr-1" />
+                  Head of Department
+                </Badge>
+                <span className="text-violet-200 text-sm">• Welcome, {user.name}</span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Badge className="bg-white/20 text-white border-white/30 px-4 py-2">
-              <Building2 className="w-4 h-4 mr-2" />
-              {user.departmentName}
-            </Badge>
+          <div className="flex flex-col sm:flex-row items-end md:items-center gap-3">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 min-w-[140px]">
+              <p className="text-violet-200 text-xs uppercase tracking-wide">Department Code</p>
+              <p className="text-2xl font-bold">{user.departmentName?.substring(0, 3).toUpperCase() || 'N/A'}</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 min-w-[140px]">
+              <p className="text-violet-200 text-xs uppercase tracking-wide">Total Strength</p>
+              <p className="text-2xl font-bold">{totalStudents + totalStaff}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -4008,7 +4047,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
       {/* OVERVIEW TAB */}
       {activeTab === 'overview' && (
         <>
-          {/* Stats Cards */}
+          {/* Stats Cards - Updated with Active Batches instead of Pending Approvals */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Card className="border border-gray-200 hover:shadow-lg transition-all overflow-hidden">
               <CardContent className="p-5">
@@ -4016,7 +4055,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                   <div>
                     <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Total Students</p>
                     <p className="text-3xl font-bold text-gray-800 mt-1">{totalStudents}</p>
-                    <p className="text-xs text-green-600 mt-1">{studentsByYear['IV Year'] || 0} Final Year</p>
+                    <p className="text-xs text-green-600 mt-1">{studentsByYear['4th Year'] || 0} Final Year</p>
                   </div>
                   <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center">
                     <GraduationCap className="w-5 h-5 text-blue-600" />
@@ -4062,22 +4101,91 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Pending Approvals</p>
-                    <p className="text-3xl font-bold text-gray-800 mt-1">{pendingStudentApprovals + pendingStaffApprovals}</p>
-                    <p className="text-xs text-orange-600 mt-1">{pendingStudentApprovals} Students • {pendingStaffApprovals} Staff</p>
+                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Active Batches</p>
+                    <p className="text-3xl font-bold text-gray-800 mt-1">{activeBatches.length}</p>
+                    <p className="text-xs text-cyan-600 mt-1">{Object.keys(studentsBySection).length} Sections</p>
                   </div>
-                  <div className="w-11 h-11 rounded-xl bg-orange-50 flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-orange-600" />
+                  <div className="w-11 h-11 rounded-xl bg-cyan-50 flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-cyan-600" />
                   </div>
                 </div>
               </CardContent>
-              <div className="h-1 bg-gradient-to-r from-orange-400 to-orange-500" />
+              <div className="h-1 bg-gradient-to-r from-cyan-400 to-cyan-500" />
             </Card>
           </div>
 
-          {/* Quick Actions & Recent Activity */}
+          {/* Mini Analytics Section - Students by Year & Achievement Breakdown */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Quick Actions */}
+            {/* Students by Year Distribution (Bar Chart) */}
+            <Card className="border border-gray-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-blue-500" /> Students by Year Distribution
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {['4th Year', '3rd Year', '2nd Year', '1st Year'].map((year, idx) => {
+                    const count = studentsByYear[year] || 0
+                    const percentage = totalStudents > 0 ? (count / totalStudents) * 100 : 0
+                    const colors = ['from-blue-500 to-blue-400', 'from-purple-500 to-purple-400', 'from-emerald-500 to-emerald-400', 'from-orange-500 to-orange-400']
+                    return (
+                      <div key={year} className="flex items-center gap-3">
+                        <span className="text-sm text-gray-600 w-16 shrink-0">{year}</span>
+                        <div className="flex-1 h-8 bg-gray-100 rounded-lg overflow-hidden relative">
+                          <div 
+                            className={`h-full bg-gradient-to-r ${colors[idx]} rounded-lg transition-all duration-500 flex items-center justify-end pr-2`}
+                            style={{ width: `${Math.max(percentage, count > 0 ? 8 : 0)}%` }}
+                          >
+                            {count > 0 && (
+                              <span className="text-white text-xs font-bold">{count}</span>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-sm font-medium text-gray-700 w-8 text-right">{count}</span>
+                      </div>
+                    )
+                  })}
+                  {totalStudents === 0 && (
+                    <p className="text-sm text-gray-400 text-center py-4">No student data available</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Achievement Type Breakdown */}
+            <Card className="border border-gray-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-amber-500" /> Achievement Type Breakdown
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-3 max-h-[200px] overflow-y-auto">
+                  {achievementTypeBreakdown.slice(0, 8).map(({ key, label, icon: Icon, count }) => (
+                    <div key={key} className="flex items-center gap-2 p-2.5 bg-gray-50 rounded-lg hover:bg-violet-50 transition-colors">
+                      <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
+                        <Icon className="w-4 h-4 text-violet-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-gray-700 truncate">{label.split(' ')[0]}</p>
+                        <p className="text-sm font-bold text-violet-600">{count}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {achievementTypeBreakdown.length === 0 && (
+                    <div className="col-span-2 text-center py-4">
+                      <p className="text-sm text-gray-400">No achievements recorded yet</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Actions & Recent Activity - Updated Actions */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Quick Actions - Updated with new actions */}
             <Card className="border border-gray-200">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
@@ -4086,37 +4194,48 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
               </CardHeader>
               <CardContent className="space-y-3">
                 <button 
-                  onClick={() => setActiveTab('students')}
+                  onClick={() => setActiveTabLocal('students')}
                   className="w-full flex items-center gap-3 p-3 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors text-left"
                 >
                   <GraduationCap className="w-5 h-5 text-blue-600" />
                   <div>
-                    <p className="font-medium text-blue-900 text-sm">Review Student Submissions</p>
-                    <p className="text-xs text-blue-600">{pendingStudentApprovals} pending approval</p>
+                    <p className="font-medium text-blue-900 text-sm">Manage Students</p>
+                    <p className="text-xs text-blue-600">View and manage {totalStudents} students</p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-blue-400 ml-auto" />
                 </button>
                 <button 
-                  onClick={() => setActiveTab('staff')}
+                  onClick={() => setActiveTabLocal('staff')}
                   className="w-full flex items-center gap-3 p-3 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition-colors text-left"
                 >
                   <Users className="w-5 h-5 text-emerald-600" />
                   <div>
-                    <p className="font-medium text-emerald-900 text-sm">View Staff Achievements</p>
-                    <p className="text-xs text-emerald-600">{totalStaffAchievements} total submissions</p>
+                    <p className="font-medium text-emerald-900 text-sm">View Staff</p>
+                    <p className="text-xs text-emerald-600">{totalStaff} faculty members</p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-emerald-400 ml-auto" />
                 </button>
                 <button 
-                  onClick={() => setActiveTab('analytics')}
+                  onClick={() => setActiveTab('report_generator')}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg bg-amber-50 hover:bg-amber-100 transition-colors text-left"
+                >
+                  <FileText className="w-5 h-5 text-amber-600" />
+                  <div>
+                    <p className="font-medium text-amber-900 text-sm">Generate Reports</p>
+                    <p className="text-xs text-amber-600">Create department reports</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-amber-400 ml-auto" />
+                </button>
+                <button 
+                  onClick={() => setShowInlineAnalytics(!showInlineAnalytics)}
                   className="w-full flex items-center gap-3 p-3 rounded-lg bg-violet-50 hover:bg-violet-100 transition-colors text-left"
                 >
                   <BarChart3 className="w-5 h-5 text-violet-600" />
                   <div>
                     <p className="font-medium text-violet-900 text-sm">Department Analytics</p>
-                    <p className="text-xs text-violet-600">View detailed reports</p>
+                    <p className="text-xs text-violet-600">{showInlineAnalytics ? 'Hide' : 'Show'} inline analytics</p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-violet-400 ml-auto" />
+                  <ChevronRight className={`w-4 h-4 text-violet-400 ml-auto transition-transform ${showInlineAnalytics ? 'rotate-90' : ''}`} />
                 </button>
               </CardContent>
             </Card>
@@ -4169,7 +4288,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
         </>
       )}
 
-      {/* STUDENTS TAB - User Management with Batch-wise Organization */}
+      {/* STUDENTS TAB - Year > Section > Batch Hierarchy Navigation */}
       {activeTab === 'students' && (
         <div className="space-y-6">
           {/* Search, Filter and Add Button */}
@@ -4184,30 +4303,6 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
               />
             </div>
-            <select
-              value={selectedBatch}
-              onChange={(e) => setSelectedBatch(e.target.value)}
-              className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none bg-white"
-            >
-              <option value="all">All Batches</option>
-              <option value="2025 Batch">2025 Batch</option>
-              <option value="2024 Batch">2024 Batch</option>
-              <option value="2023 Batch">2023 Batch</option>
-              <option value="2022 Batch">2022 Batch</option>
-              <option value="2021 Batch">2021 Batch</option>
-              <option value="2020 Batch">2020 Batch</option>
-            </select>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none bg-white"
-            >
-              <option value="all">All Years</option>
-              <option value="I Year">I Year</option>
-              <option value="II Year">II Year</option>
-              <option value="III Year">III Year</option>
-              <option value="IV Year">IV Year</option>
-            </select>
             <Button
               onClick={handleAddStudent}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2"
@@ -4217,73 +4312,169 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
             </Button>
           </div>
 
-          {/* Batch-wise Statistics Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {(() => {
-              // Get unique batches and count students per batch
-              const batchCounts = departmentStudents.reduce((acc, s) => {
-                const batch = s.batch || 'Unassigned'
-                acc[batch] = (acc[batch] || 0) + 1
-                return acc
-              }, {} as Record<string, number>)
-              
-              const batches = Object.entries(batchCounts).sort((a, b) => parseInt(b[0]) - parseInt(a[0]))
-              
-              // Color palette for batches
-              const batchColors = [
-                'from-blue-500 to-blue-400',
-                'from-purple-500 to-purple-400',
-                'from-emerald-500 to-emerald-400',
-                'from-orange-500 to-orange-400',
-                'from-pink-500 to-pink-400',
-                'from-cyan-500 to-cyan-400',
-              ]
-              
-              return batches.map(([batch, count], idx) => (
-                <button
-                  key={batch}
-                  onClick={() => setSelectedBatch(selectedBatch === batch ? 'all' : batch)}
-                  className={`p-3 rounded-xl bg-gradient-to-br ${batchColors[idx % batchColors.length]} text-white text-left transition-all hover:shadow-lg ${selectedBatch === batch ? 'ring-2 ring-offset-2 ring-gray-800' : ''}`}
+          {/* LEVEL 1: Year Selection (1st, 2nd, 3rd, 4th Year) */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <GraduationCap className="w-4 h-4 text-violet-500" />
+              Select Year of Study
+              {selectedStudentYear !== 'all' && (
+                <button 
+                  onClick={() => { setSelectedStudentYear('all'); setSelectedSection('all'); }}
+                  className="text-xs text-violet-600 hover:text-violet-800 flex items-center gap-1"
                 >
-                  <p className="text-[10px] opacity-90 font-medium">{batch}</p>
-                  <p className="text-xl font-bold">{count}</p>
-                  <p className="text-[10px] opacity-80">students</p>
+                  <X className="w-3 h-3" /> Clear
                 </button>
-              ))
-            })()}
+              )}
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {['1st Year', '2nd Year', '3rd Year', '4th Year'].map((year, idx) => {
+                const count = departmentStudents.filter(s => s.year === year).length
+                const colors = [
+                  'from-orange-500 to-amber-400',
+                  'from-emerald-500 to-green-400', 
+                  'from-blue-500 to-indigo-400',
+                  'from-purple-500 to-violet-400'
+                ]
+                const isSelected = selectedStudentYear === year
+                return (
+                  <button
+                    key={year}
+                    onClick={() => {
+                      setSelectedStudentYear(isSelected ? 'all' : year)
+                      setSelectedSection('all') // Reset section when year changes
+                    }}
+                    className={`p-4 rounded-xl bg-gradient-to-br ${colors[idx]} text-left transition-all hover:shadow-lg ${isSelected ? 'ring-4 ring-offset-2 ring-gray-800 scale-105' : ''}`}
+                  >
+                    <p className="text-white/90 text-sm font-medium">{year}</p>
+                    <p className="text-2xl font-bold text-white mt-1">{count}</p>
+                    <p className="text-white/70 text-xs">students</p>
+                  </button>
+                )
+              })}
+              {/* All Years Option */}
+              <button
+                onClick={() => { setSelectedStudentYear('all'); setSelectedSection('all'); }}
+                className={`p-4 rounded-xl bg-gradient-to-br from-gray-500 to-gray-400 text-left transition-all hover:shadow-lg ${selectedStudentYear === 'all' ? 'ring-4 ring-offset-2 ring-gray-800' : ''}`}
+              >
+                <p className="text-white/90 text-sm font-medium">All Years</p>
+                <p className="text-2xl font-bold text-white mt-1">{totalStudents}</p>
+                <p className="text-white/70 text-xs">total students</p>
+              </button>
+            </div>
           </div>
 
+          {/* LEVEL 2: Section Selection (A, B) - Only shown when a year is selected */}
+          {selectedStudentYear !== 'all' && (
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <FolderOpen className="w-4 h-4 text-emerald-500" />
+                Select Section
+                {selectedSection !== 'all' && (
+                  <button 
+                    onClick={() => setSelectedSection('all')}
+                    className="text-xs text-emerald-600 hover:text-emerald-800 flex items-center gap-1"
+                  >
+                    <X className="w-3 h-3" /> Clear
+                  </button>
+                )}
+              </h3>
+              <div className="flex gap-3">
+                {['A', 'B'].map(section => {
+                  const count = departmentStudents.filter(s => s.year === selectedStudentYear && (s.section || 'A') === section).length
+                  const isSelected = selectedSection === section
+                  return (
+                    <button
+                      key={section}
+                      onClick={() => setSelectedSection(isSelected ? 'all' : section)}
+                      className={`flex-1 max-w-[200px] p-4 rounded-xl transition-all hover:shadow-lg ${
+                        isSelected 
+                          ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white ring-4 ring-offset-2 ring-emerald-400 scale-105' 
+                          : 'bg-white border-2 border-gray-200 hover:border-emerald-300'
+                      }`}
+                    >
+                      <p className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-gray-700'}`}>Section {section}</p>
+                      <p className={`text-xl font-bold mt-1 ${isSelected ? 'text-white' : 'text-gray-900'}`}>{count}</p>
+                      <p className={`text-xs ${isSelected ? 'text-white/70' : 'text-gray-500'}`}>students</p>
+                    </button>
+                  )
+                })}
+                {/* All Sections Option */}
+                <button
+                  onClick={() => setSelectedSection('all')}
+                  className={`flex-1 max-w-[200px] p-4 rounded-xl transition-all hover:shadow-lg ${
+                    selectedSection === 'all' 
+                      ? 'bg-gradient-to-br from-gray-500 to-gray-400 text-white ring-4 ring-offset-2 ring-gray-300' 
+                      : 'bg-white border-2 border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <p className={`text-sm font-bold ${selectedSection === 'all' ? 'text-white' : 'text-gray-700'}`}>All Sections</p>
+                  <p className={`text-xl font-bold mt-1 ${selectedSection === 'all' ? 'text-white' : 'text-gray-900'}`}>
+                    {departmentStudents.filter(s => s.year === selectedStudentYear).length}
+                  </p>
+                  <p className={`text-xs ${selectedSection === 'all' ? 'text-white/70' : 'text-gray-500'}`}>students</p>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* LEVEL 3: Batch Display with Student List */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Students List - Organized by Batch */}
+            {/* Students List - Organized by Batch with Hierarchy Filters */}
             <Card className="border border-gray-200 lg:col-span-2">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
                     <GraduationCap className="w-5 h-5 text-blue-500" /> 
-                    Department Students ({filteredStudents.length})
-                    {selectedBatch !== 'all' && (
-                      <Badge className="bg-violet-100 text-violet-700 ml-2">{selectedBatch}</Badge>
+                    Department Students
+                    <Badge variant="outline" className="text-xs ml-2">{user.departmentName}</Badge>
+                    {/* Show active filters */}
+                    {selectedStudentYear !== 'all' && (
+                      <Badge className="bg-blue-100 text-blue-700 text-xs ml-1">{selectedStudentYear}</Badge>
                     )}
+                    {selectedSection !== 'all' && (
+                      <Badge className="bg-emerald-100 text-emerald-700 text-xs">Sec {selectedSection}</Badge>
+                    )}
+                    <span className="text-gray-500 text-sm">({filteredStudents.length})</span>
                   </CardTitle>
-                  <Badge variant="outline" className="text-xs">{user.departmentName}</Badge>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1">
-                  {/* Group students by batch */}
+                  {/* Group students by batch for Level 3 display */}
                   {(() => {
-                    // Group filtered students by batch
-                    const groupedByBatch = filteredStudents.reduce((acc, student) => {
+                    // Apply hierarchy filters
+                    let filteredForDisplay = departmentStudents
+                    
+                    // Apply search filter
+                    if (searchUser.trim()) {
+                      filteredForDisplay = filteredForDisplay.filter(s => 
+                        s.name.toLowerCase().includes(searchUser.toLowerCase()) ||
+                        s.regNo.toLowerCase().includes(searchUser.toLowerCase())
+                      )
+                    }
+                    
+                    // Apply year filter
+                    if (selectedStudentYear !== 'all') {
+                      filteredForDisplay = filteredForDisplay.filter(s => s.year === selectedStudentYear)
+                    }
+                    
+                    // Apply section filter
+                    if (selectedSection !== 'all') {
+                      filteredForDisplay = filteredForDisplay.filter(s => (s.section || 'A') === selectedSection)
+                    }
+                    
+                    // Group by batch
+                    const groupedByBatch = filteredForDisplay.reduce((acc, student) => {
                       const batch = student.batch || 'Unassigned'
                       if (!acc[batch]) acc[batch] = []
                       acc[batch].push(student)
                       return acc
-                    }, {} as Record<string, typeof filteredStudents>)
+                    }, {} as Record<string, typeof filteredForDisplay>)
                     
                     // Sort batches (newest first)
                     const sortedBatches = Object.keys(groupedByBatch).sort((a, b) => {
-                      const numA = parseInt(a)
-                      const numB = parseInt(b)
+                      const numA = parseInt(a.split('-')[0])
+                      const numB = parseInt(b.split('-')[0])
                       if (!isNaN(numA) && !isNaN(numB)) return numB - numA
                       return b.localeCompare(a)
                     })
@@ -4293,7 +4484,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                         <div className="text-center py-12">
                           <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                           <p className="text-gray-500 font-medium">No students found</p>
-                          <p className="text-sm text-gray-400 mt-1">Add students to your department or adjust your filters</p>
+                          <p className="text-sm text-gray-400 mt-1">Try adjusting your filters or add new students</p>
                         </div>
                       )
                     }
@@ -4304,11 +4495,13 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                         <div className="bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-2.5 flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-white" />
-                            <span className="font-bold text-white text-sm">{batch}</span>
+                            <span className="font-bold text-white text-sm">Batch {batch}</span>
                           </div>
-                          <Badge className="bg-white/20 text-white border-0 text-xs">
-                            {groupedByBatch[batch].length} Students
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-white/20 text-white border-0 text-xs">
+                              {groupedByBatch[batch].length} Students
+                            </Badge>
+                          </div>
                         </div>
                         
                         {/* Students Table for this batch */}
@@ -4319,6 +4512,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                                 <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Reg No</th>
                                 <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Name</th>
                                 <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Year</th>
+                                <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Sec</th>
                                 <th className="text-center py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Status</th>
                                 <th className="text-right py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Actions</th>
                               </tr>
@@ -4338,6 +4532,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                                       </div>
                                     </td>
                                     <td className="py-2 px-3 text-xs text-gray-600">{student.year}</td>
+                                    <td className="py-2 px-3 text-xs text-gray-600">{student.section || 'A'}</td>
                                     <td className="py-2 px-3 text-center">
                                       <Badge className={
                                         student.status === 'active' ? 'bg-green-100 text-green-700 text-[10px]' : 'bg-gray-100 text-gray-600 text-[10px]'
@@ -4628,34 +4823,43 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none font-mono"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Year *</label>
                   <select
                     value={studentForm.year}
                     onChange={(e) => setStudentForm({...studentForm, year: e.target.value})}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
                   >
-                    <option value="I Year">I Year</option>
-                    <option value="II Year">II Year</option>
-                    <option value="III Year">III Year</option>
-                    <option value="IV Year">IV Year</option>
+                    <option value="1st Year">1st Year</option>
+                    <option value="2nd Year">2nd Year</option>
+                    <option value="3rd Year">3rd Year</option>
+                    <option value="4th Year">4th Year</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Batch Year *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Section *</label>
+                  <select
+                    value={studentForm.section}
+                    onChange={(e) => setStudentForm({...studentForm, section: e.target.value})}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                  >
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Batch *</label>
                   <select
                     value={studentForm.batch}
                     onChange={(e) => setStudentForm({...studentForm, batch: e.target.value})}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none bg-white"
                   >
-                    <option value="2025 Batch">2025 Batch</option>
-                    <option value="2024 Batch">2024 Batch</option>
-                    <option value="2023 Batch">2023 Batch</option>
-                    <option value="2022 Batch">2022 Batch</option>
-                    <option value="2021 Batch">2021 Batch</option>
-                    <option value="2020 Batch">2020 Batch</option>
-                    <option value="2019 Batch">2019 Batch</option>
+                    <option value="2024-2028">2024-2028</option>
+                    <option value="2023-2027">2023-2027</option>
+                    <option value="2022-2026">2022-2026</option>
+                    <option value="2021-2025">2021-2025</option>
+                    <option value="2020-2024">2020-2024</option>
                   </select>
                 </div>
               </div>
@@ -4835,6 +5039,13 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
   const [staffAchievements, setStaffAchievements] = useState<any[]>([])
   const [selectedDashboardType, setSelectedDashboardType] = useState<string | null>(null)
   
+  // Student Management State for Staff Role
+  const [staffStudents, setStaffStudents] = useState<any[]>([])
+  const [showStudentTab, setShowStudentTab] = useState(false)
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false)
+  const [staffStudentForm, setStaffStudentForm] = useState({ name: '', registerNumber: '', email: '', year: '1st Year', section: 'A' })
+  const [studentSearch, setStudentSearch] = useState('')
+  
   // Load achievements from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem('staff_achievements')
@@ -4845,7 +5056,22 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
         console.error('Failed to parse staff achievements:', e)
       }
     }
-  }, [])
+    
+    // Load students from HOD's data (filtered by department)
+    const storageKey = `hod_users_${user.departmentName}`
+    try {
+      const savedUsers = localStorage.getItem(storageKey)
+      if (savedUsers) {
+        const parsed = JSON.parse(savedUsers)
+        if (parsed.students) {
+          // Staff can only see students from their department
+          setStaffStudents(parsed.students)
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load students:', e)
+    }
+  }, [user.departmentName])
   
   // Calculate stats from actual data
   const totalRecords = staffAchievements.length
@@ -4874,6 +5100,64 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
   const selectedTypeAchievements = selectedDashboardType 
     ? staffAchievements.filter((a: any) => a.type === selectedDashboardType)
     : []
+
+  // ==================== STUDENT MANAGEMENT FUNCTIONS FOR STAFF ====================
+  const handleAddStaffStudent = () => {
+    setStaffStudentForm({ name: '', registerNumber: '', email: '', year: '1st Year', section: 'A' })
+    setShowAddStudentModal(true)
+  }
+
+  const handleSaveStaffStudent = () => {
+    if (!staffStudentForm.name.trim() || !staffStudentForm.registerNumber.trim()) {
+      alert('Please fill in all required fields')
+      return
+    }
+
+    // Create new student object
+    const newStudent = {
+      id: Date.now(),
+      name: staffStudentForm.name,
+      regNo: staffStudentForm.registerNumber,
+      email: staffStudentForm.email,
+      year: staffStudentForm.year,
+      section: staffStudentForm.section,
+      batch: '2024-2028', // Default batch based on year
+      status: 'active'
+    }
+
+    // Add to local state and save to localStorage
+    const updatedStudents = [...staffStudents, newStudent]
+    setStaffStudents(updatedStudents)
+    
+    // Save back to localStorage (HOD's data)
+    const storageKey = `hod_users_${user.departmentName}`
+    try {
+      const savedUsers = localStorage.getItem(storageKey)
+      let userData = { students: [], staff: [] }
+      if (savedUsers) {
+        userData = JSON.parse(savedUsers)
+      }
+      userData.students = updatedStudents
+      localStorage.setItem(storageKey, JSON.stringify(userData))
+    } catch (e) {
+      console.error('Failed to save student:', e)
+    }
+
+    setShowAddStudentModal(false)
+  }
+
+  // Filter students by search
+  const filteredStaffStudents = staffStudents.filter(s => 
+    s.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
+    s.regNo.toLowerCase().includes(studentSearch.toLowerCase())
+  )
+
+  // Students by year for staff view
+  const staffStudentsByYear = filteredStaffStudents.reduce((acc, s) => {
+    const year = s.year || 'Unknown'
+    acc[year] = (acc[year] || 0) + 1
+    return acc
+  }, {} as Record<string, number>)
 
   return (
     <div className="space-y-6">
@@ -5175,13 +5459,20 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
       )}
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <ActionCard 
           icon={Plus} 
           title="Submit New Activity" 
           description="Report a new activity or event"
           color="bg-gradient-to-br from-blue-500 to-indigo-600"
           onClick={() => setActiveTab('staff_achievement')}
+        />
+        <ActionCard 
+          icon={GraduationCap} 
+          title="Student Management" 
+          description="View and manage your class students"
+          color="bg-gradient-to-br from-violet-500 to-purple-600"
+          onClick={() => setShowStudentTab(!showStudentTab)}
         />
         <ActionCard 
           icon={MessageSquare} 
@@ -5191,6 +5482,205 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
           onClick={() => setActiveTab('feedback')}
         />
       </div>
+
+      {/* STUDENT MANAGEMENT SECTION FOR STAFF */}
+      {showStudentTab && (
+        <Card className="border border-violet-200 bg-gradient-to-r from-violet-50 to-white">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                <GraduationCap className="w-5 h-5 text-violet-500" /> 
+                Student Management
+                <Badge variant="outline" className="text-xs">{user.departmentName}</Badge>
+              </CardTitle>
+              <button 
+                onClick={() => setShowStudentTab(false)}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {/* Search and Add Student */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search students by name or register number..."
+                  value={studentSearch}
+                  onChange={(e) => setStudentSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
+                />
+              </div>
+              <Button
+                onClick={handleAddStaffStudent}
+                className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              >
+                <PlusCircle className="w-4 h-4" />
+                Add Student
+              </Button>
+            </div>
+
+            {/* Students by Year Summary */}
+            <div className="grid grid-cols-4 gap-2 mb-4">
+              {['1st Year', '2nd Year', '3rd Year', '4th Year'].map((year, idx) => {
+                const count = staffStudentsByYear[year] || 0
+                const colors = ['bg-orange-100 text-orange-700', 'bg-emerald-100 text-emerald-700', 'bg-blue-100 text-blue-700', 'bg-purple-100 text-purple-700']
+                return (
+                  <div key={year} className={`p-2 rounded-lg ${colors[idx]} text-center`}>
+                    <p className="text-xs font-medium">{year}</p>
+                    <p className="text-lg font-bold">{count}</p>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Students List */}
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="max-h-[300px] overflow-y-auto">
+                {filteredStaffStudents.length === 0 ? (
+                  <div className="text-center py-8">
+                    <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500 font-medium">No students found</p>
+                    <p className="text-sm text-gray-400 mt-1">Add students to your class or adjust search</p>
+                  </div>
+                ) : (
+                  <table className="w-full">
+                    <thead className="bg-gray-50 sticky top-0">
+                      <tr>
+                        <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Reg No</th>
+                        <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Name</th>
+                        <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Year</th>
+                        <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Sec</th>
+                        <th className="text-center py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredStaffStudents.map(student => (
+                        <tr key={student.id} className="border-b border-gray-100 hover:bg-violet-50/30 transition-colors">
+                          <td className="py-2 px-3 text-xs font-mono text-gray-700">{student.regNo}</td>
+                          <td className="py-2 px-3">
+                            <p className="text-xs font-medium text-gray-800">{student.name}</p>
+                            <p className="text-[10px] text-gray-400">{student.email}</p>
+                          </td>
+                          <td className="py-2 px-3 text-xs text-gray-600">{student.year}</td>
+                          <td className="py-2 px-3 text-xs text-gray-600">{student.section || 'A'}</td>
+                          <td className="py-2 px-3 text-center">
+                            <Badge className={
+                              student.status === 'active' ? 'bg-green-100 text-green-700 text-[10px]' : 'bg-gray-100 text-gray-600 text-[10px]'
+                            }>
+                              {student.status}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-500 mt-3 text-center">
+              Showing {filteredStaffStudents.length} of {staffStudents.length} students from {user.departmentName}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Add Student Modal for Staff */}
+      {showAddStudentModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900">Add New Student</h3>
+                <button
+                  onClick={() => setShowAddStudentModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <XCircle className="w-5 h-5 text-gray-500" />
+                </button>
+                </div>
+                <p className="text-sm text-gray-500 mt-1">{user.departmentName} Department</p>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                  <input
+                    type="text"
+                    value={staffStudentForm.name}
+                    onChange={(e) => setStaffStudentForm({...staffStudentForm, name: e.target.value})}
+                    placeholder="Enter student full name"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Register Number *</label>
+                  <input
+                    type="text"
+                    value={staffStudentForm.registerNumber}
+                    onChange={(e) => setStaffStudentForm({...staffStudentForm, registerNumber: e.target.value.toUpperCase()})}
+                    placeholder="e.g., CSE001"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={staffStudentForm.email}
+                    onChange={(e) => setStaffStudentForm({...staffStudentForm, email: e.target.value})}
+                    placeholder="student@niet.ac.in"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Year *</label>
+                    <select
+                      value={staffStudentForm.year}
+                      onChange={(e) => setStaffStudentForm({...staffStudentForm, year: e.target.value})}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
+                    >
+                      <option value="1st Year">1st Year</option>
+                      <option value="2nd Year">2nd Year</option>
+                      <option value="3rd Year">3rd Year</option>
+                      <option value="4th Year">4th Year</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Section *</label>
+                    <select
+                      value={staffStudentForm.section}
+                      onChange={(e) => setStaffStudentForm({...staffStudentForm, section: e.target.value})}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
+                    >
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAddStudentModal(false)}
+                  className="px-6"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveStaffStudent}
+                  className="px-6 bg-violet-600 hover:bg-violet-700"
+                >
+                  Add Student
+                </Button>
+              </div>
+            </div>
+        </div>
+      )}
     </div>
   )
 }

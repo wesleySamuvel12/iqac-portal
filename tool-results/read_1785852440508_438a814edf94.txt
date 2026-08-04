@@ -1,0 +1,2002 @@
+     1→'use client'
+     2→
+     3→import React, { useState, useEffect, useCallback, useRef } from 'react'
+     4→import { useAuthStore } from '@/lib/store/auth-store'
+     5→import { Button } from '@/components/ui/button'
+     6→import { Input } from '@/components/ui/input'
+     7→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+     8→import { Badge } from '@/components/ui/badge'
+     9→import { 
+    10→  Building2, Mail, Lock, Eye, EyeOff, Loader2, 
+    11→  LayoutDashboard, Users, GraduationCap, FileText,
+    12→  BarChart3, Settings, Bell, LogOut, Menu, X,
+    13→  Home, UserCheck, BookOpen, Award, TrendingUp,
+    14→  CheckCircle, Clock, AlertCircle, ChevronRight,
+    15→  Shield, Star, Activity, Zap, Database,
+    16→  Search, Filter, Download, Plus, Edit3, Trash2,
+    17→  Calendar, MapPin, Phone, Globe, Send,
+    18→  ArrowRight, RefreshCw, Upload, FolderOpen,
+    19→  Target, Lightbulb, HeartHandshake, Trophy,
+    20→  MessageSquare, ThumbsUp, ThumbsDown,
+    21→  Sun, Moon, ChevronDown, ChevronLeft, ChevronUp,
+    22→  ClipboardList, Flag, Mic, Presentation,
+    23→  Briefcase, Wrench, Rocket, Code, PlusCircle,
+    24→  Newspaper, Handshake, Circle,
+    25→  DollarSign, Paperclip, Inbox, Tag, XCircle, ArrowLeft,
+    26→  Save, Sparkles, PanelLeft, PanelLeftClose,
+    27→  GripVertical, FileSpreadsheet, Wifi
+    28→} from 'lucide-react'
+    29→
+    30→// ============ TYPES ============
+    31→interface Department {
+    32→  id: string
+    33→  name: string
+    34→  code: string
+    35→  vision?: string
+    36→  mission?: string
+    37→  hod?: string
+    38→  facultyCount?: number
+    39→  studentCount?: number
+    40→  activityCount?: number
+    41→}
+    42→
+    43→interface DashboardStats {
+    44→  totalDepartments: number
+    45→  totalFaculty: number
+    46→  totalStudents: number
+    47→  totalActivities: number
+    48→  totalResearch: number
+    49→  pendingApprovals: number
+    50→}
+    51→
+    52→interface User {
+    53→  id: string
+    54→  email: string
+    55→  name: string
+    56→  role: 'ADMIN' | 'HOD' | 'STAFF' | 'STUDENT'
+    57→  departmentId?: string
+    58→  departmentName?: string
+    59→}
+    60→
+    61→type TabType = 'dashboard' | 'departments' | 'faculty' | 'students' | 'activities' | 'research' 
+    62→  | 'approvals' | 'analytics' | 'documents' | 'settings' | 'achievements' | 'feedback'
+    63→  | 'staff_achievement' | 'student_achievement_view'
+    64→  | 'hod_student_approval' | 'hod_staff_approval' | 'my_achievement'
+    65→  | 'report_generator' | 'hod_management' | 'showcase' | 'database'
+    66→
+    67→// ============ ACHIEVEMENT TYPES DEFINITION (13 Types - Student Focused) ============
+    68→const ACHIEVEMENT_TYPES: Record<string, {
+    69→  label: string
+    70→  icon: React.ElementType
+    71→  color: string
+    72→  fields: Array<{
+    73→    id: string
+    74→    label: string
+    75→    type: string
+    76→    required?: boolean
+    77→    locked?: boolean
+    78→    full?: boolean
+    79→    options?: string[]
+    80→  }>
+    81→}> = {
+    82→  journal: {
+    83→    label: 'Journal Publication',
+    84→    icon: Newspaper,
+    85→    color: 'from-blue-500 to-blue-600',
+    86→    fields: [
+    87→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+    88→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+    89→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+    90→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+    91→      { id: 'title', label: 'Paper Title', type: 'text', required: true, full: true },
+    92→      { id: 'journal', label: 'Journal Name', type: 'text', required: true, full: true },
+    93→      { id: 'indexed', label: 'Indexed In', type: 'select_with_other', options: ['SCI','Scopus','UGC Care','Web of Science'] },
+    94→      { id: 'issn', label: 'ISSN', type: 'text' },
+    95→      { id: 'publisher', label: 'Publisher', type: 'text' },
+    96→      { id: 'month', label: 'Month', type: 'select', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] },
+    97→      { id: 'year_pub', label: 'Year', type: 'number' },
+    98→      { id: 'status_pub', label: 'Status', type: 'constant', value: 'Published' },
+    99→      { id: 'supervisor', label: 'Supervisor', type: 'text' },
+   100→      { id: 'link', label: 'Paper Link', type: 'url' },
+   101→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   102→    ]
+   103→  },
+   104→  conference: {
+   105→    label: 'Conference Publication',
+   106→    icon: Mic,
+   107→    color: 'from-purple-500 to-purple-600',
+   108→    fields: [
+   109→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   110→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   111→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   112→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   113→      { id: 'title', label: 'Paper Title', type: 'text', required: true, full: true },
+   114→      { id: 'conf', label: 'Conference Name', type: 'text', required: true, full: true },
+   115→      { id: 'org', label: 'Organizing Institute', type: 'text' },
+   116→      { id: 'indexed', label: 'Indexed In', type: 'select_with_other', options: ['Scopus','SCI','Web of Science','UGC Care'] },
+   117→      { id: 'publisher', label: 'Publisher', type: 'publisher_select', options: ['IEEE','Springer','Elsevier','Other'] },
+   118→      { id: 'month', label: 'Month', type: 'select', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] },
+   119→      { id: 'year_pub', label: 'Year', type: 'number' },
+   120→      { id: 'status_pub', label: 'Status', type: 'select', options: ['Presented','Published','Both'] },
+   121→      { id: 'supervisor', label: 'Supervisor', type: 'text' },
+   122→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   123→    ]
+   124→  },
+   125→  patent: {
+   126→    label: 'Patent',
+   127→    icon: Lightbulb,
+   128→    color: 'from-amber-500 to-orange-500',
+   129→    fields: [
+   130→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   131→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   132→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   133→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   134→      { id: 'title', label: 'Invention Title', type: 'text', required: true, full: true },
+   135→      { id: 'patent_no', label: 'Patent No.', type: 'text' },
+   136→      { id: 'month', label: 'Month', type: 'select', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] },
+   137→      { id: 'year_pub', label: 'Year', type: 'number' },
+   138→      { id: 'status_pub', label: 'Status', type: 'select', options: ['Filed','Published','Granted'] },
+   139→      { id: 'inventors', label: 'All Inventors', type: 'text' },
+   140→      { id: 'supervisor', label: 'Supervisor', type: 'text' },
+   141→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   142→    ]
+   143→  },
+   144→  nptel: {
+   145→    label: 'NPTEL / MOOC',
+   146→    icon: GraduationCap,
+   147→    color: 'from-green-500 to-teal-600',
+   148→    fields: [
+   149→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   150→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   151→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   152→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   153→      { id: 'platform', label: 'Platform', type: 'select_with_other', options: ['NPTEL','Swayam','Coursera','edX','FutureLearn','Udemy'] },
+   154→      { id: 'course', label: 'Course Name', type: 'text', required: true, full: true },
+   155→      { id: 'domain', label: 'Domain', type: 'text' },
+   156→      { id: 'mentor', label: 'Faculty Mentor', type: 'text' },
+   157→      { id: 'duration', label: 'Duration (wks)', type: 'number' },
+   158→      { id: 'score', label: 'Score (%)', type: 'number' },
+   159→      { id: 'grade', label: 'Grade', type: 'select', options: ['Elite + Gold','Elite + Silver','Elite','Successfully Completed','Completed'] },
+   160→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   161→    ]
+   162→  },
+   163→  seminar: {
+   164→    label: 'Seminar / Workshop',
+   165→    icon: Presentation,
+   166→    color: 'from-pink-500 to-rose-600',
+   167→    fields: [
+   168→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   169→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   170→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   171→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   172→      { id: 'title', label: 'Event Title', type: 'text', required: true, full: true },
+   173→      { id: 'type_sem', label: 'Type', type: 'select_with_other', options: ['Seminar','Webinar','Workshop','Conference','FDP'] },
+   174→      { id: 'org', label: 'Organizing Institute', type: 'text' },
+   175→      { id: 'state', label: 'State', type: 'text' },
+   176→      { id: 'from_date', label: 'From Date', type: 'date' },
+   177→      { id: 'to_date', label: 'To Date', type: 'date' },
+   178→      { id: 'mode', label: 'Mode', type: 'select', options: ['Online','Offline','Hybrid'] },
+   179→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   180→    ]
+   181→  },
+   182→  internship: {
+   183→    label: 'Internship',
+   184→    icon: Briefcase,
+   185→    color: 'from-cyan-500 to-blue-600',
+   186→    fields: [
+   187→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   188→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   189→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   190→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   191→      { id: 'org_name', label: 'Organization / Industry', type: 'text', required: true, full: true },
+   192→      { id: 'role', label: 'Internship Role/Title', type: 'text' },
+   193→      { id: 'from_date', label: 'From Date', type: 'date' },
+   194→      { id: 'to_date', label: 'To Date', type: 'date' },
+   195→      { id: 'paid', label: 'Paid?', type: 'select', options: ['Yes','No'] },
+   196→      { id: 'stipend', label: 'Stipend (₹)', type: 'number' },
+   197→      { id: 'mode', label: 'Mode', type: 'select', options: ['Online','Offline','Hybrid'] },
+   198→      { id: 'industry_mentor', label: 'Industry Mentor', type: 'text' },
+   199→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   200→    ]
+   201→  },
+   202→  training: {
+   203→    label: 'Training Programme',
+   204→    icon: Wrench,
+   205→    color: 'from-indigo-500 to-violet-600',
+   206→    fields: [
+   207→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   208→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   209→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   210→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   211→      { id: 'prog_name', label: 'Training Program Name', type: 'text', required: true, full: true },
+   212→      { id: 'organizer', label: 'Organizer', type: 'text' },
+   213→      { id: 'from_date', label: 'From Date', type: 'date' },
+   214→      { id: 'to_date', label: 'To Date', type: 'date' },
+   215→      { id: 'hours', label: 'Hours / Days', type: 'text' },
+   216→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   217→    ]
+   218→  },
+   219→  award: {
+   220→    label: 'Awards & Recognition',
+   221→    icon: Trophy,
+   222→    color: 'from-yellow-500 to-amber-600',
+   223→    fields: [
+   224→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   225→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   226→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   227→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   228→      { id: 'award_name', label: 'Award Name', type: 'text', required: true, full: true },
+   229→      { id: 'event', label: 'Event / Competition', type: 'text' },
+   230→      { id: 'organizer', label: 'Organizer', type: 'text' },
+   231→      { id: 'level', label: 'Level', type: 'select', options: ['International','National','State','Regional','Institutional'] },
+   232→      { id: 'position', label: 'Position', type: 'text' },
+   233→      { id: 'date', label: 'Date', type: 'date' },
+   234→      { id: 'cash_prize', label: 'Cash / Prize', type: 'text' },
+   235→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   236→    ]
+   237→  },
+   238→  cocurricular: {
+   239→    label: 'Co-Curricular Activities',
+   240→    icon: Circle,
+   241→    color: 'from-emerald-500 to-green-600',
+   242→    fields: [
+   243→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   244→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   245→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   246→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   247→      { id: 'activity_type', label: 'Activity Type', type: 'select_with_other', options: ['Sports','Cultural','Club Activity','Social Service','Leadership','Student Council'] },
+   248→      { id: 'event_name', label: 'Event Name', type: 'text', required: true },
+   249→      { id: 'organizer', label: 'Organizer', type: 'text' },
+   250→      { id: 'level', label: 'Level', type: 'select', options: ['International','National','State','Regional','Institutional'] },
+   251→      { id: 'position', label: 'Position', type: 'text' },
+   252→      { id: 'date', label: 'Date', type: 'date' },
+   253→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   254→    ]
+   255→  },
+   256→  placement: {
+   257→    label: 'Placement',
+   258→    icon: Handshake,
+   259→    color: 'from-violet-500 to-purple-600',
+   260→    fields: [
+   261→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   262→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   263→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   264→      { id: 'yop', label: 'Year of Passing', type: 'number' },
+   265→      { id: 'company', label: 'Company Name', type: 'text', required: true, full: true },
+   266→      { id: 'state', label: 'Company State', type: 'text' },
+   267→      { id: 'role', label: 'Job Role', type: 'text' },
+   268→      { id: 'package', label: 'Package (LPA)', type: 'number' },
+   269→      { id: 'offer_date', label: 'Offer Date', type: 'date' },
+   270→      { id: 'mode', label: 'Mode', type: 'select', options: ['Campus','Off-Campus','Lateral'] },
+   271→      { id: 'emp_type', label: 'Employment Type', type: 'select', options: ['Full-Time','Part-Time','Contract','Internship to PPO'] },
+   272→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   273→    ]
+   274→  },
+   275→  startup: {
+   276→    label: 'Startup',
+   277→    icon: Rocket,
+   278→    color: 'from-red-500 to-pink-600',
+   279→    fields: [
+   280→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   281→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   282→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   283→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   284→      { id: 'title', label: 'Startup Title / Idea', type: 'text', required: true, full: true },
+   285→      { id: 'domain', label: 'Domain / Sector', type: 'text' },
+   286→      { id: 'stage', label: 'Stage', type: 'select', options: ['Idea','Prototype','MVP','Launched','Scaling'] },
+   287→      { id: 'registered', label: 'Is Registered?', type: 'select', options: ['Yes','No'] },
+   288→      { id: 'startup_name', label: 'Startup Name', type: 'text' },
+   289→      { id: 'incubation', label: 'Incubation Status', type: 'select', options: ['Incubated','Not Incubated','Applied'] },
+   290→      { id: 'outcome', label: 'Outcome', type: 'text' },
+   291→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   292→    ]
+   293→  },
+   294→  hackathon: {
+   295→    label: 'Hackathon / Ideathon / SIH',
+   296→    icon: Code,
+   297→    color: 'from-slate-500 to-gray-600',
+   298→    fields: [
+   299→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   300→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   301→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   302→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   303→      { id: 'category', label: 'Category', type: 'select_with_other', options: ['Hackathon','Ideathon','SIH','Innovation Challenge'] },
+   304→      { id: 'title', label: 'Title / Idea', type: 'text', required: true, full: true },
+   305→      { id: 'event_agency', label: 'Event / Agency', type: 'text' },
+   306→      { id: 'problem_domain', label: 'Problem Domain', type: 'text' },
+   307→      { id: 'level', label: 'Level', type: 'select', options: ['International','National','State','Regional','Institutional'] },
+   308→      { id: 'stage', label: 'Stage', type: 'select', options: ['Submitted','Shortlisted','Finalist','Winner','Runner-Up'] },
+   309→      { id: 'position_prize', label: 'Position / Prize', type: 'text' },
+   310→      { id: 'amount', label: 'Amount Received (₹)', type: 'number' },
+   311→      { id: 'event_date', label: 'Event Date', type: 'date' },
+   312→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   313→    ]
+   314→  },
+   315→  other: {
+   316→    label: 'Custom Achievement',
+   317→    icon: PlusCircle,
+   318→    color: 'from-gray-400 to-gray-500',
+   319→    fields: [
+   320→      { id: 'custom_type', label: 'Custom Achievement Type', type: 'text', required: true, full: true },
+   321→      { id: 'name', label: 'Student Name', type: 'text', required: true },
+   322→      { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
+   323→      { id: 'reg', label: 'Register No', type: 'text', required: true },
+   324→      { id: 'year', label: 'Year of Study', type: 'select', options: ['I Year','II Year','III Year','IV Year'] },
+   325→      { id: 'date', label: 'Date', type: 'date' },
+   326→      { id: 'description', label: 'Description', type: 'textarea', full: true }
+   327→    ]
+   328→  }
+   329→}
+   330→
+   331→// ============ DEPARTMENTS LIST FOR LOGIN (NIET Official Departments) ============
+   332→const DEPARTMENTS_LIST = [
+   333→  { code: 'AERO', name: 'Aeronautical Engineering', color: 'sky' },
+   334→  { code: 'AI&DS', name: 'Artificial Intelligence and Data Science', color: 'purple' },
+   335→  { code: 'CSBS', name: 'Computer Science and Business Systems', color: 'blue' },
+   336→  { code: 'CSE', name: 'Computer Science and Engineering', color: 'indigo' },
+   337→  { code: 'ECE', name: 'Electronics and Communication Engineering', color: 'pink' },
+   338→  { code: 'EEE', name: 'Electrical and Electronics Engineering', color: 'yellow' },
+   339→  { code: 'IT', name: 'Information Technology', color: 'cyan' },
+   340→  { code: 'MCT', name: 'Mechatronics Engineering', color: 'zinc' },
+   341→  { code: 'MECH', name: 'Mechanical Engineering', color: 'orange' },
+   342→  { code: 'MBA', name: 'Master of Business Administration', color: 'violet' },
+   343→  { code: 'S&H', name: 'Science and Humanities', color: 'emerald' },
+   344→]
+   345→
+   346→const ROLE_COLORS: Record<string, { bg: string; border: string; text: string; icon: string }> = {
+   347→  HOD: { bg: 'bg-purple-50 hover:bg-purple-100', border: 'border-purple-200 hover:border-purple-300', text: 'text-purple-700 hover:text-purple-800', icon: 'text-purple-500' },
+   348→  STAFF: { bg: 'bg-green-50 hover:bg-green-100', border: 'border-green-200 hover:border-green-300', text: 'text-green-700 hover:text-green-800', icon: 'text-green-500' },
+   349→  STUDENT: { bg: 'bg-amber-50 hover:bg-amber-100', border: 'border-amber-200 hover:border-amber-300', text: 'text-amber-700 hover:text-amber-800', icon: 'text-amber-500' },
+   350→}
+   351→
+   352→// ============ LOGIN PAGE - PREMIUM IMPRESSIVE DESIGN ============
+   353→function LoginPage() {
+   354→  const [email, setEmail] = useState('')
+   355→  const [password, setPassword] = useState('')
+   356→  const [showPassword, setShowPassword] = useState(false)
+   357→  const [isLoading, setIsLoading] = useState(false)
+   358→  const [error, setError] = useState('')
+   359→  const [selectedRole, setSelectedRole] = useState<'STUDENT' | 'STAFF' | 'HOD' | 'ADMIN'>('STUDENT')
+   360→  const [selectedDept, setSelectedDept] = useState('CSE')
+   361→  const [showDeptDropdown, setShowDeptDropdown] = useState(false)
+   362→  const [isFocused, setIsFocused] = useState<string | null>(null)
+   363→  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+   364→  const login = useAuthStore((state) => state.login)
+   365→
+   366→  // Track mouse position for spotlight effect
+   367→  useEffect(() => {
+   368→    const handleMouseMove = (e: MouseEvent) => {
+   369→      setMousePos({ x: e.clientX, y: e.clientY })
+   370→    }
+   371→    window.addEventListener('mousemove', handleMouseMove)
+   372→    return () => window.removeEventListener('mousemove', handleMouseMove)
+   373→  }, [])
+   374→
+   375→  const handleSubmit = async (e: React.FormEvent) => {
+   376→    e.preventDefault()
+   377→    setError('')
+   378→    setIsLoading(true)
+   379→
+   380→    try {
+   381→      const result = await login(email, password)
+   382→      if (!result.success) {
+   383→        setError(result.error || 'Invalid email or password')
+   384→      }
+   385→    } catch (err) {
+   386→      setError('Network error. Please try again.')
+   387→    } finally {
+   388→      setIsLoading(false)
+   389→    }
+   390→  }
+   391→
+   392→  const quickLogin = (emailVal: string, passVal: string) => {
+   393→    setEmail(emailVal)
+   394→    setPassword(passVal)
+   395→  }
+   396→
+   397→  const getDeptEmail = (deptCode: string, role: string) => {
+   398→    const code = deptCode.toLowerCase()
+   399→    switch(role) {
+   400→      case 'HOD': return `hod_${code}@niet.ac.in`
+   401→      case 'STAFF': return `staff_${code}1@niet.ac.in`
+   402→      case 'STUDENT': return `student_${code}1@niet.ac.in`
+   403→      default: return ''
+   404→    }
+   405→  }
+   406→
+   407→  const getPassword = (role: string) => {
+   408→    switch(role) {
+   409→      case 'ADMIN': return 'admin123'
+   410→      case 'HOD': return 'hod123'
+   411→      case 'STAFF': return 'staff123'
+   412→      case 'STUDENT': return 'student123'
+   413→      default: return ''
+   414→    }
+   415→  }
+   416→
+   417→  const currentDept = DEPARTMENTS_LIST.find(d => d.code === selectedDept)
+   418→
+   419→  // Premium Role Configuration
+   420→  const roleTabs = [
+   421→    { id: 'STUDENT' as const, label: 'Student', icon: GraduationCap, color: 'emerald', gradient: 'from-emerald-400 via-teal-500 to-cyan-500', glowColor: 'rgba(16, 185, 129, 0.4)', bgColor: 'bg-emerald-50', textColor: 'text-emerald-700', borderColor: 'border-emerald-300', shadowColor: 'shadow-emerald-200' },
+   422→    { id: 'STAFF' as const, label: 'Staff / Faculty', icon: BookOpen, color: 'blue', gradient: 'from-blue-400 via-indigo-500 to-violet-500', glowColor: 'rgba(59, 130, 246, 0.4)', bgColor: 'bg-blue-50', textColor: 'text-blue-700', borderColor: 'border-blue-300', shadowColor: 'shadow-blue-200' },
+   423→    { id: 'HOD' as const, label: 'HOD', icon: UserCheck, color: 'purple', gradient: 'from-purple-400 via-fuchsia-500 to-pink-500', glowColor: 'rgba(168, 85, 247, 0.4)', bgColor: 'bg-purple-50', textColor: 'text-purple-700', borderColor: 'border-purple-300', shadowColor: 'shadow-purple-200' },
+   424→    { id: 'ADMIN' as const, label: 'IQAC Admin', icon: Shield, color: 'amber', gradient: 'from-amber-400 via-orange-500 to-red-500', glowColor: 'rgba(245, 158, 11, 0.4)', bgColor: 'bg-amber-50', textColor: 'text-amber-700', borderColor: 'border-amber-300', shadowColor: 'shadow-amber-200' },
+   425→  ]
+   426→
+   427→  const getPlaceholderForRole = () => {
+   428→    switch(selectedRole) {
+   429→      case 'STUDENT': return 'student_cse1@niet.ac.in'
+   430→      case 'STAFF': return 'staff_cse1@niet.ac.in'
+   431→      case 'HOD': return 'hod_cse@niet.ac.in'
+   432→      case 'ADMIN': return 'admin@niet.ac.in'
+   433→      default: return 'Enter your email'
+   434→    }
+   435→  }
+   436→
+   437→  // Generate particles for ambient effect
+   438→  const particles = Array.from({ length: 30 }, (_, i) => ({
+   439→    id: i,
+   440→    size: Math.random() * 4 + 2,
+   441→    x: Math.random() * 100,
+   442→    y: Math.random() * 100,
+   443→    delay: Math.random() * 10,
+   444→    duration: 15 + Math.random() * 20,
+   445→    opacity: 0.1 + Math.random() * 0.4
+   446→  }))
+   447→
+   448→  return (
+   449→    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 flex flex-col">
+   450→      {/* ====== PREMIUM AMBIENT BACKGROUND ====== */}
+   451→      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+   452→        {/* Multi-layer Gradient Mesh */}
+   453→        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.15),transparent)]" />
+   454→        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_100%_50%,rgba(99,102,241,0.1),transparent)]" />
+   455→        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_0%_100%,rgba(6,182,212,0.1),transparent)]" />
+   456→        
+   457→        {/* Animated Floating Orbs - Premium Version */}
+   458→        <div className="premium-orb orb-1" />
+   459→        <div className="premium-orb orb-2" />
+   460→        <div className="premium-orb orb-3" />
+   461→        <div className="premium-orb orb-4" />
+   462→        <div className="premium-orb orb-5" />
+   463→        
+   464→        {/* Aurora Borealis Effect */}
+   465→        <div className="aurora-layer aurora-1-premium" />
+   466→        <div className="aurora-layer aurora-2-premium" />
+   467→
+   468→        {/* Animated Particle System */}
+   469→        <div className="particle-container-premium">
+   470→          {particles.map((p) => (
+   471→            <div
+   472→              key={p.id}
+   473→              className="floating-particle"
+   474→              style={{
+   475→                width: `${p.size}px`,
+   476→                height: `${p.size}px`,
+   477→                left: `${p.x}%`,
+   478→                top: `${p.y}%`,
+   479→                animationDelay: `${p.delay}s`,
+   480→                animationDuration: `${p.duration}s`,
+   481→                opacity: p.opacity,
+   482→              }}
+   483→            />
+   484→          ))}
+   485→        </div>
+   486→
+   487→        {/* Subtle Grid Pattern */}
+   488→        <div className="grid-pattern-premium" />
+   489→
+   490→        {/* Floating Geometric Shapes */}
+   491→        <div className="geo-shape geo-shape-1" />
+   492→        <div className="geo-shape geo-shape-2" />
+   493→        <div className="geo-shape geo-shape-3" />
+   494→        <div className="geo-shape geo-shape-4" />
+   495→        
+   496→        {/* Radial Gradient Overlay for Depth */}
+   497→        <div className="absolute inset-0 bg-gradient-radial-depth" />
+   498→      </div>
+   499→
+   500→      {/* ====== INSTITUTIONAL STATUS BAR ====== */}
+   501→      <header className="relative z-20 w-full">
+   502→        <div className="premium-status-bar">
+   503→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   504→            <div className="flex items-center justify-between h-11">
+   505→              <div className="flex items-center gap-3">
+   506→                {/* NAAC Badge with Pulse */}
+   507→                <div className="premium-badge naac-badge">
+   508→                  <span className="badge-pulse-ring" />
+   509→                  <span className="badge-dot" />
+   510→                  <svg className="w-3 h-3 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+   511→                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+   512→                  </svg>
+   513→                  <span className="badge-text">NAAC Accredited</span>
+   514→                </div>
+   515→                
+   516→                {/* NIRF Badge */}
+   517→                <div className="premium-badge nirf-badge hidden sm:flex">
+   518→                  <Award className="w-3.5 h-3.5 text-blue-500" />
+   519→                  <span className="badge-text-blue">NIRF Ranked</span>
+   520→                </div>
+   521→
+   522→                {/* AICTE Badge */}
+   523→                <div className="premium-badge aicte-badge hidden md:flex">
+   524→                  <Building2 className="w-3.5 h-3.5 text-violet-500" />
+   525→                  <span className="badge-text-violet">AICTE Approved</span>
+   526→                </div>
+   527→              </div>
+   528→              
+   529→              <div className="flex items-center gap-4">
+   530→                <a href="#" className="support-link">
+   531→                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+   532→                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+   533→                  </svg>
+   534→                  IT Support
+   535→                </a>
+   536→                <div className="version-badge">
+   537→                  v3.0 Enterprise
+   538→                </div>
+   539→              </div>
+   540→            </div>
+   541→          </div>
+   542→        </div>
+   543→      </header>
+   544→
+   545→      {/* ====== MAIN CONTENT AREA ====== */}
+   546→      <main className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+   547→        <div className="w-full max-w-[520px]">
+   548→          
+   549→          {/* ====== PREMIUM LOGO & HEADER ====== */}
+   550→          <div className="text-center mb-10 premium-header-animate">
+   551→            {/* 3D Floating Logo Container */}
+   552→            <div className="logo-container-premium">
+   553→              {/* Outer Glow Rings */}
+   554→              <div className="logo-glow-outer" />
+   555→              <div className="logo-glow-middle" />
+   556→              
+   557→              {/* Rotating Gradient Border */}
+   558→              <div className="logo-border-rotating" />
+   559→              
+   560→              {/* Main Logo Card */}
+   561→              <div className="logo-main-card">
+   562→                <div className="logo-inner-gradient">
+   563→                  <Building2 className="logo-icon" />
+   564→                </div>
+   565→                
+   566→                {/* Glass Reflection */}
+   567→                <div className="logo-reflection" />
+   568→              </div>
+   569→              
+   570→              {/* Verification Badge */}
+   571→              <div className="logo-verify-badge">
+   572→                <CheckCircle className="w-3 h-3" />
+   573→              </div>
+   574→              
+   575→              {/* Orbiting Dots */}
+   576→              <div className="orbit-dot orbit-dot-1" />
+   577→              <div className="orbit-dot orbit-dot-2" />
+   578→              <div className="orbit-dot orbit-dot-3" />
+   579→            </div>
+   580→            
+   581→            {/* Title with Gradient Text */}
+   582→            <h1 className="premium-title">
+   583→              <span className="title-text-gradient">IQAC Portal</span>
+   584→            </h1>
+   585→            
+   586→            {/* Subtitle with Typing Effect Style */}
+   587→            <p className="premium-subtitle">
+   588→              <span className="subtitle-icon-wrapper">
+   589→                <GraduationCap className="w-4 h-4" />
+   590→              </span>
+   591→              Nehru Institute of Engineering and Technology
+   592→            </p>
+   593→
+   594→            {/* Tagline */}
+   595→            <div className="tagline-container">
+   596→              <div className="tagline-line" />
+   597→              <span className="tagline-text">Excellence in Quality Assurance</span>
+   598→              <div className="tagline-line" />
+   599→            </div>
+   600→          </div>
+   601→
+   602→          {/* ====== PREMIUM GLASS CARD ====== */}
+   603→          <div className="premium-card-container" onMouseMove={(e) => {
+   604→            const rect = e.currentTarget.getBoundingClientRect()
+   605→            const x = ((e.clientX - rect.left) / rect.width) * 100
+   606→            const y = ((e.clientY - rect.top) / rect.height) * 100
+   607→            e.currentTarget.style.setProperty('--mouse-x', `${x}%`)
+   608→            e.currentTarget.style.setProperty('--mouse-y', `${y}%`)
+   609→          }}>
+   610→            
+   611→            {/* Animated Border Gradient */}
+   612→            <div className="card-animated-border" />
+   613→            
+   614→            {/* Spotlight Effect Following Mouse */}
+   615→            <div className="card-spotlight" />
+   616→            
+   617→            {/* Main Card Content */}
+   618→            <div className="premium-card-content">
+   619→              
+   620→              {/* ====== ROLE TABS SECTION ====== */}
+   621→              <div className="role-section">
+   622→                <div className="role-label">
+   623→                  <div className="role-label-icon">
+   624→                    <UserCheck className="w-3.5 h-3.5" />
+   625→                  </div>
+   626→                  Select Your Role
+   627→                  <div className="role-label-line" />
+   628→                </div>
+   629→                
+   630→                <div className="role-tabs-grid">
+   631→                  {roleTabs.map((tab, index) => {
+   632→                    const Icon = tab.icon
+   633→                    const isActive = selectedRole === tab.id
+   634→                    return (
+   635→                      <button
+   636→                        key={tab.id}
+   637→                        type="button"
+   638→                        onClick={() => setSelectedRole(tab.id)}
+   639→                        className={`role-tab-button ${isActive ? `role-tab-active-${tab.color}` : ''}`}
+   640→                        style={{ animationDelay: `${index * 0.05}s` }}
+   641→                      >
+   642→                        {/* Active State Glow */}
+   643→                        {isActive && (
+   644→                          <>
+   645→                            <div className="active-glow" style={{ background: tab.glowColor }} />
+   646→                            <div className="active-border-gradient" style={{ background: `linear-gradient(135deg, ${tab.glowColor}, transparent)` }} />
+   647→                          </>
+   648→                        )}
+   649→                        
+   650→                        {/* Icon Container */}
+   651→                        <div className={`role-icon-wrap ${isActive ? 'role-icon-active' : ''}`}>
+   652→                          {isActive ? (
+   653→                            <div className="icon-gradient-bg" style={{ background: `linear-gradient(135deg, ${tab.gradient})` }}>
+   654→                              <Icon className="role-icon-active-svg" />
+   655→                            </div>
+   656→                          ) : (
+   657→                            <Icon className="role-icon-inactive" />
+   658→                          )}
+   659→                        </div>
+   660→                        
+   661→                        {/* Label */}
+   662→                        <span className={`role-label-text ${isActive ? `role-label-active-${tab.color}` : ''}`}>
+   663→                          {tab.label.split(' ')[0]}
+   664→                        </span>
+   665→                        
+   666→                        {/* Bottom Indicator */}
+   667→                        {isActive && (
+   668→                          <div className="active-indicator-bar" style={{ background: `linear-gradient(90deg, ${tab.glowColor}, transparent)` }} />
+   669→                        )}
+   670→                      </button>
+   671→                    )
+   672→                  })}
+   673→                </div>
+   674→              </div>
+   675→
+   676→              {/* Error Message with Slide Animation */}
+   677→              {error && (
+   678→                <div className="error-container-premium">
+   679→                  <div className="error-content">
+   680→                    <div className="error-icon-wrap">
+   681→                      <AlertCircle className="error-icon" />
+   682→                    </div>
+   683→                    <p className="error-text">{error}</p>
+   684→                  </div>
+   685→                  <button onClick={() => setError('')} className="error-close">
+   686→                    <XCircle className="w-4 h-4" />
+   687→                  </button>
+   688→                </div>
+   689→              )}
+   690→
+   691→              {/* ====== FORM SECTION ====== */}
+   692→              <form onSubmit={handleSubmit} className="form-space-premium">
+   693→                
+   694→                {/* Email Input Field */}
+   695→                <div className="input-group-premium">
+   696→                  <label className={`input-label-premium ${isFocused === 'email' ? 'input-label-focused' : ''}`}>
+   697→                    <Mail className="input-label-icon" />
+   698→                    Email Address
+   699→                    <span className="input-required-mark">*</span>
+   700→                  </label>
+   701→                  <div className={`input-wrapper-premium ${isFocused === 'email' ? 'input-wrapper-focused' : ''}`}>
+   702→                    <div className="input-prefix">
+   703→                      <Mail className={`input-prefix-icon ${isFocused === 'email' ? 'prefix-icon-focused' : ''}`} />
+   704→                    </div>
+   705→                    <input
+   706→                      type="email"
+   707→                      value={email}
+   708→                      onChange={(e) => setEmail(e.target.value)}
+   709→                      onFocus={() => setIsFocused('email')}
+   710→                      onBlur={() => setIsFocused(null)}
+   711→                      placeholder={getPlaceholderForRole()}
+   712→                      className="premium-input-field"
+   713→                      required
+   714→                    />
+   715→                    <div className="input-focus-line" />
+   716→                    {isFocused === 'email' && <div className="input-glow-effect" />}
+   717→                  </div>
+   718→                </div>
+   719→
+   720→                {/* Password Input Field */}
+   721→                <div className="input-group-premium">
+   722→                  <label className={`input-label-premium ${isFocused === 'password' ? 'input-label-focused' : ''}`}>
+   723→                    <Lock className="input-label-icon" />
+   724→                    Password
+   725→                    <span className="input-required-mark">*</span>
+   726→                  </label>
+   727→                  <div className={`input-wrapper-premium ${isFocused === 'password' ? 'input-wrapper-focused' : ''}`}>
+   728→                    <div className="input-prefix">
+   729→                      <Lock className={`input-prefix-icon ${isFocused === 'password' ? 'prefix-icon-focused' : ''}`} />
+   730→                    </div>
+   731→                    <input
+   732→                      type={showPassword ? "text" : "password"}
+   733→                      value={password}
+   734→                      onChange={(e) => setPassword(e.target.value)}
+   735→                      onFocus={() => setIsFocused('password')}
+   736→                      onBlur={() => setIsFocused(null)}
+   737→                      placeholder="Enter your password"
+   738→                      className="premium-input-field pr-12"
+   739→                      required
+   740→                    />
+   741→                    <button
+   742→                      type="button"
+   743→                      onClick={() => setShowPassword(!showPassword)}
+   744→                      className="password-toggle-btn"
+   745→                    >
+   746→                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+   747→                    </button>
+   748→                    <div className="input-focus-line" />
+   749→                    {isFocused === 'password' && <div className="input-glow-effect" />}
+   750→                  </div>
+   751→                </div>
+   752→
+   753→                {/* ====== SUBMIT BUTTON ====== */}
+   754→                <button
+   755→                  type="submit"
+   756→                  disabled={isLoading}
+   757→                  className="premium-submit-btn"
+   758→                >
+   759→                  {/* Button Background Layers */}
+   760→                  <div className="btn-bg-base" />
+   761→                  <div className="btn-bg-gradient" />
+   762→                  <div className="btn-shimmer" />
+   763→                  
+   764→                  {/* Loading Spinner or Content */}
+   765→                  <span className="btn-content">
+   766→                    {isLoading ? (
+   767→                      <>
+   768→                        <Loader2 className="btn-spinner" />
+   769→                        <span>Authenticating...</span>
+   770→                      </>
+   771→                    ) : (
+   772→                      <>
+   773→                        <span className="btn-text">Sign In to Portal</span>
+   774→                        <ArrowRight className="btn-arrow" />
+   775→                      </>
+   776→                    )}
+   777→                  </span>
+   778→                  
+   779→                  {/* Hover Glow */}
+   780→                  <div className="btn-hover-glow" />
+   781→                </button>
+   782→              </form>
+   783→
+   784→              {/* ====== DIVIDER ====== */}
+   785→              <div className="divider-premium">
+   786→                <div className="divider-line" />
+   787→                <span className="divider-text">
+   788→                  <Sparkles className="w-3 h-3 mr-1" />
+   789→                  Quick Access
+   790→                  <Sparkles className="w-3 h-3 ml-1" />
+   791→                </span>
+   792→                <div className="divider-line" />
+   793→              </div>
+   794→
+   795→              {/* ====== QUICK ACCESS SECTION ====== */}
+   796→              <div className="quick-access-section">
+   797→                
+   798→                {/* Admin Quick Access */}
+   799→                {selectedRole !== 'ADMIN' && (
+   800→                  <button
+   801→                    onClick={() => quickLogin('admin@niet.ac.in', 'admin123')}
+   802→                    className="admin-quick-btn"
+   803→                  >
+   804→                    <div className="admin-btn-left">
+   805→                      <div className="admin-btn-icon-wrap">
+   806→                        <Shield className="admin-btn-icon" />
+   807→                      </div>
+   808→                      <div className="admin-btn-text">
+   809→                        <span className="admin-btn-title">System Administrator</span>
+   810→                        <span className="admin-btn-desc">Full access to all modules</span>
+   811→                      </div>
+   812→                    </div>
+   813→                    <ChevronRight className="admin-btn-arrow" />
+   814→                    <div className="admin-btn-glow" />
+   815→                  </button>
+   816→                )}
+   817→
+   818→                {/* Department Selector */}
+   819→                {selectedRole !== 'ADMIN' && (
+   820→                  <div className="dept-selector-section">
+   821→                    <label className="dept-label">
+   822→                      <Building2 className="w-3 h-3 mr-1.5" />
+   823→                      Select Department
+   824→                    </label>
+   825→                    <div className="dept-dropdown-container">
+   826→                      <button
+   827→                        type="button"
+   828→                        onClick={() => setShowDeptDropdown(!showDeptDropdown)}
+   829→                        className="dept-dropdown-trigger"
+   830→                      >
+   831→                        <div className="dept-selected">
+   832→                          <div className="dept-icon-box">
+   833→                            <Building2 className="w-4 h-4 text-indigo-500" />
+   834→                          </div>
+   835→                          <span>{currentDept?.code} - {currentDept?.name}</span>
+   836→                        </div>
+   837→                        <ChevronDown className={`dept-chevron ${showDeptDropdown ? 'chevron-open' : ''}`} />
+   838→                      </button>
+   839→                      
+   840→                      {showDeptDropdown && (
+   841→                        <div className="dept-dropdown-menu">
+   842→                          {DEPARTMENTS_LIST.map((dept) => (
+   843→                            <button
+   844→                              key={dept.code}
+   845→                              type="button"
+   846→                              onClick={() => {
+   847→                                setSelectedDept(dept.code)
+   848→                                setShowDeptDropdown(false)
+   849→                              }}
+   850→                              className={`dept-option ${selectedDept === dept.code ? 'dept-option-active' : ''}`}
+   851→                            >
+   852→                              <div className={`dept-option-dot ${`dot-${dept.color || 'gray'}`}`} />
+   853→                              <span className="dept-option-code">{dept.code}</span>
+   854→                              <span className="dept-option-name">{dept.name}</span>
+   855→                              {selectedDept === dept.code && <CheckCircle className="dept-option-check" />}
+   856→                            </button>
+   857→                          ))}
+   858→                        </div>
+   859→                      )}
+   860→                    </div>
+   861→                  </div>
+   862→                )}
+   863→
+   864→                {/* Role Quick Login Grid */}
+   865→                {selectedRole !== 'ADMIN' && (
+   866→                  <div className="quick-role-grid">
+   867→                    {[
+   868→                      { id: 'STUDENT', icon: GraduationCap, label: 'Student', color: 'emerald' },
+   869→                      { id: 'STAFF', icon: BookOpen, label: 'Staff', color: 'blue' },
+   870→                      { id: 'HOD', icon: UserCheck, label: 'HOD', color: 'purple' },
+   871→                    ].map((role) => {
+   872→                      const Icon = role.icon
+   873→                      const isActive = selectedRole === role.id
+   874→                      return (
+   875→                        <button
+   876→                          key={role.id}
+   877→                          onClick={() => quickLogin(getDeptEmail(selectedDept, role.id), getPassword(role.id))}
+   878→                          className={`quick-role-btn ${isActive ? `quick-role-active-${role.color}` : ''}`}
+   879→                        >
+   880→                          <Icon className={`quick-role-icon ${isActive ? `quick-role-icon-active-${role.color}` : ''}`} />
+   881→                          <span className={`quick-role-label ${isActive ? `quick-role-label-active-${role.color}` : ''}`}>
+   882→                            {role.label}
+   883→                          </span>
+   884→                          {isActive && <div className={`quick-role-indicator indicator-${role.color}`} />}
+   885→                        </button>
+   886→                      )
+   887→                    })}
+   888→                  </div>
+   889→                )}
+   890→
+   891→                {/* Department Pills */}
+   892→                {selectedRole !== 'ADMIN' && (
+   893→                  <div className="dept-pills-container">
+   894→                    {['CSE', 'ECE', 'EEE', 'MECH', 'AI&DS', 'IT', 'AIDS', 'CIVIL'].map((code) => (
+   895→                      <button
+   896→                        key={code}
+   897→                        type="button"
+   898→                        onClick={() => setSelectedDept(code)}
+   899→                        className={`dept-pill ${selectedDept === code ? 'dept-pill-active' : ''}`}
+   900→                      >
+   901→                        {selectedDept === code && <span className="pill-glow" />}
+   902→                        <span className="pill-text">{code}</span>
+   903→                      </button>
+   904→                    ))}
+   905→                  </div>
+   906→                )}
+   907→              </div>
+   908→            </div>
+   909→            
+   910→            {/* Card Bottom Accent Line */}
+   911→            <div className="card-bottom-accent" />
+   912→          </div>
+   913→
+   914→          {/* ====== FOOTER ====== */}
+   915→          <footer className="premium-footer">
+   916→            <div className="footer-content">
+   917→              <Lock className="footer-lock-icon" />
+   918→              <span className="footer-text">Secure Authentication • NIET IQAC Enterprise System</span>
+   919→              <div className="footer-dots">
+   920→                <span className="footer-dot" />
+   921→                <span className="footer-dot footer-dot-delay" />
+   922→                <span className="footer-dot footer-dot-delay-2" />
+   923→              </div>
+   924→            </div>
+   925→          </footer>
+   926→        </div>
+   927→      </main>
+   928→
+   929→      {/* ====== PREMIUM CSS STYLES ====== */}
+   930→      <style jsx>{`
+   931→        /* ========== FLOATING ORBS ========== */
+   932→        .premium-orb {
+   933→          position: absolute;
+   934→          border-radius: 50%;
+   935→          filter: blur(80px);
+   936→          opacity: 0.5;
+   937→          will-change: transform;
+   938→        }
+   939→        .orb-1 {
+   940→          width: 500px;
+   941→          height: 500px;
+   942→          background: linear-gradient(135deg, #818cf8, #6366f1);
+   943→          top: -200px;
+   944→          right: -150px;
+   945→          animation: premiumFloat1 25s ease-in-out infinite;
+   946→        }
+   947→        .orb-2 {
+   948→          width: 450px;
+   949→          height: 450px;
+   950→          background: linear-gradient(135deg, #22d3ee, #06b6d4);
+   951→          bottom: -180px;
+   952→          left: -120px;
+   953→          animation: premiumFloat2 28s ease-in-out infinite reverse;
+   954→        }
+   955→        .orb-3 {
+   956→          width: 350px;
+   957→          height: 350px;
+   958→          background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+   959→          top: 35%;
+   960→          left: 5%;
+   961→          animation: premiumFloat3 32s ease-in-out infinite;
+   962→        }
+   963→        .orb-4 {
+   964→          width: 280px;
+   965→          height: 280px;
+   966→          background: linear-gradient(135deg, #34d399, #10b981);
+   967→          top: 15%;
+   968→          right: 10%;
+   969→          animation: premiumFloat4 22s ease-in-out infinite;
+   970→        }
+   971→        .orb-5 {
+   972→          width: 200px;
+   973→          height: 200px;
+   974→          background: linear-gradient(135deg, #fbbf24, #f59e0b);
+   975→          bottom: 25%;
+   976→          right: 20%;
+   977→          animation: premiumFloat5 26s ease-in-out infinite;
+   978→        }
+   979→
+   980→        @keyframes premiumFloat1 {
+   981→          0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+   982→          33% { transform: translate(-50px, 40px) rotate(120deg) scale(1.08); }
+   983→          66% { transform: translate(30px, -30px) rotate(240deg) scale(0.94); }
+   984→        }
+   985→        @keyframes premiumFloat2 {
+   986→          0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+   987→          33% { transform: translate(45px, -35px) rotate(-120deg) scale(1.1); }
+   988→          66% { transform: translate(-35px, 40px) rotate(-240deg) scale(0.92); }
+   989→        }
+   990→        @keyframes premiumFloat3 {
+   991→          0%, 100% { transform: translate(0, 0) scale(1); }
+   992→          50% { transform: translate(60px, 45px) scale(1.12); }
+   993→        }
+   994→        @keyframes premiumFloat4 {
+   995→          0%, 100% { transform: translate(0, 0); }
+   996→          50% { transform: translate(-45px, -35px) scale(1.08); }
+   997→        }
+   998→        @keyframes premiumFloat5 {
+   999→          0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  1000→          50% { transform: translate(35px, -25px) rotate(180deg); }
+  1001→        }
+  1002→
+  1003→        /* ========== AURORA EFFECT ========== */
+  1004→        .aurora-layer {
+  1005→          position: absolute;
+  1006→          width: 150%;
+  1007→          height: 150%;
+  1008→          top: -25%;
+  1009→          left: -25%;
+  1010→          opacity: 0.12;
+  1011→          mix-blend-mode: screen;
+  1012→          filter: blur(100px);
+  1013→        }
+  1014→        .aurora-1-premium {
+  1015→          background: conic-gradient(from 0deg at 50% 50%, transparent, #818cf8, transparent, #22d3ee, transparent, #a78bfa, transparent);
+  1016→          animation: auroraRotate1 40s linear infinite;
+  1017→        }
+  1018→        .aurora-2-premium {
+  1019→          background: conic-gradient(from 180deg at 50% 50%, transparent, #34d399, transparent, #fbbf24, transparent, #f472b6, transparent);
+  1020→          animation: auroraRotate2 50s linear infinite reverse;
+  1021→        }
+  1022→
+  1023→        @keyframes auroraRotate1 {
+  1024→          from { transform: rotate(0deg); }
+  1025→          to { transform: rotate(360deg); }
+  1026→        }
+  1027→        @keyframes auroraRotate2 {
+  1028→          from { transform: rotate(0deg); }
+  1029→          to { transform: rotate(-360deg); }
+  1030→        }
+  1031→
+  1032→        /* ========== PARTICLES ========== */
+  1033→        .particle-container-premium {
+  1034→          position: absolute;
+  1035→          inset: 0;
+  1036→          overflow: hidden;
+  1037→        }
+  1038→        .floating-particle {
+  1039→          position: absolute;
+  1040→          background: linear-gradient(135deg, #818cf8, #22d3ee);
+  1041→          border-radius: 50%;
+  1042→          animation: particleDrift linear infinite;
+  1043→          pointer-events: none;
+  1044→        }
+  1045→        @keyframes particleDrift {
+  1046→          0%, 100% { 
+  1047→            transform: translateY(0) translateX(0) scale(1) rotate(0deg);
+  1048→            opacity: 0;
+  1049→          }
+  1050→          10% { opacity: var(--tw-opacity); }
+  1051→          90% { opacity: var(--tw-opacity); }
+  1052→          50% { transform: translateY(-100vh) translateX(50px) scale(1.5) rotate(180deg); }
+  1053→          100% { 
+  1054→            transform: translateY(-120vh) translateX(-30px) scale(0.5) rotate(360deg);
+  1055→            opacity: 0;
+  1056→          }
+  1057→        }
+  1058→
+  1059→        /* ========== GRID PATTERN ========== */
+  1060→        .grid-pattern-premium {
+  1061→          position: absolute;
+  1062→          inset: 0;
+  1063→          opacity: 0.03;
+  1064→          background-image: 
+  1065→            linear-gradient(rgba(99,102,241,0.5) 1px, transparent 1px),
+  1066→            linear-gradient(90deg, rgba(99,102,241,0.5) 1px, transparent 1px);
+  1067→          background-size: 50px 50px;
+  1068→          mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black, transparent);
+  1069→        }
+  1070→
+  1071→        /* ========== GEOMETRIC SHAPES ========== */
+  1072→        .geo-shape {
+  1073→          position: absolute;
+  1074→          border: 1px solid rgba(99,102,241,0.15);
+  1075→          opacity: 0.6;
+  1076→        }
+  1077→        .geo-shape-1 {
+  1078→          width: 80px;
+  1079→          height: 80px;
+  1080→          top: 15%;
+  1081→          left: 8%;
+  1082→          border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+  1083→          animation: geoMorph1 20s ease-in-out infinite;
+  1084→        }
+  1085→        .geo-shape-2 {
+  1086→          width: 60px;
+  1087→          height: 60px;
+  1088→          top: 25%;
+  1089→          right: 12%;
+  1090→          border-radius: 50%;
+  1091→          animation: geoMorph2 18s ease-in-out infinite;
+  1092→        }
+  1093→        .geo-shape-3 {
+  1094→          width: 100px;
+  1095→          height: 100px;
+  1096→          bottom: 20%;
+  1097→          left: 15%;
+  1098→          border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  1099→          animation: geoMorph3 25s ease-in-out infinite reverse;
+  1100→        }
+  1101→        .geo-shape-4 {
+  1102→          width: 40px;
+  1103→          height: 40px;
+  1104→          bottom: 30%;
+  1105→          right: 18%;
+  1106→          transform: rotate(45deg);
+  1107→          animation: geoMorph4 15s ease-in-out infinite;
+  1108→        }
+  1109→
+  1110→        @keyframes geoMorph1 {
+  1111→          0%, 100% { transform: rotate(0deg) scale(1); border-color: rgba(129,140,248,0.15); }
+  1112→          50% { transform: rotate(180deg) scale(1.1); border-color: rgba(34,211,238,0.2); }
+  1113→        }
+  1114→        @keyframes geoMorph2 {
+  1115→          0%, 100% { transform: scale(1) rotate(0deg); }
+  1116→          50% { transform: scale(1.2) rotate(90deg); }
+  1117→        }
+  1118→        @keyframes geoMorph3 {
+  1119→          0%, 100% { transform: rotate(0deg) scale(1); }
+  1120→          50% { transform: rotate(-120deg) scale(1.15); }
+  1121→        }
+  1122→        @keyframes geoMorph4 {
+  1123→          0%, 100% { transform: rotate(45deg) scale(1); opacity: 0.6; }
+  1124→          50% { transform: rotate(225deg) scale(1.3); opacity: 0.3; }
+  1125→        }
+  1126→
+  1127→        /* ========== RADIAL GRADIENT DEPTH ========== */
+  1128→        .bg-gradient-radial-depth {
+  1129→          background: radial-gradient(ellipse at center, transparent 0%, rgba(248,250,252,0.4) 100%);
+  1130→        }
+  1131→
+  1132→        /* ========== STATUS BAR ========== */
+  1133→        .premium-status-bar {
+  1134→          background: rgba(255,255,255,0.72);
+  1135→          backdrop-filter: blur(20px);
+  1136→          -webkit-backdrop-filter: blur(20px);
+  1137→          border-bottom: 1px solid rgba(226,232,240,0.6);
+  1138→          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  1139→        }
+  1140→        .premium-badge {
+  1141→          display: flex;
+  1142→          align-items: center;
+  1143→          gap: 6px;
+  1144→          padding: 5px 12px;
+  1145→          border-radius: 9999px;
+  1146→          font-size: 11px;
+  1147→          font-weight: 600;
+  1148→          transition: all 0.3s ease;
+  1149→        }
+  1150→        .naac-badge {
+  1151→          background: linear-gradient(135deg, rgba(209,250,229,0.8), rgba(167,243,208,0.6));
+  1152→          border: 1px solid rgba(16,185,129,0.25);
+  1153→          color: #047857;
+  1154→        }
+  1155→        .nirf-badge {
+  1156→          background: linear-gradient(135deg, rgba(219,234,254,0.8), rgba(191,219,254,0.6));
+  1157→          border: 1px solid rgba(59,130,246,0.25);
+  1158→          color: #1d4ed8;
+  1159→        }
+  1160→        .aicte-badge {
+  1161→          background: linear-gradient(135deg, rgba(233,213,255,0.8), rgba(216,180,254,0.6));
+  1162→          border: 1px solid rgba(139,92,246,0.25);
+  1163→          color: #7c3aed;
+  1164→        }
+  1165→        .badge-pulse-ring {
+  1166→          position: absolute;
+  1167→          inset: -2px;
+  1168→          border-radius: inherit;
+  1169→          background: inherit;
+  1170→          opacity: 0.4;
+  1171→          animation: badgePulse 2s ease-out infinite;
+  1172→        }
+  1173→        @keyframes badgePulse {
+  1174→          0% { transform: scale(1); opacity: 0.4; }
+  1175→          100% { transform: scale(1.4); opacity: 0; }
+  1176→        }
+  1177→        .badge-dot {
+  1178→          width: 6px;
+  1179→          height: 6px;
+  1180→          border-radius: 50%;
+  1181→          background: currentColor;
+  1182→          animation: badgeDotPulse 2s ease-in-out infinite;
+  1183→        }
+  1184→        @keyframes badgeDotPulse {
+  1185→          0%, 100% { opacity: 1; }
+  1186→          50% { opacity: 0.5; }
+  1187→        }
+  1188→        .badge-text, .badge-text-blue, .badge-text-violet {
+  1189→          letter-spacing: 0.02em;
+  1190→        }
+  1191→        .support-link {
+  1192→          display: flex;
+  1193→          align-items: center;
+  1194→          gap: 4px;
+  1195→          font-size: 11px;
+  1196→          font-weight: 500;
+  1197→          color: #64748b;
+  1198→          transition: all 0.2s ease;
+  1199→        }
+  1200→        .support-link:hover {
+  1201→          color: #6366f1;
+  1202→        }
+  1203→        .version-badge {
+  1204→          padding: 4px 10px;
+  1205→          border-radius: 6px;
+  1206→          background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  1207→          font-size: 10px;
+  1208→          font-weight: 600;
+  1209→          color: #475569;
+  1210→          letter-spacing: 0.05em;
+  1211→        }
+  1212→
+  1213→        /* ========== HEADER ANIMATIONS ========== */
+  1214→        .premium-header-animate {
+  1215→          animation: headerReveal 1s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+  1216→        }
+  1217→        @keyframes headerReveal {
+  1218→          0% { 
+  1219→            opacity: 0; 
+  1220→            transform: translateY(-30px) scale(0.95);
+  1221→            filter: blur(10px);
+  1222→          }
+  1223→          100% { 
+  1224→            opacity: 1; 
+  1225→            transform: translateY(0) scale(1);
+  1226→            filter: blur(0);
+  1227→          }
+  1228→        }
+  1229→
+  1230→        /* ========== LOGO CONTAINER ========== */
+  1231→        .logo-container-premium {
+  1232→          position: relative;
+  1233→          display: inline-block;
+  1234→          margin-bottom: 24px;
+  1235→          animation: logoFloat 6s ease-in-out infinite;
+  1236→        }
+  1237→        @keyframes logoFloat {
+  1238→          0%, 100% { transform: translateY(0); }
+  1239→          50% { transform: translateY(-8px); }
+  1240→        }
+  1241→        .logo-glow-outer {
+  1242→          position: absolute;
+  1243→          inset: -20px;
+  1244→          border-radius: 28px;
+  1245→          background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(34,211,238,0.3));
+  1246→          filter: blur(30px);
+  1247→          opacity: 0.7;
+  1248→          animation: glowPulse 4s ease-in-out infinite;
+  1249→        }
+  1250→        .logo-glow-middle {
+  1251→          position: absolute;
+  1252→          inset: -10px;
+  1253→          border-radius: 22px;
+  1254→          background: linear-gradient(135deg, rgba(129,140,248,0.4), rgba(56,189,248,0.4));
+  1255→          filter: blur(20px);
+  1256→          opacity: 0.5;
+  1257→          animation: glowPulse 4s ease-in-out infinite 1s;
+  1258→        }
+  1259→        @keyframes glowPulse {
+  1260→          0%, 100% { opacity: 0.5; transform: scale(1); }
+  1261→          50% { opacity: 0.8; transform: scale(1.05); }
+  1262→        }
+  1263→        .logo-border-rotating {
+  1264→          position: absolute;
+  1265→          inset: -3px;
+  1266→          border-radius: 22px;
+  1267→          background: conic-gradient(from 0deg, #818cf8, #22d3ee, #a78bfa, #34d399, #fbbf24, #818cf8);
+  1268→          animation: borderRotate 6s linear infinite;
+  1269→          z-index: -1;
+  1270→        }
+  1271→        @keyframes borderRotate {
+  1272→          from { transform: rotate(0deg); }
+  1273→          to { transform: rotate(360deg); }
+  1274→        }
+  1275→        .logo-main-card {
+  1276→          position: relative;
+  1277→          width: 96px;
+  1278→          height: 96px;
+  1279→          border-radius: 18px;
+  1280→          background: rgba(255,255,255,0.9);
+  1281→          backdrop-filter: blur(20px);
+  1282→          border: 1px solid rgba(226,232,240,0.8);
+  1283→          box-shadow: 
+  1284→            0 20px 40px -10px rgba(0,0,0,0.1),
+  1285→            0 0 0 1px rgba(255,255,255,0.8) inset;
+  1286→          overflow: hidden;
+  1287→          display: flex;
+  1288→          align-items: center;
+  1289→          justify-content: center;
+  1290→        }
+  1291→        .logo-inner-gradient {
+  1292→          width: 76px;
+  1293→          height: 76px;
+  1294→          border-radius: 14px;
+  1295→          background: linear-gradient(135deg, #6366f1, #3b82f6, #06b6d4);
+  1296→          display: flex;
+  1297→          align-items: center;
+  1298→          justify-content: center;
+  1299→          box-shadow: 
+  1300→            0 4px 15px -3px rgba(99,102,241,0.4),
+  1301→            inset 0 1px 0 rgba(255,255,255,0.2);
+  1302→        }
+  1303→        .logo-icon {
+  1304→          width: 38px;
+  1305→          height: 38px;
+  1306→          color: white;
+  1307→          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+  1308→        }
+  1309→        .logo-reflection {
+  1310→          position: absolute;
+  1311→          inset: 0;
+  1312→          background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%);
+  1313→          pointer-events: none;
+  1314→        }
+  1315→        .logo-verify-badge {
+  1316→          position: absolute;
+  1317→          top: -6px;
+  1318→          right: -6px;
+  1319→          width: 26px;
+  1320→          height: 26px;
+  1321→          border-radius: 50%;
+  1322→          background: linear-gradient(135deg, #10b981, #059669);
+  1323→          display: flex;
+  1324→          align-items: center;
+  1325→          justify-content: center;
+  1326→          box-shadow: 0 4px 12px rgba(16,185,129,0.4);
+  1327→          color: white;
+  1328→          animation: verifyBounce 2s ease-in-out infinite;
+  1329→        }
+  1330→        @keyframes verifyBounce {
+  1331→          0%, 100% { transform: scale(1); }
+  1332→          50% { transform: scale(1.1); }
+  1333→        }
+  1334→        .orbit-dot {
+  1335→          position: absolute;
+  1336→          width: 8px;
+  1337→          height: 8px;
+  1338→          border-radius: 50%;
+  1339→          z-index: -1;
+  1340→        }
+  1341→        .orbit-dot-1 {
+  1342→          top: -4px;
+  1343→          left: 50%;
+  1344→          transform: translateX(-50%);
+  1345→          background: linear-gradient(135deg, #f472b6, #ec4899);
+  1346→          animation: orbitPulse1 2s ease-in-out infinite;
+  1347→        }
+  1348→        .orbit-dot-2 {
+  1349→          bottom: 10px;
+  1350→          left: -4px;
+  1351→          background: linear-gradient(135deg, #34d399, #10b981);
+  1352→          animation: orbitPulse2 2s ease-in-out infinite 0.5s;
+  1353→        }
+  1354→        .orbit-dot-3 {
+  1355→          bottom: 10px;
+  1356→          right: -4px;
+  1357→          background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  1358→          animation: orbitPulse3 2s ease-in-out infinite 1s;
+  1359→        }
+  1360→        @keyframes orbitPulse1, @keyframes orbitPulse2, @keyframes orbitPulse3 {
+  1361→          0%, 100% { transform: scale(1); opacity: 0.7; }
+  1362→          50% { transform: scale(1.3); opacity: 1; }
+  1363→        }
+  1364→
+  1365→        /* ========== TITLE & SUBTITLE ========== */
+  1366→        .premium-title {
+  1367→          margin-bottom: 8px;
+  1368→        }
+  1369→        .title-text-gradient {
+  1370→          font-size: 2.5rem;
+  1371→          font-weight: 800;
+  1372→          background: linear-gradient(135deg, #1e293b 0%, #4f46e5 50%, #06b6d4 100%);
+  1373→          background-size: 200% auto;
+  1374→          -webkit-background-clip: text;
+  1375→          -webkit-text-fill-color: transparent;
+  1376→          background-clip: text;
+  1377→          animation: titleShine 5s linear infinite;
+  1378→          letter-spacing: -0.02em;
+  1379→        }
+  1380→        @keyframes titleShine {
+  1381→          to { background-position: 200% center; }
+  1382→        }
+  1383→        .premium-subtitle {
+  1384→          display: flex;
+  1385→          align-items: center;
+  1386→          justify-content: center;
+  1387→          gap: 8px;
+  1388→          font-size: 0.95rem;
+  1389→          color: #64748b;
+  1390→          font-weight: 500;
+  1391→        }
+  1392→        .subtitle-icon-wrapper {
+  1393→          display: flex;
+  1394→          align-items: center;
+  1395→          justify-content: center;
+  1396→          width: 24px;
+  1397→          height: 24px;
+  1398→          border-radius: 6px;
+  1399→          background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  1400→          color: #6366f1;
+  1401→        }
+  1402→        .tagline-container {
+  1403→          display: flex;
+  1404→          align-items: center;
+  1405→          justify-content: center;
+  1406→          gap: 12px;
+  1407→          margin-top: 12px;
+  1408→        }
+  1409→        .tagline-line {
+  1410→          width: 30px;
+  1411→          height: 1px;
+  1412→          background: linear-gradient(90deg, transparent, #cbd5e1);
+  1413→        }
+  1414→        .tagline-line:last-child {
+  1415→          background: linear-gradient(90deg, #cbd5e1, transparent);
+  1416→        }
+  1417→        .tagline-text {
+  1418→          font-size: 11px;
+  1419→          font-weight: 600;
+  1420→          color: #94a3b8;
+  1421→          letter-spacing: 0.1em;
+  1422→          text-transform: uppercase;
+  1423→        }
+  1424→
+  1425→        /* ========== PREMIUM CARD ========== */
+  1426→        .premium-card-container {
+  1427→          position: relative;
+  1428→          animation: cardEntrance 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+  1429→        }
+  1430→        @keyframes cardEntrance {
+  1431→          0% { 
+  1432→            opacity: 0; 
+  1433→            transform: translateY(40px) scale(0.96);
+  1434→            filter: blur(10px);
+  1435→          }
+  1436→          100% { 
+  1437→            opacity: 1; 
+  1438→            transform: translateY(0) scale(1);
+  1439→            filter: blur(0);
+  1440→          }
+  1441→        }
+  1442→        .card-animated-border {
+  1443→          position: absolute;
+  1444→          inset: 0;
+  1445→          border-radius: 28px;
+  1446→          padding: 1.5px;
+  1447→          background: linear-gradient(
+  1448→            var(--mouse-x, 50%) var(--mouse-y, 50%),
+  1449→            #818cf8 0%,
+  1450→            #22d3ee 25%,
+  1451→            #a78bfa 50%,
+  1452→            #34d399 75%,
+  1453→            #818cf8 100%
+  1454→          );
+  1455→          background-size: 300% 300%;
+  1456→          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  1457→          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  1458→          -webkit-mask-composite: xor;
+  1459→          mask-composite: exclude;
+  1460→          opacity: 0.8;
+  1461→          transition: background-position 0.5s ease;
+  1462→          pointer-events: none;
+  1463→        }
+  1464→        .card-spotlight {
+  1465→          position: absolute;
+  1466→          inset: 0;
+  1467→          border-radius: 28px;
+  1468→          background: radial-gradient(
+  1469→            600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+  1470→            rgba(99,102,241,0.06),
+  1471→            transparent 40%
+  1472→          );
+  1473→          pointer-events: none;
+  1474→          opacity: 0;
+  1475→          transition: opacity 0.3s ease;
+  1476→        }
+  1477→        .premium-card-container:hover .card-spotlight {
+  1478→          opacity: 1;
+  1479→        }
+  1480→        .premium-card-content {
+  1481→          position: relative;
+  1482→          background: rgba(255,255,255,0.88);
+  1483→          backdrop-filter: blur(30px);
+  1484→          -webkit-backdrop-filter: blur(30px);
+  1485→          border-radius: 28px;
+  1486→          border: 1px solid rgba(226,232,240,0.7);
+  1487→          box-shadow: 
+  1488→            0 4px 6px -1px rgba(0,0,0,0.05),
+  1489→            0 20px 50px -12px rgba(0,0,0,0.1),
+  1490→            0 0 0 1px rgba(255,255,255,0.8) inset;
+  1491→          overflow: hidden;
+  1492→        }
+  1493→        .premium-card-content::before {
+  1494→          content: '';
+  1495→          position: absolute;
+  1496→          top: 0;
+  1497→          left: 0;
+  1498→          right: 0;
+  1499→          height: 1px;
+  1500→          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+  1501→        }
+  1502→        .card-bottom-accent {
+  1503→          position: absolute;
+  1504→          bottom: 0;
+  1505→          left: 20%;
+  1506→          right: 20%;
+  1507→          height: 2px;
+  1508→          background: linear-gradient(90deg, transparent, #818cf8, #22d3ee, transparent);
+  1509→          opacity: 0.5;
+  1510→        }
+  1511→
+  1512→        /* ========== ROLE TABS ========== */
+  1513→        .role-section {
+  1514→          padding: 24px 24px 0;
+  1515→        }
+  1516→        .role-label {
+  1517→          display: flex;
+  1518→          align-items: center;
+  1519→          gap: 8px;
+  1520→          font-size: 11px;
+  1521→          font-weight: 700;
+  1522→          color: #64748b;
+  1523→          text-transform: uppercase;
+  1524→          letter-spacing: 0.08em;
+  1525→          margin-bottom: 14px;
+  1526→        }
+  1527→        .role-label-icon {
+  1528→          display: flex;
+  1529→          align-items: center;
+  1530→          justify-content: center;
+  1531→          width: 20px;
+  1532→          height: 20px;
+  1533→          border-radius: 6px;
+  1534→          background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  1535→          color: #6366f1;
+  1536→        }
+  1537→        .role-label-line {
+  1538→          flex: 1;
+  1539→          height: 1px;
+  1540→          background: linear-gradient(90deg, #e2e8f0, transparent);
+  1541→          margin-left: 8px;
+  1542→        }
+  1543→        .role-tabs-grid {
+  1544→          display: grid;
+  1545→          grid-template-columns: repeat(4, 1fr);
+  1546→          gap: 10px;
+  1547→        }
+  1548→        .role-tab-button {
+  1549→          position: relative;
+  1550→          display: flex;
+  1551→          flex-direction: column;
+  1552→          align-items: center;
+  1553→          gap: 8px;
+  1554→          padding: 14px 8px 12px;
+  1555→          border-radius: 16px;
+  1556→          border: 1.5px solid #e2e8f0;
+  1557→          background: white;
+  1558→          cursor: pointer;
+  1559→          transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  1560→          overflow: hidden;
+  1561→        }
+  1562→        .role-tab-button:hover {
+  1563→          border-color: #cbd5e1;
+  1564→          transform: translateY(-2px);
+  1565→          box-shadow: 0 8px 20px -8px rgba(0,0,0,0.1);
+  1566→        }
+  1567→        .role-tab-button[class*="active"] {
+  1568→          border-color: transparent;
+  1569→          transform: translateY(-3px);
+  1570→          box-shadow: 0 12px 28px -10px var(--glow-color, rgba(99,102,241,0.25));
+  1571→        }
+  1572→        .active-glow {
+  1573→          position: absolute;
+  1574→          inset: 0;
+  1575→          opacity: 0.15;
+  1576→          transition: opacity 0.3s ease;
+  1577→        }
+  1578→        .active-border-gradient {
+  1579→          position: absolute;
+  1580→          inset: 0;
+  1581→          opacity: 0.5;
+  1582→        }
+  1583→        .role-icon-wrap {
+  1584→          width: 42px;
+  1585→          height: 42px;
+  1586→          border-radius: 12px;
+  1587→          display: flex;
+  1588→          align-items: center;
+  1589→          justify-content: center;
+  1590→          background: #f1f5f9;
+  1591→          transition: all 0.3s ease;
+  1592→        }
+  1593→        .role-tab-button:hover .role-icon-wrap {
+  1594→          background: #e2e8f0;
+  1595→        }
+  1596→        .role-icon-active {
+  1597→          background: transparent !important;
+  1598→        }
+  1599→        .icon-gradient-bg {
+  1600→          width: 100%;
+  1601→          height: 100%;
+  1602→          border-radius: 12px;
+  1603→          display: flex;
+  1604→          align-items: center;
+  1605→          justify-content: center;
+  1606→          box-shadow: 0 4px 12px -2px rgba(0,0,0,0.15);
+  1607→        }
+  1608→        .role-icon-active-svg {
+  1609→          width: 20px;
+  1610→          height: 20px;
+  1611→          color: white;
+  1612→          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+  1613→        }
+  1614→        .role-icon-inactive {
+  1615→          width: 20px;
+  1616→          height: 20px;
+  1617→          color: #94a3b8;
+  1618→          transition: color 0.3s ease;
+  1619→        }
+  1620→        .role-tab-button:hover .role-icon-inactive {
+  1621→          color: #64748b;
+  1622→        }
+  1623→        .role-label-text {
+  1624→          font-size: 11px;
+  1625→          font-weight: 600;
+  1626→          color: #64748b;
+  1627→          transition: color 0.3s ease;
+  1628→        }
+  1629→        .role-label-active-emerald { color: #059669; }
+  1630→        .role-label-active-blue { color: #2563eb; }
+  1631→        .role-label-active-purple { color: #9333ea; }
+  1632→        .role-label-active-amber { color: #d97706; }
+  1633→        .active-indicator-bar {
+  1634→          position: absolute;
+  1635→          bottom: 0;
+  1636→          left: 20%;
+  1637→          right: 20%;
+  1638→          height: 3px;
+  1639→          border-radius: 3px 3px 0 0;
+  1640→        }
+  1641→
+  1642→        /* ========== ERROR MESSAGE ========== */
+  1643→        .error-container-premium {
+  1644→          display: flex;
+  1645→          align-items: center;
+  1646→          justify-content: space-between;
+  1647→          margin: 16px 24px;
+  1648→          padding: 14px 16px;
+  1649→          border-radius: 14px;
+  1650→          background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  1651→          border: 1px solid #fecaca;
+  1652→          animation: errorSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1), errorShake 0.5s ease-out 0.4s;
+  1653→        }
+  1654→        @keyframes errorSlideIn {
+  1655→          from { opacity: 0; transform: translateX(-20px); }
+  1656→          to { opacity: 1; transform: translateX(0); }
+  1657→        }
+  1658→        @keyframes errorShake {
+  1659→          0%, 100% { transform: translateX(0); }
+  1660→          20% { transform: translateX(-10px); }
+  1661→          40% { transform: translateX(10px); }
+  1662→          60% { transform: translateX(-6px); }
+  1663→          80% { transform: translateX(4px); }
+  1664→        }
+  1665→        .error-content {
+  1666→          display: flex;
+  1667→          align-items: center;
+  1668→          gap: 10px;
+  1669→        }
+  1670→        .error-icon-wrap {
+  1671→          width: 28px;
+  1672→          height: 28px;
+  1673→          border-radius: 8px;
+  1674→          background: linear-gradient(135deg, #fecaca, #fca5a5);
+  1675→          display: flex;
+  1676→          align-items: center;
+  1677→          justify-content: center;
+  1678→          flex-shrink: 0;
+  1679→        }
+  1680→        .error-icon {
+  1681→          width: 16px;
+  1682→          height: 16px;
+  1683→          color: #dc2626;
+  1684→        }
+  1685→        .error-text {
+  1686→          font-size: 13px;
+  1687→          font-weight: 600;
+  1688→          color: #991b1b;
+  1689→        }
+  1690→        .error-close {
+  1691→          padding: 4px;
+  1692→          color: #dc2626;
+  1693→          opacity: 0.6;
+  1694→          transition: opacity 0.2s ease;
+  1695→        }
+  1696→        .error-close:hover {
+  1697→          opacity: 1;
+  1698→        }
+  1699→
+  1700→        /* ========== FORM INPUTS ========== */
+  1701→        .form-space-premium {
+  1702→          padding: 20px 24px;
+  1703→          display: flex;
+  1704→          flex-direction: column;
+  1705→          gap: 20px;
+  1706→        }
+  1707→        .input-group-premium {
+  1708→          display: flex;
+  1709→          flex-direction: column;
+  1710→          gap: 8px;
+  1711→        }
+  1712→        .input-label-premium {
+  1713→          display: flex;
+  1714→          align-items: center;
+  1715→          gap: 6px;
+  1716→          font-size: 13px;
+  1717→          font-weight: 600;
+  1718→          color: #475569;
+  1719→          transition: color 0.3s ease;
+  1720→        }
+  1721→        .input-label-focused {
+  1722→          color: #6366f1;
+  1723→        }
+  1724→        .input-label-icon {
+  1725→          width: 16px;
+  1726→          height: 16px;
+  1727→          color: #94a3b8;
+  1728→          transition: color 0.3s ease;
+  1729→        }
+  1730→        .input-label-focused .input-label-icon {
+  1731→          color: #6366f1;
+  1732→        }
+  1733→        .input-required-mark {
+  1734→          color: #ef4444;
+  1735→          margin-left: 2px;
+  1736→        }
+  1737→        .input-wrapper-premium {
+  1738→          position: relative;
+  1739→          display: flex;
+  1740→          align-items: center;
+  1741→          border-radius: 14px;
+  1742→          border: 1.5px solid #e2e8f0;
+  1743→          background: white;
+  1744→          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  1745→          overflow: hidden;
+  1746→        }
+  1747→        .input-wrapper-focused {
+  1748→          border-color: #818cf8;
+  1749→          box-shadow: 
+  1750→            0 0 0 4px rgba(99,102,241,0.08),
+  1751→            0 4px 12px -4px rgba(99,102,241,0.15);
+  1752→        }
+  1753→        .input-prefix {
+  1754→          display: flex;
+  1755→          align-items: center;
+  1756→          justify-content: center;
+  1757→          width: 46px;
+  1758→          height: 100%;
+  1759→          flex-shrink: 0;
+  1760→        }
+  1761→        .input-prefix-icon {
+  1762→          width: 18px;
+  1763→          height: 18px;
+  1764→          color: #94a3b8;
+  1765→          transition: all 0.3s ease;
+  1766→        }
+  1767→        .prefix-icon-focused {
+  1768→          color: #6366f1;
+  1769→          transform: scale(1.1);
+  1770→        }
+  1771→        .premium-input-field {
+  1772→          flex: 1;
+  1773→          height: 52px;
+  1774→          padding: 0 16px;
+  1775→          font-size: 14px;
+  1776→          font-weight: 500;
+  1777→          color: #1e293b;
+  1778→          background: transparent;
+  1779→          border: none;
+  1780→          outline: none;
+  1781→        }
+  1782→        .premium-input-field::placeholder {
+  1783→          color: #94a3b8;
+  1784→          font-weight: 400;
+  1785→        }
+  1786→        .input-focus-line {
+  1787→          position: absolute;
+  1788→          bottom: 0;
+  1789→          left: 50%;
+  1790→          width: 0;
+  1791→          height: 2px;
+  1792→          background: linear-gradient(90deg, #818cf8, #22d3ee);
+  1793→          transition: all 0.3s ease;
+  1794→          transform: translateX(-50%);
+  1795→        }
+  1796→        .input-wrapper-focused .input-focus-line {
+  1797→          width: 100%;
+  1798→        }
+  1799→        .input-glow-effect {
+  1800→          position: absolute;
+  1801→          inset: 0;
+  1802→          border-radius: 14px;
+  1803→          background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(34,211,238,0.08));
+  1804→          opacity: 0;
+  1805→          transition: opacity 0.3s ease;
+  1806→          pointer-events: none;
+  1807→        }
+  1808→        .input-wrapper-focused .input-glow-effect {
+  1809→          opacity: 1;
+  1810→        }
+  1811→        .password-toggle-btn {
+  1812→          position: absolute;
+  1813→          right: 12px;
+  1814→          top: 50%;
+  1815→          transform: translateY(-50%);
+  1816→          padding: 6px;
+  1817→          color: #94a3b8;
+  1818→          border-radius: 8px;
+  1819→          transition: all 0.2s ease;
+  1820→        }
+  1821→        .password-toggle-btn:hover {
+  1822→          color: #6366f1;
+  1823→          background: rgba(99,102,241,0.08);
+  1824→        }
+  1825→
+  1826→        /* ========== SUBMIT BUTTON ========== */
+  1827→        .premium-submit-btn {
+  1828→          position: relative;
+  1829→          width: 100%;
+  1830→          height: 54px;
+  1831→          border: none;
+  1832→          border-radius: 14px;
+  1833→          cursor: pointer;
+  1834→          overflow: hidden;
+  1835→          transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  1836→        }
+  1837→        .premium-submit-btn:hover {
+  1838→          transform: translateY(-2px);
+  1839→          box-shadow: 
+  1840→            0 8px 25px -8px rgba(99,102,241,0.5),
+  1841→            0 4px 10px -4px rgba(0,0,0,0.1);
+  1842→        }
+  1843→        .premium-submit-btn:active {
+  1844→          transform: translateY(0) scale(0.98);
+  1845→        }
+  1846→        .btn-bg-base {
+  1847→          position: absolute;
+  1848→          inset: 0;
+  1849→          background: linear-gradient(135deg, #6366f1, #4f46e5);
+  1850→        }
+  1851→        .btn-bg-gradient {
+  1852→          position: absolute;
+  1853→          inset: 0;
+  1854→          background: linear-gradient(135deg, #818cf8, #6366f1, #3b82f6, #06b6d4);
+  1855→          background-size: 300% 300%;
+  1856→          opacity: 0;
+  1857→          transition: opacity 0.4s ease;
+  1858→        }
+  1859→        .premium-submit-btn:hover .btn-bg-gradient {
+  1860→          opacity: 1;
+  1861→          animation: btnGradientShift 3s ease infinite;
+  1862→        }
+  1863→        @keyframes btnGradientShift {
+  1864→          0%, 100% { background-position: 0% 50%; }
+  1865→          50% { background-position: 100% 50%; }
+  1866→        }
+  1867→        .btn-shimmer {
+  1868→          position: absolute;
+  1869→          inset: 0;
+  1870→          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  1871→          transform: translateX(-100%);
+  1872→          transition: transform 0.6s ease;
+  1873→        }
+  1874→        .premium-submit-btn:hover .btn-shimmer {
+  1875→          transform: translateX(100%);
+  1876→        }
+  1877→        .btn-content {
+  1878→          position: relative;
+  1879→          z-index: 1;
+  1880→          display: flex;
+  1881→          align-items: center;
+  1882→          justify-content: center;
+  1883→          gap: 8px;
+  1884→          font-size: 15px;
+  1885→          font-weight: 700;
+  1886→          color: white;
+  1887→          letter-spacing: 0.01em;
+  1888→        }
+  1889→        .btn-spinner {
+  1890→          width: 20px;
+  1891→          height: 20px;
+  1892→          animation: spin 1s linear infinite;
+  1893→        }
+  1894→        @keyframes spin {
+  1895→          from { transform: rotate(0deg); }
+  1896→          to { transform: rotate(360deg); }
+  1897→        }
+  1898→        .btn-arrow {
+  1899→          width: 18px;
+  1900→          height: 18px;
+  1901→          transition: transform 0.3s ease;
+  1902→        }
+  1903→        .premium-submit-btn:hover .btn-arrow {
+  1904→          transform: translateX(4px);
+  1905→        }
+  1906→        .btn-hover-glow {
+  1907→          position: absolute;
+  1908→          inset: -2px;
+  1909→          border-radius: 16px;
+  1910→          background: linear-gradient(135deg, #818cf8, #22d3ee);
+  1911→          opacity: 0;
+  1912→          filter: blur(15px);
+  1913→          z-index: -1;
+  1914→          transition: opacity 0.4s ease;
+  1915→        }
+  1916→        .premium-submit-btn:hover .btn-hover-glow {
+  1917→          opacity: 0.4;
+  1918→        }
+  1919→
+  1920→        /* ========== DIVIDER ========== */
+  1921→        .divider-premium {
+  1922→          display: flex;
+  1923→          align-items: center;
+  1924→          gap: 16px;
+  1925→          margin: 20px 24px;
+  1926→        }
+  1927→        .divider-line {
+  1928→          flex: 1;
+  1929→          height: 1px;
+  1930→          background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+  1931→        }
+  1932→        .divider-text {
+  1933→          display: flex;
+  1934→          align-items: center;
+  1935→          font-size: 10px;
+  1936→          font-weight: 700;
+  1937→          color: #94a3b8;
+  1938→          text-transform: uppercase;
+  1939→          letter-spacing: 0.1em;
+  1940→          white-space: nowrap;
+  1941→        }
+  1942→
+  1943→        /* ========== QUICK ACCESS ========== */
+  1944→        .quick-access-section {
+  1945→          padding: 0 24px 24px;
+  1946→          display: flex;
+  1947→          flex-direction: column;
+  1948→          gap: 16px;
+  1949→        }
+  1950→        .admin-quick-btn {
+  1951→          position: relative;
+  1952→          display: flex;
+  1953→          align-items: center;
+  1954→          justify-content: space-between;
+  1955→          padding: 14px 16px;
+  1956→          border-radius: 14px;
+  1957→          border: 1.5px solid #fde68a;
+  1958→          background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  1959→          cursor: pointer;
+  1960→          overflow: hidden;
+  1961→          transition: all 0.3s ease;
+  1962→        }
+  1963→        .admin-quick-btn:hover {
+  1964→          border-color: #fcd34d;
+  1965→          box-shadow: 0 8px 20px -8px rgba(245,158,11,0.3);
+  1966→          transform: translateY(-1px);
+  1967→        }
+  1968→        .admin-btn-left {
+  1969→          display: flex;
+  1970→          align-items: center;
+  1971→          gap: 12px;
+  1972→        }
+  1973→        .admin-btn-icon-wrap {
+  1974→          width: 40px;
+  1975→          height: 40px;
+  1976→          border-radius: 10px;
+  1977→          background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  1978→          display: flex;
+  1979→          align-items: center;
+  1980→          justify-content: center;
+  1981→          box-shadow: 0 4px 10px -2px rgba(245,158,11,0.4);
+  1982→        }
+  1983→        .admin-btn-icon {
+  1984→          width: 20px;
+  1985→          height: 20px;
+  1986→          color: white;
+  1987→        }
+  1988→        .admin-btn-title {
+  1989→          display: block;
+  1990→          font-size: 13px;
+  1991→          font-weight: 700;
+  1992→          color: #92400e;
+  1993→        }
+  1994→        .admin-btn-desc {
+  1995→          display: block;
+  1996→          font-size: 11px;
+  1997→          color: #b45309;
+  1998→        }
+  1999→        .admin-btn-arrow {
+  2000→          width: 18px;
+
+[showing lines 1-2000 of 17736; use offset=2001 with limit to continue reading]
