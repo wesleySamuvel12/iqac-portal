@@ -63,6 +63,7 @@ type TabType = 'dashboard' | 'departments' | 'faculty' | 'students' | 'activitie
   | 'staff_achievement' | 'student_achievement_view'
   | 'hod_student_approval' | 'hod_staff_approval' | 'my_achievement'
   | 'report_generator' | 'hod_management' | 'showcase' | 'database'
+  | 'staff_management'
 
 // ============ ACHIEVEMENT TYPES DEFINITION (13 Types - Student Focused) ============
 const ACHIEVEMENT_TYPES: Record<string, {
@@ -5050,13 +5051,6 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
   const [staffAchievements, setStaffAchievements] = useState<any[]>([])
   const [selectedDashboardType, setSelectedDashboardType] = useState<string | null>(null)
   
-  // Student Management State for Staff Role
-  const [staffStudents, setStaffStudents] = useState<any[]>([])
-  const [showStudentTab, setShowStudentTab] = useState(true)
-  const [showAddStudentModal, setShowAddStudentModal] = useState(false)
-  const [staffStudentForm, setStaffStudentForm] = useState({ name: '', registerNumber: '', email: '', year: '1st Year', section: 'A' })
-  const [studentSearch, setStudentSearch] = useState('')
-  
   // Load achievements from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem('staff_achievements')
@@ -5066,20 +5060,6 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
       } catch (e) {
         console.error('Failed to parse staff achievements:', e)
       }
-    }
-    
-    // Load students for staff's department
-    const storageKey = `hod_users_${user.departmentName}`
-    try {
-      const savedUsers = localStorage.getItem(storageKey)
-      if (savedUsers) {
-        const parsed = JSON.parse(savedUsers)
-        if (parsed.students) {
-          setStaffStudents(parsed.students)
-        }
-      }
-    } catch (e) {
-      console.error('Failed to load students:', e)
     }
   }, [user.departmentName])
   
@@ -5110,59 +5090,6 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
   const selectedTypeAchievements = selectedDashboardType 
     ? staffAchievements.filter((a: any) => a.type === selectedDashboardType)
     : []
-
-  // ==================== STUDENT MANAGEMENT FUNCTIONS FOR STAFF ====================
-  const handleAddStaffStudent = () => {
-    setStaffStudentForm({ name: '', registerNumber: '', email: '', year: '1st Year', section: 'A' })
-    setShowAddStudentModal(true)
-  }
-
-  const handleSaveStaffStudent = () => {
-    if (!staffStudentForm.name.trim() || !staffStudentForm.registerNumber.trim()) {
-      alert('Please fill in all required fields')
-      return
-    }
-
-    const newStudent = {
-      id: Date.now(),
-      name: staffStudentForm.name,
-      regNo: staffStudentForm.registerNumber,
-      email: staffStudentForm.email,
-      year: staffStudentForm.year,
-      section: staffStudentForm.section,
-      batch: '2024-2028',
-      status: 'active'
-    }
-
-    const updatedStudents = [...staffStudents, newStudent]
-    setStaffStudents(updatedStudents)
-    
-    const storageKey = `hod_users_${user.departmentName}`
-    try {
-      const savedUsers = localStorage.getItem(storageKey)
-      let userData = { students: [], staff: [] }
-      if (savedUsers) {
-        userData = JSON.parse(savedUsers)
-      }
-      userData.students = updatedStudents
-      localStorage.setItem(storageKey, JSON.stringify(userData))
-    } catch (e) {
-      console.error('Failed to save student:', e)
-    }
-
-    setShowAddStudentModal(false)
-  }
-
-  const filteredStaffStudents = staffStudents.filter(s => 
-    s.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
-    s.regNo.toLowerCase().includes(studentSearch.toLowerCase())
-  )
-
-  const staffStudentsByYear = filteredStaffStudents.reduce((acc, s) => {
-    const year = s.year || 'Unknown'
-    acc[year] = (acc[year] || 0) + 1
-    return acc
-  }, {} as Record<string, number>)
 
   return (
     <div className="space-y-6">
@@ -5481,205 +5408,6 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
           onClick={() => setActiveTab('feedback')}
         />
       </div>
-
-      {/* STUDENT MANAGEMENT SECTION FOR STAFF */}
-      <Card className="border border-violet-200 bg-gradient-to-r from-violet-50 to-white">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
-              <GraduationCap className="w-5 h-5 text-violet-500" /> 
-              Student Management
-              <Badge variant="outline" className="text-xs">{user.departmentName}</Badge>
-            </CardTitle>
-            <button 
-              onClick={() => setShowStudentTab(!showStudentTab)}
-              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              {showStudentTab ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
-            </button>
-          </div>
-        </CardHeader>
-        {showStudentTab && (
-        <CardContent>
-          {/* Search and Add Student */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search students by name or register number..."
-                value={studentSearch}
-                onChange={(e) => setStudentSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
-              />
-            </div>
-            <Button
-              onClick={handleAddStaffStudent}
-              className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-            >
-              <PlusCircle className="w-4 h-4" />
-              Add Student
-            </Button>
-          </div>
-
-          {/* Students by Year Summary */}
-          <div className="grid grid-cols-4 gap-2 mb-4">
-            {['1st Year', '2nd Year', '3rd Year', '4th Year'].map((year, idx) => {
-              const count = staffStudentsByYear[year] || 0
-              const colors = ['bg-orange-100 text-orange-700', 'bg-emerald-100 text-emerald-700', 'bg-blue-100 text-blue-700', 'bg-purple-100 text-purple-700']
-              return (
-                <div key={year} className={`p-2 rounded-lg ${colors[idx]} text-center`}>
-                  <p className="text-xs font-medium">{year}</p>
-                  <p className="text-lg font-bold">{count}</p>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Students List */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
-            <div className="max-h-[300px] overflow-y-auto">
-              {filteredStaffStudents.length === 0 ? (
-                <div className="text-center py-8">
-                  <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 font-medium">No students found</p>
-                  <p className="text-sm text-gray-400 mt-1">Add students to your class or adjust search</p>
-                </div>
-              ) : (
-                <table className="w-full">
-                  <thead className="bg-gray-50 sticky top-0">
-                    <tr>
-                      <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Reg No</th>
-                      <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Name</th>
-                      <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Year</th>
-                      <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Sec</th>
-                      <th className="text-center py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredStaffStudents.map(student => (
-                      <tr key={student.id} className="border-b border-gray-100 hover:bg-violet-50/30 transition-colors">
-                        <td className="py-2 px-3 text-xs font-mono text-gray-700">{student.regNo}</td>
-                        <td className="py-2 px-3">
-                          <p className="text-xs font-medium text-gray-800">{student.name}</p>
-                          <p className="text-[10px] text-gray-400">{student.email}</p>
-                        </td>
-                        <td className="py-2 px-3 text-xs text-gray-600">{student.year}</td>
-                        <td className="py-2 px-3 text-xs text-gray-600">{student.section || 'A'}</td>
-                        <td className="py-2 px-3 text-center">
-                          <Badge className={
-                            student.status === 'active' ? 'bg-green-100 text-green-700 text-[10px]' : 'bg-gray-100 text-gray-600 text-[10px]'
-                          }>
-                            {student.status}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
-
-          <p className="text-xs text-gray-500 mt-3 text-center">
-            Showing {filteredStaffStudents.length} of {staffStudents.length} students from {user.departmentName}
-          </p>
-        </CardContent>
-        )}
-      </Card>
-
-      {/* Add Student Modal for Staff */}
-      {showAddStudentModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-900">Add New Student</h3>
-                <button
-                  onClick={() => setShowAddStudentModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <XCircle className="w-5 h-5 text-gray-500" />
-                </button>
-                </div>
-                <p className="text-sm text-gray-500 mt-1">{user.departmentName} Department</p>
-              </div>
-              <div className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                  <input
-                    type="text"
-                    value={staffStudentForm.name}
-                    onChange={(e) => setStaffStudentForm({...staffStudentForm, name: e.target.value})}
-                    placeholder="Enter student full name"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Register Number *</label>
-                  <input
-                    type="text"
-                    value={staffStudentForm.registerNumber}
-                    onChange={(e) => setStaffStudentForm({...staffStudentForm, registerNumber: e.target.value.toUpperCase()})}
-                    placeholder="e.g., CSE001"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input
-                    type="email"
-                    value={staffStudentForm.email}
-                    onChange={(e) => setStaffStudentForm({...staffStudentForm, email: e.target.value})}
-                    placeholder="student@niet.ac.in"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Year *</label>
-                    <select
-                      value={staffStudentForm.year}
-                      onChange={(e) => setStaffStudentForm({...staffStudentForm, year: e.target.value})}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
-                    >
-                      <option value="1st Year">1st Year</option>
-                      <option value="2nd Year">2nd Year</option>
-                      <option value="3rd Year">3rd Year</option>
-                      <option value="4th Year">4th Year</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Section *</label>
-                    <select
-                      value={staffStudentForm.section}
-                      onChange={(e) => setStaffStudentForm({...staffStudentForm, section: e.target.value})}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
-                    >
-                      <option value="A">A</option>
-                      <option value="B">B</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-              <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowAddStudentModal(false)}
-                  className="px-6"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSaveStaffStudent}
-                  className="px-6 bg-violet-600 hover:bg-violet-700"
-                >
-                  Add Student
-                </Button>
-              </div>
-            </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -8002,6 +7730,430 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
               </CardContent>
             </Card>
           )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ============ STAFF MANAGEMENT PAGE (Class Student Management) ============
+function StaffManagementPage({ user }: { user: User }) {
+  const [students, setStudents] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [editingStudent, setEditingStudent] = useState<any>(null)
+  const [studentForm, setStudentForm] = useState({ name: '', registerNumber: '', email: '', year: '1st Year', section: 'A' })
+  const [selectedYear, setSelectedYear] = useState<string | null>(null)
+  
+  // Load students from API for staff's department
+  useEffect(() => {
+    fetchStudents()
+  }, [user.departmentId])
+  
+  const fetchStudents = async () => {
+    try {
+      setLoading(true)
+      const res = await fetch(`/api/students?departmentId=${user.departmentId}&limit=200`)
+      const data = await res.json()
+      if (data.success) {
+        setStudents(data.students || [])
+      }
+    } catch (error) {
+      console.error('Failed to load students:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  // Filter students by search and optionally by year
+  const filteredStudents = students.filter(s => {
+    const matchesSearch = s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          s.registerNumber?.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesYear = !selectedYear || s.semester === selectedYear || 
+                        `${s.semester}${getYearSuffix(s.semester)}`.toLowerCase() === selectedYear.toLowerCase() ||
+                        getYearFromSemester(s.semester) === selectedYear
+    return matchesSearch && matchesYear
+  })
+  
+  // Helper to get year from semester
+  function getYearFromSemester(semester: number | undefined): string {
+    if (!semester) return '1st Year'
+    if (semester <= 2) return '1st Year'
+    if (semester <= 4) return '2nd Year'
+    if (semester <= 6) return '3rd Year'
+    return '4th Year'
+  }
+  
+  function getYearSuffix(semester: number | undefined): string {
+    if (!semester) return ''
+    if (semester % 2 === 0) return ''
+    return ''
+  }
+  
+  // Stats by year
+  const statsByYear = {
+    '1st Year': filteredStudents.filter(s => s.semester && s.semester <= 2).length,
+    '2nd Year': filteredStudents.filter(s => s.semester && s.semester > 2 && s.semester <= 4).length,
+    '3rd Year': filteredStudents.filter(s => s.semester && s.semester > 4 && s.semester <= 6).length,
+    '4th Year': filteredStudents.filter(s => s.semester && s.semester > 6).length,
+  }
+  
+  const handleAddStudent = () => {
+    setEditingStudent(null)
+    setStudentForm({ name: '', registerNumber: '', email: '', year: '1st Year', section: 'A' })
+    setShowAddModal(true)
+  }
+  
+  const handleEditStudent = (student: any) => {
+    setEditingStudent(student)
+    setStudentForm({
+      name: student.name || '',
+      registerNumber: student.registerNumber || '',
+      email: student.user?.email || '',
+      year: getYearFromSemester(student.semester),
+      section: student.section || 'A',
+    })
+    setShowAddModal(true)
+  }
+  
+  const handleSaveStudent = async () => {
+    if (!studentForm.name.trim() || !studentForm.registerNumber.trim()) {
+      alert('Please fill in required fields')
+      return
+    }
+    
+    try {
+      // Convert year to semester
+      const yearToSemester: Record<string, number> = {
+        '1st Year': 1,
+        '2nd Year': 3,
+        '3rd Year': 5,
+        '4th Year': 7,
+      }
+      
+      if (editingStudent) {
+        // Update existing student
+        const res = await fetch(`/api/students/${editingStudent.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: studentForm.name,
+            registerNumber: studentForm.registerNumber,
+            semester: yearToSemester[studentForm.year],
+            section: studentForm.section,
+          }),
+        })
+        if (res.ok) {
+          await fetchStudents()
+        }
+      } else {
+        // Create new student
+        const res = await fetch('/api/students', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: studentForm.name,
+            registerNumber: studentForm.registerNumber,
+            email: studentForm.email || `${studentForm.registerNumber.toLowerCase()}@niet.ac.in`,
+            password: 'student123',
+            departmentId: user.departmentId,
+            semester: yearToSemester[studentForm.year],
+            section: studentForm.section,
+            admissionYear: new Date().getFullYear(),
+          }),
+        })
+        if (res.ok) {
+          await fetchStudents()
+        }
+      }
+      
+      setShowAddModal(false)
+    } catch (error) {
+      console.error('Error saving student:', error)
+      alert('Failed to save student')
+    }
+  }
+  
+  const handleDeleteStudent = async (studentId: string) => {
+    if (!confirm('Are you sure you want to delete this student?')) return
+    
+    try {
+      const res = await fetch(`/api/students/${studentId}`, { method: 'DELETE' })
+      if (res.ok) {
+        await fetchStudents()
+      }
+    } catch (error) {
+      console.error('Error deleting student:', error)
+      alert('Failed to delete student')
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+            <Users className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Class Management</h1>
+            <p className="text-blue-100">{user.departmentName} • Your Class Students</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {Object.entries(statsByYear).map(([year, count]) => (
+          <Card key={year} className="border overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => setSelectedYear(selectedYear === year ? null : year)}>
+            <CardContent className={`p-4 ${selectedYear === year ? 'bg-blue-50' : ''}`}>
+              <p className="text-sm text-gray-500 font-medium">{year}</p>
+              <p className="text-3xl font-bold text-gray-800 mt-1">{count}</p>
+              <p className="text-xs text-gray-400 mt-1">students</p>
+            </CardContent>
+            <div className={`h-1 ${selectedYear === year ? 'bg-blue-500' : 
+              year === '1st Year' ? 'bg-orange-400' :
+              year === '2nd Year' ? 'bg-emerald-400' :
+              year === '3rd Year' ? 'bg-blue-400' : 'bg-purple-400'} `} />
+          </Card>
+        ))}
+        <Card className="border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
+          <CardContent className="p-4">
+            <p className="text-sm text-blue-600 font-medium">Total</p>
+            <p className="text-3xl font-bold text-blue-800 mt-1">{filteredStudents.length}</p>
+            <p className="text-xs text-blue-400 mt-1">in your class</p>
+          </CardContent>
+          <div className="h-1 bg-gradient-to-r from-blue-400 to-indigo-500" />
+        </Card>
+      </div>
+
+      {/* Toolbar */}
+      <Card className="border">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-3 justify-between">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by name or register number..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+              />
+            </div>
+            <div className="flex gap-2">
+              {selectedYear && (
+                <Button variant="outline" onClick={() => setSelectedYear(null)} className="gap-2">
+                  <X className="w-4 h-4" />
+                  Clear Filter
+                </Button>
+              )}
+              <Button onClick={handleAddStudent} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                <PlusCircle className="w-4 h-4" />
+                Add Student
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Students Table */}
+      <Card className="border">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <GraduationCap className="w-5 h-5 text-blue-500" />
+            Student List
+            <Badge variant="outline" className="ml-auto">{filteredStudents.length} students</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            </div>
+          ) : filteredStudents.length === 0 ? (
+            <div className="text-center py-12">
+              <GraduationCap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 font-medium text-lg">No students found</p>
+              <p className="text-sm text-gray-400 mt-1">Add your first student or adjust search filters</p>
+              <Button onClick={handleAddStudent} className="mt-4 bg-blue-600 hover:bg-blue-700 gap-2">
+                <PlusCircle className="w-4 h-4" />
+                Add Student
+              </Button>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 border-b">
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Reg No</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Name</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Email</th>
+                    <th className="text-center py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Year</th>
+                    <th className="text-center py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Section</th>
+                    <th className="text-center py-3 px-4 text-xs font-semibold text-gray-500 uppercase">CGPA</th>
+                    <th className="text-center py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStudents.map((student) => (
+                    <tr key={student.id} className="border-b hover:bg-blue-50/30 transition-colors">
+                      <td className="py-3 px-4">
+                        <span className="font-mono text-sm text-gray-700">{student.registerNumber}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <p className="font-medium text-gray-800">{student.name}</p>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="text-sm text-gray-500">{student.user?.email || '-'}</span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <Badge variant="outline" className={
+                          getYearFromSemester(student.semester) === '1st Year' ? 'border-orange-300 text-orange-700' :
+                          getYearFromSemester(student.semester) === '2nd Year' ? 'border-emerald-300 text-emerald-700' :
+                          getYearFromSemester(student.semester) === '3rd Year' ? 'border-blue-300 text-blue-700' :
+                          'border-purple-300 text-purple-700'
+                        }>
+                          {getYearFromSemester(student.semester)}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className="text-sm text-gray-600">{student.section || 'A'}</span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className="text-sm font-medium text-gray-700">{student.cgpa || '-'}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex justify-center gap-1">
+                          <button
+                            onClick={() => handleEditStudent(student)}
+                            className="p-1.5 hover:bg-blue-100 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <Edit3 className="w-4 h-4 text-blue-600" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteStudent(student.id)}
+                            className="p-1.5 hover:bg-red-100 rounded-lg transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add/Edit Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900">
+                  {editingStudent ? 'Edit Student' : 'Add New Student'}
+                </h3>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <XCircle className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 mt-1">{user.departmentName} Department</p>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                <input
+                  type="text"
+                  value={studentForm.name}
+                  onChange={(e) => setStudentForm({...studentForm, name: e.target.value})}
+                  placeholder="Enter student full name"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Register Number *</label>
+                <input
+                  type="text"
+                  value={studentForm.registerNumber}
+                  onChange={(e) => setStudentForm({...studentForm, registerNumber: e.target.value.toUpperCase()})}
+                  placeholder="e.g., CSE001"
+                  disabled={!!editingStudent}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none font-mono disabled:bg-gray-100"
+                />
+              </div>
+              
+              {!editingStudent && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={studentForm.email}
+                    onChange={(e) => setStudentForm({...studentForm, email: e.target.value})}
+                    placeholder="student@niet.ac.in"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                  />
+                </div>
+              )}
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Year *</label>
+                  <select
+                    value={studentForm.year}
+                    onChange={(e) => setStudentForm({...studentForm, year: e.target.value})}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                  >
+                    <option value="1st Year">1st Year</option>
+                    <option value="2nd Year">2nd Year</option>
+                    <option value="3rd Year">3rd Year</option>
+                    <option value="4th Year">4th Year</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Section *</label>
+                  <select
+                    value={studentForm.section}
+                    onChange={(e) => setStudentForm({...studentForm, section: e.target.value})}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                  >
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setShowAddModal(false)}
+                className="px-6"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveStudent}
+                className="px-6 bg-blue-600 hover:bg-blue-700"
+              >
+                {editingStudent ? 'Update' : 'Add'} Student
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -13935,6 +14087,7 @@ const ROLE_SIDEBAR_CONFIG = {
     roleIcon: BookOpen,
     menuItems: [
       { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'Overview & Stats' },
+      { id: 'staff_management', icon: Users, label: 'Class Management', badge: 'My Class', description: 'Manage your class students' },
       { id: 'staff_achievement', icon: Award, label: 'Staff Achievements', badge: 'New', description: 'Your achievements' },
       { id: 'student_achievement_view', icon: GraduationCap, label: 'Student Achievements', badge: 'View', description: 'View student data' },
       { id: 'feedback', icon: MessageSquare, label: 'Feedback', description: 'Send feedback' },
@@ -17888,6 +18041,7 @@ export default function IQACPortal() {
         : <FeedbackModule user={user} feedbackEnabled={feedbackEnabled} setFeedbackEnabled={setFeedbackEnabled} />
       case 'report_generator': return <HODReportGeneratorPage user={user} />
       case 'hod_management': return <HODManagementPage user={user} />
+      case 'staff_management': return <StaffManagementPage user={user} />
       case 'showcase': return <AdminShowcasePage />
       default: return <DashboardContent user={user} setActiveTab={setActiveTab} />
     }
