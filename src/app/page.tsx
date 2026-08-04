@@ -5050,13 +5050,6 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
   const [staffAchievements, setStaffAchievements] = useState<any[]>([])
   const [selectedDashboardType, setSelectedDashboardType] = useState<string | null>(null)
   
-  // Student Management State for Staff Role
-  const [staffStudents, setStaffStudents] = useState<any[]>([])
-  const [showStudentTab, setShowStudentTab] = useState(false)
-  const [showAddStudentModal, setShowAddStudentModal] = useState(false)
-  const [staffStudentForm, setStaffStudentForm] = useState({ name: '', registerNumber: '', email: '', year: '1st Year', section: 'A' })
-  const [studentSearch, setStudentSearch] = useState('')
-  
   // Load achievements from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem('staff_achievements')
@@ -5068,20 +5061,6 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
       }
     }
     
-    // Load students from HOD's data (filtered by department)
-    const storageKey = `hod_users_${user.departmentName}`
-    try {
-      const savedUsers = localStorage.getItem(storageKey)
-      if (savedUsers) {
-        const parsed = JSON.parse(savedUsers)
-        if (parsed.students) {
-          // Staff can only see students from their department
-          setStaffStudents(parsed.students)
-        }
-      }
-    } catch (e) {
-      console.error('Failed to load students:', e)
-    }
   }, [user.departmentName])
   
   // Calculate stats from actual data
@@ -5111,64 +5090,6 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
   const selectedTypeAchievements = selectedDashboardType 
     ? staffAchievements.filter((a: any) => a.type === selectedDashboardType)
     : []
-
-  // ==================== STUDENT MANAGEMENT FUNCTIONS FOR STAFF ====================
-  const handleAddStaffStudent = () => {
-    setStaffStudentForm({ name: '', registerNumber: '', email: '', year: '1st Year', section: 'A' })
-    setShowAddStudentModal(true)
-  }
-
-  const handleSaveStaffStudent = () => {
-    if (!staffStudentForm.name.trim() || !staffStudentForm.registerNumber.trim()) {
-      alert('Please fill in all required fields')
-      return
-    }
-
-    // Create new student object
-    const newStudent = {
-      id: Date.now(),
-      name: staffStudentForm.name,
-      regNo: staffStudentForm.registerNumber,
-      email: staffStudentForm.email,
-      year: staffStudentForm.year,
-      section: staffStudentForm.section,
-      batch: '2024-2028', // Default batch based on year
-      status: 'active'
-    }
-
-    // Add to local state and save to localStorage
-    const updatedStudents = [...staffStudents, newStudent]
-    setStaffStudents(updatedStudents)
-    
-    // Save back to localStorage (HOD's data)
-    const storageKey = `hod_users_${user.departmentName}`
-    try {
-      const savedUsers = localStorage.getItem(storageKey)
-      let userData = { students: [], staff: [] }
-      if (savedUsers) {
-        userData = JSON.parse(savedUsers)
-      }
-      userData.students = updatedStudents
-      localStorage.setItem(storageKey, JSON.stringify(userData))
-    } catch (e) {
-      console.error('Failed to save student:', e)
-    }
-
-    setShowAddStudentModal(false)
-  }
-
-  // Filter students by search
-  const filteredStaffStudents = staffStudents.filter(s => 
-    s.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
-    s.regNo.toLowerCase().includes(studentSearch.toLowerCase())
-  )
-
-  // Students by year for staff view
-  const staffStudentsByYear = filteredStaffStudents.reduce((acc, s) => {
-    const year = s.year || 'Unknown'
-    acc[year] = (acc[year] || 0) + 1
-    return acc
-  }, {} as Record<string, number>)
 
   return (
     <div className="space-y-6">
@@ -5478,13 +5399,7 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
           color="bg-gradient-to-br from-blue-500 to-indigo-600"
           onClick={() => setActiveTab('staff_achievement')}
         />
-        <ActionCard 
-          icon={GraduationCap} 
-          title="Student Management" 
-          description="View and manage your class students"
-          color="bg-gradient-to-br from-violet-500 to-purple-600"
-          onClick={() => setShowStudentTab(!showStudentTab)}
-        />
+
         <ActionCard 
           icon={MessageSquare} 
           title="Give Feedback" 
@@ -5494,204 +5409,7 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
         />
       </div>
 
-      {/* STUDENT MANAGEMENT SECTION FOR STAFF */}
-      {showStudentTab && (
-        <Card className="border border-violet-200 bg-gradient-to-r from-violet-50 to-white">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
-                <GraduationCap className="w-5 h-5 text-violet-500" /> 
-                Student Management
-                <Badge variant="outline" className="text-xs">{user.departmentName}</Badge>
-              </CardTitle>
-              <button 
-                onClick={() => setShowStudentTab(false)}
-                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-4 h-4 text-gray-500" />
-              </button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {/* Search and Add Student */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search students by name or register number..."
-                  value={studentSearch}
-                  onChange={(e) => setStudentSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
-                />
-              </div>
-              <Button
-                onClick={handleAddStaffStudent}
-                className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-              >
-                <PlusCircle className="w-4 h-4" />
-                Add Student
-              </Button>
-            </div>
 
-            {/* Students by Year Summary */}
-            <div className="grid grid-cols-4 gap-2 mb-4">
-              {['1st Year', '2nd Year', '3rd Year', '4th Year'].map((year, idx) => {
-                const count = staffStudentsByYear[year] || 0
-                const colors = ['bg-orange-100 text-orange-700', 'bg-emerald-100 text-emerald-700', 'bg-blue-100 text-blue-700', 'bg-purple-100 text-purple-700']
-                return (
-                  <div key={year} className={`p-2 rounded-lg ${colors[idx]} text-center`}>
-                    <p className="text-xs font-medium">{year}</p>
-                    <p className="text-lg font-bold">{count}</p>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Students List */}
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="max-h-[300px] overflow-y-auto">
-                {filteredStaffStudents.length === 0 ? (
-                  <div className="text-center py-8">
-                    <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 font-medium">No students found</p>
-                    <p className="text-sm text-gray-400 mt-1">Add students to your class or adjust search</p>
-                  </div>
-                ) : (
-                  <table className="w-full">
-                    <thead className="bg-gray-50 sticky top-0">
-                      <tr>
-                        <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Reg No</th>
-                        <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Name</th>
-                        <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Year</th>
-                        <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Sec</th>
-                        <th className="text-center py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredStaffStudents.map(student => (
-                        <tr key={student.id} className="border-b border-gray-100 hover:bg-violet-50/30 transition-colors">
-                          <td className="py-2 px-3 text-xs font-mono text-gray-700">{student.regNo}</td>
-                          <td className="py-2 px-3">
-                            <p className="text-xs font-medium text-gray-800">{student.name}</p>
-                            <p className="text-[10px] text-gray-400">{student.email}</p>
-                          </td>
-                          <td className="py-2 px-3 text-xs text-gray-600">{student.year}</td>
-                          <td className="py-2 px-3 text-xs text-gray-600">{student.section || 'A'}</td>
-                          <td className="py-2 px-3 text-center">
-                            <Badge className={
-                              student.status === 'active' ? 'bg-green-100 text-green-700 text-[10px]' : 'bg-gray-100 text-gray-600 text-[10px]'
-                            }>
-                              {student.status}
-                            </Badge>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            </div>
-
-            <p className="text-xs text-gray-500 mt-3 text-center">
-              Showing {filteredStaffStudents.length} of {staffStudents.length} students from {user.departmentName}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Add Student Modal for Staff */}
-      {showAddStudentModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-900">Add New Student</h3>
-                <button
-                  onClick={() => setShowAddStudentModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <XCircle className="w-5 h-5 text-gray-500" />
-                </button>
-                </div>
-                <p className="text-sm text-gray-500 mt-1">{user.departmentName} Department</p>
-              </div>
-              <div className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                  <input
-                    type="text"
-                    value={staffStudentForm.name}
-                    onChange={(e) => setStaffStudentForm({...staffStudentForm, name: e.target.value})}
-                    placeholder="Enter student full name"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Register Number *</label>
-                  <input
-                    type="text"
-                    value={staffStudentForm.registerNumber}
-                    onChange={(e) => setStaffStudentForm({...staffStudentForm, registerNumber: e.target.value.toUpperCase()})}
-                    placeholder="e.g., CSE001"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input
-                    type="email"
-                    value={staffStudentForm.email}
-                    onChange={(e) => setStaffStudentForm({...staffStudentForm, email: e.target.value})}
-                    placeholder="student@niet.ac.in"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Year *</label>
-                    <select
-                      value={staffStudentForm.year}
-                      onChange={(e) => setStaffStudentForm({...staffStudentForm, year: e.target.value})}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
-                    >
-                      <option value="1st Year">1st Year</option>
-                      <option value="2nd Year">2nd Year</option>
-                      <option value="3rd Year">3rd Year</option>
-                      <option value="4th Year">4th Year</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Section *</label>
-                    <select
-                      value={staffStudentForm.section}
-                      onChange={(e) => setStaffStudentForm({...staffStudentForm, section: e.target.value})}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
-                    >
-                      <option value="A">A</option>
-                      <option value="B">B</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-              <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowAddStudentModal(false)}
-                  className="px-6"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSaveStaffStudent}
-                  className="px-6 bg-violet-600 hover:bg-violet-700"
-                >
-                  Add Student
-                </Button>
-              </div>
-            </div>
-        </div>
-      )}
     </div>
   )
 }
