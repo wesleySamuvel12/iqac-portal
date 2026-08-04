@@ -389,9 +389,20 @@ function LoginPage() {
     }
   }
 
-  const quickLogin = (emailVal: string, passVal: string) => {
+  const quickLogin = async (emailVal: string, passVal: string) => {
     setEmail(emailVal)
     setPassword(passVal)
+    // Auto-submit after setting credentials
+    setTimeout(async () => {
+      try {
+        const result = await login(emailVal, passVal)
+        if (!result.success) {
+          setError(result.error || 'Invalid email or password')
+        }
+      } catch (err) {
+        setError('Network error. Please try again.')
+      }
+    }, 100)
   }
 
   const getDeptEmail = (deptCode: string, role: string) => {
