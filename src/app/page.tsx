@@ -24,7 +24,7 @@ import {
   Newspaper, Handshake, Circle,
   DollarSign, Paperclip, Inbox, Tag, XCircle, ArrowLeft,
   Save, Sparkles, PanelLeft, PanelLeftClose,
-  GripVertical, FileSpreadsheet, Wifi
+  GripVertical, FileSpreadsheet, Wifi, Info
 } from 'lucide-react'
 
 // ============ TYPES ============
@@ -7746,6 +7746,13 @@ function StaffManagementPage({ user }: { user: User }) {
   const [studentForm, setStudentForm] = useState({ name: '', registerNumber: '', email: '', year: '1st Year', section: 'A' })
   const [selectedYear, setSelectedYear] = useState<string | null>(null)
   
+  // Bulk Import State
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importResults, setImportResults] = useState<any>(null)
+  const [dragOver, setDragOver] = useState(false)
+  
   // Load students from API for staff's department
   useEffect(() => {
     fetchStudents()
@@ -7889,6 +7896,75 @@ function StaffManagementPage({ user }: { user: User }) {
     }
   }
 
+  // ==================== BULK IMPORT FUNCTIONS ====================
+  const handleBulkImport = async () => {
+    if (!importFile) {
+      alert('Please select a CSV file first')
+      return
+    }
+    
+    setImporting(true)
+    setImportResults(null)
+    
+    try {
+      const formData = new FormData()
+      formData.append('file', importFile)
+      formData.append('departmentId', user.departmentId || '')
+      
+      const res = await fetch('/api/students/bulk-import', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      const data = await res.json()
+      
+      if (data.success) {
+        setImportResults(data)
+        await fetchStudents() // Refresh student list
+      } else {
+        alert(data.error || 'Import failed')
+      }
+    } catch (error) {
+      console.error('Import error:', error)
+      alert('Import failed. Please try again.')
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  const downloadSampleCSV = () => {
+    const csvContent = `registerNumber,name,email,phone,semester,section,cgpa
+CSE2025001,John Doe,john@niet.ac.in,+91-9876543210,1,A,0.00
+CSE2025002,Jane Smith,jane@niet.ac.in,+91-9876543211,1,A,0.00
+CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'students_sample.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const closeImportModal = () => {
+    setShowImportModal(false)
+    setImportFile(null)
+    setImportResults(null)
+    setDragOver(false)
+  }
+
+  const handleFileDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    const files = e.dataTransfer.files
+    if (files.length > 0 && files[0].type === 'text/csv') {
+      setImportFile(files[0])
+    } else if (files.length > 0) {
+      alert('Please upload a CSV file')
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -7944,13 +8020,17 @@ function StaffManagementPage({ user }: { user: User }) {
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {selectedYear && (
                 <Button variant="outline" onClick={() => setSelectedYear(null)} className="gap-2">
                   <X className="w-4 h-4" />
                   Clear Filter
                 </Button>
               )}
+              <Button onClick={() => setShowImportModal(true)} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+                <Upload className="w-4 h-4" />
+                Bulk Import
+              </Button>
               <Button onClick={handleAddStudent} className="bg-blue-600 hover:bg-blue-700 gap-2">
                 <PlusCircle className="w-4 h-4" />
                 Add Student
@@ -8152,6 +8232,159 @@ function StaffManagementPage({ user }: { user: User }) {
               >
                 {editingStudent ? 'Update' : 'Add'} Student
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* BULK IMPORT MODAL */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 sticky top-0 bg-white z-10 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <Upload className="w-5 h-5 text-emerald-600" />
+                    Bulk Import Students
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">{user.departmentName} Department</p>
+                </div>
+                <button onClick={closeImportModal} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                  <XCircle className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* File Upload Area */}
+              {!importResults ? (
+                <>
+                  <div
+                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+                      dragOver ? 'border-emerald-500 bg-emerald-50' : 'border-gray-300 hover:border-emerald-400'
+                    }`}
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={handleFileDrop}
+                  >
+                    <Upload className={`w-12 h-12 mx-auto mb-4 ${dragOver ? 'text-emerald-500' : 'text-gray-400'}`} />
+                    <p className="text-lg font-medium text-gray-700 mb-2">
+                      {dragOver ? 'Drop your CSV file here' : 'Drag & drop your CSV file here'}
+                    </p>
+                    <p className="text-sm text-gray-500 mb-4">or click to browse</p>
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={(e) => e.target.files?.[0] && setImportFile(e.target.files[0])}
+                      className="hidden"
+                      id="import-file-input"
+                    />
+                    <label htmlFor="import-file-input" className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors">
+                      <FolderOpen className="w-4 h-4" />
+                      Select CSV File
+                    </label>
+                    {importFile && (
+                      <div className="mt-4 p-3 bg-emerald-50 rounded-lg flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-5 h-5 text-emerald-600" />
+                          <span className="text-sm font-medium text-emerald-700">{importFile.name}</span>
+                          <span className="text-xs text-emerald-600">({(importFile.size / 1024).toFixed(1)} KB)</span>
+                        </div>
+                        <button onClick={() => setImportFile(null)} className="text-red-500 hover:text-red-700">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Sample Template Download */}
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <Info className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-blue-800 mb-1">CSV Format Requirements</p>
+                        <p className="text-xs text-blue-600 mb-2">Your CSV should include these columns:</p>
+                        <code className="block text-xs bg-white px-3 py-2 rounded border border-blue-200 text-blue-700">
+                          registerNumber, name, email, phone, semester, section, cgpa
+                        </code>
+                        <button onClick={downloadSampleCSV} className="mt-3 inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 font-medium">
+                          <Download className="w-4 h-4" />
+                          Download Sample CSV
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Import Button */}
+                  <div className="flex justify-end gap-3 pt-2">
+                    <Button variant="outline" onClick={closeImportModal} disabled={importing}>
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={handleBulkImport} 
+                      disabled={!importFile || importing}
+                      className="bg-emerald-600 hover:bg-emerald-700 gap-2 min-w-[120px]"
+                    >
+                      {importing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Importing...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4" />
+                          Import Students
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                /* Results View */
+                <div className="space-y-4">
+                  <div className={`p-4 rounded-lg ${importResults.created > 0 ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 border border-gray-200'}`}>
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <CheckCircle className={`w-5 h-5 ${importResults.created > 0 ? 'text-emerald-600' : 'text-gray-400'}`} />
+                      Import Complete
+                    </h4>
+                    
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center p-3 bg-white rounded-lg border">
+                        <p className="text-2xl font-bold text-emerald-600">{importResults.created || 0}</p>
+                        <p className="text-xs text-gray-500">Created</p>
+                      </div>
+                      <div className="text-center p-3 bg-white rounded-lg border">
+                        <p className="text-2xl font-bold text-orange-500">{importResults.skipped || 0}</p>
+                        <p className="text-xs text-gray-500">Skipped</p>
+                      </div>
+                      <div className="text-center p-3 bg-white rounded-lg border">
+                        <p className="text-2xl font-bold text-red-500">{importResults.failed || 0}</p>
+                        <p className="text-xs text-gray-500">Failed</p>
+                      </div>
+                    </div>
+
+                    {(importResults.errors && importResults.errors.length > 0) && (
+                      <div className="mt-4">
+                        <p className="text-sm font-medium text-red-700 mb-2">Errors ({importResults.errors.length}):</p>
+                        <div className="max-h-40 overflow-y-auto space-y-1">
+                          {importResults.errors.map((err: any, idx: number) => (
+                            <div key={idx} className="text-xs bg-red-50 text-red-700 p-2 rounded border border-red-200">
+                              Row {err.row}: {err.error}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-2">
+                    <Button onClick={closeImportModal} className="bg-blue-600 hover:bg-blue-700">
+                      Done
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
