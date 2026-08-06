@@ -7,7 +7,7 @@ export interface User {
   id: string
   email: string
   name: string
-  role: 'ADMIN' | 'HOD' | 'STAFF' | 'STUDENT'
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'HOD' | 'STAFF' | 'STUDENT'
   departmentId?: string
   departmentName?: string
   avatar?: string
@@ -18,11 +18,15 @@ interface AuthState {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
+  isCmsMode: boolean
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  cmsLogin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
   logout: () => Promise<void>
   setUser: (user: User | null) => void
   setLoading: (loading: boolean) => void
+  setCmsMode: (mode: boolean) => void
   isAdmin: () => boolean
+  isSuperAdmin: () => boolean
   isHOD: () => boolean
   isStaff: () => boolean
   isStudent: () => boolean
@@ -34,6 +38,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       isLoading: false,
+      isCmsMode: false,
 
       login: async (email: string, password: string) => {
         set({ isLoading: true })
@@ -51,11 +56,41 @@ export const useAuthStore = create<AuthState>()(
               user: data.user,
               isAuthenticated: true,
               isLoading: false,
+              isCmsMode: false,
             })
             return { success: true }
           } else {
             set({ isLoading: false })
             return { success: false, error: data.error || 'Login failed' }
+          }
+        } catch (error) {
+          set({ isLoading: false })
+          return { success: false, error: 'Network error. Please try again.' }
+        }
+      },
+
+      cmsLogin: async (email: string, password: string) => {
+        set({ isLoading: true })
+        try {
+          const response = await fetch('/api/auth/cms-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+          })
+
+          const data = await response.json()
+
+          if (response.ok && data.success) {
+            set({
+              user: data.user,
+              isAuthenticated: true,
+              isLoading: false,
+              isCmsMode: true,
+            })
+            return { success: true }
+          } else {
+            set({ isLoading: false })
+            return { success: false, error: data.error || 'CMS Login failed' }
           }
         } catch (error) {
           set({ isLoading: false })
@@ -69,13 +104,15 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           // Ignore logout errors
         }
-        set({ user: null, isAuthenticated: false })
+        set({ user: null, isAuthenticated: false, isCmsMode: false })
       },
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       setLoading: (loading) => set({ isLoading: loading }),
+      setCmsMode: (mode) => set({ isCmsMode: mode }),
 
       isAdmin: () => get().user?.role === 'ADMIN',
+      isSuperAdmin: () => get().user?.role === 'SUPER_ADMIN',
       isHOD: () => get().user?.role === 'HOD',
       isStaff: () => get().user?.role === 'STAFF',
       isStudent: () => get().user?.role === 'STUDENT',
@@ -85,6 +122,7 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        isCmsMode: state.isCmsMode,
       }),
     }
   )

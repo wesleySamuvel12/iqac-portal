@@ -39,6 +39,7 @@ model User {
 }
 
 enum UserRole {
+  SUPER_ADMIN
   ADMIN
   HOD
   STAFF
@@ -901,4 +902,180 @@ model Institution {
   currentAcademicYear String?
   currentSemester     String?
   updatedAt           DateTime @updatedAt
+}
+
+// ==================== CMS / SUPER ADMIN CONFIGURATION ====================
+
+model CmsConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  category    String   @default("GENERAL")
+  description String?
+  updatedAt   DateTime @updatedAt
+  
+  @@index([key])
+  @@index([category])
+}
+
+model CmsPage {
+  id          String       @id @default(cuid())
+  title       String
+  slug        String       @unique
+  content     String?      // JSON or HTML content
+  status      PageStatus   @default(DRAFT)
+  template    String?      // Template name
+  metaTitle   String?
+  metaDescription String?
+  createdBy   String
+  updatedBy   String?
+  publishedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  @@index([slug])
+  @@index([status])
+}
+
+enum PageStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model CmsMenu {
+  id        String     @id @default(cuid())
+  title     String
+  url       String?
+  parentId  String?
+  order     Int        @default(0)
+  icon      String?
+  isVisible Boolean    @default(true)
+  openInNewTab Boolean  @default(false)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  
+  parent    CmsMenu?   @relation("MenuHierarchy", fields: [parentId], references: [id])
+  children  CmsMenu[]  @relation("MenuHierarchy")
+  
+  @@index([parentId])
+  @@index([order])
+}
+
+model CmsBanner {
+  id          String       @id @default(cuid())
+  title       String
+  subtitle    String?
+  imageUrl    String
+  linkUrl     String?
+  position    BannerPosition @default(HOME_TOP)
+  status      BannerStatus  @default(ACTIVE)
+  startDate   DateTime?
+  endDate     DateTime?
+  order       Int          @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  @@index([position])
+  @@index([status])
+}
+
+enum BannerPosition {
+  HOME_TOP
+  HOME_MIDDLE
+  HOME_BOTTOM
+  LOGIN_PAGE
+  DASHBOARD_TOP
+}
+
+enum BannerStatus {
+  ACTIVE
+  INACTIVE
+  SCHEDULED
+}
+
+model CmsAnnouncement {
+  id          String            @id @default(cuid())
+  title       String
+  content     String?
+  type        AnnouncementType  @default(INFO)
+  targetRoles String?           // JSON array of roles
+  targetDepts String?           // JSON array of department IDs
+  isPinned    Boolean           @default(false)
+  status      AnnouncementStatus @default(ACTIVE)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdBy   String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  
+  @@index([status])
+  @@index([isPinned])
+  @@index([startDate])
+}
+
+enum AnnouncementType {
+  INFO
+  WARNING
+  SUCCESS
+  URGENT
+  EVENT
+  HOLIDAY
+  MAINTENANCE
+}
+
+enum AnnouncementStatus {
+  ACTIVE
+  EXPIRED
+  SCHEDULED
+  DRAFT
+}
+
+model AuditLogEntry {
+  id         String   @id @default(cuid())
+  userId     String?
+  userName   String?
+  action     String
+  module     String
+  details    String?  // JSON string with additional data
+  ipAddress  String?
+  userAgent  String?
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+  @@index([module])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model SystemBackup {
+  id          String   @id @default(cuid())
+  fileName    String
+  filePath    String
+  size        Int      // in bytes
+  type        BackupType @default(FULL)
+  status      BackupStatus @default(COMPLETED)
+  createdBy   String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+}
+
+enum BackupType {
+  FULL
+  USERS
+  DATA
+  SETTINGS
+  MEDIA
+}
+
+enum BackupStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  RESTORED
 }
