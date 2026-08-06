@@ -1,0 +1,789 @@
+     1→import { NextRequest, NextResponse } from 'next/server'
+     2→import { db } from '@/lib/db'
+     3→
+     4→export async function GET(request: NextRequest) {
+     5→  try {
+     6→    const { searchParams } = new URL(request.url)
+     7→    const type = searchParams.get('type') // 'weekly', 'monthly', 'yearly'
+     8→    const format = searchParams.get('format') // 'json', 'csv', 'xlsx', 'pdf', 'summary'
+     9→    const departmentId = searchParams.get('departmentId')
+    10→    const category = searchParams.get('category') // 'all', 'student', 'staff', 'hod', 'achievement', 'activity'
+    11→
+    12→    // Calculate date range based on report type
+    13→    const now = new Date()
+    14→    let startDate: Date
+    15→    let periodLabel: string
+    16→
+    17→    if (type === 'weekly') {
+    18→      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    19→      periodLabel = `Weekly Report: ${startDate.toLocaleDateString()} - ${now.toLocaleDateString()}`
+    20→    } else if (type === 'monthly') {
+    21→      startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+    22→      periodLabel = `Monthly Report: ${startDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`
+    23→    } else if (type === 'yearly') {
+    24→      startDate = new Date(now.getFullYear(), 0, 1)
+    25→      periodLabel = `Yearly Report: ${now.getFullYear()}`
+    26→    } else {
+    27→      startDate = new Date(0)
+    28→      periodLabel = 'Complete Report: All Time'
+    29→    }
+    30→
+    31→    // Get departments to report on
+    32→    const departments = await db.department.findMany({
+    33→      where: departmentId ? { id: departmentId } : {},
+    34→      include: {
+    35→        students: {
+    36→          include: {
+    37→            user: { select: { name: true, email: true, role: true } },
+    38→            achievements: {
+    39→              where: { createdAt: { gte: startDate } },
+    40→              orderBy: { createdAt: 'desc' }
+    41→            },
+    42→            certifications: {
+    43→              where: { createdAt: { gte: startDate } },
+    44→              orderBy: { createdAt: 'desc' }
+    45→            },
+    46→            placements: {
+    47→              where: { createdAt: { gte: startDate } },
+    48→              orderBy: { createdAt: 'desc' }
+    49→            },
+    50→            internships: {
+    51→              where: { createdAt: { gte: startDate } },
+    52→              orderBy: { createdAt: 'desc' }
+    53→            },
+    54→            npCourses: {
+    55→              where: { createdAt: { gte: startDate } },
+    56→              orderBy: { createdAt: 'desc' }
+    57→            }
+    58→          }
+    59→        },
+    60→        faculty: {
+    61→          include: {
+    62→            user: { select: { name: true, email: true, role: true } },
+    63→            awards: {
+    64→              where: { createdAt: { gte: startDate } },
+    65→              orderBy: { createdAt: 'desc' }
+    66→            },
+    67→            certifications: {
+    68→              where: { createdAt: { gte: startDate } },
+    69→              orderBy: { createdAt: 'desc' }
+    70→            },
+    71→            patents: {
+    72→              where: { createdAt: { gte: startDate } },
+    73→              orderBy: { createdAt: 'desc' }
+    74→            },
+    75→            projects: {
+    76→              where: { createdAt: { gte: startDate } },
+    77→              orderBy: { createdAt: 'desc' }
+    78→            },
+    79→            books: {
+    80→              where: { createdAt: { gte: startDate } },
+    81→              orderBy: { createdAt: 'desc' }
+    82→            },
+    83→            fdpPrograms: {
+    84→              where: { createdAt: { gte: startDate } },
+    85→              orderBy: { createdAt: 'desc' }
+    86→            },
+    87→            consultations: {
+    88→              where: { createdAt: { gte: startDate } },
+    89→              orderBy: { createdAt: 'desc' }
+    90→            }
+    91→          }
+    92→        },
+    93→        activities: {
+    94→          where: { createdAt: { gte: startDate } },
+    95→          orderBy: { createdAt: 'desc' }
+    96→        },
+    97→        research: {
+    98→          where: { createdAt: { gte: startDate } },
+    99→          include: {
+   100→            publications: {
+   101→              include: {
+   102→                faculty: {
+   103→                  include: { user: { select: { name: true } } }
+   104→                }
+   105→              }
+   106→            }
+   107→          },
+   108→          orderBy: { createdAt: 'desc' }
+   109→        }
+   110→      },
+   111→      orderBy: { name: 'asc' }
+   112→    })
+   113→
+   114→    // Build comprehensive report data
+   115→    const reportData = {
+   116→      metadata: {
+   117→        generatedAt: now.toISOString(),
+   118→        period: type || 'all',
+   119→        periodLabel,
+   120→        dateRange: {
+   121→          from: startDate.toISOString(),
+   122→          to: now.toISOString()
+   123→        },
+   124→        totalDepartments: departments.length,
+   125→        category: category || 'all'
+   126→      },
+   127→      executiveSummary: {
+   128→        totalStudents: departments.reduce((sum, d) => sum + d.students.length, 0),
+   129→        totalFaculty: departments.reduce((sum, d) => sum + d.faculty.length, 0),
+   130→        totalHODs: departments.reduce((sum, d) => sum + d.faculty.filter(f => f.isHOD).length, 0),
+   131→        totalActivities: departments.reduce((sum, d) => sum + d.activities.length, 0),
+   132→        totalResearch: departments.reduce((sum, d) => sum + d.research.length, 0)
+   133→      },
+   134→      departmentReports: departments.map(dept => {
+   135→        // Student achievements for this department
+   136→        const studentAchievements = dept.students.flatMap(s => 
+   137→          s.achievements.map(a => ({
+   138→            ...a,
+   139→            studentName: s.user.name,
+   140→            studentRegNumber: s.registerNumber,
+   141→            department: dept.name
+   142→          }))
+   143→        )
+   144→
+   145→        // Staff achievements for this department
+   146→        const staffAchievements = dept.faculty
+   147→          .filter(f => !f.isHOD)
+   148→          .flatMap(f => [
+   149→            ...f.awards.map(a => ({ ...a, achievementType: 'award', staffName: f.user.name, designation: f.designation, department: dept.name })),
+   150→            ...f.certifications.map(c => ({ ...c, achievementType: 'certification', staffName: f.user.name, designation: f.designation, department: dept.name })),
+   151→            ...f.patents.map(p => ({ ...p, achievementType: 'patent', staffName: f.user.name, designation: f.designation, department: dept.name })),
+   152→            ...f.projects.map(p => ({ ...p, achievementType: 'project', staffName: f.user.name, designation: f.designation, department: dept.name })),
+   153→            ...f.books.map(b => ({ ...b, achievementType: 'book', staffName: f.user.name, designation: f.designation, department: dept.name })),
+   154→            ...f.fdpPrograms.map(fdp => ({ ...fdp, achievementType: 'fdp', staffName: f.user.name, designation: f.designation, department: dept.name })),
+   155→            ...f.consultations.map(c => ({ ...c, achievementType: 'consultancy', staffName: f.user.name, designation: f.designation, department: dept.name }))
+   156→          ])
+   157→
+   158→        // HOD achievements for this department
+   159→        const hodAchievements = dept.faculty
+   160→          .filter(f => f.isHOD)
+   161→          .flatMap(f => [
+   162→            ...f.awards.map(a => ({ ...a, achievementType: 'award', staffName: f.user.name, role: 'HOD', department: dept.name })),
+   163→            ...f.certifications.map(c => ({ ...c, achievementType: 'certification', staffName: f.user.name, role: 'HOD', department: dept.name })),
+   164→            ...f.patents.map(p => ({ ...p, achievementType: 'patent', staffName: f.user.name, role: 'HOD', department: dept.name }))
+   165→          ])
+   166→
+   167→        // Placements and Internships
+   168→        const placements = dept.students.flatMap(s =>
+   169→          s.placements.map(p => ({ ...p, studentName: s.user.name, registerNumber: s.registerNumber, department: dept.name }))
+   170→        )
+   171→        const internshipsData = dept.students.flatMap(s =>
+   172→          s.internships.map(i => ({ ...i, studentName: s.user.name, registerNumber: s.registerNumber, department: dept.name }))
+   173→        )
+   174→
+   175→        return {
+   176→          id: dept.id,
+   177→          name: dept.name,
+   178→          code: dept.code,
+   179→          summary: {
+   180→            students: dept.students.length,
+   181→            faculty: dept.faculty.length,
+   182→            hod: dept.faculty.filter(f => f.isHOD).length,
+   183→            activities: dept.activities.length,
+   184→            research: dept.research.length
+   185→          },
+   186→          achievements: {
+   187→            student: {
+   188→              count: studentAchievements.length,
+   189→              items: studentAchievements
+   190→            },
+   191→            staff: {
+   192→              count: staffAchievements.length,
+   193→              items: staffAchievements
+   194→            },
+   195→            hod: {
+   196→              count: hodAchievements.length,
+   197→              items: hodAchievements
+   198→            },
+   199→            total: studentAchievements.length + staffAchievements.length + hodAchievements.length
+   200→          },
+   201→          placements: {
+   202→            count: placements.length,
+   203→            items: placements
+   204→          },
+   205→          internships: {
+   206→            count: internshipsData.length,
+   207→            items: internshipsData
+   208→          },
+   209→          activities: dept.activities.map(a => ({
+   210→            id: a.id,
+   211→            title: a.title,
+   212→            type: a.type,
+   213→            status: a.status,
+   214→            startDate: a.startDate,
+   215→            endDate: a.endDate,
+   216→            participants: a.participants
+   217→          })),
+   218→          research: dept.research.map(r => ({
+   219→            id: r.id,
+   220→            title: r.title,
+   221→            type: r.type,
+   222→            status: r.status,
+   223→            publishDate: r.publishDate,
+   224→            authors: r.publications?.map(p => p.faculty?.user?.name).join(', ')
+   225→          }))
+   226→        }
+   227→      }),
+   228→      rankings: {
+   229→        byTotalAchievements: [...departments]
+   230→          .map(d => ({
+   231→            name: d.name,
+   232→            total: d.students.reduce((sum, s) => sum + s.achievements.length, 0) +
+   233→                   d.faculty.reduce((sum, f) => sum + f.awards.length + f.certifications.length + f.patents.length + f.projects.length, 0)
+   234→          }))
+   235→          .sort((a, b) => b.total - a.total),
+   236→        byStudentAchievements: [...departments]
+   237→          .map(d => ({
+   238→            name: d.name,
+   239→            count: d.students.reduce((sum, s) => sum + s.achievements.length, 0)
+   240→          }))
+   241→          .sort((a, b) => b.count - a.count),
+   242→        byResearchOutput: [...departments]
+   243→          .map(d => ({ name: d.name, count: d.research.length }))
+   244→          .sort((a, b) => b.count - a.count),
+   245→        byPlacementRate: departments
+   246→          .filter(d => d.students.length > 0)
+   247→          .map(d => ({
+   248→            name: d.name,
+   249→            rate: Math.round((d.students.reduce((sum, s) => sum + s.placements.length, 0) / d.students.length) * 100)
+   250→          }))
+   251→          .sort((a, b) => b.rate - a.rate)
+   252→      }
+   253→    }
+   254→
+   255→    // Calculate executive summary totals
+   256→    reportData.executiveSummary.totalAchievements = reportData.departmentReports.reduce(
+   257→      (sum, d) => sum + d.achievements.total, 0
+   258→    )
+   259→    reportData.executiveSummary.totalPlacements = reportData.departmentReports.reduce(
+   260→      (sum, d) => sum + d.placements.count, 0
+   261→    )
+   262→    reportData.executiveSummary.totalInternships = reportData.departmentReports.reduce(
+   263→      (sum, d) => sum + d.internships.count, 0
+   264→    )
+   265→
+   266→    // Return in requested format
+   267→    if (format === 'csv') {
+   268→      return generateCSV(reportData, type, now, periodLabel)
+   269→    }
+   270→
+   271→    if (format === 'xlsx') {
+   272→      return generateExcel(reportData, type, now, periodLabel)
+   273→    }
+   274→
+   275→    if (format === 'pdf') {
+   276→      return generatePDF(reportData, type, now, periodLabel)
+   277→    }
+   278→
+   279→    // Default JSON response
+   280→    return NextResponse.json({
+   281→      success: true,
+   282→      data: reportData
+   283→    })
+   284→  } catch (error) {
+   285→    console.error('Error generating report:', error)
+   286→    return NextResponse.json(
+   287→      { success: false, error: 'Failed to generate report' },
+   288→      { status: 500 }
+   289→    )
+   290→  }
+   291→}
+   292→
+   293→// CSV Generation
+   294→function generateCSV(reportData: any, type: string | null, now: Date, periodLabel: string) {
+   295→  const csvRows: string[] = []
+   296→  
+   297→  // Header
+   298→  csvRows.push(`NIET IQAC ${periodLabel}`)
+   299→  csvRows.push(`Generated: ${now.toLocaleDateString()}`)
+   300→  csvRows.push('')
+   301→  
+   302→  // Executive Summary
+   303→  csvRows.push('EXECUTIVE SUMMARY')
+   304→  csvRows.push(`Total Students,${reportData.executiveSummary.totalStudents}`)
+   305→  csvRows.push(`Total Faculty,${reportData.executiveSummary.totalFaculty}`)
+   306→  csvRows.push(`Total HODs,${reportData.executiveSummary.totalHODs}`)
+   307→  csvRows.push(`Total Activities,${reportData.executiveSummary.totalActivities}`)
+   308→  csvRows.push(`Total Research Papers,${reportData.executiveSummary.totalResearch}`)
+   309→  csvRows.push(`Total Achievements,${reportData.executiveSummary.totalAchievements || 0}`)
+   310→  csvRows.push('')
+   311→  
+   312→  // Department-wise breakdown
+   313→  csvRows.push('DEPARTMENT-WISE BREAKDOWN')
+   314→  csvRows.push('Department,Code,Students,Faculty,HOD,Activities,Research,Student Achievements,Staff Achievements,HOD Achievements,Total')
+   315→  
+   316→  for (const dept of reportData.departmentReports) {
+   317→    csvRows.push([
+   318→      dept.name,
+   319→      dept.code,
+   320→      dept.summary.students,
+   321→      dept.summary.faculty,
+   322→      dept.summary.hod,
+   323→      dept.summary.activities,
+   324→      dept.summary.research,
+   325→      dept.achievements.student.count,
+   326→      dept.achievements.staff.count,
+   327→      dept.achievements.hod.count,
+   328→      dept.achievements.total
+   329→    ].join(','))
+   330→  }
+   331→
+   332→  const csvContent = csvRows.join('\n')
+   333→  
+   334→  return new NextResponse(csvContent, {
+   335→    headers: {
+   336→      'Content-Type': 'text/csv',
+   337→      'Content-Disposition': `attachment; filename="iqac-report-${type || 'all'}-${now.toISOString().split('T')[0]}.csv"`
+   338→    }
+   339→  })
+   340→}
+   341→
+   342→// Excel Generation using xlsx library
+   343→async function generateExcel(reportData: any, type: string | null, now: Date, periodLabel: string) {
+   344→  // Dynamic import for xlsx
+   345→  const XLSX = await import('xlsx')
+   346→  
+   347→  // Create workbook
+   348→  const wb = XLSX.utils.book_new()
+   349→  
+   350→  // Sheet 1: Executive Summary
+   351→  const summaryData = [
+   352→    ['NIET IQAC REPORT'],
+   353→    [periodLabel],
+   354→    [`Generated: ${now.toLocaleDateString()}`],
+   355→    [''],
+   356→    ['EXECUTIVE SUMMARY'],
+   357→    ['Metric', 'Value'],
+   358→    ['Total Students', reportData.executiveSummary.totalStudents],
+   359→    ['Total Faculty', reportData.executiveSummary.totalFaculty],
+   360→    ['Total HODs', reportData.executiveSummary.totalHODs],
+   361→    ['Total Activities', reportData.executiveSummary.totalActivities],
+   362→    ['Total Research Papers', reportData.executiveSummary.totalResearch],
+   363→    ['Total Achievements', reportData.executiveSummary.totalAchievements || 0],
+   364→    ['Total Placements', reportData.executiveSummary.totalPlacements || 0],
+   365→    ['Total Internships', reportData.executiveSummary.totalInternships || 0],
+   366→  ]
+   367→  const wsSummary = XLSX.utils.aoa_to_sheet(summaryData)
+   368→  XLSX.utils.book_append_sheet(wb, wsSummary, 'Executive Summary')
+   369→  
+   370→  // Sheet 2: Department Breakdown
+   371→  const deptHeaders = ['Department', 'Code', 'Students', 'Faculty', 'HOD', 'Activities', 'Research', 'Student Ach.', 'Staff Ach.', 'HOD Ach.', 'Total']
+   372→  const deptRows = reportData.departmentReports.map((dept: any) => [
+   373→    dept.name,
+   374→    dept.code,
+   375→    dept.summary.students,
+   376→    dept.summary.faculty,
+   377→    dept.summary.hod,
+   378→    dept.summary.activities,
+   379→    dept.summary.research,
+   380→    dept.achievements.student.count,
+   381→    dept.achievements.staff.count,
+   382→    dept.achievements.hod.count,
+   383→    dept.achievements.total
+   384→  ])
+   385→  const wsDept = XLSX.utils.aoa_to_sheet([deptHeaders, ...deptRows])
+   386→  XLSX.utils.book_append_sheet(wb, wsDept, 'Departments')
+   387→  
+   388→  // Sheet 3: Rankings
+   389→  const rankingData = [
+   390→    ['TOP DEPARTMENTS BY TOTAL ACHIEVEMENTS'],
+   391→    ['Rank', 'Department', 'Total Achievements'],
+   392→    ...reportData.rankings.byTotalAchievements.slice(0, 10).map((d: any, i: number) => [i + 1, d.name, d.total]),
+   393→    [''],
+   394→    ['TOP BY STUDENT ACHIEVEMENTS'],
+   395→    ['Rank', 'Department', 'Count'],
+   396→    ...reportData.rankings.byStudentAchievements.slice(0, 10).map((d: any, i: number) => [i + 1, d.name, d.count]),
+   397→    [''],
+   398→    ['PLACEMENT RATE RANKING'],
+   399→    ['Rank', 'Department', 'Placement Rate (%)'],
+   400→    ...reportData.rankings.byPlacementRate.slice(0, 10).map((d: any, i: number) => [i + 1, d.name, d.rate + '%']),
+   401→  ]
+   402→  const wsRanking = XLSX.utils.aoa_to_sheet(rankingData)
+   403→  XLSX.utils.book_append_sheet(wb, wsRanking, 'Rankings')
+   404→  
+   405→  // Sheet 4: Detailed Achievements (if any exist)
+   406→  const allAchievements: any[] = []
+   407→  reportData.departmentReports.forEach((dept: any) => {
+   408→    dept.achievements.student.items.forEach((item: any) => {
+   409→      allAchievements.push(['Student', dept.name, item.studentName || '', item.title || item.name || '', item.type || '', item.status || ''])
+   410→    })
+   411→    dept.achievements.staff.items.forEach((item: any) => {
+   412→      allAchievements.push(['Staff', dept.name, item.staffName || '', item.title || item.name || '', item.achievementType || '', item.status || ''])
+   413→    })
+   414→    dept.achievements.hod.items.forEach((item: any) => {
+   415→      allAchievements.push(['HOD', dept.name, item.staffName || '', item.title || item.name || '', item.achievementType || '', item.status || ''])
+   416→    })
+   417→  })
+   418→  
+   419→  if (allAchievements.length > 0) {
+   420→    const achHeaders = ['Role', 'Department', 'Person', 'Title', 'Type', 'Status']
+   421→    const wsAch = XLSX.utils.aoa_to_sheet([achHeaders, ...allAchievements])
+   422→    XLSX.utils.book_append_sheet(wb, wsAch, 'Achievements')
+   423→  }
+   424→  
+   425→  // Generate buffer
+   426→  const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+   427→  
+   428→  return new NextResponse(excelBuffer, {
+   429→    headers: {
+   430→      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+   431→      'Content-Disposition': `attachment; filename="iqac-report-${type || 'all'}-${now.toISOString().split('T')[0]}.xlsx"`
+   432→    }
+   433→  })
+   434→}
+   435→
+   436→// PDF Generation - HTML-based professional report
+   437→async function generatePDF(reportData: any, type: string | null, now: Date, periodLabel: string) {
+   438→  // Build HTML content for the PDF
+   439→  const htmlContent = `
+   440→<!DOCTYPE html>
+   441→<html>
+   442→<head>
+   443→  <meta charset="UTF-8">
+   444→  <title>NIET IQAC Report</title>
+   445→  <style>
+   446→    @page {
+   447→      size: A4;
+   448→      margin: 15mm;
+   449→    }
+   450→    
+   451→    * {
+   452→      box-sizing: border-box;
+   453→      margin: 0;
+   454→      padding: 0;
+   455→    }
+   456→    
+   457→    body {
+   458→      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+   459→      font-size: 11px;
+   460→      line-height: 1.4;
+   461→      color: #1e293b;
+   462→      background: #ffffff;
+   463→    }
+   464→    
+   465→    /* Header */
+   466→    .header {
+   467→      text-align: center;
+   468→      padding: 20px 0;
+   469→      border-bottom: 3px solid #059669;
+   470→      margin-bottom: 25px;
+   471→    }
+   472→    
+   473→    .header h1 {
+   474→      font-size: 24px;
+   475→      color: #059669;
+   476→      font-weight: 700;
+   477→      margin-bottom: 5px;
+   478→    }
+   479→    
+   480→    .header .subtitle {
+   481→      font-size: 14px;
+   482→      color: #64748b;
+   483→    }
+   484→    
+   485→    .header .date {
+   486→      font-size: 11px;
+   487→      color: #94a3b8;
+   488→      margin-top: 5px;
+   489→    }
+   490→    
+   491→    /* Section */
+   492→    .section {
+   493→      margin-bottom: 25px;
+   494→    }
+   495→    
+   496→    .section-title {
+   497→      font-size: 16px;
+   498→      font-weight: 700;
+   499→      color: #059669;
+   500→      background: #ecfdf5;
+   501→      padding: 10px 15px;
+   502→      border-left: 4px solid #059669;
+   503→      margin-bottom: 15px;
+   504→    }
+   505→    
+   506→    /* Stats Grid */
+   507→    .stats-grid {
+   508→      display: grid;
+   509→      grid-template-columns: repeat(3, 1fr);
+   510→      gap: 12px;
+   511→      margin-bottom: 20px;
+   512→    }
+   513→    
+   514→    .stat-card {
+   515→      background: #f8fafc;
+   516→      border: 1px solid #e2e8f0;
+   517→      border-radius: 8px;
+   518→      padding: 12px;
+   519→      text-align: center;
+   520→    }
+   521→    
+   522→    .stat-value {
+   523→      font-size: 24px;
+   524→      font-weight: 700;
+   525→      color: #059669;
+   526→    }
+   527→    
+   528→    .stat-label {
+   529→      font-size: 10px;
+   530→      color: #64748b;
+   531→      text-transform: uppercase;
+   532→      letter-spacing: 0.5px;
+   533→    }
+   534→    
+   535→    /* Table */
+   536→    table {
+   537→      width: 100%;
+   538→      border-collapse: collapse;
+   539→      font-size: 10px;
+   540→    }
+   541→    
+   542→    th {
+   543→      background: #059669;
+   544→      color: white;
+   545→      padding: 10px 8px;
+   546→      text-align: left;
+   547→      font-weight: 600;
+   548→      text-transform: uppercase;
+   549→      font-size: 9px;
+   550→      letter-spacing: 0.5px;
+   551→    }
+   552→    
+   553→    td {
+   554→      padding: 8px;
+   555→      border-bottom: 1px solid #e2e8f0;
+   556→    }
+   557→    
+   558→    tr:nth-child(even) {
+   559→      background: #f8fafc;
+   560→    }
+   561→    
+   562→    tr:hover {
+   563→      background: #ecfdf5;
+   564→    }
+   565→    
+   566→    .text-right {
+   567→      text-align: right;
+   568→    }
+   569→    
+   570→    .text-center {
+   571→      text-align: center;
+   572→    }
+   573→    
+   574→    .badge {
+   575→      display: inline-block;
+   576→      padding: 3px 8px;
+   577→      border-radius: 12px;
+   578→      font-size: 9px;
+   579→      font-weight: 600;
+   580→    }
+   581→    
+   582→    .badge-blue {
+   583→      background: #dbeafe;
+   584→      color: #1d4ed8;
+   585→    }
+   586→    
+   587→    .badge-green {
+   588→      background: #dcfce7;
+   589→      color: #15803d;
+   590→    }
+   591→    
+   592→    .badge-purple {
+   593→      background: #f3e8ff;
+   594→      color: #7c3aed;
+   595→    }
+   596→    
+   597→    .badge-gray {
+   598→      background: #f1f5f9;
+   599→      color: #475569;
+   600→    }
+   601→    
+   602→    /* Rankings */
+   603→    .ranking-list {
+   604→      display: grid;
+   605→      grid-template-columns: repeat(2, 1fr);
+   606→      gap: 15px;
+   607→    }
+   608→    
+   609→    .ranking-item {
+   610→      display: flex;
+   611→      align-items: center;
+   612→      gap: 10px;
+   613→      padding: 10px;
+   614→      background: #f8fafc;
+   615→      border-radius: 6px;
+   616→    }
+   617→    
+   618→    .rank-badge {
+   619→      width: 28px;
+   620→      height: 28px;
+   621→      border-radius: 50%;
+   622→      display: flex;
+   623→      align-items: center;
+   624→      justify-content: center;
+   625→      font-weight: 700;
+   626→      font-size: 12px;
+   627→      color: white;
+   628→      flex-shrink: 0;
+   629→    }
+   630→    
+   631→    .rank-1 { background: #f59e0b; }
+   632→    .rank-2 { background: #6b7280; }
+   633→    .rank-3 { background: #d97706; }
+   634→    .rank-other { background: #94a3b8; }
+   635→    
+   636→    .rank-name {
+   637→      flex: 1;
+   638→      font-weight: 500;
+   639→    }
+   640→    
+   641→    .rank-value {
+   642→      font-weight: 700;
+   643→      color: #059669;
+   644→    }
+   645→    
+   646→    /* Footer */
+   647→    .footer {
+   648→      margin-top: 30px;
+   649→      padding-top: 15px;
+   650→      border-top: 1px solid #e2e8f0;
+   651→      text-align: center;
+   652→      font-size: 9px;
+   653→      color: #94a3b8;
+   654→    }
+   655→    
+   656→    @media print {
+   657→      body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+   658→    }
+   659→  </style>
+   660→</head>
+   661→<body>
+   662→  <!-- Header -->
+   663→  <div class="header">
+   664→    <h1>NIET IQAC Report</h1>
+   665→    <div class="subtitle">${periodLabel}</div>
+   666→    <div class="date">Generated on ${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+   667→  </div>
+   668→
+   669→  <!-- Executive Summary -->
+   670→  <div class="section">
+   671→    <div class="section-title">Executive Summary</div>
+   672→    <div class="stats-grid">
+   673→      <div class="stat-card">
+   674→        <div class="stat-value">${reportData.executiveSummary.totalStudents}</div>
+   675→        <div class="stat-label">Total Students</div>
+   676→      </div>
+   677→      <div class="stat-card">
+   678→        <div class="stat-value">${reportData.executiveSummary.totalFaculty}</div>
+   679→        <div class="stat-label">Total Faculty</div>
+   680→      </div>
+   681→      <div class="stat-card">
+   682→        <div class="stat-value">${reportData.executiveSummary.totalHODs}</div>
+   683→        <div class="stat-label">Total HODs</div>
+   684→      </div>
+   685→      <div class="stat-card">
+   686→        <div class="stat-value">${reportData.executiveSummary.totalActivities || 0}</div>
+   687→        <div class="stat-label">Activities</div>
+   688→      </div>
+   689→      <div class="stat-card">
+   690→        <div class="stat-value">${reportData.executiveSummary.totalResearch || 0}</div>
+   691→        <div class="stat-label">Research Papers</div>
+   692→      </div>
+   693→      <div class="stat-card">
+   694→        <div class="stat-value">${reportData.executiveSummary.totalAchievements || 0}</div>
+   695→        <div class="stat-label">Total Achievements</div>
+   696→      </div>
+   697→    </div>
+   698→  </div>
+   699→
+   700→  <!-- Department Reports Table -->
+   701→  <div class="section">
+   702→    <div class="section-title">Department-wise Performance</div>
+   703→    <table>
+   704→      <thead>
+   705→        <tr>
+   706→          <th>Department</th>
+   707→          <th class="text-center">Code</th>
+   708→          <th class="text-center">Students</th>
+   709→          <th class="text-center">Faculty</th>
+   710→          <th class="text-center">HOD</th>
+   711→          <th class="text-center">Activities</th>
+   712→          <th class="text-center">Research</th>
+   713→          <th class="text-center">Student Ach.</th>
+   714→          <th class="text-center">Staff Ach.</th>
+   715→          <th class="text-center">HOD Ach.</th>
+   716→          <th class="text-center">Total</th>
+   717→        </tr>
+   718→      </thead>
+   719→      <tbody>
+   720→        ${reportData.departmentReports.map((dept: any) => `
+   721→        <tr>
+   722→          <td><strong>${dept.name}</strong></td>
+   723→          <td class="text-center">${dept.code}</td>
+   724→          <td class="text-center">${dept.summary.students}</td>
+   725→          <td class="text-center">${dept.summary.faculty}</td>
+   726→          <td class="text-center">${dept.summary.hod}</td>
+   727→          <td class="text-center">${dept.summary.activities}</td>
+   728→          <td class="text-center">${dept.summary.research}</td>
+   729→          <td class="text-center"><span class="badge badge-blue">${dept.achievements.student.count}</span></td>
+   730→          <td class="text-center"><span class="badge badge-green">${dept.achievements.staff.count}</span></td>
+   731→          <td class="text-center"><span class="badge badge-purple">${dept.achievements.hod.count}</span></td>
+   732→          <td class="text-center"><span class="badge badge-gray">${dept.achievements.total}</span></td>
+   733→        </tr>
+   734→        `).join('')}
+   735→      </tbody>
+   736→    </table>
+   737→  </div>
+   738→
+   739→  <!-- Rankings -->
+   740→  <div class="section">
+   741→    <div class="section-title">Top Performers</div>
+   742→    <div class="ranking-list">
+   743→      <div>
+   744→        <p style="font-weight: 600; margin-bottom: 10px; color: #374151;">By Total Achievements</p>
+   745→        ${(reportData.rankings.byTotalAchievements || []).slice(0, 5).map((dept: any, idx: number) => `
+   746→        <div class="ranking-item">
+   747→          <span class="rank-badge ${idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : 'rank-other'}">${idx + 1}</span>
+   748→          <span class="rank-name">${dept.name}</span>
+   749→          <span class="rank-value">${dept.total}</span>
+   750→        </div>
+   751→        `).join('')}
+   752→      </div>
+   753→      <div>
+   754→        <p style="font-weight: 600; margin-bottom: 10px; color: #374151;">By Placement Rate</p>
+   755→        ${(reportData.rankings.byPlacementRate || []).slice(0, 5).map((dept: any, idx: number) => `
+   756→        <div class="ranking-item">
+   757→          <span class="rank-badge ${idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : 'rank-other'}">${idx + 1}</span>
+   758→          <span class="rank-name">${dept.name}</span>
+   759→          <span class="rank-value">${dept.rate}%</span>
+   760→        </div>
+   761→        `).join('')}
+   762→      </div>
+   763→    </div>
+   764→  </div>
+   765→
+   766→  <!-- Footer -->
+   767→  <div class="footer">
+   768→    <p>This report was auto-generated by NIET IQAC Management System</p>
+   769→    <p>Confidential - For Internal Use Only</p>
+   770→  </div>
+   771→</body>
+   772→</html>
+   773→  `
+   774→
+   775→  // Use Playwright or html-based conversion for PDF
+   776→  // For simplicity, we'll return HTML that can be converted to PDF client-side
+   777→  // Or use a server-side approach
+   778→  
+   779→  // Return as HTML with PDF content-type hint
+   780→  // In production, you'd use puppeteer/playwright to convert to actual PDF
+   781→  return new NextResponse(htmlContent, {
+   782→    headers: {
+   783→      'Content-Type': 'text/html',
+   784→      'Content-Disposition': `attachment; filename="iqac-report-${type || 'all'}-${now.toISOString().split('T')[0]}.html"`,
+   785→      'X-PDF-Hint': 'true'
+   786→    }
+   787→  })
+   788→}
+   789→
