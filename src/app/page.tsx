@@ -32,7 +32,9 @@ import {
   Camera, FileBadge,
   Timeline, ArrowUpDown, Maximize2,
   // CMS Portal icons
-  Megaphone, HardDrive, AlertTriangle, UserPlus
+  Megaphone, HardDrive, AlertTriangle, UserPlus,
+  // Login icon
+  LogIn
 } from 'lucide-react'
 
 // Premium Components (only ones that export correctly)
@@ -439,6 +441,10 @@ function LoginPage() {
   const [showDeptDropdown, setShowDeptDropdown] = useState(false)
   const [isFocused, setIsFocused] = useState<string | null>(null)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+  // CMS Portal specific states
+  const [cmsEmail, setCmsEmail] = useState('')
+  const [cmsPassword, setCmsPassword] = useState('')
+  const [showCmsPassword, setShowCmsPassword] = useState(false)
   const login = useAuthStore((state) => state.login)
   const cmsLogin = useAuthStore((state) => state.cmsLogin)
 
@@ -460,6 +466,23 @@ function LoginPage() {
       const result = await login(email, password)
       if (!result.success) {
         setError(result.error || 'Invalid email or password')
+      }
+    } catch (err) {
+      setError('Network error. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // CMS Portal Login Handler
+  const handleCmsLogin = async () => {
+    setError('')
+    setIsLoading(true)
+    
+    try {
+      const result = await cmsLogin(cmsEmail, cmsPassword)
+      if (!result.success) {
+        setError(result.error || 'CMS Login failed')
       }
     } catch (err) {
       setError('Network error. Please try again.')
@@ -999,7 +1022,7 @@ function LoginPage() {
             <div className="card-bottom-accent" />
           </div>
 
-          {/* ====== CMS PORTAL ENTRANCE (Separate Login) ====== */}
+          {/* ====== CMS PORTAL ENTRANCE (Separate Login with Gmail/Password) ====== */}
           <div className="mt-6 cms-portal-entrance">
             <div className="cms-divider">
               <div className="cms-divider-line" />
@@ -1010,43 +1033,107 @@ function LoginPage() {
               <div className="cms-divider-line" />
             </div>
             
-            <button
-              onClick={() => {
-                setEmail('Manager')
-                setPassword('Manager@1234')
-                setTimeout(async () => {
-                  try {
-                    const result = await cmsLogin('Manager', 'Manager@1234')
-                    if (!result.success) {
-                      setError(result.error || 'CMS Login failed')
-                    }
-                  } catch (err) {
-                    setError('Network error. Please try again.')
-                  }
-                }, 100)
-              }}
-              className="cms-portal-btn"
-            >
-              <div className="cms-btn-left">
-                <div className="cms-btn-icon-wrap">
-                  <Wrench className="cms-btn-icon" />
+            {/* CMS Portal Card with Email/Password Fields */}
+            <div className="cms-login-card">
+              <div className="cms-card-header">
+                <div className="cms-card-icon-wrap">
+                  <Wrench className="cms-card-icon" />
                 </div>
-                <div className="cms-btn-text">
-                  <span className="cms-btn-title">CMS Portal</span>
-                  <span className="cms-btn-desc">Manager Access • System Configuration</span>
+                <div className="cms-card-title-section">
+                  <h3 className="cms-card-title">CMS Portal</h3>
+                  <p className="cms-card-subtitle">Manager Access • System Configuration</p>
+                </div>
+                <div className="cms-card-badge">
+                  <Shield className="w-3 h-3" />
+                  SECURE
                 </div>
               </div>
-              <div className="cms-btn-badge">
-                <Shield className="w-3 h-3" />
-                SECURE
+              
+              <div className="cms-form-fields">
+                {/* Manager Email/Gmail Field */}
+                <div className={`cms-field-group ${isFocused === 'cms-email' ? 'cms-field-focused' : ''}`}>
+                  <label className="cms-field-label">
+                    <Mail className="w-3.5 h-3.5" />
+                    Email / Gmail
+                  </label>
+                  <div className="cms-input-wrapper">
+                    <Input
+                      type="email"
+                      placeholder="manager@niet.ac.in"
+                      value={cmsEmail}
+                      onChange={(e) => setCmsEmail(e.target.value)}
+                      onFocus={() => setIsFocused('cms-email')}
+                      onBlur={() => setIsFocused(null)}
+                      className="cms-input-field"
+                    />
+                  </div>
+                </div>
+                
+                {/* Manager Password Field */}
+                <div className={`cms-field-group ${isFocused === 'cms-password' ? 'cms-field-focused' : ''}`}>
+                  <label className="cms-field-label">
+                    <Lock className="w-3.5 h-3.5" />
+                    Password
+                  </label>
+                  <div className="cms-input-wrapper">
+                    <Input
+                      type={showCmsPassword ? 'text' : 'password'}
+                      placeholder="Enter password"
+                      value={cmsPassword}
+                      onChange={(e) => setCmsPassword(e.target.value)}
+                      onFocus={() => setIsFocused('cms-password')}
+                      onBlur={() => setIsFocused(null)}
+                      className="cms-input-field pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCmsPassword(!showCmsPassword)}
+                      className="cms-password-toggle"
+                    >
+                      {showCmsPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                
+                {/* CMS Login Button */}
+                <button
+                  onClick={handleCmsLogin}
+                  disabled={isLoading || !cmsEmail || !cmsPassword}
+                  className="cms-login-button"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Authenticating...
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="w-4 h-4" />
+                      Login to CMS Portal
+                    </>
+                  )}
+                  <div className="cms-btn-glow" />
+                </button>
               </div>
-              <ChevronRight className="cms-btn-arrow" />
-              <div className="cms-btn-glow" />
-            </button>
-            
-            <p className="cms-credentials-hint">
-              Credentials: <code>Manager</code> / <code>Manager@1234</code>
-            </p>
+              
+              {/* Quick Fill Option */}
+              <div className="cms-quick-fill">
+                <span className="cms-quick-label">Quick Fill:</span>
+                <button 
+                  onClick={() => {
+                    setCmsEmail('manager@niet.ac.in')
+                    setCmsPassword('Manager@1234')
+                  }}
+                  className="cms-quick-btn"
+                >
+                  Use Default Credentials
+                </button>
+              </div>
+              
+              <p className="cms-credentials-hint">
+                Default: <code>manager@niet.ac.in</code> / <code>Manager@1234</code>
+              </p>
+            </div>
           </div>
 
           {/* ====== FOOTER ====== */}
@@ -2569,6 +2656,202 @@ function LoginPage() {
           font-size: 10px;
           font-family: 'JetBrains Mono', monospace;
           color: #475569;
+        }
+        
+        /* ========== CMS LOGIN CARD WITH FORM FIELDS ========== */
+        .cms-login-card {
+          background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #1e293b 100%);
+          border: 1px solid rgba(148, 163, 184, 0.2);
+          border-radius: 16px;
+          padding: 20px;
+          position: relative;
+          overflow: hidden;
+        }
+        .cms-login-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.5), transparent);
+        }
+        .cms-card-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 18px;
+          padding-bottom: 14px;
+          border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+        }
+        .cms-card-icon-wrap {
+          width: 42px;
+          height: 42px;
+          border-radius: 12px;
+          background: linear-gradient(135deg, #6366f1, #8b5cf6);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .cms-card-icon {
+          width: 22px;
+          height: 22px;
+          color: white;
+        }
+        .cms-card-title-section {
+          flex: 1;
+        }
+        .cms-card-title {
+          font-size: 15px;
+          font-weight: 600;
+          color: white;
+          margin: 0;
+        }
+        .cms-card-subtitle {
+          font-size: 11px;
+          color: #94a3b8;
+          margin-top: 2px;
+        }
+        .cms-card-badge {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 5px 10px;
+          background: rgba(16, 185, 129, 0.15);
+          border: 1px solid rgba(16, 185, 129, 0.3);
+          border-radius: 8px;
+          font-size: 9px;
+          font-weight: 700;
+          color: #10b981;
+          letter-spacing: 0.8px;
+        }
+        .cms-form-fields {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+        .cms-field-group {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .cms-field-label {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          font-weight: 600;
+          color: #94a3b8;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .cms-input-wrapper {
+          position: relative;
+        }
+        .cms-input-field {
+          width: 100%;
+          padding: 12px 14px;
+          background: rgba(15, 23, 42, 0.6) !important;
+          border: 1px solid rgba(148, 163, 184, 0.2) !important;
+          border-radius: 10px !important;
+          color: white !important;
+          font-size: 13px;
+          transition: all 0.25s ease;
+        }
+        .cms-input-field:focus {
+          border-color: rgba(99, 102, 241, 0.6) !important;
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+          outline: none !important;
+        }
+        .cms-input-field::placeholder {
+          color: #64748b;
+        }
+        .cms-field-focused .cms-field-label {
+          color: #818cf8;
+        }
+        .cms-password-toggle {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          color: #64748b;
+          cursor: pointer;
+          padding: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: color 0.2s ease;
+        }
+        .cms-password-toggle:hover {
+          color: #94a3b8;
+        }
+        .cms-login-button {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 13px 20px;
+          margin-top: 4px;
+          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+          border: none !important;
+          border-radius: 11px !important;
+          color: white !important;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          position: relative;
+          overflow: hidden;
+          transition: all 0.3s ease;
+        }
+        .cms-login-button:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+        }
+        .cms-login-button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+        .cms-login-button .cms-btn-glow {
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+          transition: left 0.5s ease;
+        }
+        .cms-login-button:hover:not(:disabled) .cms-btn-glow {
+          left: 100%;
+        }
+        .cms-quick-fill {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-top: 12px;
+          padding-top: 12px;
+          border-top: 1px solid rgba(148, 163, 184, 0.12);
+        }
+        .cms-quick-label {
+          font-size: 11px;
+          color: #64748b;
+        }
+        .cms-quick-btn {
+          font-size: 11px;
+          color: #818cf8;
+          background: none;
+          border: none;
+          cursor: pointer;
+          text-decoration: underline;
+          text-decoration-style: dashed;
+          text-underline-offset: 3px;
+          transition: color 0.2s ease;
+        }
+        .cms-quick-btn:hover {
+          color: #a5b4fc;
         }
       `}</style>
     </div>
