@@ -34,7 +34,9 @@ import {
   // CMS Portal icons
   Megaphone, HardDrive, AlertTriangle, UserPlus,
   // Login icon
-  LogIn
+  LogIn,
+  // Admin icons
+  FileCheck
 } from 'lucide-react'
 
 // Premium Components (only ones that export correctly)
@@ -3807,7 +3809,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
               onClick={() => setActiveTab('activities')}
             />
             <ActionCard 
-              icon={FileCheckIcon} 
+              icon={FileCheck} 
               title="Review Approvals" 
               description="Process pending approval requests"
               color="bg-gradient-to-br from-amber-500 to-orange-500"
