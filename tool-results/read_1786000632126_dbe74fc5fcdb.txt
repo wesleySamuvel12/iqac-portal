@@ -1,0 +1,502 @@
+ 10000→      fdpsAttended: { prev: '', curr: '' },
+ 10001→      fdpsOrganized: { prev: '', curr: '' },
+ 10002→      nptelCompleted: { prev: '', curr: '' },
+ 10003→      moocsCompleted: { prev: '', curr: '' },
+ 10004→      resourcePerson: { prev: '', curr: '' }
+ 10005→    })),
+ 10006→    
+ 10007→    // Cumulative Faculty Dev
+ 10008→    cumulativeFacultyDev: {
+ 10009→      fdpsAttended: { prev: '', cumulative: '' },
+ 10010→      fdpsOrganized: { prev: '', cumulative: '' },
+ 10011→      nptelCompleted: { prev: '', cumulative: '' },
+ 10012→      moocsCompleted: { prev: '', cumulative: '' },
+ 10013→      resourcePerson: { prev: '', cumulative: '' }
+ 10014→    },
+ 10015→    
+ 10016→    // E. STUDENTS INTERNSHIP
+ 10017→    internship: {
+ 10018→      previous: { paid: '', nonPaid: '', virtual: '', notAvailed: '' },
+ 10019→      current: { paid: '', nonPaid: '', virtual: '', notAvailed: '' },
+ 10020→      total: { paid: '', nonPaid: '', virtual: '', notAvailed: '' }
+ 10021→    },
+ 10022→    
+ 10023→    // F. FACULTY-INDUSTRY INTERACTION
+ 10024→    industryInteraction: Array(8).fill(null).map(() => ({
+ 10025→      name: '',
+ 10026→      mousSigned: { prev: '', curr: '' },
+ 10027→      industryVisits: { prev: '', curr: '' },
+ 10028→      expertsInvited: { prev: '', curr: '' },
+ 10029→      collaborativeActivities: { prev: '', curr: '' },
+ 10030→      consultancyServices: { prev: '', curr: '' }
+ 10031→    })),
+ 10032→    
+ 10033→    // G. QUALITY ASSURANCE ACTIVITIES
+ 10034→    qaActivities: [
+ 10035→      { particular: 'Course File', status: 'Updated', remarks: '' },
+ 10036→      { particular: 'Question Bank', status: 'Updated', remarks: '' },
+ 10037→      { particular: 'CO-PO Mapping File', status: 'Updated', remarks: '' },
+ 10038→      { particular: "Student's Monthly Feedback with ATR", status: 'Updated', remarks: '' },
+ 10039→      { particular: 'Academic Audit Observations', status: 'Phase I / II / III / IV Completed', remarks: 'Enclose the report' },
+ 10040→      { particular: 'Best Practices Implemented', status: 'Yes / No', remarks: '' },
+ 10041→      { particular: 'Mentor-Mentee Records', status: 'Updated', remarks: '' },
+ 10042→      { particular: 'SDG Activities File', status: 'Updated', remarks: '' },
+ 10043→      { particular: 'Dept./NBA Documentation Updation', status: 'Updated', remarks: '' },
+ 10044→      { particular: 'Total Fees pending', status: '', remarks: '' }
+ 10045→    ],
+ 10046→    
+ 10047→    // H. DOCUMENTS TO BE ATTACHED
+ 10048→    documents: {
+ 10049→      eventReports: false,
+ 10050→      workshopCertificates: false,
+ 10051→      publicationProofs: false,
+ 10052→      placementDetails: false,
+ 10053→      internshipDetails: false,
+ 10054→      studentAchievementProofs: false,
+ 10055→      sdgExtensionReports: false,
+ 10056→      mouIndustryDocuments: false
+ 10057→    }
+ 10058→  })
+ 10059→
+ 10060→  const sections = [
+ 10061→    { id: 0, title: 'Header Information', icon: FileText },
+ 10062→    { id: 1, title: 'Dept. Basic Information', icon: Users },
+ 10063→    { id: 2, title: 'A. Academic Activities', icon: BookOpen },
+ 10064→    { id: 3, title: 'B. Student Development', icon: GraduationCap },
+ 10065→    { id: 4, title: 'C. Research & Innovation', icon: Award },
+ 10066→    { id: 5, title: 'D. Faculty Development', icon: TrendingUp },
+ 10067→    { id: 6, title: 'E. Students Internship', icon: Briefcase },
+ 10068→    { id: 7, title: 'F. Industry Interaction', icon: Handshake },
+ 10069→    { id: 8, title: 'G. Quality Assurance', icon: Shield },
+ 10070→    { id: 9, title: 'H. Documents Checklist', icon: FolderOpen }
+ 10071→  ]
+ 10072→
+ 10073→  const updateField = (field: string, value: string) => {
+ 10074→    setReportData(prev => ({ ...prev, [field]: value }))
+ 10075→  }
+ 10076→
+ 10077→  const updateStudentDev = (key: string, subKey: string, value: string) => {
+ 10078→    setReportData(prev => ({
+ 10079→      ...prev,
+ 10080→      studentDev: {
+ 10081→        ...prev.studentDev,
+ 10082→        [key]: { ...prev.studentDev[key as keyof typeof prev.studentDev], [subKey]: value }
+ 10083→      }
+ 10084→    }))
+ 10085→  }
+ 10086→
+ 10087→  const updateResearchFaculty = (index: number, field: string, subKey?: string, value?: string) => {
+ 10088→    setReportData(prev => {
+ 10089→      const newFaculty = [...prev.researchFaculty]
+ 10090→      if (subKey && value !== undefined) {
+ 10091→        newFaculty[index] = {
+ 10092→          ...newFaculty[index],
+ 10093→          [field]: { ...newFaculty[index][field as keyof typeof newFaculty[0]], [subKey]: value }
+ 10094→        }
+ 10095→      } else {
+ 10096→        newFaculty[index] = { ...newFaculty[index], [field]: value || '' }
+ 10097→      }
+ 10098→      return { ...prev, researchFaculty: newFaculty }
+ 10099→    })
+ 10100→  }
+ 10101→
+ 10102→  const updateFacultyDev = (index: number, field: string, subKey: string, value: string) => {
+ 10103→    setReportData(prev => {
+ 10104→      const newFaculty = [...prev.facultyDev]
+ 10105→      newFaculty[index] = {
+ 10106→        ...newFaculty[index],
+ 10107→        [field]: { ...newFaculty[index][field as keyof typeof newFaculty[0]], [subKey]: value }
+ 10108→      }
+ 10109→      return { ...prev, facultyDev: newFaculty }
+ 10110→    })
+ 10111→  }
+ 10112→
+ 10113→  const updateInternship = (period: string, field: string, value: string) => {
+ 10114→    setReportData(prev => ({
+ 10115→      ...prev,
+ 10116→      internship: {
+ 10117→        ...prev.internship,
+ 10118→        [period]: { ...prev.internship[period as keyof typeof prev.internship], [field]: value }
+ 10119→      }
+ 10120→    }))
+ 10121→  }
+ 10122→
+ 10123→  const updateIndustryInteraction = (index: number, field: string, subKey: string, value: string) => {
+ 10124→    setReportData(prev => {
+ 10125→      const newData = [...prev.industryInteraction]
+ 10126→      newData[index] = {
+ 10127→        ...newData[index],
+ 10128→        [field]: { ...newData[index][field as keyof typeof newData[0]], [subKey]: value }
+ 10129→      }
+ 10130→      return { ...prev, industryInteraction: newData }
+ 10131→    })
+ 10132→  }
+ 10133→
+ 10134→  const updateQAActivity = (index: number, field: string, value: string) => {
+ 10135→    setReportData(prev => {
+ 10136→      const newQA = [...prev.qaActivities]
+ 10137→      newQA[index] = { ...newQA[index], [field]: value }
+ 10138→      return { ...prev, qaActivities: newQA }
+ 10139→    })
+ 10140→  }
+ 10141→
+ 10142→  const updateDocuments = (field: string, value: boolean) => {
+ 10143→    setReportData(prev => ({
+ 10144→      ...prev,
+ 10145→      documents: { ...prev.documents, [field]: value }
+ 10146→    }))
+ 10147→  }
+ 10148→
+ 10149→  const generateReport = async () => {
+ 10150→    setGenerating(true)
+ 10151→    try {
+ 10152→      const response = await fetch('/api/generate-report', {
+ 10153→        method: 'POST',
+ 10154→        headers: { 'Content-Type': 'application/json' },
+ 10155→        body: JSON.stringify({ reportData, department: user.departmentName })
+ 10156→      })
+ 10157→      
+ 10158→      if (response.ok) {
+ 10159→        const blob = await response.blob()
+ 10160→        const url = window.URL.createObjectURL(blob)
+ 10161→        const a = document.createElement('a')
+ 10162→        a.href = url
+ 10163→        a.download = `Monthly_Department_Report_${user.departmentName}_${reportData.reportingMonth}_${reportData.reportingYear}.docx`
+ 10164→        document.body.appendChild(a)
+ 10165→        a.click()
+ 10166→        window.URL.revokeObjectURL(url)
+ 10167→        document.body.removeChild(a)
+ 10168→        setGenerated(true)
+ 10169→        setTimeout(() => setGenerated(false), 3000)
+ 10170→      } else {
+ 10171→        alert('Error generating report')
+ 10172→      }
+ 10173→    } catch (error) {
+ 10174→      console.error('Error:', error)
+ 10175→      alert('Error generating report')
+ 10176→    } finally {
+ 10177→      setGenerating(false)
+ 10178→    }
+ 10179→  }
+ 10180→
+ 10181→  // Generate Excel file
+ 10182→  const generateExcel = async () => {
+ 10183→    setGenerating(true)
+ 10184→    try {
+ 10185→      const response = await fetch('/api/generate-excel', {
+ 10186→        method: 'POST',
+ 10187→        headers: { 'Content-Type': 'application/json' },
+ 10188→        body: JSON.stringify({ reportData, department: user.departmentName })
+ 10189→      })
+ 10190→      
+ 10191→      if (response.ok) {
+ 10192→        const blob = await response.blob()
+ 10193→        const url = window.URL.createObjectURL(blob)
+ 10194→        const a = document.createElement('a')
+ 10195→        a.href = url
+ 10196→        a.download = `Monthly_Report_${user.departmentName}_${reportData.reportingMonth}.xlsx`
+ 10197→        document.body.appendChild(a)
+ 10198→        a.click()
+ 10199→        window.URL.revokeObjectURL(url)
+ 10200→        document.body.removeChild(a)
+ 10201→      } else {
+ 10202→        alert('Error generating Excel')
+ 10203→      }
+ 10204→    } catch (error) {
+ 10205→      console.error('Error:', error)
+ 10206→      alert('Error generating Excel')
+ 10207→    } finally {
+ 10208→      setGenerating(false)
+ 10209→    }
+ 10210→  }
+ 10211→
+ 10212→  // Generate PDF file - Downloads actual PDF
+ 10213→  const generatePDF = async () => {
+ 10214→    setGenerating(true)
+ 10215→    try {
+ 10216→      const response = await fetch('/api/generate-pdf', {
+ 10217→        method: 'POST',
+ 10218→        headers: { 'Content-Type': 'application/json' },
+ 10219→        body: JSON.stringify({ reportData, department: user.departmentName })
+ 10220→      })
+ 10221→      
+ 10222→      if (response.ok) {
+ 10223→        // Get the PDF as a blob
+ 10224→        const blob = await response.blob()
+ 10225→        
+ 10226→        // Create download link
+ 10227→        const url = window.URL.createObjectURL(blob)
+ 10228→        const a = document.createElement('a')
+ 10229→        a.href = url
+ 10230→        a.download = `Monthly_Department_Report_${user.departmentName}_${reportData.reportingMonth || 'Report'}_${reportData.reportingYear || new Date().getFullYear()}.pdf`
+ 10231→        document.body.appendChild(a)
+ 10232→        a.click()
+ 10233→        
+ 10234→        // Cleanup
+ 10235→        window.URL.revokeObjectURL(url)
+ 10236→        document.body.removeChild(a)
+ 10237→        
+ 10238→        setGenerated(true)
+ 10239→        setTimeout(() => setGenerated(false), 3000)
+ 10240→      } else {
+ 10241→        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+ 10242→        alert('Error generating PDF: ' + (errorData.error || 'Server error'))
+ 10243→      }
+ 10244→    } catch (error) {
+ 10245→      console.error('Error:', error)
+ 10246→      alert('Error generating PDF. Please try again.')
+ 10247→    } finally {
+ 10248→      setGenerating(false)
+ 10249→    }
+ 10250→  }
+ 10251→
+ 10252→  return (
+ 10253→    <div className="h-[calc(100vh-110px)] flex flex-col gap-1.5 p-2.5 overflow-hidden bg-gray-50">
+ 10254→      {/* Header - Ultra Compact with Export Buttons */}
+ 10255→      <div className="flex items-center justify-between gap-2 flex-shrink-0">
+ 10256→        <div className="min-w-0">
+ 10257→          <h2 className="text-base font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-tight truncate">
+ 10258→            📋 Report Generator
+ 10259→          </h2>
+ 10260→          <p className="text-gray-500 text-[10px]">NIET Monthly Department Report</p>
+ 10261→        </div>
+ 10262→        <div className="flex gap-1 flex-shrink-0">
+ 10263→          <Button 
+ 10264→            onClick={generateExcel} 
+ 10265→            disabled={generating}
+ 10266→            variant="outline"
+ 10267→            className="bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-700 px-2.5 h-7 text-[10px] font-medium"
+ 10268→          >
+ 10269→            <FileSpreadsheet className="w-3 h-3 mr-1" />
+ 10270→            Excel
+ 10271→          </Button>
+ 10272→          <Button 
+ 10273→            onClick={generatePDF} 
+ 10274→            disabled={generating}
+ 10275→            variant="outline"
+ 10276→            className="bg-red-50 hover:bg-red-100 border-red-300 text-red-700 px-2.5 h-7 text-[10px] font-medium"
+ 10277→          >
+ 10278→            <FileText className="w-3 h-3 mr-1" />
+ 10279→            PDF
+ 10280→          </Button>
+ 10281→          <Button 
+ 10282→            onClick={generateReport} 
+ 10283→            disabled={generating}
+ 10284→            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-2.5 h-7 text-[10px] font-medium shadow-md"
+ 10285→          >
+ 10286→            {generating ? (
+ 10287→              <><Loader2 className="w-3 h-3 mr-1 animate-spin" />...</>
+ 10288→            ) : (
+ 10289→              <><Download className="w-3 h-3 mr-1" />DOCX</>
+ 10290→            )}
+ 10291→          </Button>
+ 10292→        </div>
+ 10293→      </div>
+ 10294→
+ 10295→      {generated && (
+ 10296→        <div className="bg-green-100 border border-green-300 rounded px-2 py-1 flex items-center gap-1.5 flex-shrink-0">
+ 10297→          <CheckCircle className="w-3 h-3 text-green-600" />
+ 10298→          <span className="text-green-700 font-medium text-[10px]">Report generated successfully!</span>
+ 10299→        </div>
+ 10300→      )}
+ 10301→
+ 10302→      {/* Section Navigation - Single Row, Ultra Compact */}
+ 10303→      <div className="bg-white rounded-lg border border-gray-200 p-0.5 flex-shrink-0">
+ 10304→        <div className="flex gap-0.5 justify-center flex-wrap">
+ 10305→          {sections.map((section) => (
+ 10306→            <button
+ 10307→              key={section.id}
+ 10308→              onClick={() => setActiveSection(section.id)}
+ 10309→              className={`flex items-center gap-1 px-1.5 py-[3px] rounded-[4px] text-[9px] transition-all ${
+ 10310→                activeSection === section.id
+ 10311→                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-sm'
+ 10312→                  : 'text-gray-600 hover:bg-gray-100'
+ 10313→              }`}
+ 10314→            >
+ 10315→              <section.icon className="w-2.5 h-2.5" />
+ 10316→              <span className="hidden md:inline">{section.title}</span>
+ 10317→              <span className="md:hidden">{section.title.split(' ')[0]}</span>
+ 10318→            </button>
+ 10319→          ))}
+ 10320→        </div>
+ 10321→      </div>
+ 10322→
+ 10323→      {/* Section Content - No Scroll, Fits Screen Perfectly */}
+ 10324→      <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex-1 min-h-0 overflow-hidden">
+ 10325→        {/* Section 0: Header Information - Ultra Compact */}
+ 10326→        {activeSection === 0 && (
+ 10327→          <div className="p-2.5 space-y-2 h-full flex flex-col overflow-hidden">
+ 10328→            <div className="border-b pb-1.5">
+ 10329→              <h3 className="text-xs font-bold text-gray-900 flex items-center gap-1">
+ 10330→                <FileText className="w-3 h-3 text-blue-500" />
+ 10331→                Header Information
+ 10332→              </h3>
+ 10333→            </div>
+ 10334→            
+ 10335→            {/* NIET Header - Ultra Compact */}
+ 10336→            <div className="bg-gradient-to-r from-slate-800 to-blue-900 rounded-md p-2 text-white">
+ 10337→              <div className="flex items-center justify-between">
+ 10338→                <div>
+ 10339→                  <h1 className="text-[11px] font-bold leading-tight">NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY</h1>
+ 10340→                  <p className="text-blue-200 text-[9px]">(AUTONOMOUS) – ISO Certified | NAAC "A+" | NBA</p>
+ 10341→                </div>
+ 10342→                <GraduationCap className="w-6 h-6 text-white/50 hidden sm:block" />
+ 10343→              </div>
+ 10344→            </div>
+ 10345→
+ 10346→            <div className="bg-blue-50 rounded px-2 py-1 border border-blue-200">
+ 10347→              <span className="font-bold text-blue-900 text-[10px]">MONTHLY DEPARTMENT REPORT - {reportData.academicYear}</span>
+ 10348→            </div>
+ 10349→
+ 10350→            <div className="grid grid-cols-3 gap-2">
+ 10351→              <div className="space-y-0.5">
+ 10352→                <label className="text-[9px] font-medium text-gray-600">School *</label>
+ 10353→                <Input value={reportData.schoolName} onChange={(e) => updateField('schoolName', e.target.value)} placeholder="School of..." className="border-gray-300 h-6 text-[10px]" />
+ 10354→              </div>
+ 10355→              <div className="space-y-0.5">
+ 10356→                <label className="text-[9px] font-medium text-gray-600">Department *</label>
+ 10357→                <Input value={reportData.department} onChange={(e) => updateField('department', e.target.value)} placeholder="Dept Name" className="border-gray-300 h-6 text-[10px]" />
+ 10358→              </div>
+ 10359→              <div className="space-y-0.5">
+ 10360→                <label className="text-[9px] font-medium text-gray-600">Month / Year *</label>
+ 10361→                <div className="flex gap-1">
+ 10362→                  <select value={reportData.reportingMonth} onChange={(e) => updateField('reportingMonth', e.target.value)} className="flex-1 px-1.5 py-0 border border-gray-300 rounded text-[10px] h-6">
+ 10363→                    <option value="">Select</option>
+ 10364→                    {['January','February','March','April','May','June','July','August','September','October','November','December'].map(m => <option key={m} value={m}>{m}</option>)}
+ 10365→                  </select>
+ 10366→                  <Input value={reportData.reportingYear} onChange={(e) => updateField('reportingYear', e.target.value)} className="w-14 border-gray-300 h-6 text-[10px]" />
+ 10367→                </div>
+ 10368→              </div>
+ 10369→            </div>
+ 10370→          </div>
+ 10371→        )}
+ 10372→
+ 10373→        {/* Section 1: Dept. Basic Information - Ultra Compact */}
+ 10374→        {activeSection === 1 && (
+ 10375→          <div className="p-2.5 space-y-2 h-full flex flex-col overflow-hidden">
+ 10376→            <div className="border-b pb-1.5">
+ 10377→              <h3 className="text-xs font-bold text-gray-900 flex items-center gap-1">
+ 10378→                <Users className="w-3 h-3 text-green-500" />
+ 10379→                DEPT. BASIC INFORMATION
+ 10380→              </h3>
+ 10381→            </div>
+ 10382→
+ 10383→            <div className="flex-1 overflow-auto">
+ 10384→              <table className="w-full border-collapse text-[10px]">
+ 10385→                <tbody>
+ 10386→                  <tr className="border-b">
+ 10387→                    <td className="p-1 bg-teal-50 font-semibold text-teal-900 w-20">Faculty</td>
+ 10388→                    <td className="p-0.5 border"><Input value={reportData.facultyCount} onChange={(e) => updateField('facultyCount', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+ 10389→                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">Prof</td>
+ 10390→                    <td className="p-0.5 border"><Input value={reportData.profCount} onChange={(e) => updateField('profCount', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+ 10391→                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">AsP</td>
+ 10392→                    <td className="p-0.5 border"><Input value={reportData.aspCount} onChange={(e) => updateField('aspCount', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+ 10393→                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">AP</td>
+ 10394→                    <td className="p-0.5 border"><Input value={reportData.apCount} onChange={(e) => updateField('apCount', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+ 10395→                  </tr>
+ 10396→                  <tr className="border-b">
+ 10397→                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">PhD Holders</td>
+ 10398→                    <td className="p-0.5 border" colSpan={2}><Input value={reportData.phdHolders} onChange={(e) => updateField('phdHolders', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+ 10399→                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">PhD</td>
+ 10400→                    <td className="p-0.5 border"><Input value={reportData.phdCount} onChange={(e) => updateField('phdCount', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+ 10401→                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">Pursuing</td>
+ 10402→                    <td className="p-0.5 border"><Input value={reportData.pursuingPhd} onChange={(e) => updateField('pursuingPhd', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+ 10403→                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">Not Reg.</td>
+ 10404→                    <td className="p-0.5 border"><Input value={reportData.notRegistered} onChange={(e) => updateField('notRegistered', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+ 10405→                  </tr>
+ 10406→                  <tr>
+ 10407→                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">Students</td>
+ 10408→                    <td className="p-0.5 border"><Input value={reportData.totalStudents} onChange={(e) => updateField('totalStudents', e.target.value)} className="border-0 h-5 text-[10px] px-1" placeholder="Total" /></td>
+ 10409→                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">I Yr</td>
+ 10410→                    <td className="p-0.5 border"><Input value={reportData.year1Students} onChange={(e) => updateField('year1Students', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+ 10411→                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">II Yr</td>
+ 10412→                    <td className="p-0.5 border"><Input value={reportData.year2Students} onChange={(e) => updateField('year2Students', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+ 10413→                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">III Yr</td>
+ 10414→                    <td className="p-0.5 border"><Input value={reportData.year3Students} onChange={(e) => updateField('year3Students', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+ 10415→                  </tr>
+ 10416→                  <tr>
+ 10417→                    <td className="p-1 bg-gray-50"></td><td className="p-0.5 border"></td>
+ 10418→                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">IV Yr</td>
+ 10419→                    <td className="p-0.5 border" colSpan={5}><Input value={reportData.year4Students} onChange={(e) => updateField('year4Students', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
+ 10420→                  </tr>
+ 10421→                </tbody>
+ 10422→              </table>
+ 10423→            </div>
+ 10424→          </div>
+ 10425→        )}
+ 10426→
+ 10427→        {/* Section 2: A. Academic Activities - Ultra Compact */}
+ 10428→        {activeSection === 2 && (
+ 10429→          <div className="p-2.5 space-y-1.5 h-full flex flex-col overflow-hidden">
+ 10430→            <div className="bg-green-100 border border-green-300 rounded-t px-2 py-1">
+ 10431→              <h3 className="font-bold text-green-900 text-[10px]">A. ACADEMIC ACTIVITIES</h3>
+ 10432→            </div>
+ 10433→            <div className="flex-1 overflow-auto">
+ 10434→              <table className="w-full border-collapse border text-[10px]">
+ 10435→                <thead><tr className="bg-green-50"><th className="p-1 border font-semibold w-28">Particulars</th><th className="p-1 border font-semibold w-16">Theory</th><th className="p-1 border font-semibold w-16">Lab</th></tr></thead>
+ 10436→                <tbody>
+ 10437→                  <tr><td className="p-1 border">Syllabus Coverage</td><td className="p-0 border"><Input value={reportData.syllabusCoverageTheory} onChange={(e) => updateField('syllabusCoverageTheory', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td><td className="p-0 border"><Input value={reportData.syllabusCoverageLab} onChange={(e) => updateField('syllabusCoverageLab', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td></tr>
+ 10438→                  <tr><td className="p-1 border">Lesson Plan</td><td className="p-0 border"><select value={reportData.lessonPlanTheory} onChange={(e) => updateField('lessonPlanTheory', e.target.value)} className="w-full border-0 bg-transparent text-[10px] h-5"><option>Y/N</option><option>Yes</option><option>No</option></select></td><td className="p-0 border"><select value={reportData.lessonPlanLab} onChange={(e) => updateField('lessonPlanLab', e.target.value)} className="w-full border-0 bg-transparent text-[10px] h-5"><option>Y/N</option><option>Yes</option><option>No</option></select></td></tr>
+ 10439→                  <tr><td className="p-1 border">CIA Conducted</td><td className="p-0 border"><select value={reportData.ciaConducted} onChange={(e) => updateField('ciaConducted', e.target.value)} className="w-full border-0 bg-transparent text-[10px] h-5"><option>Y/N</option><option>Yes</option><option>No</option></select></td><td className="p-0 border text-gray-400 text-center">NA</td></tr>
+ 10440→                  <tr><td className="p-1 border">Attendance Report</td><td className="p-0 border" colSpan={2}><select value={reportData.attendanceReport} onChange={(e) => updateField('attendanceReport', e.target.value)} className="w-full border-0 bg-transparent text-[10px] h-5"><option>Y/N</option><option>Yes</option><option>No</option></select></td></tr>
+ 10441→                  <tr><td className="p-1 border">Remedial Classes</td><td className="p-0 border"><Input value={reportData.remedialClasses} onChange={(e) => updateField('remedialClasses', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td><td className="p-0 border text-gray-400 text-center">NA</td></tr>
+ 10442→                  <tr><td className="p-1 border">Mentoring Sessions</td><td className="p-0 border"><Input value={reportData.mentoringSessions} onChange={(e) => updateField('mentoringSessions', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td><td className="p-0 border text-gray-400 text-center">NA</td></tr>
+ 10443→                </tbody>
+ 10444→              </table>
+ 10445→            </div>
+ 10446→          </div>
+ 10447→        )}
+ 10448→
+ 10449→        {/* Section 3: B. Student Development Activities */}
+ 10450→        {activeSection === 3 && (
+ 10451→          <div className="p-4 space-y-4">
+ 10452→            <div className="bg-purple-100 border border-purple-300 rounded-t-lg p-2.5">
+ 10453→              <h3 className="font-bold text-purple-900 text-sm">B. STUDENT DEVELOPMENT ACTIVITIES</h3>
+ 10454→              <p className="text-purple-700 text-xs">(*Prev Months: Cumulative counting starts from 1st July)</p>
+ 10455→            </div>
+ 10456→
+ 10457→            <div className="overflow-x-auto">
+ 10458→              <table className="w-full border-collapse border text-xs">
+ 10459→                <thead>
+ 10460→                  <tr className="bg-purple-50">
+ 10461→                    <th className="p-1.5 border font-semibold text-purple-900" rowSpan={2}>Particulars</th>
+ 10462→                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Guest Lectures</th>
+ 10463→                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Workshops</th>
+ 10464→                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Industrial Visits</th>
+ 10465→                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Value Added</th>
+ 10466→                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Skill Enhance.</th>
+ 10467→                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Hands-on</th>
+ 10468→                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Hackathon</th>
+ 10469→                    <th className="p-1 border font-semibold text-purple-900" rowSpan={2}>Prof. Society</th>
+ 10470→                  </tr>
+ 10471→                  <tr className="bg-purple-50">
+ 10472→                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
+ 10473→                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
+ 10474→                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
+ 10475→                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
+ 10476→                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
+ 10477→                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
+ 10478→                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
+ 10479→                  </tr>
+ 10480→                </thead>
+ 10481→                <tbody>
+ 10482→                  <tr>
+ 10483→                    <td className="p-1.5 border font-medium bg-gray-50">Prev Months*</td>
+ 10484→                    <td className="p-0.5 border"><Input value={reportData.studentDev.guestLectures.prev} onChange={(e) => updateStudentDev('guestLectures', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+ 10485→                    <td className="p-0.5 border"></td>
+ 10486→                    <td className="p-0.5 border"><Input value={reportData.studentDev.workshops.prev} onChange={(e) => updateStudentDev('workshops', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+ 10487→                    <td className="p-0.5 border"></td>
+ 10488→                    <td className="p-0.5 border"><Input value={reportData.studentDev.industrialVisits.prev} onChange={(e) => updateStudentDev('industrialVisits', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+ 10489→                    <td className="p-0.5 border"></td>
+ 10490→                    <td className="p-0.5 border"><Input value={reportData.studentDev.valueAddedCourses.prev} onChange={(e) => updateStudentDev('valueAddedCourses', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+ 10491→                    <td className="p-0.5 border"></td>
+ 10492→                    <td className="p-0.5 border"><Input value={reportData.studentDev.skillEnhancement.prev} onChange={(e) => updateStudentDev('skillEnhancement', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+ 10493→                    <td className="p-0.5 border"></td>
+ 10494→                    <td className="p-0.5 border"><Input value={reportData.studentDev.handsOnTraining.prev} onChange={(e) => updateStudentDev('handsOnTraining', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+ 10495→                    <td className="p-0.5 border"></td>
+ 10496→                    <td className="p-0.5 border"><Input value={reportData.studentDev.hackathon.prev} onChange={(e) => updateStudentDev('hackathon', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
+ 10497→                    <td className="p-0.5 border"></td>
+ 10498→                    <td className="p-0.5 border"></td>
+ 10499→                  </tr>
+
+[showing lines 10000-10499 of 18621; use offset=10500 with limit to continue reading]
