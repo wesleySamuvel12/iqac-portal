@@ -938,8 +938,7 @@ function LoginPage() {
                                 setShowDeptDropdown(false)
                               }}
                               className={'dept-option ' + (selectedDept === dept.code ? 'dept-option-active' : '')}>
-                            >
-                              <div className={'dept-option-dot dot-' + (dept.color || 'gray')}>
+                              <div className={'dept-option-dot dot-' + (dept.color || 'gray')}></div>
                               <span className="dept-option-code">{dept.code}</span>
                               <span className="dept-option-name">{dept.name}</span>
                               {selectedDept === dept.code && <CheckCircle className="dept-option-check"></CheckCircle>}
@@ -987,7 +986,6 @@ function LoginPage() {
                         type="button"
                         onClick={() => setSelectedDept(code)}
                         className={"dept-pill " + (selectedDept === code ? "dept-pill-active" : "")}>
-                      >
                         {selectedDept === code && <span className="pill-glow" />}
                         <span className="pill-text">{code}</span>
                       </button>
@@ -2612,7 +2610,7 @@ function StatCard({ title, value, icon: Icon, trend, color = "blue", subtitle }:
               <p className="text-xs text-gray-400">{subtitle}</p>
             )}
           </div>
-          <div className={"p-3 rounded-xl bg-gradient-to-br ${colorClasses[color]} shadow-lg group-hover:scale-110 transition-transform`}>
+          <div className={'p-3 rounded-xl bg-gradient-to-br ' + colorClasses[color] + ' shadow-lg group-hover:scale-110 transition-transform'}>
             <Icon className="w-6 h-6 text-white" />
           </div>
         </div>
@@ -2670,7 +2668,7 @@ function AchievementFormHeader({ selectedType }: { selectedType: string | null }
   
   return (
     <div className="flex items-center gap-3">
-      <div className={"w-10 h-10 rounded-xl bg-gradient-to-br ${typeData.color} flex items-center justify-center`}>
+      <div className={'w-10 h-10 rounded-xl bg-gradient-to-br ' + typeData.color + ' flex items-center justify-center'}>
         <IconComponent className="w-5 h-5 text-white" />
       </div>
       <div>
@@ -2736,7 +2734,7 @@ function ActionCard({ icon: Icon, title, description, color, onClick }: {
       onClick={onClick}
     >
       <CardContent className="p-6">
-        <div className={"w-14 h-14 rounded-2xl ${color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg`}>
+        <div className={'w-14 h-14 rounded-2xl ' + color + ' flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg'}>
           <Icon className="w-7 h-7 text-white" />
         </div>
         <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">{title}</h3>
@@ -2817,7 +2815,7 @@ function AchievementForm({ user, onBack }: { user: User; onBack: () => void }) {
           <Input
             value={formData[field.id] || ''}
             onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            placeholder={`Enter ${field.label.toLowerCase()}`}
+            placeholder={'Enter ' + field.label.toLowerCase() + ''}
             required={field.required}
             className="bg-white/80"
           />
@@ -2827,7 +2825,7 @@ function AchievementForm({ user, onBack }: { user: User; onBack: () => void }) {
           <textarea
             value={formData[field.id] || ''}
             onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            placeholder={`Enter ${field.label.toLowerCase()}`}
+            placeholder={'Enter ' + field.label.toLowerCase() + ''}
             rows={3}
             required={field.required}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 resize-none bg-white/80"
@@ -2839,7 +2837,7 @@ function AchievementForm({ user, onBack }: { user: User; onBack: () => void }) {
             type="number"
             value={formData[field.id] || ''}
             onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            placeholder={`Enter ${field.label.toLowerCase()}`}
+            placeholder={'Enter ' + field.label.toLowerCase() + ''}
             required={field.required}
             className="bg-white/80"
           />
@@ -2875,7 +2873,7 @@ function AchievementForm({ user, onBack }: { user: User; onBack: () => void }) {
               <Input
                 value={otherValues[field.id] || ''}
                 onChange={(e) => handleOtherChange(field.id, e.target.value)}
-                placeholder={`Specify ${field.label.toLowerCase()}...`}
+                placeholder={'Specify ' + field.label.toLowerCase() + '...'}
                 className="mt-2 bg-amber-50 border-amber-200 focus:border-amber-400"
               />
             )}
@@ -2920,7 +2918,7 @@ function AchievementForm({ user, onBack }: { user: User; onBack: () => void }) {
               onClick={() => setSelectedType(key)}
             >
               <CardContent className="p-5 text-center">
-                <div className={"w-14 h-14 rounded-2xl bg-gradient-to-br ${type.color} flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-lg`}>
+                <div className={'w-14 h-14 rounded-2xl bg-gradient-to-br ' + type.color + ' flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-lg'}>
                   <type.icon className="w-7 h-7 text-white" />
                 </div>
                 <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{type.name}</h3>
@@ -3071,9 +3069,9 @@ function FeedbackModule({ user, feedbackEnabled, setFeedbackEnabled }: {
             <span className="text-sm font-medium text-gray-700">Enable Feedback</span>
             <button
               onClick={() => setFeedbackEnabled(!feedbackEnabled)}
-              className={"relative w-12 h-6 rounded-full transition-colors ${feedbackEnabled ? 'bg-green-500' : 'bg-gray-300'}`}
+              className={'relative w-12 h-6 rounded-full transition-colors ' + feedbackEnabled ? 'bg-green-500' : 'bg-gray-300' + ''}
             >
-              <span className={"absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${feedbackEnabled ? 'translate-x-6' : ''}`} />
+              <span className={'absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ' + feedbackEnabled ? 'translate-x-6' : '' + ''} />
             </button>
           </div>
         )}
@@ -3130,7 +3128,7 @@ function FeedbackModule({ user, feedbackEnabled, setFeedbackEnabled }: {
                           key={star}
                           type="button"
                           onClick={() => setNewFeedback(prev => ({ ...prev, rating: star }))}
-                          className={"p-1 rounded transition-colors ${star <= newFeedback.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                          className={'p-1 rounded transition-colors ' + star <= newFeedback.rating ? 'text-yellow-400' : 'text-gray-300' + ''}
                         >
                           <Star className="w-6 h-6 fill-current" />
                         </button>
@@ -3197,7 +3195,7 @@ function FeedbackModule({ user, feedbackEnabled, setFeedbackEnabled }: {
                     <Badge variant="secondary">{feedback.category}</Badge>
                     <div className="flex items-center gap-1">
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} className={"w-4 h-4 ${i < feedback.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
+                        <Star key={i} className={'w-4 h-4 ' + i < feedback.rating ? 'text-yellow-400 fill-current' : 'text-gray-300' + ''} />
                       ))}
                     </div>
                   </div>
@@ -3720,13 +3718,13 @@ function StudentDashboardContent({ user, setActiveTab }: { user: User; setActive
                 return (
                   <div 
                     key={key} 
-                    className={"flex-1 min-w-[50px] flex flex-col items-center gap-1.5 ${isSelected ? 'ring-2 ring-cyan-500 rounded-lg' : ''}`}
+                    className={'flex-1 min-w-[50px] flex flex-col items-center gap-1.5 ' + (isSelected ? 'ring-2 ring-cyan-500 rounded-lg' : '')}
                   >
                     <div className="w-full flex items-end justify-center h-52">
                       <div 
                         onClick={() => setSelectedDashboardType(isSelected ? null : key)}
-                        className={"w-full max-w-[45px] bg-gradient-to-t ${colors[colorIndex]} ${isSelected ? 'ring-2 ring-offset-1 ring-cyan-500' : ''} rounded-t-md hover:opacity-80 transition-all cursor-pointer relative group`}
-                        style={{ height: `${height}%` }}
+                        className={'w-full max-w-[45px] bg-gradient-to-t ' + colors[colorIndex] + ' rounded-t-md hover:opacity-80 transition-all cursor-pointer relative group' + (isSelected ? ' ring-2 ring-offset-1 ring-cyan-500' : '')}
+                        style={{ height: height + '%' }}
                       >
                         <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                           {count} {count === 1 ? 'item' : 'items'}
@@ -3734,7 +3732,7 @@ function StudentDashboardContent({ user, setActiveTab }: { user: User; setActive
                       </div>
                     </div>
                     <div className="flex flex-col items-center gap-0.5">
-                      <Icon className={"w-4 h-4 ${count > 0 ? 'text-cyan-600' : 'text-gray-400'}`} />
+                      <Icon className={'w-4 h-4 ' + (count > 0 ? 'text-cyan-600' : 'text-gray-400')} />
                       <span className="text-[9px] text-gray-600 text-center leading-tight line-clamp-2">{type.label.split(' ')[0]}</span>
                     </div>
                   </div>
@@ -3829,7 +3827,7 @@ function StudentDashboardContent({ user, setActiveTab }: { user: User; setActive
                 <div 
                   key={key} 
                   onClick={() => setSelectedDashboardType(isSelected ? null : key)}
-                  className={"p-3 rounded-xl bg-gradient-to-br ${type.color} hover:shadow-lg transition-all cursor-pointer ${isSelected ? 'ring-4 ring-cyan-400 scale-105' : 'hover:scale-102'}`}
+                  className={'p-3 rounded-xl bg-gradient-to-br ${type.color} hover:shadow-lg transition-all cursor-pointer ' + isSelected ? 'ring-4 ring-cyan-400 scale-105' : 'hover:scale-102' + ''}
                 >
                   <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
                     <Icon className="w-4 h-4 text-white" />
@@ -3872,7 +3870,7 @@ function StudentDashboardContent({ user, setActiveTab }: { user: User; setActive
                 <div className="grid gap-3 max-h-64 overflow-y-auto">
                   {selectedTypeAchievements.map((achievement: any, idx: number) => (
                     <div key={idx} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 hover:border-cyan-200 transition-colors">
-                      <div className={"w-10 h-10 rounded-lg bg-gradient-to-br ${ACHIEVEMENT_TYPES[selectedDashboardType]?.color || 'from-gray-400 to-gray-500'} flex items-center justify-center`}>
+                      <div className={'w-10 h-10 rounded-lg bg-gradient-to-br ' + ACHIEVEMENT_TYPES[selectedDashboardType]?.color || 'from-gray-400 to-gray-500' + ' flex items-center justify-center'}>
                         {(() => {
                           const TypeIcon = ACHIEVEMENT_TYPES[selectedDashboardType]?.icon
                           return TypeIcon ? <TypeIcon className="w-5 h-5 text-white" /> : null
@@ -3882,12 +3880,12 @@ function StudentDashboardContent({ user, setActiveTab }: { user: User; setActive
                         <p className="font-medium text-gray-800 truncate">{achievement.title || 'Untitled'}</p>
                         <p className="text-xs text-gray-500">
                           {new Date(achievement.submittedAt || Date.now()).toLocaleDateString()} • 
-                          <span className={"inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ml-1 ${
+                          <span className={'inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ml-1 ' + 
                             achievement.status?.includes('approved') ? 'bg-green-100 text-green-700' :
                             achievement.status?.includes('pending') ? 'bg-orange-100 text-orange-700' :
                             achievement.status === 'rejected' ? 'bg-red-100 text-red-700' :
                             'bg-gray-100 text-gray-700'
-                          }`}>
+                           + ''}>
                             {achievement.status?.replace('_', ' ') || 'Unknown'}
                           </span>
                         </p>
@@ -4298,18 +4296,18 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
           <button
             key={tab.id}
             onClick={() => setActiveTabLocal(tab.id as typeof activeTab)}
-            className={"flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all whitespace-nowrap ${
+            className={'flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all whitespace-nowrap ' + 
               activeTab === tab.id
                 ? 'bg-white text-violet-700 shadow-md'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-            }`}
+             + ''}
           >
             <tab.icon className="w-4 h-4" />
             {tab.label}
             {'count' in tab && (
-              <span className={"px-2 py-0.5 rounded-full text-xs ${
+              <span className={'px-2 py-0.5 rounded-full text-xs ' + 
                 activeTab === tab.id ? 'bg-violet-100 text-violet-700' : 'bg-gray-200 text-gray-600'
-              }`}>
+               + ''}>
                 {tab.count}
               </span>
             )}
@@ -4407,8 +4405,8 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                         <span className="text-sm text-gray-600 w-16 shrink-0">{year}</span>
                         <div className="flex-1 h-8 bg-gray-100 rounded-lg overflow-hidden relative">
                           <div 
-                            className={"h-full bg-gradient-to-r ${colors[idx]} rounded-lg transition-all duration-500 flex items-center justify-end pr-2`}
-                            style={{ width: `${Math.max(percentage, count > 0 ? 8 : 0)}%` }}
+                            className={'h-full bg-gradient-to-r ' + colors[idx] + ' rounded-lg transition-all duration-500 flex items-center justify-end pr-2'}
+                            style={{ width: Math.max(percentage, count > 0 ? 8 : 0) + '%' }}
                           >
                             {count > 0 && (
                               <span className="text-white text-xs font-bold">{count}</span>
@@ -4508,7 +4506,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                     <p className="font-medium text-violet-900 text-sm">Department Analytics</p>
                     <p className="text-xs text-violet-600">{showInlineAnalytics ? 'Hide' : 'Show'} inline analytics</p>
                   </div>
-                  <ChevronRight className={"w-4 h-4 text-violet-400 ml-auto transition-transform ${showInlineAnalytics ? 'rotate-90' : ''}`} />
+                  <ChevronRight className={'w-4 h-4 text-violet-400 ml-auto transition-transform ' + showInlineAnalytics ? 'rotate-90' : '' + ''} />
                 </button>
               </CardContent>
             </Card>
@@ -4527,9 +4525,9 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                     .slice(0, 5)
                     .map(entry => (
                       <div key={entry.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
-                        <div className={"w-8 h-8 rounded-lg flex items-center justify-center ${
+                        <div className={'w-8 h-8 rounded-lg flex items-center justify-center ' + 
                           entry.studentName ? 'bg-blue-100' : 'bg-emerald-100'
-                        }`}>
+                         + ''}>
                           {entry.studentName ? 
                             <GraduationCap className="w-4 h-4 text-blue-600" /> :
                             <Users className="w-4 h-4 text-emerald-600" />
@@ -4616,7 +4614,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                       setSelectedStudentYear(isSelected ? 'all' : year)
                       setSelectedSection('all') // Reset section when year changes
                     }}
-                    className={"p-4 rounded-xl bg-gradient-to-br ${colors[idx]} text-left transition-all hover:shadow-lg ${isSelected ? 'ring-4 ring-offset-2 ring-gray-800 scale-105' : ''}`}
+                    className={'p-4 rounded-xl bg-gradient-to-br ${colors[idx]} text-left transition-all hover:shadow-lg ' + isSelected ? 'ring-4 ring-offset-2 ring-gray-800 scale-105' : '' + ''}
                   >
                     <p className="text-white/90 text-sm font-medium">{year}</p>
                     <p className="text-2xl font-bold text-white mt-1">{count}</p>
@@ -4627,7 +4625,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
               {/* All Years Option */}
               <button
                 onClick={() => { setSelectedStudentYear('all'); setSelectedSection('all'); }}
-                className={"p-4 rounded-xl bg-gradient-to-br from-gray-500 to-gray-400 text-left transition-all hover:shadow-lg ${selectedStudentYear === 'all' ? 'ring-4 ring-offset-2 ring-gray-800' : ''}`}
+                className={'p-4 rounded-xl bg-gradient-to-br from-gray-500 to-gray-400 text-left transition-all hover:shadow-lg ' + selectedStudentYear === 'all' ? 'ring-4 ring-offset-2 ring-gray-800' : '' + ''}
               >
                 <p className="text-white/90 text-sm font-medium">All Years</p>
                 <p className="text-2xl font-bold text-white mt-1">{totalStudents}</p>
@@ -4659,32 +4657,32 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                     <button
                       key={section}
                       onClick={() => setSelectedSection(isSelected ? 'all' : section)}
-                      className={"flex-1 max-w-[200px] p-4 rounded-xl transition-all hover:shadow-lg ${
+                      className={'flex-1 max-w-[200px] p-4 rounded-xl transition-all hover:shadow-lg ' + 
                         isSelected 
                           ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white ring-4 ring-offset-2 ring-emerald-400 scale-105' 
                           : 'bg-white border-2 border-gray-200 hover:border-emerald-300'
-                      }`}
+                       + ''}
                     >
-                      <p className={"text-sm font-bold ${isSelected ? 'text-white' : 'text-gray-700'}`}>Section {section}</p>
-                      <p className={"text-xl font-bold mt-1 ${isSelected ? 'text-white' : 'text-gray-900'}`}>{count}</p>
-                      <p className={"text-xs ${isSelected ? 'text-white/70' : 'text-gray-500'}`}>students</p>
+                      <p className={'text-sm font-bold ' + isSelected ? 'text-white' : 'text-gray-700' + ''}>Section {section}</p>
+                      <p className={'text-xl font-bold mt-1 ' + isSelected ? 'text-white' : 'text-gray-900' + ''}>{count}</p>
+                      <p className={'text-xs ' + isSelected ? 'text-white/70' : 'text-gray-500' + ''}>students</p>
                     </button>
                   )
                 })}
                 {/* All Sections Option */}
                 <button
                   onClick={() => setSelectedSection('all')}
-                  className={"flex-1 max-w-[200px] p-4 rounded-xl transition-all hover:shadow-lg ${
+                  className={'flex-1 max-w-[200px] p-4 rounded-xl transition-all hover:shadow-lg ' + 
                     selectedSection === 'all' 
                       ? 'bg-gradient-to-br from-gray-500 to-gray-400 text-white ring-4 ring-offset-2 ring-gray-300' 
                       : 'bg-white border-2 border-gray-200 hover:border-gray-300'
-                  }`}
+                   + ''}
                 >
-                  <p className={"text-sm font-bold ${selectedSection === 'all' ? 'text-white' : 'text-gray-700'}`}>All Sections</p>
-                  <p className={"text-xl font-bold mt-1 ${selectedSection === 'all' ? 'text-white' : 'text-gray-900'}`}>
+                  <p className={'text-sm font-bold ' + selectedSection === 'all' ? 'text-white' : 'text-gray-700' + ''}>All Sections</p>
+                  <p className={'text-xl font-bold mt-1 ' + selectedSection === 'all' ? 'text-white' : 'text-gray-900' + ''}>
                     {departmentStudents.filter(s => s.year === selectedStudentYear).length}
                   </p>
-                  <p className={"text-xs ${selectedSection === 'all' ? 'text-white/70' : 'text-gray-500'}`}>students</p>
+                  <p className={'text-xs ' + selectedSection === 'all' ? 'text-white/70' : 'text-gray-500' + ''}>students</p>
                 </button>
               </div>
             </div>
@@ -4893,7 +4891,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                             <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
                               <div 
                                 className="h-full bg-blue-500 rounded-full"
-                                style={{ width: `${(count / totalStudents) * 100}%` }}
+                                style={{ width: ((count / totalStudents) * 100) + '%' }}
                               />
                             </div>
                             <span className="text-sm font-medium text-gray-700 w-6 text-right">{count}</span>
@@ -5462,13 +5460,13 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
                 return (
                   <div 
                     key={key} 
-                    className={"flex-1 min-w-[50px] flex flex-col items-center gap-1.5 ${isSelected ? 'ring-2 ring-emerald-500 rounded-lg' : ''}`}
+                    className={'flex-1 min-w-[50px] flex flex-col items-center gap-1.5 ' + (isSelected ? 'ring-2 ring-emerald-500 rounded-lg' : '')}
                   >
                     <div className="w-full flex items-end justify-center h-52">
                       <div 
                         onClick={() => setSelectedDashboardType(isSelected ? null : key)}
-                        className={"w-full max-w-[45px] bg-gradient-to-t ${colors[colorIndex]} ${isSelected ? 'ring-2 ring-offset-1 ring-emerald-500' : ''} rounded-t-md hover:opacity-80 transition-all cursor-pointer relative group`}
-                        style={{ height: `${height}%` }}
+                        className={'w-full max-w-[45px] bg-gradient-to-t ' + colors[colorIndex] + ' rounded-t-md hover:opacity-80 transition-all cursor-pointer relative group' + (isSelected ? ' ring-2 ring-offset-1 ring-emerald-500' : '')}
+                        style={{ width: height + '%' }}
                       >
                         <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                           {count} {count === 1 ? 'item' : 'items'}
@@ -5476,7 +5474,7 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
                       </div>
                     </div>
                     <div className="flex flex-col items-center gap-0.5">
-                      <Icon className={"w-4 h-4 ${count > 0 ? 'text-emerald-600' : 'text-gray-400'}`} />
+                      <Icon className={'w-4 h-4 ' + (count > 0 ? 'text-emerald-600' : 'text-gray-400')} />
                       <span className="text-[9px] text-gray-600 text-center leading-tight line-clamp-2">{type.label.split(' ')[0]}</span>
                     </div>
                   </div>
@@ -5565,7 +5563,7 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
                 <div 
                   key={key} 
                   onClick={() => setSelectedDashboardType(isSelected ? null : key)}
-                  className={"p-3 rounded-xl bg-gradient-to-br ${type.color} hover:shadow-lg transition-all cursor-pointer ${isSelected ? 'ring-4 ring-emerald-400 scale-105' : 'hover:scale-102'}`}
+                  className={'p-3 rounded-xl bg-gradient-to-br ${type.color} hover:shadow-lg transition-all cursor-pointer ' + isSelected ? 'ring-4 ring-emerald-400 scale-105' : 'hover:scale-102' + ''}
                 >
                   <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
                     <Icon className="w-4 h-4 text-white" />
@@ -5608,7 +5606,7 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
                 <div className="grid gap-3 max-h-64 overflow-y-auto">
                   {selectedTypeAchievements.map((achievement: any, idx: number) => (
                     <div key={idx} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 hover:border-emerald-200 transition-colors">
-                      <div className={"w-10 h-10 rounded-lg bg-gradient-to-br ${STAFF_ACHIEVEMENT_TYPES[selectedDashboardType]?.color || 'from-gray-400 to-gray-500'} flex items-center justify-center`}>
+                      <div className={'w-10 h-10 rounded-lg bg-gradient-to-br ' + STAFF_ACHIEVEMENT_TYPES[selectedDashboardType]?.color || 'from-gray-400 to-gray-500' + ' flex items-center justify-center'}>
                         {(() => {
                           const TypeIcon = STAFF_ACHIEVEMENT_TYPES[selectedDashboardType]?.icon
                           return TypeIcon ? <TypeIcon className="w-5 h-5 text-white" /> : null
@@ -5618,12 +5616,12 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
                         <p className="font-medium text-gray-800 truncate">{achievement.title || 'Untitled'}</p>
                         <p className="text-xs text-gray-500">
                           {new Date(achievement.submittedAt || Date.now()).toLocaleDateString()} • 
-                          <span className={"inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ml-1 ${
+                          <span className={'inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ml-1 ' + 
                             achievement.status?.includes('approved') ? 'bg-green-100 text-green-700' :
                             achievement.status?.includes('pending') ? 'bg-orange-100 text-orange-700' :
                             achievement.status === 'rejected' ? 'bg-red-100 text-red-700' :
                             'bg-gray-100 text-gray-700'
-                          }`}>
+                           + ''}>
                             {achievement.status?.replace('_', ' ') || 'Unknown'}
                           </span>
                         </p>
@@ -5973,7 +5971,7 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
                     size="sm"
                     variant={detailFilter === tab.id ? 'default' : 'outline'}
                     onClick={() => setDetailFilter(tab.id as any)}
-                    className={"gap-2 ${detailFilter === tab.id ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                    className={'gap-2 ' + detailFilter === tab.id ? 'bg-blue-600 hover:bg-blue-700' : '' + ''}
                   >
                     <tab.icon className="w-4 h-4" /> {tab.label}
                   </Button>
@@ -6075,7 +6073,7 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
                                 <p className="text-lg font-bold text-green-600">{totalAchievements}</p>
                                 <p className="text-xs text-gray-400">Achievements</p>
                               </div>
-                              <ChevronDown className={"w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                              <ChevronDown className={'w-5 h-5 text-gray-400 transition-transform ' + isExpanded ? 'rotate-180' : '' + ''} />
                             </div>
                             
                             {/* Expanded Achievement Details */}
@@ -6092,7 +6090,7 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
                                     { key: 'fdpPrograms', label: 'FDP', icon: GraduationCap, color: 'text-pink-600 bg-pink-50' },
                                     { key: 'consultations', label: 'Consultancy', icon: Handshake, color: 'text-orange-600 bg-orange-50' },
                                   ].map(ach => (
-                                    <div key={ach.key} className={"${ach.color} p-2 rounded-lg text-center`}>
+                                    <div key={ach.key} className={'' + ach.color + ' p-2 rounded-lg text-center'}>
                                       <ach.icon className="w-4 h-4 mx-auto mb-1" />
                                       <p className="text-lg font-bold">{faculty.achievementCounts?.[ach.key] || faculty[ach.key]?.length || 0}</p>
                                       <p className="text-xs opacity-75">{ach.label}</p>
@@ -6103,28 +6101,28 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
                                 {/* Recent Achievements List */}
                                 <div className="space-y-2 max-h-48 overflow-y-auto">
                                   {Array.isArray(faculty.awards) && faculty.awards.slice(0, 3).map((a: any, i: number) => (
-                                    <div key={`award-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
+                                    <div key={'award-' + i + ''} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
                                       <Trophy className="w-4 h-4 text-amber-500" />
                                       <span className="truncate flex-1">{a.title || a.name || 'Award'}</span>
                                       <Badge variant="outline" className="text-xs">Award</Badge>
                                     </div>
                                   ))}
                                   {Array.isArray(faculty.certifications) && faculty.certifications.slice(0, 3).map((c: any, i: number) => (
-                                    <div key={`cert-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
+                                    <div key={'cert-' + i + ''} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
                                       <Award className="w-4 h-4 text-blue-500" />
                                       <span className="truncate flex-1">{c.title || c.name || 'Certification'}</span>
                                       <Badge variant="outline" className="text-xs">Cert</Badge>
                                     </div>
                                   ))}
                                   {Array.isArray(faculty.patents) && faculty.patents.slice(0, 2).map((p: any, i: number) => (
-                                    <div key={`pat-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
+                                    <div key={'pat-' + i + ''} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
                                       <FileText className="w-4 h-4 text-purple-500" />
                                       <span className="truncate flex-1">{p.title || p.name || 'Patent'}</span>
                                       <Badge variant="outline" className="text-xs">Patent</Badge>
                                     </div>
                                   ))}
                                   {Array.isArray(faculty.projects) && faculty.projects.slice(0, 2).map((pr: any, i: number) => (
-                                    <div key={`proj-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
+                                    <div key={'proj-' + i + ''} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
                                       <Briefcase className="w-4 h-4 text-green-500" />
                                       <span className="truncate flex-1">{pr.title || pr.name || 'Project'}</span>
                                       <Badge variant="outline" className="text-xs">Project</Badge>
@@ -6182,7 +6180,7 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
                               <p className="text-lg font-bold text-purple-600">{totalAchievements}</p>
                               <p className="text-xs text-gray-400">Achievements</p>
                             </div>
-                            <ChevronDown className={"w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                            <ChevronDown className={'w-5 h-5 text-gray-400 transition-transform ' + isExpanded ? 'rotate-180' : '' + ''} />
                           </div>
                           
                           {/* Expanded Student Achievement Details */}
@@ -6196,7 +6194,7 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
                                   { key: 'internships', label: 'Internships', icon: Wrench, color: 'text-orange-600 bg-orange-50' },
                                   { key: 'npCourses', label: 'NP Courses', icon: BookOpen, color: 'text-indigo-600 bg-indigo-50' },
                                 ].map(ach => (
-                                  <div key={ach.key} className={"${ach.color} p-2 rounded-lg text-center`}>
+                                  <div key={ach.key} className={'' + ach.color + ' p-2 rounded-lg text-center'}>
                                     <ach.icon className="w-4 h-4 mx-auto mb-1" />
                                     <p className="text-lg font-bold">{student.achievementCounts?.[ach.key] || student[ach.key]?.length || 0}</p>
                                     <p className="text-xs opacity-75">{ach.label}</p>
@@ -6207,21 +6205,21 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
                               {/* Student Achievements List */}
                               <div className="space-y-2 max-h-48 overflow-y-auto">
                                 {Array.isArray(student.achievements) && student.achievements.slice(0, 4).map((a: any, i: number) => (
-                                  <div key={`sa-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
+                                  <div key={'sa-' + i + ''} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
                                     <Star className="w-4 h-4 text-amber-500" />
                                     <span className="truncate flex-1">{a.title || a.name || 'Achievement'}</span>
                                     <Badge variant="outline" className="text-xs capitalize">{a.type || 'Award'}</Badge>
                                   </div>
                                 ))}
                                 {Array.isArray(student.placements) && student.placements.slice(0, 2).map((p: any, i: number) => (
-                                  <div key={`sp-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
+                                  <div key={'sp-' + i + ''} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
                                     <Briefcase className="w-4 h-4 text-green-500" />
                                     <span className="truncate flex-1">{p.company || p.organization} - {p.designation || p.role}</span>
                                     <Badge variant="outline" className="text-xs">Placement</Badge>
                                   </div>
                                 ))}
                                 {Array.isArray(student.internships) && student.internships.slice(0, 2).map((intr: any, i: number) => (
-                                  <div key={`si-${i}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
+                                  <div key={'si-' + i + ''} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
                                     <Wrench className="w-4 h-4 text-orange-500" />
                                     <span className="truncate flex-1">{intr.company || intr.organization} - {intr.domain || intr.role}</span>
                                     <Badge variant="outline" className="text-xs">Internship</Badge>
@@ -6275,7 +6273,7 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
             <CardContent className="p-6">
               {importResults ? (
                 <div className="space-y-4">
-                  <div className={"p-4 rounded-lg ${importResults.errors?.length > 0 ? 'bg-yellow-50' : 'bg-green-50'}`}>
+                  <div className={'p-4 rounded-lg ' + importResults.errors?.length > 0 ? 'bg-yellow-50' : 'bg-green-50' + ''}>
                     <p className="font-semibold text-gray-900">
                       ✓ Import Completed!
                     </p>
@@ -6357,7 +6355,7 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
             <CardContent className="p-6">
               {importResults ? (
                 <div className="space-y-4">
-                  <div className={"p-4 rounded-lg ${importResults.errors?.length > 0 ? 'bg-yellow-50' : 'bg-green-50'}`}>
+                  <div className={'p-4 rounded-lg ' + importResults.errors?.length > 0 ? 'bg-yellow-50' : 'bg-green-50' + ''}>
                     <p className="font-semibold text-gray-900">
                       ✓ Import Completed!
                     </p>
@@ -7076,42 +7074,42 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
         <div className="flex gap-1.5 bg-gray-100 p-1.5 rounded-xl overflow-x-auto scrollbar-hide">
           <button
             onClick={() => setActiveSection('overview')}
-            className={"flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ${
+            className={'flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ' + 
               activeSection === 'overview'
                 ? 'bg-white text-violet-700 shadow-md'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-            }`}
+             + ''}
           >
             <PieChartIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             Overview
           </button>
           <button
             onClick={() => setActiveSection('students')}
-            className={"flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ${
+            className={'flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ' + 
               activeSection === 'students'
                 ? 'bg-white text-blue-700 shadow-md'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-            }`}
+             + ''}
           >
             <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             Students
-            <span className={"px-1.5 sm:px-2 py-0.5 rounded-full text-xs ${
+            <span className={'px-1.5 sm:px-2 py-0.5 rounded-full text-xs ' + 
               activeSection === 'students' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'
-            }`}>{totalStudentAchievements}</span>
+             + ''}>{totalStudentAchievements}</span>
           </button>
           <button
             onClick={() => setActiveSection('staff')}
-            className={"flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ${
+            className={'flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ' + 
               activeSection === 'staff'
                 ? 'bg-white text-emerald-700 shadow-md'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-            }`}
+             + ''}
           >
             <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             Staff
-            <span className={"px-1.5 sm:px-2 py-0.5 rounded-full text-xs ${
+            <span className={'px-1.5 sm:px-2 py-0.5 rounded-full text-xs ' + 
               activeSection === 'staff' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'
-            }`}>{totalStaffAchievements}</span>
+             + ''}>{totalStaffAchievements}</span>
           </button>
         </div>
 
@@ -7119,9 +7117,9 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
           <div className="flex gap-1.5 bg-gray-100 p-1.5 rounded-xl overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setChartView('bar')}
-              className={"flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ${
+              className={'flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ' + 
                 chartView === 'bar' ? 'bg-white shadow-md text-violet-700' : 'text-gray-600 hover:bg-white/50'
-              }`}
+               + ''}
               title="Bar Chart"
             >
               <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -7129,9 +7127,9 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
             </button>
             <button
               onClick={() => setChartView('horizontal')}
-              className={"flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ${
+              className={'flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ' + 
                 chartView === 'horizontal' ? 'bg-white shadow-md text-violet-700' : 'text-gray-600 hover:bg-white/50'
-              }`}
+               + ''}
               title="Horizontal Bar"
             >
               <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 rotate-90" />
@@ -7139,9 +7137,9 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
             </button>
             <button
               onClick={() => setChartView('donut')}
-              className={"flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ${
+              className={'flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ' + 
                 chartView === 'donut' ? 'bg-white shadow-md text-violet-700' : 'text-gray-600 hover:bg-white/50'
-              }`}
+               + ''}
               title="Donut Chart"
             >
               <PieChartIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -7174,22 +7172,22 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
                           <circle 
                             cx="50" cy="50" r="40" fill="none" 
                             stroke="#10B981" strokeWidth="12"
-                            strokeDasharray={`${(studentStatusBreakdown.approved / totalStudentAchievements) * 251.2} 251.2`}
+                            strokeDasharray={'' + (studentStatusBreakdown.approved / totalStudentAchievements) * 251.2 + ' 251.2'}
                             strokeDashoffset="0"
                             className="transition-all duration-1000 ease-out"
                           />
                           <circle 
                             cx="50" cy="50" r="40" fill="none" 
                             stroke="#F59E0B" strokeWidth="12"
-                            strokeDasharray={`${(studentStatusBreakdown.pending / totalStudentAchievements) * 251.2} 251.2`}
-                            strokeDashoffset={`${-(studentStatusBreakdown.approved / totalStudentAchievements) * 251.2}`}
+                            strokeDasharray={'' + (studentStatusBreakdown.pending / totalStudentAchievements) * 251.2 + ' 251.2'}
+                            strokeDashoffset={-(studentStatusBreakdown.approved / totalStudentAchievements) * 251.2}
                             className="transition-all duration-1000 ease-out"
                           />
                           <circle 
                             cx="50" cy="50" r="40" fill="none" 
                             stroke="#EF4444" strokeWidth="12"
-                            strokeDasharray={`${(studentStatusBreakdown.rejected / totalStudentAchievements) * 251.2} 251.2`}
-                            strokeDashoffset={`${-((studentStatusBreakdown.approved + studentStatusBreakdown.pending) / totalStudentAchievements) * 251.2}`}
+                            strokeDasharray={'' + (studentStatusBreakdown.rejected / totalStudentAchievements) * 251.2 + ' 251.2'}
+                            strokeDashoffset={-((studentStatusBreakdown.approved + studentStatusBreakdown.pending) / totalStudentAchievements) * 251.2}
                             className="transition-all duration-1000 ease-out"
                           />
                         </>
@@ -7235,7 +7233,7 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
                     <div className="h-2 sm:h-2.5 bg-gray-200 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all duration-1000"
-                        style={{ width: `${totalStudentAchievements > 0 ? (studentStatusBreakdown.approved / totalStudentAchievements) * 100 : 0}%` }}
+                        style={{ width: (totalStudentAchievements > 0 ? (studentStatusBreakdown.approved / totalStudentAchievements) * 100 : 0) + '%' }}
                       />
                     </div>
                   </div>
@@ -7261,22 +7259,22 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
                           <circle 
                             cx="50" cy="50" r="40" fill="none" 
                             stroke="#10B981" strokeWidth="12"
-                            strokeDasharray={`${(staffStatusBreakdown.approved / totalStaffAchievements) * 251.2} 251.2`}
+                            strokeDasharray={'' + (staffStatusBreakdown.approved / totalStaffAchievements) * 251.2 + ' 251.2'}
                             strokeDashoffset="0"
                             className="transition-all duration-1000 ease-out"
                           />
                           <circle 
                             cx="50" cy="50" r="40" fill="none" 
                             stroke="#F59E0B" strokeWidth="12"
-                            strokeDasharray={`${(staffStatusBreakdown.pending / totalStaffAchievements) * 251.2} 251.2`}
-                            strokeDashoffset={`${-(staffStatusBreakdown.approved / totalStaffAchievements) * 251.2}`}
+                            strokeDasharray={'' + (staffStatusBreakdown.pending / totalStaffAchievements) * 251.2 + ' 251.2'}
+                            strokeDashoffset={-(staffStatusBreakdown.approved / totalStaffAchievements) * 251.2}
                             className="transition-all duration-1000 ease-out"
                           />
                           <circle 
                             cx="50" cy="50" r="40" fill="none" 
                             stroke="#EF4444" strokeWidth="12"
-                            strokeDasharray={`${(staffStatusBreakdown.rejected / totalStaffAchievements) * 251.2} 251.2`}
-                            strokeDashoffset={`${-((staffStatusBreakdown.approved + staffStatusBreakdown.pending) / totalStaffAchievements) * 251.2}`}
+                            strokeDasharray={'' + (staffStatusBreakdown.rejected / totalStaffAchievements) * 251.2 + ' 251.2'}
+                            strokeDashoffset={-((staffStatusBreakdown.approved + staffStatusBreakdown.pending) / totalStaffAchievements) * 251.2}
                             className="transition-all duration-1000 ease-out"
                           />
                         </>
@@ -7322,7 +7320,7 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
                     <div className="h-2 sm:h-2.5 bg-gray-200 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all duration-1000"
-                        style={{ width: `${totalStaffAchievements > 0 ? (staffStatusBreakdown.approved / totalStaffAchievements) * 100 : 0}%` }}
+                        style={{ width: (totalStaffAchievements > 0 ? (staffStatusBreakdown.approved / totalStaffAchievements) * 100 : 0) + '%' }}
                       />
                     </div>
                   </div>
@@ -7593,7 +7591,7 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
                     return (
                       <div key={key} className="group cursor-pointer" onClick={() => setExpandedStudentType(expandedStudentType === key ? null : key)}>
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${chartColors[idx % chartColors.length]}22` }}>
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: chartColors[idx % chartColors.length] + '22' }}>
                             <Icon className="w-4 h-4" style={{ color: chartColors[idx % chartColors.length] }} />
                           </div>
                           <span className="text-sm text-gray-700 w-40 truncate flex-shrink-0">{type.label}</span>
@@ -7611,7 +7609,7 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
                             </div>
                           </div>
                           <span className="text-xs text-gray-400 w-8 text-right">{count}</span>
-                          <ChevronRight className={"w-4 h-4 text-gray-400 transition-transform ${expandedStudentType === key ? 'rotate-90' : ''}`} />
+                          <ChevronRight className={'w-4 h-4 text-gray-400 transition-transform ' + expandedStudentType === key ? 'rotate-90' : '' + ''} />
                         </div>
                         
                         {/* Expanded Content */}
@@ -7847,7 +7845,7 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
                     return (
                       <div key={key} className="group cursor-pointer" onClick={() => setExpandedStaffType(expandedStaffType === key ? null : key)}>
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${chartColors[(idx + 3) % chartColors.length]}22` }}>
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: chartColors[(idx + 3) % chartColors.length] + '22' }}>
                             <Icon className="w-4 h-4" style={{ color: chartColors[(idx + 3) % chartColors.length] }} />
                           </div>
                           <span className="text-sm text-gray-700 w-40 truncate flex-shrink-0">{type.label}</span>
@@ -7865,7 +7863,7 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
                             </div>
                           </div>
                           <span className="text-xs text-gray-400 w-8 text-right">{count}</span>
-                          <ChevronRight className={"w-4 h-4 text-gray-400 transition-transform ${expandedStaffType === key ? 'rotate-90' : ''}`} />
+                          <ChevronRight className={'w-4 h-4 text-gray-400 transition-transform ' + expandedStaffType === key ? 'rotate-90' : '' + ''} />
                         </div>
                         
                         {/* Expanded Content */}
@@ -8246,15 +8244,15 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
         {Object.entries(statsByYear).map(([year, count]) => (
           <Card key={year} className="border overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
                 onClick={() => setSelectedYear(selectedYear === year ? null : year)}>
-            <CardContent className={"p-4 ${selectedYear === year ? 'bg-blue-50' : ''}`}>
+            <CardContent className={'p-4 ' + selectedYear === year ? 'bg-blue-50' : '' + ''}>
               <p className="text-sm text-gray-500 font-medium">{year}</p>
               <p className="text-3xl font-bold text-gray-800 mt-1">{count}</p>
               <p className="text-xs text-gray-400 mt-1">students</p>
             </CardContent>
-            <div className={"h-1 ${selectedYear === year ? 'bg-blue-500' : 
+            <div className={'h-1 ' + selectedYear === year ? 'bg-blue-500' : 
               year === '1st Year' ? 'bg-orange-400' :
               year === '2nd Year' ? 'bg-emerald-400' :
-              year === '3rd Year' ? 'bg-blue-400' : 'bg-purple-400'} `} />
+              year === '3rd Year' ? 'bg-blue-400' : 'bg-purple-400' + ' '} />
           </Card>
         ))}
         <Card className="border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -8522,14 +8520,14 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
               {!importResults ? (
                 <>
                   <div
-                    className={"border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+                    className={'border-2 border-dashed rounded-xl p-8 text-center transition-colors ' + 
                       dragOver ? 'border-emerald-500 bg-emerald-50' : 'border-gray-300 hover:border-emerald-400'
-                    }`}
+                     + ''}
                     onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
                     onDragLeave={() => setDragOver(false)}
                     onDrop={handleFileDrop}
                   >
-                    <Upload className={"w-12 h-12 mx-auto mb-4 ${dragOver ? 'text-emerald-500' : 'text-gray-400'}`} />
+                    <Upload className={'w-12 h-12 mx-auto mb-4 ' + dragOver ? 'text-emerald-500' : 'text-gray-400' + ''} />
                     <p className="text-lg font-medium text-gray-700 mb-2">
                       {dragOver ? 'Drop your CSV file here' : 'Drag & drop your CSV file here'}
                     </p>
@@ -8604,9 +8602,9 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
               ) : (
                 /* Results View */
                 <div className="space-y-4">
-                  <div className={"p-4 rounded-lg ${importResults.created > 0 ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 border border-gray-200'}`}>
+                  <div className={'p-4 rounded-lg ' + importResults.created > 0 ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 border border-gray-200' + ''}>
                     <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                      <CheckCircle className={"w-5 h-5 ${importResults.created > 0 ? 'text-emerald-600' : 'text-gray-400'}`} />
+                      <CheckCircle className={'w-5 h-5 ' + importResults.created > 0 ? 'text-emerald-600' : 'text-gray-400' + ''} />
                       Import Complete
                     </h4>
                     
@@ -8694,13 +8692,13 @@ function HODManagementPage({ user }: { user: User }) {
           <button
             key={tab.id}
             onClick={() => { setActiveTab(tab.id); setShowForm(false); setEditingItem(null); }}
-            className={"flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ${
+            className={'flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ' + 
               activeTab === tab.id 
                 ? 'bg-white text-gray-900 shadow-md' 
                 : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-            }`}
+             + ''}
           >
-            <tab.icon className={"w-4 h-4 ${activeTab === tab.id ? 'text-' + tab.color.split('-')[1] : ''}`} />
+            <tab.icon className={'w-4 h-4 ' + activeTab === tab.id ? 'text-' + tab.color.split('-')[1] : '' + ''} />
             {tab.label}
           </button>
         ))}
@@ -8823,7 +8821,7 @@ function StudentManagementSection({
         ...(searchQuery && { search: searchQuery }),
         ...(selectedBatch && { batchId: selectedBatch }),
       })
-      const res = await fetch(`/api/students?${params}`)
+      const res = await fetch('/api/students?' + params)
       const data = await res.json()
       if (data.success) {
         setStudents(data.students)
@@ -10087,7 +10085,7 @@ function BatchManagementSection({
           </div>
         ) : (
           batches.map((batch) => (
-            <Card key={batch.id} className={"transition-all duration-200 ${expandedBatch === batch.id ? 'ring-2 ring-amber-300' : 'hover:shadow-md'}`}>
+            <Card key={batch.id} className={'transition-all duration-200 ' + expandedBatch === batch.id ? 'ring-2 ring-amber-300' : 'hover:shadow-md' + ''}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 cursor-pointer flex-1" onClick={() => toggleBatchExpand(batch.id)}>
@@ -10567,11 +10565,11 @@ function HODReportGeneratorPage({ user }: { user: User }) {
             <button
               key={section.id}
               onClick={() => setActiveSection(section.id)}
-              className={"flex items-center gap-1 px-1.5 py-[3px] rounded-[4px] text-[9px] transition-all ${
+              className={'flex items-center gap-1 px-1.5 py-[3px] rounded-[4px] text-[9px] transition-all ' + 
                 activeSection === section.id
                   ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-sm'
                   : 'text-gray-600 hover:bg-gray-100'
-              }`}
+               + ''}
             >
               <section.icon className="w-2.5 h-2.5" />
               <span className="hidden md:inline">{section.title}</span>
@@ -10832,7 +10830,7 @@ function HODReportGeneratorPage({ user }: { user: User }) {
                   {reportData.researchFaculty.map((faculty, idx) => (
                     <tr key={idx}>
                       <td className="p-1 border">
-                        <Input value={faculty.name} onChange={(e) => updateResearchFaculty(idx, 'name', undefined, e.target.value)} className="border-0 h-6 text-xs px-1" placeholder={`F${idx + 1}`} />
+                        <Input value={faculty.name} onChange={(e) => updateResearchFaculty(idx, 'name', undefined, e.target.value)} className="border-0 h-6 text-xs px-1" placeholder={'F' + idx + 1 + ''} />
                       </td>
                       <td className="p-0.5 border"><Input value={faculty.journalPub.prev} onChange={(e) => updateResearchFaculty(idx, 'journalPub', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
                       <td className="p-0.5 border"><Input value={faculty.journalPub.curr} onChange={(e) => updateResearchFaculty(idx, 'journalPub', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
@@ -10941,7 +10939,7 @@ function HODReportGeneratorPage({ user }: { user: User }) {
                           const newF = [...reportData.facultyDev]
                           newF[idx] = {...newF[idx], name: e.target.value}
                           setReportData(p => ({...p, facultyDev: newF}))
-                        }} className="border-0 h-6 text-xs px-1" placeholder={`F${idx + 1}`} />
+                        }} className="border-0 h-6 text-xs px-1" placeholder={'F' + idx + 1 + ''} />
                       </td>
                       <td className="p-0.5 border"><Input value={faculty.fdpsAttended.prev} onChange={(e) => updateFacultyDev(idx, 'fdpsAttended', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
                       <td className="p-0.5 border"><Input value={faculty.fdpsAttended.curr} onChange={(e) => updateFacultyDev(idx, 'fdpsAttended', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
@@ -11087,7 +11085,7 @@ function HODReportGeneratorPage({ user }: { user: User }) {
                           const newData = [...reportData.industryInteraction]
                           newData[idx] = {...newData[idx], name: e.target.value}
                           setReportData(p => ({...p, industryInteraction: newData}))
-                        }} className="border-0 h-6 text-xs px-1" placeholder={`F${idx + 1}`} />
+                        }} className="border-0 h-6 text-xs px-1" placeholder={'F' + idx + 1 + ''} />
                       </td>
                       <td className="p-0.5 border"><Input value={faculty.mousSigned.prev} onChange={(e) => updateIndustryInteraction(idx, 'mousSigned', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
                       <td className="p-0.5 border"><Input value={faculty.mousSigned.curr} onChange={(e) => updateIndustryInteraction(idx, 'mousSigned', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
@@ -11268,7 +11266,7 @@ function AnalyticsPage() {
                   <span className="text-gray-500">{item.result}%</span>
                 </div>
                 <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                  <div className={"h-full bg-gradient-to-r ${item.color} rounded-full transition-all duration-500`} style={{ width: `${item.result}%` }} />
+                  <div className={'h-full bg-gradient-to-r ' + item.color + ' rounded-full transition-all duration-500'} style={{ width: item.result + '%' }} />
                 </div>
               </div>
             ))}
@@ -11289,7 +11287,7 @@ function AnalyticsPage() {
               <div key={item.label} className="p-4 rounded-xl bg-gray-50">
                 <p className="text-2xl font-bold text-gray-900">{item.value}%</p>
                 <p className="text-sm text-gray-500">{item.label}</p>
-                <div className={"h-1.5 ${item.color} rounded-full mt-2`} />
+                <div className={'h-1.5 ' + item.color + ' rounded-full mt-2'} />
               </div>
             ))}
           </div>
@@ -11433,7 +11431,7 @@ function AdminAchievementsPage() {
       {/* Summary Cards */}
       {data?.summary && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className={"p-4 border-2 cursor-pointer transition-all ${activeFilter === 'all' ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-amber-300'}`}
+          <Card className={'p-4 border-2 cursor-pointer transition-all ' + activeFilter === 'all' ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-amber-300' + ''}
                 onClick={() => setActiveFilter('all')}>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500">
@@ -11450,7 +11448,7 @@ function AdminAchievementsPage() {
             </div>
           </Card>
 
-          <Card className={"p-4 border-2 cursor-pointer transition-all ${activeFilter === 'student' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
+          <Card className={'p-4 border-2 cursor-pointer transition-all ' + activeFilter === 'student' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300' + ''}
                 onClick={() => setActiveFilter('student')}>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500">
@@ -11463,7 +11461,7 @@ function AdminAchievementsPage() {
             </div>
           </Card>
 
-          <Card className={"p-4 border-2 cursor-pointer transition-all ${activeFilter === 'staff' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300'}`}
+          <Card className={'p-4 border-2 cursor-pointer transition-all ' + activeFilter === 'staff' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300' + ''}
                 onClick={() => setActiveFilter('staff')}>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500">
@@ -11476,7 +11474,7 @@ function AdminAchievementsPage() {
             </div>
           </Card>
 
-          <Card className={"p-4 border-2 cursor-pointer transition-all ${activeFilter === 'hod' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}`}
+          <Card className={'p-4 border-2 cursor-pointer transition-all ' + activeFilter === 'hod' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300' + ''}
                 onClick={() => setActiveFilter('hod')}>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-violet-500">
@@ -11534,13 +11532,13 @@ function AdminAchievementsPage() {
                 <div key={achievement.id || idx} className="p-4 hover:bg-gray-50 transition-colors">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3 flex-1">
-                      <div className={"p-2 rounded-lg bg-gradient-to-br ${
+                      <div className={'p-2 rounded-lg bg-gradient-to-br ' + 
                         achievement.type === 'SPORTS' ? 'from-green-500 to-emerald-500' :
                         achievement.type === 'CULTURAL' ? 'from-pink-500 to-rose-500' :
                         achievement.type === 'TECHNICAL' ? 'from-blue-500 to-cyan-500' :
                         achievement.type === 'ACADEMIC' ? 'from-purple-500 to-violet-500' :
                         'from-gray-500 to-gray-600'
-                      }`}>
+                       + ''}>
                         <Trophy className="w-4 h-4 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -11605,10 +11603,10 @@ function AdminAchievementsPage() {
                       {data.staffAchievements.map((achievement: any, idx: number) => {
                         const IconComponent = getAchievementIcon(achievement.achievementType)
                         return (
-                          <div key={`${achievement.achievementType}-${achievement.id}-${idx}`} className="p-4 hover:bg-gray-50 transition-colors">
+                          <div key={'${achievement.achievementType}-${achievement.id}-' + idx + ''} className="p-4 hover:bg-gray-50 transition-colors">
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex items-start gap-3 flex-1">
-                                <div className={"p-2 rounded-lg bg-gradient-to-br ${getAchievementColor(achievement.achievementType)}`}>
+                                <div className={'p-2 rounded-lg bg-gradient-to-br ' + getAchievementColor(achievement.achievementType) + ''}>
                                   <IconComponent className="w-4 h-4 text-white" />
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -11674,10 +11672,10 @@ function AdminAchievementsPage() {
                       {data.hodAchievements.map((achievement: any, idx: number) => {
                         const IconComponent = getAchievementIcon(achievement.achievementType)
                         return (
-                          <div key={`hod-${achievement.achievementType}-${achievement.id}-${idx}`} className="p-4 hover:bg-gray-50 transition-colors">
+                          <div key={'hod-${achievement.achievementType}-${achievement.id}-' + idx + ''} className="p-4 hover:bg-gray-50 transition-colors">
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex items-start gap-3 flex-1">
-                                <div className={"p-2 rounded-lg bg-gradient-to-br from-purple-500 to-violet-500`}>
+                                <div className={`p-2 rounded-lg bg-gradient-to-br from-purple-500 to-violet-500`}>
                                   <IconComponent className="w-4 h-4 text-white" />
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -11815,11 +11813,11 @@ function AdminAnalyticsPage() {
           <button
             key={p.value}
             onClick={() => setPeriod(p.value as any)}
-            className={"px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={'px-4 py-2 rounded-lg text-sm font-medium transition-all ' + 
               period === p.value
                 ? 'bg-white text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
-            }`}
+             + ''}
           >
             {p.label}
           </button>
@@ -11919,7 +11917,7 @@ function AdminAnalyticsPage() {
                     fill="none"
                     stroke="#3B82F6"
                     strokeWidth="3"
-                    strokeDasharray={`${(data.achievementByRole.student / (data.achievementByRole.student + data.achievementByRole.staff + data.achievementByRole.hod || 1)) * 100}, 100`}
+                    strokeDasharray={'' + (data.achievementByRole.student / (data.achievementByRole.student + data.achievementByRole.staff + data.achievementByRole.hod || 1)) * 100 + ', 100'}
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -11944,7 +11942,7 @@ function AdminAnalyticsPage() {
                     fill="none"
                     stroke="#10B981"
                     strokeWidth="3"
-                    strokeDasharray={`${(data.achievementByRole.staff / (data.achievementByRole.student + data.achievementByRole.staff + data.achievementByRole.hod || 1)) * 100}, 100`}
+                    strokeDasharray={'' + (data.achievementByRole.staff / (data.achievementByRole.student + data.achievementByRole.staff + data.achievementByRole.hod || 1)) * 100 + ', 100'}
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -11969,7 +11967,7 @@ function AdminAnalyticsPage() {
                     fill="none"
                     stroke="#8B5CF6"
                     strokeWidth="3"
-                    strokeDasharray={`${(data.achievementByRole.hod / (data.achievementByRole.student + data.achievementByRole.staff + data.achievementByRole.hod || 1)) * 100}, 100`}
+                    strokeDasharray={'' + (data.achievementByRole.hod / (data.achievementByRole.student + data.achievementByRole.staff + data.achievementByRole.hod || 1)) * 100 + ', 100'}
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -12010,7 +12008,7 @@ function AdminAnalyticsPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {data.departments.map((dept: any, idx: number) => (
-                    <tr key={dept.id} className={"hover:bg-gray-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                    <tr key={dept.id} className={'hover:bg-gray-50 ' + idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50' + ''}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-white text-xs font-bold">
@@ -12077,12 +12075,12 @@ function AdminAnalyticsPage() {
           <div className="space-y-4">
             {data.topDepartments.map((dept: any, idx: number) => (
               <div key={dept.id} className="flex items-center gap-4">
-                <div className={"w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                <div className={'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ' + 
                   idx === 0 ? 'bg-amber-500 text-white' :
                   idx === 1 ? 'bg-gray-400 text-white' :
                   idx === 2 ? 'bg-amber-700 text-white' :
                   'bg-gray-200 text-gray-600'
-                }`}>
+                 + ''}>
                   {idx + 1}
                 </div>
                 <div className="flex-1">
@@ -12093,7 +12091,7 @@ function AdminAnalyticsPage() {
                   <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-500"
-                      style={{ width: `${(dept.achievements.totalAchievements / (data.topDepartments[0]?.achievements.totalAchievements || 1)) * 100}%` }}
+                      style={{ width: ((dept.achievements.totalAchievements / (data.topDepartments[0]?.achievements.totalAchievements || 1)) * 100) + '%' }}
                     />
                   </div>
                 </div>
@@ -12308,7 +12306,7 @@ function ReportGeneratorPage() {
     let csvContent = 'data:text/csv;charset=utf-8,'
     csvContent += 'NIET IQAC Report' + String.fromCharCode(10)
     csvContent += 'Generated:,' + new Date().toLocaleString() + String.fromCharCode(10)
-    csvContent += `Period:,${reportData?.metadata?.reportPeriod?.fromLabel} - ${reportData?.metadata?.reportPeriod?.toLabel}\n\n'
+    csvContent += 'Period:,' + (reportData?.metadata?.reportPeriod?.fromLabel || '') + ' - ' + (reportData?.metadata?.reportPeriod?.toLabel || '') + '\n\n'
     
     if (reportData?.executiveSummary) {
       csvContent += 'Executive Summary' + String.fromCharCode(10)
@@ -12688,14 +12686,10 @@ function ReportGeneratorPage() {
                       <button
                         key={fmt.id}
                         onClick={() => setExportFormat(fmt.id as any)}
-                        className={"p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
-                          exportFormat === fmt.id
-                            ? `border-${fmt.color}-500 bg-${fmt.color}-50 shadow-md`
-                            : 'border-gray-200 hover:border-gray-300 bg-white'
-                        }`}
+                        className={"p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 " + (exportFormat === fmt.id ? "border-" + fmt.color + "-500 bg-" + fmt.color + "-50 shadow-md" : 'border-gray-200 hover:border-gray-300 bg-white')}
                       >
-                        <fmt.icon className={"w-5 h-5 ${exportFormat === fmt.id ? `text-${fmt.color}-600` : 'text-gray-400'}`} />
-                        <span className={"text-xs font-medium ${exportFormat === fmt.id ? `text-${fmt.color}-900` : 'text-gray-600'}`}>
+                        <fmt.icon className={"w-5 h-5 " + (exportFormat === fmt.id ? "text-" + fmt.color + "-600" : 'text-gray-400')} />
+                        <span className={"text-xs font-medium " + (exportFormat === fmt.id ? "text-" + fmt.color + "-900" : 'text-gray-600')}>
                           {fmt.label}
                         </span>
                       </button>
@@ -12895,16 +12889,16 @@ function EnterpriseReportPreview({
           <h2 className="text-lg font-semibold text-white flex items-center gap-2">
             <LineChart className="w-5 h-5" /> Executive Summary
           </h2>
-          <ChevronDown className={"w-5 h-5 text-white transition-transform ${expandedSection === 'executive' ? 'rotate-180' : ''}`} />
+          <ChevronDown className={'w-5 h-5 text-white transition-transform ' + expandedSection === 'executive' ? 'rotate-180' : '' + ''} />
         </div>
         
         {expandedSection === 'executive' && (
           <div className="p-6">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
               {KPI_Cards.map((kpi, idx) => (
-                <div key={idx} className={"${kpi.bgColor} rounded-xl p-4 border border-gray-100 hover:shadow-lg transition-shadow`}>
+                <div key={idx} className={'' + kpi.bgColor + ' rounded-xl p-4 border border-gray-100 hover:shadow-lg transition-shadow'}>
                   <div className="flex items-center justify-between mb-2">
-                    <kpi.icon className={"w-5 h-5 text-gray-500`} />
+                    <kpi.icon className={"w-5 h-5 text-gray-500"} />
                     <span className="text-xs font-medium text-gray-500 uppercase">{kpi.label.split(' ')[0]}</span>
                   </div>
                   <p className="text-3xl font-bold text-gray-900">{kpi.value.toLocaleString()}</p>
@@ -12928,7 +12922,7 @@ function EnterpriseReportPreview({
                       stroke={execSummary.overallPerformance > 70 ? '#10b981' : execSummary.overallPerformance > 50 ? '#f59e0b' : '#ef4444'} 
                       strokeWidth="8" 
                       fill="none"
-                      strokeDasharray={`${(execSummary.overallPerformance || 0) * 2.51} 251`}
+                      strokeDasharray={'' + (execSummary.overallPerformance || 0) * 2.51 + ' 251'}
                       strokeLinecap="round"
                     />
                   </svg>
@@ -12952,17 +12946,17 @@ function EnterpriseReportPreview({
             <h2 className="text-lg font-semibold text-white flex items-center gap-2">
               <Sparkles className="w-5 h-5" /> AI-Powered Insights
             </h2>
-            <ChevronDown className={"w-5 h-5 text-white transition-transform ${expandedSection === 'ai-insights' ? 'rotate-180' : ''}`} />
+            <ChevronDown className={'w-5 h-5 text-white transition-transform ' + expandedSection === 'ai-insights' ? 'rotate-180' : '' + ''} />
           </div>
           
           {expandedSection === 'ai-insights' && (
             <div className="p-6 space-y-6">
               {/* Trend Indicator */}
-              <div className={"inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium ${
+              <div className={'inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium ' + 
                 aiInsights.overallTrend === 'improving' 
                   ? 'bg-emerald-100 text-emerald-700' 
                   : 'bg-red-100 text-red-700'
-              }`}>
+               + ''}>
                 {aiInsights.overallTrend === 'improving' ? (
                   <TrendingUp className="w-5 h-5" />
                 ) : (
@@ -13058,11 +13052,11 @@ function EnterpriseReportPreview({
                     {Object.entries(aiInsights.accreditationReadiness || {}).map(([key, value]: [string, any]) => (
                       <div key={key} className="flex items-center justify-between p-2 bg-white rounded-lg">
                         <span className="text-sm font-medium text-gray-700 uppercase">{key}</span>
-                        <span className={"px-2 py-1 rounded-full text-xs font-bold ${
+                        <span className={'px-2 py-1 rounded-full text-xs font-bold ' + 
                           value === 'Ready' ? 'bg-emerald-100 text-emerald-700' :
                           value === 'On Track' ? 'bg-blue-100 text-blue-700' :
                           'bg-amber-100 text-amber-700'
-                        }`}>
+                         + ''}>
                           {value}
                         </span>
                       </div>
@@ -13084,7 +13078,7 @@ function EnterpriseReportPreview({
           <h2 className="text-lg font-semibold text-white flex items-center gap-2">
             <Building2 className="w-5 h-5" /> Department-wise Performance
           </h2>
-          <ChevronDown className={"w-5 h-5 text-white transition-transform ${expandedSection === 'departments' ? 'rotate-180' : ''}`} />
+          <ChevronDown className={'w-5 h-5 text-white transition-transform ' + expandedSection === 'departments' ? 'rotate-180' : '' + ''} />
         </div>
         
         {expandedSection === 'departments' && (
@@ -13108,9 +13102,9 @@ function EnterpriseReportPreview({
                   {reportData?.departmentPerformance?.map((dept: any, idx: number) => (
                     <tr key={dept.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3">
-                        <span className={"w-7 h-7 rounded-full inline-flex items-center justify-center text-xs font-bold text-white ${
+                        <span className={'w-7 h-7 rounded-full inline-flex items-center justify-center text-xs font-bold text-white ' + 
                           idx === 0 ? 'bg-amber-500' : idx === 1 ? 'bg-gray-500' : idx === 2 ? 'bg-amber-700' : 'bg-gray-400'
-                        }`}>
+                         + ''}>
                           {idx + 1}
                         </span>
                       </td>
@@ -13136,17 +13130,17 @@ function EnterpriseReportPreview({
                         <div className="flex items-center justify-center gap-2">
                           <div className="w-16 bg-gray-200 rounded-full h-2">
                             <div 
-                              className={"h-2 rounded-full ${dept.performanceScore > 70 ? 'bg-green-500' : dept.performanceScore > 50 ? 'bg-amber-500' : 'bg-red-500'}`}
-                              style={{ width: `${Math.min(100, dept.performanceScore)}%` }}
+                              className={'h-2 rounded-full ' + (dept.performanceScore > 70 ? 'bg-green-500' : dept.performanceScore > 50 ? 'bg-amber-500' : 'bg-red-500')}
+                              style={{ width: Math.min(100, dept.performanceScore || 0) + '%' }}
                             ></div>
                           </div>
                           <span className="text-sm font-bold text-gray-700">{dept.performanceScore}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className={"inline-flex items-center gap-1 text-sm font-medium ${
+                        <span className={'inline-flex items-center gap-1 text-sm font-medium ' + 
                           dept.growthRate > 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
+                         + ''}>
                           {dept.growthRate > 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingUp className="w-4 h-4 rotate-180" />}
                           {dept.growthRate > 0 ? '+' : ''}{dept.growthRate.toFixed(1)}%
                         </span>
@@ -13169,7 +13163,7 @@ function EnterpriseReportPreview({
           <h2 className="text-lg font-semibold text-white flex items-center gap-2">
             <LineChart className="w-5 h-5" /> Performance Trends
           </h2>
-          <ChevronDown className={"w-5 h-5 text-white transition-transform ${expandedSection === 'trends' ? 'rotate-180' : ''}`} />
+          <ChevronDown className={'w-5 h-5 text-white transition-transform ' + expandedSection === 'trends' ? 'rotate-180' : '' + ''} />
         </div>
         
         {expandedSection === 'trends' && (
@@ -13185,7 +13179,7 @@ function EnterpriseReportPreview({
                       <div className="flex-1 bg-gray-200 rounded-full h-6 relative overflow-hidden">
                         <div 
                           className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#0A2E6D] to-[#1a4a9e] rounded-full flex items-center justify-end pr-2"
-                          style={{ width: `${Math.min(100, (month.achievements / 60) * 100)}%` }}
+                          style={{ width: Math.min(100, (month.achievements / 60) * 100) + '%' }}
                         >
                           <span className="text-xs font-bold text-white">{month.achievements}</span>
                         </div>
@@ -13213,8 +13207,8 @@ function EnterpriseReportPreview({
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-3">
                         <div 
-                          className={"${item.color} h-3 rounded-full transition-all`}
-                          style={{ width: `${Math.min(100, (item.value / item.max) * 100)}%` }}
+                          className={'' + item.color + ' h-3 rounded-full transition-all'}
+                          style={{ width: Math.min(100, (item.value / item.max) * 100) + '%' }}
                         ></div>
                       </div>
                     </div>
@@ -13240,9 +13234,9 @@ function EnterpriseReportPreview({
               {reportData?.topStudents?.slice(0, 10)?.map((student: any, idx: number) => (
                 <div key={student.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
                   <div className="flex items-center gap-3">
-                    <span className={"w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white ${
+                    <span className={'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white ' + 
                       idx === 0 ? 'bg-amber-500' : idx === 1 ? 'bg-gray-500' : idx === 2 ? 'bg-amber-700' : 'bg-[#0A2E6D]'
-                    }`}>
+                     + ''}>
                       {idx + 1}
                     </span>
                     <div>
@@ -13272,9 +13266,9 @@ function EnterpriseReportPreview({
               {reportData?.facultyAnalysis?.slice(0, 10)?.map((faculty: any, idx: number) => (
                 <div key={faculty.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
                   <div className="flex items-center gap-3">
-                    <span className={"w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white bg-gradient-to-br ${
+                    <span className={'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white bg-gradient-to-br ' + 
                       idx < 3 ? 'from-violet-500 to-purple-600' : 'from-gray-400 to-gray-500'
-                    }`}>
+                     + ''}>
                       {idx + 1}
                     </span>
                     <div>
@@ -13302,7 +13296,7 @@ function EnterpriseReportPreview({
           <h2 className="text-lg font-semibold text-white flex items-center gap-2">
             <Award className="w-5 h-5" /> NAAC Criteria Analysis
           </h2>
-          <ChevronDown className={"w-5 h-5 text-white transition-transform ${expandedSection === 'naac' ? 'rotate-180' : ''}`} />
+          <ChevronDown className={'w-5 h-5 text-white transition-transform ' + expandedSection === 'naac' ? 'rotate-180' : '' + ''} />
         </div>
         
         {expandedSection === 'naac' && (
@@ -13312,11 +13306,11 @@ function EnterpriseReportPreview({
                 <div key={key} className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-200 hover:shadow-lg transition-shadow">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-bold text-gray-500 uppercase">Criteria {idx + 1}</span>
-                    <span className={"px-2 py-0.5 rounded-full text-xs font-bold ${
+                    <span className={'px-2 py-0.5 rounded-full text-xs font-bold ' + 
                       criteria.score > 75 ? 'bg-green-100 text-green-700' :
                       criteria.score > 50 ? 'bg-amber-100 text-amber-700' :
                       'bg-red-100 text-red-700'
-                    }`}>
+                     + ''}>
                       {criteria.score?.toFixed(0) || 0}
                     </span>
                   </div>
@@ -13324,8 +13318,8 @@ function EnterpriseReportPreview({
                   {/* Mini gauge */}
                   <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
                     <div 
-                      className={"h-2 rounded-full ${criteria.score > 75 ? 'bg-green-500' : criteria.score > 50 ? 'bg-amber-500' : 'bg-red-500'}`}
-                      style={{ width: `${Math.min(100, criteria.score)}%` }}
+                      className={'h-2 rounded-full ' + (criteria.score > 75 ? 'bg-green-500' : criteria.score > 50 ? 'bg-amber-500' : 'bg-red-500')}
+                      style={{ width: Math.min(100, criteria.score || 0) + '%' }}
                     ></div>
                   </div>
                   
@@ -13353,7 +13347,7 @@ function EnterpriseReportPreview({
           <h2 className="text-lg font-semibold text-white flex items-center gap-2">
             <Flame className="w-5 h-5" /> NIRF Supporting Data
           </h2>
-          <ChevronDown className={"w-5 h-5 text-white transition-transform ${expandedSection === 'nirf' ? 'rotate-180' : ''}`} />
+          <ChevronDown className={'w-5 h-5 text-white transition-transform ' + expandedSection === 'nirf' ? 'rotate-180' : '' + ''} />
         </div>
         
         {expandedSection === 'nirf' && (
@@ -13545,9 +13539,9 @@ function ReportEditorTab({
                 </div>
                 <button
                   onClick={() => setShowBranding(!showBranding)}
-                  className={"w-12 h-6 rounded-full transition-colors ${showBranding ? 'bg-[#0A2E6D]' : 'bg-gray-300'}`}
+                  className={'w-12 h-6 rounded-full transition-colors ' + showBranding ? 'bg-[#0A2E6D]' : 'bg-gray-300' + ''}
                 >
-                  <span className={"block w-5 h-5 bg-white rounded-full shadow transform transition-transform ${showBranding ? 'translate-x-6' : 'translate-x-0.5'}`}></span>
+                  <span className={'block w-5 h-5 bg-white rounded-full shadow transform transition-transform ' + showBranding ? 'translate-x-6' : 'translate-x-0.5' + ''}></span>
                 </button>
               </label>
             </div>
@@ -13597,7 +13591,7 @@ function ReportEditorTab({
                   onClick={() => onExport(item.format)}
                   className="w-full flex items-center gap-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors"
                 >
-                  <item.icon className={"w-5 h-5 ${item.color}`} />
+                  <item.icon className={'w-5 h-5 ' + item.color + ''} />
                   <span className="font-medium text-gray-700 text-sm">{item.label}</span>
                 </button>
               ))}
@@ -13651,7 +13645,7 @@ function StatCell({ title, value, icon: Icon, color }: { title: string; value: s
             <p className="text-sm font-medium text-gray-500">{title}</p>
             <p className="text-3xl font-bold text-gray-900">{value}</p>
           </div>
-          <div className={"p-3 rounded-xl bg-gradient-to-br ${color.includes('from') ? color : `from-${color}-500 to-${color}-600`} shadow-lg`}>
+          <div className={'p-3 rounded-xl bg-gradient-to-br ' + (color.includes('from') ? color : 'from-' + color + '-500 to-' + color + '-600') + ' shadow-lg'}>
             <Icon className="w-6 h-6 text-white" />
           </div>
         </div>
@@ -13697,7 +13691,7 @@ function DatabaseManagementPage() {
       })
       const json = await res.json()
       if (json.success) {
-        setActionResult({ type: 'success', message: json.message || `${action} completed successfully` })
+        setActionResult({ type: 'success', message: json.message || (action + ' completed successfully') })
         if (action === 'cleanup' || action === 'stats') {
           fetchDatabaseInfo()
         }
@@ -13738,9 +13732,9 @@ function DatabaseManagementPage() {
 
       {/* Action Result Alert */}
       {actionResult && (
-        <div className={"p-4 rounded-xl flex items-center gap-3 ${
+        <div className={'p-4 rounded-xl flex items-center gap-3 ' + 
           actionResult.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
-        }`}>
+         + ''}>
           {actionResult.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
           <p>{actionResult.message}</p>
         </div>
@@ -13790,24 +13784,24 @@ function DatabaseManagementPage() {
           </CardContent>
         </Card>
 
-        <Card className={"border overflow-hidden ${
+        <Card className={'border overflow-hidden ' + 
           dbInfo?.health?.status === 'healthy' ? 'border-green-200 bg-green-50' :
           dbInfo?.health?.status === 'warning' ? 'border-yellow-200 bg-yellow-50' :
           'border-red-200 bg-red-50'
-        }`}>
+         + ''}>
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Health Status</p>
-                <p className={"text-xl font-bold capitalize ${
+                <p className={'text-xl font-bold capitalize ' + 
                   dbInfo?.health?.status === 'healthy' ? 'text-green-700' :
                   dbInfo?.health?.status === 'warning' ? 'text-yellow-700' : 'text-red-700'
-                }`}>{dbInfo?.health?.status || 'Unknown'}</p>
+                 + ''}>{dbInfo?.health?.status || 'Unknown'}</p>
               </div>
-              <div className={"p-3 rounded-xl ${
+              <div className={'p-3 rounded-xl ' + 
                 dbInfo?.health?.status === 'healthy' ? 'bg-green-200' :
                 dbInfo?.health?.status === 'warning' ? 'bg-yellow-200' : 'bg-red-200'
-              }`}>
+               + ''}>
                 {dbInfo?.health?.status === 'healthy' ? <CheckCircle className="w-6 h-6 text-green-700" /> :
                  dbInfo?.health?.status === 'warning' ? <AlertCircle className="w-6 h-6 text-yellow-700" /> :
                  <XCircle className="w-6 h-6 text-red-700" />}
@@ -13889,16 +13883,16 @@ function DatabaseManagementPage() {
               {dbInfo?.usersByRole ? Object.entries(dbInfo.usersByRole).map(([role, count]: [string, any]) => (
                 <div key={role} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div className={"w-10 h-10 rounded-full flex items-center justify-center ${
+                    <div className={'w-10 h-10 rounded-full flex items-center justify-center ' + 
                       role === 'ADMIN' ? 'bg-red-100' :
                       role === 'HOD' ? 'bg-amber-100' :
                       role === 'STAFF' ? 'bg-green-100' : 'bg-blue-100'
-                    }`}>
-                      <Users className={"w-5 h-5 ${
+                     + ''}>
+                      <Users className={'w-5 h-5 ' + 
                         role === 'ADMIN' ? 'text-red-600' :
                         role === 'HOD' ? 'text-amber-600' :
                         role === 'STAFF' ? 'text-green-600' : 'text-blue-600'
-                      }`} />
+                       + ''} />
                     </div>
                     <span className="font-medium">{role}</span>
                   </div>
@@ -14238,7 +14232,7 @@ function AdminDepartmentResultsPage() {
                 onClick={() => setSelectedDept(selectedDept === dept.id ? null : dept.id)}
               >
                 {selectedDept === dept.id ? 'Hide Details' : 'View Full Details'}
-                <ChevronDown className={"w-4 h-4 ml-2 transition-transform ${selectedDept === dept.id ? 'rotate-180' : ''}`} />
+                <ChevronDown className={'w-4 h-4 ml-2 transition-transform ' + selectedDept === dept.id ? 'rotate-180' : '' + ''} />
               </Button>
 
               {/* Expanded Details */}
@@ -14442,12 +14436,12 @@ function AdminShowcasePage() {
           <div className="space-y-3">
             {data?.departments?.slice(0, 5).map((dept: any, idx: number) => (
               <div key={dept.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-                <span className={"w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                <span className={'w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ' + 
                   idx === 0 ? 'bg-yellow-400 text-yellow-900' :
                   idx === 1 ? 'bg-gray-300 text-gray-700' :
                   idx === 2 ? 'bg-amber-600 text-white' :
                   'bg-gray-200 text-gray-600'
-                }`}>
+                 + ''}>
                   {idx + 1}
                 </span>
                 <div className="flex-1">
@@ -14565,7 +14559,7 @@ function AdminShowcasePage() {
                 <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
-                    style={{ width: `${Math.min(100, (r.count / (data?.highlights?.totalResearch || 1)) * 100)}%` }}
+                    style={{ width: Math.min(100, (r.count / (data?.highlights?.totalResearch || 1)) * 100) + '%' }}
                   />
                 </div>
                 <span className="text-sm font-medium text-gray-900 w-10 text-right">{r.count}</span>
@@ -14587,7 +14581,7 @@ function AdminShowcasePage() {
                 <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full"
-                    style={{ width: `${Math.min(100, (a.count / (data?.highlights?.totalActivities || 1)) * 100)}%` }}
+                    style={{ width: Math.min(100, (a.count / (data?.highlights?.totalActivities || 1)) * 100) + '%' }}
                   />
                 </div>
                 <span className="text-sm font-medium text-gray-900 w-10 text-right">{a.count}</span>
@@ -14825,7 +14819,7 @@ function SettingsPage({ user }: { user: User }) {
 
       const json = await res.json()
       if (json.success) {
-        setSaveMessage({ type: 'success', message: `${section.charAt(0).toUpperCase() + section.slice(1)} settings saved successfully!` })
+        setSaveMessage({ type: 'success', message: (section.charAt(0).toUpperCase() + section.slice(1)) + ' settings saved successfully!' })
       } else {
         setSaveMessage({ type: 'error', message: json.error || 'Failed to save settings' })
       }
@@ -14865,9 +14859,9 @@ function SettingsPage({ user }: { user: User }) {
           <p className="text-gray-500 mt-1">Configure and manage all system settings</p>
         </div>
         {saveMessage && (
-          <div className={"px-4 py-2 rounded-lg flex items-center gap-2 ${
+          <div className={'px-4 py-2 rounded-lg flex items-center gap-2 ' + 
             saveMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-          }`}>
+           + ''}>
             {saveMessage.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
             {saveMessage.message}
           </div>
@@ -14882,11 +14876,11 @@ function SettingsPage({ user }: { user: User }) {
             <button
               key={tab.id}
               onClick={() => setActiveSettingsTab(tab.id)}
-              className={"flex items-center gap-2 px-4 py-2.5 rounded-t-lg font-medium text-sm whitespace-nowrap transition-colors ${
+              className={'flex items-center gap-2 px-4 py-2.5 rounded-t-lg font-medium text-sm whitespace-nowrap transition-colors ' + 
                 activeSettingsTab === tab.id
                   ? 'bg-amber-500 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+               + ''}
             >
               <Icon className="w-4 h-4" />
               {tab.label}
@@ -14972,9 +14966,9 @@ function SettingsPage({ user }: { user: User }) {
               </div>
               <button
                 onClick={() => setDarkMode(!darkMode)}
-                className={"relative w-12 h-6 rounded-full transition-colors ${darkMode ? 'bg-indigo-500' : 'bg-gray-300'}`}
+                className={'relative w-12 h-6 rounded-full transition-colors ' + darkMode ? 'bg-indigo-500' : 'bg-gray-300' + ''}
               >
-                <span className={"absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${darkMode ? 'translate-x-6' : ''}`} />
+                <span className={'absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ' + darkMode ? 'translate-x-6' : '' + ''} />
               </button>
             </div>
 
@@ -15022,9 +15016,9 @@ function SettingsPage({ user }: { user: User }) {
                 </div>
                 <button
                   onClick={() => setDomainForm({...domainForm, sslEnabled: !domainForm.sslEnabled})}
-                  className={"relative w-12 h-6 rounded-full transition-colors ${domainForm.sslEnabled ? 'bg-green-500' : 'bg-gray-300'}`}
+                  className={'relative w-12 h-6 rounded-full transition-colors ' + domainForm.sslEnabled ? 'bg-green-500' : 'bg-gray-300' + ''}
                 >
-                  <span className={"absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${domainForm.sslEnabled ? 'translate-x-6' : ''}`} />
+                  <span className={'absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ' + domainForm.sslEnabled ? 'translate-x-6' : '' + ''} />
                 </button>
               </div>
               <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
@@ -15034,9 +15028,9 @@ function SettingsPage({ user }: { user: User }) {
                 </div>
                 <button
                   onClick={() => setDomainForm({...domainForm, forceWww: !domainForm.forceWww})}
-                  className={"relative w-12 h-6 rounded-full transition-colors ${domainForm.forceWww ? 'bg-blue-500' : 'bg-gray-300'}`}
+                  className={'relative w-12 h-6 rounded-full transition-colors ' + domainForm.forceWww ? 'bg-blue-500' : 'bg-gray-300' + ''}
                 >
-                  <span className={"absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${domainForm.forceWww ? 'translate-x-6' : ''}`} />
+                  <span className={'absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ' + domainForm.forceWww ? 'translate-x-6' : '' + ''} />
                 </button>
               </div>
             </div>
@@ -15121,9 +15115,9 @@ function SettingsPage({ user }: { user: User }) {
                 </div>
                 <button
                   onClick={() => setDatabaseForm({...databaseForm, backupEnabled: !databaseForm.backupEnabled})}
-                  className={"relative w-12 h-6 rounded-full transition-colors ${databaseForm.backupEnabled ? 'bg-purple-500' : 'bg-gray-300'}`}
+                  className={'relative w-12 h-6 rounded-full transition-colors ' + databaseForm.backupEnabled ? 'bg-purple-500' : 'bg-gray-300' + ''}
                 >
-                  <span className={"absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${databaseForm.backupEnabled ? 'translate-x-6' : ''}`} />
+                  <span className={'absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ' + databaseForm.backupEnabled ? 'translate-x-6' : '' + ''} />
                 </button>
               </div>
               {databaseForm.backupEnabled && (
@@ -15213,9 +15207,9 @@ function SettingsPage({ user }: { user: User }) {
                 </div>
                 <button
                   onClick={() => setNetworkForm({...networkForm, maintenanceMode: !networkForm.maintenanceMode})}
-                  className={"relative w-12 h-6 rounded-full transition-colors ${networkForm.maintenanceMode ? 'bg-orange-500' : 'bg-gray-300'}`}
+                  className={'relative w-12 h-6 rounded-full transition-colors ' + networkForm.maintenanceMode ? 'bg-orange-500' : 'bg-gray-300' + ''}
                 >
-                  <span className={"absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${networkForm.maintenanceMode ? 'translate-x-6' : ''}`} />
+                  <span className={'absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ' + networkForm.maintenanceMode ? 'translate-x-6' : '' + ''} />
                 </button>
               </div>
             </div>
@@ -15297,9 +15291,9 @@ function SettingsPage({ user }: { user: User }) {
                 </div>
                 <button
                   onClick={() => setEmailForm({...emailForm, notificationEmails: !emailForm.notificationEmails})}
-                  className={"relative w-12 h-6 rounded-full transition-colors ${emailForm.notificationEmails ? 'bg-red-500' : 'bg-gray-300'}`}
+                  className={'relative w-12 h-6 rounded-full transition-colors ' + emailForm.notificationEmails ? 'bg-red-500' : 'bg-gray-300' + ''}
                 >
-                  <span className={"absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${emailForm.notificationEmails ? 'translate-x-6' : ''}`} />
+                  <span className={'absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ' + emailForm.notificationEmails ? 'translate-x-6' : '' + ''} />
                 </button>
               </div>
               <div className="flex items-center justify-between p-4 bg-pink-50 rounded-lg border border-pink-200">
@@ -15309,9 +15303,9 @@ function SettingsPage({ user }: { user: User }) {
                 </div>
                 <button
                   onClick={() => setEmailForm({...emailForm, approvalAlerts: !emailForm.approvalAlerts})}
-                  className={"relative w-12 h-6 rounded-full transition-colors ${emailForm.approvalAlerts ? 'bg-pink-500' : 'bg-gray-300'}`}
+                  className={'relative w-12 h-6 rounded-full transition-colors ' + emailForm.approvalAlerts ? 'bg-pink-500' : 'bg-gray-300' + ''}
                 >
-                  <span className={"absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${emailForm.approvalAlerts ? 'translate-x-6' : ''}`} />
+                  <span className={'absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ' + emailForm.approvalAlerts ? 'translate-x-6' : '' + ''} />
                 </button>
               </div>
             </div>
@@ -15428,9 +15422,9 @@ function SettingsPage({ user }: { user: User }) {
                 </div>
                 <button
                   onClick={() => setSecurityForm({...securityForm, twoFactorAuth: !securityForm.twoFactorAuth})}
-                  className={"relative w-12 h-6 rounded-full transition-colors ${securityForm.twoFactorAuth ? 'bg-red-600' : 'bg-gray-300'}`}
+                  className={'relative w-12 h-6 rounded-full transition-colors ' + securityForm.twoFactorAuth ? 'bg-red-600' : 'bg-gray-300' + ''}
                 >
-                  <span className={"absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${securityForm.twoFactorAuth ? 'translate-x-6' : ''}`} />
+                  <span className={'absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ' + securityForm.twoFactorAuth ? 'translate-x-6' : '' + ''} />
                 </button>
               </div>
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 md:col-span-2">
@@ -15440,9 +15434,9 @@ function SettingsPage({ user }: { user: User }) {
                 </div>
                 <button
                   onClick={() => setSecurityForm({...securityForm, auditLogging: !securityForm.auditLogging})}
-                  className={"relative w-12 h-6 rounded-full transition-colors ${securityForm.auditLogging ? 'bg-gray-700' : 'bg-gray-300'}`}
+                  className={'relative w-12 h-6 rounded-full transition-colors ' + securityForm.auditLogging ? 'bg-gray-700' : 'bg-gray-300' + ''}
                 >
-                  <span className={"absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${securityForm.auditLogging ? 'translate-x-6' : ''}`} />
+                  <span className={'absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ' + securityForm.auditLogging ? 'translate-x-6' : '' + ''} />
                 </button>
               </div>
             </div>
@@ -15574,9 +15568,9 @@ function NotificationDropdown() {
           
           <div className="max-h-80 overflow-y-auto">
             {notifications.map(notif => (
-              <div key={notif.id} className={"p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors ${!notif.read ? 'bg-blue-50/30' : ''}`}>
+              <div key={notif.id} className={'p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors ' + !notif.read ? 'bg-blue-50/30' : '' + ''}>
                 <div className="flex items-start gap-3">
-                  <div className={"w-2 h-2 rounded-full mt-2 ${!notif.read ? 'bg-blue-500' : 'bg-gray-300'}`} />
+                  <div className={'w-2 h-2 rounded-full mt-2 ' + !notif.read ? 'bg-blue-500' : 'bg-gray-300' + ''} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900">{notif.title}</p>
                     <p className="text-xs text-gray-500 mt-1">{notif.time}</p>
@@ -15710,7 +15704,7 @@ function Sidebar({
           onClick={onToggle}
         />
       )}
-      <aside className={"${
+      <aside className={'' + 
         // Mobile behavior:
         // - open: full width overlay (w-72), visible
         // - closed: hidden off-screen (-translate-x-full)
@@ -15721,14 +15715,14 @@ function Sidebar({
         open 
           ? 'w-72 max-lg:w-72 translate-x-0' 
           : 'max-lg:-translate-x-full max-lg:w-72 lg:w-20 lg:translate-x-0'
-      } bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col z-50 transition-all duration-300 fixed inset-y-0 left-0 shadow-2xl sidebar-shadow`}>
+       + ' bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col z-50 transition-all duration-300 fixed inset-y-0 left-0 shadow-2xl sidebar-shadow'}>
     
     {/* ====== ROLE-BASED HEADER ====== */}
-    <div className={"p-4 border-b border-gray-100 bg-gradient-to-r ${roleConfig.brandColor} bg-opacity-5 relative ${!open ? 'flex items-center justify-center' : ''}`}>
+    <div className={'p-4 border-b border-gray-100 bg-gradient-to-r ${roleConfig.brandColor} bg-opacity-5 relative ' + !open ? 'flex items-center justify-center' : '' + ''}>
       {/* Toggle Button */}
       <button
         onClick={onToggle}
-        className={"absolute top-3 right-3 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100/80 transition-colors z-10 ${!open ? 'top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2' : ''}`}
+        className={'absolute top-3 right-3 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100/80 transition-colors z-10 ' + !open ? 'top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2' : '' + ''}
         title={open ? "Collapse Sidebar" : "Expand Sidebar"}
       >
         {open ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -15737,18 +15731,18 @@ function Sidebar({
       {open ? (
         <div className="flex items-center gap-3 pr-8">
           {/* Role-Specific Logo */}
-          <div className={"w-11 h-11 rounded-xl bg-gradient-to-br ${roleConfig.brandColor} flex items-center justify-center shadow-lg logo-glow relative overflow-hidden`}>
+          <div className={'w-11 h-11 rounded-xl bg-gradient-to-br ' + roleConfig.brandColor + ' flex items-center justify-center shadow-lg logo-glow relative overflow-hidden'}>
             <RoleIcon className="w-6 h-6 text-white" />
             <div className="absolute inset-0 bg-white/20 rounded-xl" />
           </div>
           <div className="overflow-hidden flex-1">
             <div className="flex items-center gap-2">
               <span className="font-bold text-gray-900 text-sm block truncate">NIET IQAC</span>
-              <span className={"px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full ${roleConfig.bgColor} ${roleConfig.textColor}`}>
+              <span className={'px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full ${roleConfig.bgColor} ' + roleConfig.textColor + ''}>
                 {user.role}
               </span>
             </div>
-            <span className={"text-xs ${roleConfig.textColor} font-medium flex items-center gap-1 mt-0.5`}>
+            <span className={'text-xs ' + roleConfig.textColor + ' font-medium flex items-center gap-1 mt-0.5'}>
               <RoleIcon className="w-3 h-3" />
               {roleConfig.roleLabel}
             </span>
@@ -15756,7 +15750,7 @@ function Sidebar({
         </div>
       ) : (
         /* Icon only mode - just show small logo */
-        <div className={"w-10 h-10 rounded-xl bg-gradient-to-br ${roleConfig.brandColor} flex items-center justify-center shadow-lg`}>
+        <div className={'w-10 h-10 rounded-xl bg-gradient-to-br ' + roleConfig.brandColor + ' flex items-center justify-center shadow-lg'}>
           <RoleIcon className="w-5 h-5 text-white" />
         </div>
       )}
@@ -15765,8 +15759,8 @@ function Sidebar({
       {open && (
         <div className="mt-3 pt-3 border-t border-white/20">
           <div className="flex items-center gap-2">
-            <div className={"w-8 h-8 rounded-lg ${roleConfig.bgColor} flex items-center justify-center`}>
-              <span className={"text-sm font-bold ${roleConfig.textColor}`}>{user.name?.charAt(0) || 'U'}</span>
+            <div className={'w-8 h-8 rounded-lg ' + roleConfig.bgColor + ' flex items-center justify-center'}>
+              <span className={'text-sm font-bold ' + roleConfig.textColor + ''}>{user.name?.charAt(0) || 'U'}</span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 truncate">{user.name || 'User'}</p>
@@ -15785,7 +15779,7 @@ function Sidebar({
     )}
 
     {/* ====== MENU ITEMS ====== */}
-    <nav className={"flex-1 ${open ? 'p-3' : 'p-2'} space-y-1 overflow-y-auto custom-scrollbar`}>
+    <nav className={'flex-1 ' + open ? 'p-3' : 'p-2' + ' space-y-1 overflow-y-auto custom-scrollbar'}>
       {menuItems.map((item, index) => {
         const Icon = item.icon
         const isActive = activeTab === item.id
@@ -15796,32 +15790,22 @@ function Sidebar({
               e.stopPropagation()
               setActiveTab(item.id)
             }}
-            className={"w-full flex items-center ${open ? 'gap-3 px-3' : 'justify-center px-0'} py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative group ${
-              isActive 
-                ? `${roleConfig.bgColor} ${roleConfig.textColor} shadow-sm border border-${roleConfig.accentColor}-200`
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-            }`}
+            className={'w-full flex items-center ' + (open ? 'gap-3 px-3' : 'justify-center px-0') + ' py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative group ' + (isActive ? roleConfig.bgColor + ' ' + roleConfig.textColor + ' shadow-sm border border-' + roleConfig.accentColor + '-200' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900')}
             title={!open ? item.label : undefined}
-            style={{ animationDelay: `${index * 30}ms` }}
+            style={{ animationDelay: (index * 30) + 'ms' }}
           >
             {/* Icon Container */}
-            <div className={"w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
-              isActive 
-                ? `bg-gradient-to-br ${roleConfig.brandColor} shadow-md`
-                : 'bg-gray-100 group-hover:bg-gray-200'
-            }`}>
-              <Icon className={"w-4 h-4 transition-colors ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`} />
+            <div className={'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 ' + (isActive ? 'bg-gradient-to-br ' + roleConfig.brandColor + ' shadow-md' : 'bg-gray-100 group-hover:bg-gray-200')}>
+              <Icon className={'w-4 h-4 transition-colors ' + (isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700')} />
             </div>
             
             {/* Label & Badge - Only show when open */}
             {open && (
               <div className="flex-1 text-left min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className={"truncate ${isActive ? 'font-bold' : ''}`}>{item.label}</span>
+                  <span className={'truncate ' + (isActive ? 'font-bold' : '')}>{item.label}</span>
                   {item.badge && (
-                    <span className={"ml-auto px-2 py-0.5 text-[10px] rounded-full font-bold shrink-0 ${
-                      isActive ? `bg-white/30 text-current` : 'bg-red-50 text-red-600'
-                    }`}>
+                    <span className={'ml-auto px-2 py-0.5 text-[10px] rounded-full font-bold shrink-0 ' + (isActive ? 'bg-white/30 text-current' : 'bg-red-50 text-red-600')}>
                       {item.badge}
                     </span>
                   )}
@@ -15834,7 +15818,7 @@ function Sidebar({
             
             {/* Active Left Border */}
             {isActive && open && (
-              <span className={"absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-gradient-to-b ${roleConfig.brandColor}`} />
+              <span className={'absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-gradient-to-b ' + roleConfig.brandColor + ''} />
             )}
             
             {/* Active indicator dot for collapsed mode */}
@@ -15850,10 +15834,10 @@ function Sidebar({
     {open && (
       <div className="p-3 border-t border-gray-100 space-y-2">
         {/* Quick Stats Card */}
-        <div className={"p-3 rounded-xl bg-gradient-to-br ${roleConfig.brandColor} bg-opacity-5 border border-${roleConfig.accentColor}-100`}>
+        <div className={'p-3 rounded-xl bg-gradient-to-br ${roleConfig.brandColor} bg-opacity-5 border border-' + roleConfig.accentColor + '-100'}>
           <div className="flex items-center gap-2 mb-2">
-            <Zap className={"w-4 h-4 ${roleConfig.textColor}`} />
-            <span className={"text-xs font-bold ${roleConfig.textColor}`}>Quick Info</span>
+            <Zap className={'w-4 h-4 ' + roleConfig.textColor + ''} />
+            <span className={'text-xs font-bold ' + roleConfig.textColor + ''}>Quick Info</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="text-center p-2 bg-white/60 rounded-lg">
@@ -15926,9 +15910,9 @@ function MobileNav({ activeTab, setActiveTab, user }: { activeTab: TabType; setA
                 <button
                   key={item.id}
                   onClick={() => { setActiveTab(item.id); setOpen(false) }}
-                  className={"w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  className={'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ' + 
                     activeTab === item.id ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'
-                  }`}
+                   + ''}
                 >
                   <item.icon className="w-5 h-5" />
                   <span>{item.label}</span>
@@ -15991,7 +15975,7 @@ function StudentAchievementsPage({ user }: { user: User }) {
         const initialData: Record<string, string> = {
           name: user.name || '',
           dept: user.departmentName || '',
-          reg: `${user.departmentName || ''}001` // Default reg no
+          reg: (user.departmentName || '') + '001' // Default reg no
         }
         setFormData(initialData)
       }
@@ -16212,13 +16196,13 @@ function StudentAchievementsPage({ user }: { user: User }) {
                       onDrop={() => handleTypeDrop(index)}
                       onDragEnd={handleTypeDragEnd}
                       onClick={() => setSelectedType(typeKey)}
-                      className={"relative p-4 rounded-xl border-2 cursor-grab active:cursor-grabbing transition-all duration-200 group ${
+                      className={'relative p-4 rounded-xl border-2 cursor-grab active:cursor-grabbing transition-all duration-200 group ' + 
                         isDragging 
                           ? 'opacity-40 scale-95 rotate-2 shadow-lg z-10' 
                           : isDragOver 
                             ? 'border-cyan-400 bg-cyan-50 scale-[1.02] shadow-md border-dashed' 
                             : 'border-gray-200 hover:border-cyan-300 hover:bg-cyan-50/50 hover:shadow-md'
-                      }`}
+                       + ''}
                     >
                       {/* Drag Handle Indicator */}
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -16226,7 +16210,7 @@ function StudentAchievementsPage({ user }: { user: User }) {
                       </div>
                       
                       {/* Type Icon */}
-                      <div className={"w-12 h-12 rounded-xl bg-gradient-to-br ${typeConfig.color} flex items-center justify-center mb-3 transition-transform group-hover:scale-110 ${isDragging ? 'scale-90' : ''}`}>
+                      <div className={'w-12 h-12 rounded-xl bg-gradient-to-br ${typeConfig.color} flex items-center justify-center mb-3 transition-transform group-hover:scale-110 ' + isDragging ? 'scale-90' : '' + ''}>
                         <Icon className="w-6 h-6 text-white" />
                       </div>
                       
@@ -16254,7 +16238,7 @@ function StudentAchievementsPage({ user }: { user: User }) {
                 {/* Selected Type Header with Back Button */}
                 <div className="flex items-center justify-between pb-2 border-b border-gray-100">
                   <div className="flex items-center gap-3">
-                    <div className={"w-10 h-10 rounded-xl bg-gradient-to-br ${currentTypeConfig?.color} flex items-center justify-center`}>
+                    <div className={'w-10 h-10 rounded-xl bg-gradient-to-br ' + currentTypeConfig?.color + ' flex items-center justify-center'}>
                       {(() => {
                         const Icon = currentTypeConfig?.icon
                         return Icon ? <Icon className="w-5 h-5 text-white" /> : null
@@ -16269,7 +16253,7 @@ function StudentAchievementsPage({ user }: { user: User }) {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {currentTypeConfig?.fields.filter(field => field.type !== 'textarea').map((field) => (
-                    <div key={field.id} className={"space-y-1 ${field.full ? 'md:col-span-2' : ''}`}>
+                    <div key={field.id} className={'space-y-1 ' + field.full ? 'md:col-span-2' : '' + ''}>
                       <label className="text-sm font-medium text-gray-600">
                         {field.label}
                         {field.required && <span className="text-red-500 ml-1">*</span>}
@@ -16282,10 +16266,10 @@ function StudentAchievementsPage({ user }: { user: User }) {
                           value={formData[field.id] || ''}
                           onChange={(e) => handleFieldChange(field.id, e.target.value)}
                           disabled={field.locked}
-                          placeholder={`Enter ${field.label.toLowerCase()}`}
-                          className={"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 ${
+                          placeholder={'Enter ' + field.label.toLowerCase() + ''}
+                          className={'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 ' + 
                             field.locked ? 'bg-gray-100 cursor-not-allowed border-gray-200' : 'bg-white border-gray-200'
-                          }`}
+                           + ''}
                         />
                       )}
                       
@@ -16294,7 +16278,7 @@ function StudentAchievementsPage({ user }: { user: User }) {
                           type="number"
                           value={formData[field.id] || ''}
                           onChange={(e) => handleFieldChange(field.id, e.target.value)}
-                          placeholder={`Enter ${field.label.toLowerCase()}`}
+                          placeholder={'Enter ' + field.label.toLowerCase() + ''}
                           className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
                         />
                       )}
@@ -16354,8 +16338,8 @@ function StudentAchievementsPage({ user }: { user: User }) {
                           {formData[field.id] === 'Other' && (
                             <input
                               type="text"
-                              value={formData[`${field.id}_other`] || ''}
-                              onChange={(e) => handleFieldChange(`${field.id}_other`, e.target.value)}
+                              value={formData[field.id + '_other'] || ''}
+                              onChange={(e) => handleFieldChange(field.id + '_other', e.target.value)}
                               placeholder="Please specify..."
                               className="w-full px-3 py-2 border border-cyan-300 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-cyan-50"
                             />
@@ -16373,14 +16357,10 @@ function StudentAchievementsPage({ user }: { user: User }) {
                                 onClick={() => {
                                   handleFieldChange(field.id, opt)
                                   if (opt !== 'Other') {
-                                    handleFieldChange(`${field.id}_other`, '')
+                                    handleFieldChange(field.id + '_other', '')
                                   }
                                 }}
-                                className={"px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                                  formData[field.id] === opt
-                                    ? 'bg-cyan-600 text-white shadow-md'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                } ${opt === 'Other' && formData[field.id] === 'Other' ? 'col-span-2' : ''}`}
+                                className={'px-3 py-2 rounded-lg text-sm font-medium transition-all ' + (formData[field.id] === opt ? 'bg-cyan-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200') + (opt === 'Other' && formData[field.id] === 'Other' ? ' col-span-2' : '')}
                               >
                                 {opt}
                               </button>
@@ -16389,8 +16369,8 @@ function StudentAchievementsPage({ user }: { user: User }) {
                           {formData[field.id] === 'Other' && (
                             <input
                               type="text"
-                              value={formData[`${field.id}_other`] || ''}
-                              onChange={(e) => handleFieldChange(`${field.id}_other`, e.target.value)}
+                              value={formData[field.id + '_other'] || ''}
+                              onChange={(e) => handleFieldChange(field.id + '_other', e.target.value)}
                               placeholder="Enter publisher name..."
                               className="w-full px-3 py-2 border border-cyan-300 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-cyan-50"
                             />
@@ -16412,11 +16392,11 @@ function StudentAchievementsPage({ user }: { user: User }) {
                     onDragOver={handleFileDragOver}
                     onDragLeave={handleFileDragLeave}
                     onDrop={handleFileDrop}
-                    className={"relative border-2 border-dashed rounded-xl p-6 text-center transition-all ${
+                    className={'relative border-2 border-dashed rounded-xl p-6 text-center transition-all ' + 
                       isDragOver 
                         ? 'border-cyan-400 bg-cyan-50 scale-[1.02]' 
                         : 'border-gray-300 hover:border-gray-400 bg-gray-50'
-                    }`}
+                     + ''}
                   >
                     <input
                       type="file"
@@ -16448,7 +16428,7 @@ function StudentAchievementsPage({ user }: { user: User }) {
                     <div className="mt-3 space-y-2">
                       {uploadedFiles.map((file, index) => (
                         <div 
-                          key={`${file.name}-${index}`}
+                          key={'${file.name}-' + index + ''}
                           className="flex items-center gap-2 p-2 bg-white border border-gray-200 rounded-lg group hover:border-cyan-300 transition-colors"
                         >
                           <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
@@ -16560,13 +16540,13 @@ function StudentAchievementsPage({ user }: { user: User }) {
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDrop={() => handleDrop(index)}
                   onDragEnd={handleDragEnd}
-                  className={"flex items-center gap-4 p-4 rounded-xl border-2 transition-all cursor-grab active:cursor-grabbing ${
+                  className={'flex items-center gap-4 p-4 rounded-xl border-2 transition-all cursor-grab active:cursor-grabbing ' + 
                     draggedItem === index 
                       ? 'opacity-50 scale-95 border-cyan-300 bg-cyan-50 shadow-lg' 
                       : dragOverIndex === index 
                         ? 'border-cyan-400 bg-cyan-50 border-dashed' 
                         : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
+                   + ''}
                 >
                   {/* Drag Handle */}
                   <div className="text-gray-400 hover:text-gray-600 touch-none">
@@ -16695,14 +16675,10 @@ function StudentFeedbackPage({ user, feedbackEnabled }: { user: User; feedbackEn
                   <button
                     key={option.value}
                     onClick={() => setRecipient(option.value as any)}
-                    className={"flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                      recipient === option.value 
-                        ? `border-${option.color}-500 bg-${option.color}-50` 
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    className={'flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ' + (recipient === option.value ? 'border-' + option.color + '-500 bg-' + option.color + '-50' : 'border-gray-200 hover:border-gray-300')}
                   >
-                    <option.icon className={"w-6 h-6 ${recipient === option.value ? `text-${option.color}-600` : 'text-gray-400'}`} />
-                    <span className={"text-sm font-medium ${recipient === option.value ? `text-${option.color}-700` : 'text-gray-600'}`}>
+                    <option.icon className={'w-6 h-6 ' + (recipient === option.value ? 'text-' + option.color + '-600' : 'text-gray-400')} />
+                    <span className={'text-sm font-medium ' + (recipient === option.value ? 'text-' + option.color + '-700' : 'text-gray-600')}>
                       {option.label}
                     </span>
                   </button>
@@ -16733,9 +16709,9 @@ function StudentFeedbackPage({ user, feedbackEnabled }: { user: User; feedbackEn
                     className="p-1"
                   >
                     <Star 
-                      className={"w-8 h-8 transition-colors ${
+                      className={'w-8 h-8 transition-colors ' + 
                         star <= rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'
-                      }`} 
+                       + ''} 
                     />
                   </button>
                 ))}
@@ -17094,11 +17070,11 @@ function FileUpload({ onFileSelect, accept = '*', maxFiles = 5 }: {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={"border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ${
+        className={'border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ' + 
           isDragging 
             ? 'border-blue-500 bg-blue-50 scale-[1.02]' 
             : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
-        }`}
+         + ''}
       >
         <input
           ref={fileInputRef}
@@ -17108,7 +17084,7 @@ function FileUpload({ onFileSelect, accept = '*', maxFiles = 5 }: {
           onChange={handleFileInput}
           className="hidden"
         />
-        <Upload className={"w-10 h-10 mx-auto mb-3 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`} />
+        <Upload className={'w-10 h-10 mx-auto mb-3 ' + isDragging ? 'text-blue-500' : 'text-gray-400' + ''} />
         <p className="text-sm font-medium text-gray-700">
           {isDragging ? 'Drop files here...' : 'Drag & drop files here'}
         </p>
@@ -17374,7 +17350,7 @@ function StaffAchievementPage({ user }: { user: User }) {
             type="text"
             value={value}
             onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}...`}
+            placeholder={field.placeholder || ('Enter ' + field.label.toLowerCase() + '...')}
             className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm bg-white"
             required={field.required}
           />
@@ -17491,7 +17467,7 @@ function StaffAchievementPage({ user }: { user: User }) {
                   className="cursor-pointer hover:shadow-lg transition-all duration-200 group border border-gray-200 hover:border-blue-300"
                 >
                   <CardContent className="p-4 flex items-center gap-4">
-                    <div className={"w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center group-hover:scale-110 transition-transform shadow-md`}>
+                    <div className={'w-12 h-12 rounded-xl bg-gradient-to-br ' + color + ' flex items-center justify-center group-hover:scale-110 transition-transform shadow-md'}>
                       <Icon className="w-6 h-6 text-white" />
                     </div>
                     <span className="font-medium text-gray-800">{label}</span>
@@ -17521,7 +17497,7 @@ function StaffAchievementPage({ user }: { user: User }) {
                     <>
                       <currentTypeConfig.headerIcon className="w-5 h-5 text-gray-700" />
                       <h3 className="text-lg font-semibold text-gray-900">
-                        {currentTypeConfig.headerTitle || `Add ${currentTypeConfig.label}`}
+                        {currentTypeConfig.headerTitle || ('Add ' + currentTypeConfig.label)}
                       </h3>
                     </>
                   )}
@@ -17532,7 +17508,7 @@ function StaffAchievementPage({ user }: { user: User }) {
                 {/* Dynamic Fields Grid - 3 columns like screenshots */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                   {currentTypeConfig?.fields.map(field => (
-                    <div key={field.id} className={"${field.full ? 'md:col-span-2 lg:col-span-3' : ''}`}>
+                    <div key={field.id} className={'' + field.full ? 'md:col-span-2 lg:col-span-3' : '' + ''}>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">
                         {field.label} {field.required && <span className="text-red-500">*</span>}
                       </label>
@@ -17588,7 +17564,7 @@ function StaffAchievementPage({ user }: { user: User }) {
                       return (
                         <div key={entry.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
                           <div className="flex items-center gap-3">
-                            <div className={"w-10 h-10 rounded-lg bg-gradient-to-br ${STAFF_ACHIEVEMENT_TYPES[entry.type]?.color || 'bg-gray-400'} flex items-center justify-center shadow-sm`}>
+                            <div className={'w-10 h-10 rounded-lg bg-gradient-to-br ' + STAFF_ACHIEVEMENT_TYPES[entry.type]?.color || 'bg-gray-400' + ' flex items-center justify-center shadow-sm'}>
                               <EntryIcon className="w-5 h-5 text-white" />
                             </div>
                             <div>
@@ -17707,14 +17683,14 @@ function StaffAchievementPage({ user }: { user: User }) {
                   return (
                     <div 
                       key={key} 
-                      className={"border rounded-lg transition-all hover:shadow-md ${
+                      className={'border rounded-lg transition-all hover:shadow-md ' + 
                         count > 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-60'
-                      }`}
+                       + ''}
                     >
                       {/* Type Header Row */}
                       <div className="flex items-center justify-between p-4 cursor-pointer" onClick={() => toggleAchievementType(key)}>
                         <div className="flex items-center gap-3">
-                          <div className={"w-10 h-10 rounded-lg bg-gradient-to-br ${typeConfig.color} flex items-center justify-center shadow-sm`}>
+                          <div className={'w-10 h-10 rounded-lg bg-gradient-to-br ' + typeConfig.color + ' flex items-center justify-center shadow-sm'}>
                             <Icon className="w-5 h-5 text-white" />
                           </div>
                           <div>
@@ -17723,14 +17699,14 @@ function StaffAchievementPage({ user }: { user: User }) {
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className={"px-3 py-1 rounded-full text-sm font-bold ${
+                          <span className={'px-3 py-1 rounded-full text-sm font-bold ' + 
                             count > 0 
                               ? 'bg-blue-100 text-blue-700' 
                               : 'bg-gray-100 text-gray-500'
-                          }`}>
+                           + ''}>
                             {count}
                           </span>
-                          <ChevronDown className={"w-4 h-4 text-gray-400 transition-transform ${expandedTypes.has(key) ? 'rotate-180' : ''}`} />
+                          <ChevronDown className={'w-4 h-4 text-gray-400 transition-transform ' + expandedTypes.has(key) ? 'rotate-180' : '' + ''} />
                         </div>
                       </div>
 
@@ -18021,13 +17997,13 @@ function StudentAchievementViewPage({ user }: { user: User }) {
         ) : (
           filteredAchievements.map(entry => (
             <Card key={entry.id} className="overflow-hidden hover:shadow-md transition-shadow">
-              <div className={"h-1 ${
+              <div className={'h-1 ' + 
                 entry.status === 'pending_staff' ? 'bg-yellow-500' :
                 entry.status === 'staff_approved' ? 'bg-blue-500' :
                 entry.status === 'pending_hod' ? 'bg-purple-500' :
                 entry.status === 'hod_approved' ? 'bg-green-500' :
                 'bg-red-500'
-              }`}></div>
+               + ''}></div>
               <CardContent className="p-4">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   <div className="flex items-start gap-4 flex-1">
@@ -18039,7 +18015,7 @@ function StudentAchievementViewPage({ user }: { user: User }) {
                         <h3 className="font-semibold text-gray-900">{entry.studentName}</h3>
                         <span className="text-sm text-gray-500">•</span>
                         <span className="text-sm text-gray-600">{entry.regNo}</span>
-                        <span className={"px-2 py-0.5 text-xs rounded-full border ${getStatusColor(entry.status)}`}>
+                        <span className={'px-2 py-0.5 text-xs rounded-full border ' + getStatusColor(entry.status) + ''}>
                           {getStatusLabel(entry.status)}
                         </span>
                       </div>
@@ -18130,7 +18106,7 @@ function StudentAchievementViewPage({ user }: { user: User }) {
                 <div>
                   <h4 className="font-bold text-gray-900 text-lg">{selectedEntry.studentName}</h4>
                   <p className="text-gray-600">{selectedEntry.regNo} • {selectedEntry.department}</p>
-                  <span className={"inline-block mt-1 px-3 py-1 text-xs rounded-full border ${getStatusColor(selectedEntry.status)}`}>
+                  <span className={'inline-block mt-1 px-3 py-1 text-xs rounded-full border ' + getStatusColor(selectedEntry.status) + ''}>
                     {getStatusLabel(selectedEntry.status)}
                   </span>
                 </div>
@@ -18313,7 +18289,7 @@ function MyAchievementPage({ user }: { user: User }) {
                       onClick={() => setSelectedType(key)}
                       className="p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all group"
                     >
-                      <div className={"w-10 h-10 rounded-lg bg-gradient-to-br ${config.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                      <div className={'w-10 h-10 rounded-lg bg-gradient-to-br ' + config.color + ' flex items-center justify-center mb-3 group-hover:scale-110 transition-transform'}>
                         <Icon className="w-5 h-5 text-white" />
                       </div>
                       <span className="text-sm font-medium text-gray-700">{config.label}</span>
@@ -18349,7 +18325,7 @@ function MyAchievementPage({ user }: { user: User }) {
       ) : (
         <form onSubmit={handleSubmit}>
           <Card className="overflow-hidden">
-            <div className={"h-1.5 bg-gradient-to-r ${ACHIEVEMENT_TYPES[selectedType]?.color}`} />
+            <div className={'h-1.5 bg-gradient-to-r ' + ACHIEVEMENT_TYPES[selectedType]?.color + ''} />
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">{ACHIEVEMENT_TYPES[selectedType]?.label}</CardTitle>
@@ -18360,7 +18336,7 @@ function MyAchievementPage({ user }: { user: User }) {
             </CardHeader>
             <CardContent className="space-y-4">
               {ACHIEVEMENT_TYPES[selectedType]?.fields.map(field => (
-                <div key={field.id} className={"${field.full ? 'col-span-full' : ''}`}>
+                <div key={field.id} className={'' + field.full ? 'col-span-full' : '' + ''}>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     {field.label} {field.required && <span className="text-red-500">*</span>}
                   </label>
@@ -18381,7 +18357,7 @@ function MyAchievementPage({ user }: { user: User }) {
                       onChange={(e) => setFormData(prev => ({...prev, [field.id]: e.target.value}))}
                       required={field.required}
                       rows={4}
-                      placeholder={`Enter ${field.label.toLowerCase()}`}
+                      placeholder={'Enter ' + field.label.toLowerCase() + ''}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                     />
                   ) : (
@@ -18391,7 +18367,7 @@ function MyAchievementPage({ user }: { user: User }) {
                       onChange={(e) => setFormData(prev => ({...prev, [field.id]: e.target.value}))}
                       required={field.required}
                       readOnly={field.locked}
-                      placeholder={`Enter ${field.label.toLowerCase()}`}
+                      placeholder={'Enter ' + field.label.toLowerCase() + ''}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
                     />
                   )}
@@ -18699,9 +18675,9 @@ function HODStudentApprovalPage({ user }: { user: User }) {
             {filteredAchievements.map(entry => (
               <div 
                 key={entry.id} 
-                className={"px-6 py-4 transition-colors duration-150 hover:bg-[#F8FAFC] group ${
+                className={'px-6 py-4 transition-colors duration-150 hover:bg-[#F8FAFC] group ' + 
                   entry.status === 'pending_hod' ? 'bg-white' : ''
-                }`}
+                 + ''}
               >
                 <div className="grid grid-cols-12 gap-4 items-center">
                   {/* Student Info */}
@@ -18736,7 +18712,7 @@ function HODStudentApprovalPage({ user }: { user: User }) {
 
                   {/* Status Badge */}
                   <div className="col-span-2">
-                    <span className={"inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(entry.status)}`}>
+                    <span className={'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ' + getStatusColor(entry.status) + ''}>
                       {getStatusLabel(entry.status)}
                     </span>
                     {entry.status === 'rejected' && entry.rejectionReason && (
@@ -18818,7 +18794,7 @@ function HODStudentApprovalPage({ user }: { user: User }) {
                 <div>
                   <h4 className="font-bold text-gray-900 text-lg">{selectedEntry.studentName}</h4>
                   <p className="text-gray-600">{selectedEntry.regNo} • {selectedEntry.department}</p>
-                  <span className={"inline-block mt-1 px-3 py-1 text-xs rounded-full border ${getStatusColor(selectedEntry.status)}`}>
+                  <span className={'inline-block mt-1 px-3 py-1 text-xs rounded-full border ' + getStatusColor(selectedEntry.status) + ''}>
                     {getStatusLabel(selectedEntry.status)}
                   </span>
                 </div>
@@ -19221,9 +19197,9 @@ function HODStaffApprovalPage({ user }: { user: User }) {
             {filteredAchievements.map(entry => (
               <div 
                 key={entry.id} 
-                className={"px-6 py-4 transition-colors duration-150 hover:bg-[#F8FAFC] group ${
+                className={'px-6 py-4 transition-colors duration-150 hover:bg-[#F8FAFC] group ' + 
                   entry.status === 'pending_hod' ? 'bg-white' : ''
-                }`}
+                 + ''}
               >
                 <div className="grid grid-cols-12 gap-4 items-center">
                   {/* Staff Info */}
@@ -19249,11 +19225,11 @@ function HODStaffApprovalPage({ user }: { user: User }) {
 
                   {/* Category */}
                   <div className="col-span-2">
-                    <span className={"inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${
+                    <span className={'inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ' + 
                       entry.category === 'research' 
                         ? 'bg-blue-100 text-blue-700' 
                         : 'bg-amber-100 text-amber-700'
-                    }`}>
+                     + ''}>
                       {entry.category === 'research' ? '📄' : '🏆'}
                       {entry.typeName}
                     </span>
@@ -19262,7 +19238,7 @@ function HODStaffApprovalPage({ user }: { user: User }) {
 
                   {/* Status Badge */}
                   <div className="col-span-2">
-                    <span className={"inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(entry.status)}`}>
+                    <span className={'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ' + getStatusColor(entry.status) + ''}>
                       {getStatusLabel(entry.status)}
                     </span>
                     {entry.status === 'rejected' && entry.rejectionReason && (
@@ -19344,7 +19320,7 @@ function HODStaffApprovalPage({ user }: { user: User }) {
                 <div>
                   <h4 className="font-bold text-gray-900 text-lg">{selectedEntry.staffName}</h4>
                   <p className="text-gray-600">{selectedEntry.department} Department</p>
-                  <span className={"inline-block mt-1 px-3 py-1 text-xs rounded-full border ${getStatusColor(selectedEntry.status)}`}>
+                  <span className={'inline-block mt-1 px-3 py-1 text-xs rounded-full border ' + getStatusColor(selectedEntry.status) + ''}>
                     {getStatusLabel(selectedEntry.status)}
                   </span>
                 </div>
@@ -19606,7 +19582,7 @@ export default function IQACPortal() {
   }
 
   return (
-    <div className={"min-h-screen flex ${darkMode ? 'dark-theme' : ''}`} suppressHydrationWarning>
+    <div className={'min-h-screen flex ' + darkMode ? 'dark-theme' : '' + ''} suppressHydrationWarning>
       {/* Sidebar */}
       <Sidebar 
         activeTab={activeTab} 
@@ -19617,10 +19593,10 @@ export default function IQACPortal() {
       />
       
       {/* Main Content Area - responsive margins based on screen size and sidebar state */}
-      <div className={"flex-1 flex flex-col min-h-screen main-content-wrapper transition-all duration-300 ${
+      <div className={'flex-1 flex flex-col min-h-screen main-content-wrapper transition-all duration-300 ' + 
         // Mobile: no margin (sidebar is overlay), Desktop: margin based on sidebar state
         sidebarOpen ? 'lg:ml-72' : 'lg:ml-20'
-      }`}>
+       + ''}>
         {/* Header */}
         <header className="bg-white/95 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-30 header-shadow">
           <div className="flex items-center justify-between px-4 lg:px-6 h-16">
@@ -19705,241 +19681,7 @@ export default function IQACPortal() {
       </div>
 
       {/* Global Styles */}
-      <style jsx global>{`
-        /* Glassmorphism Utilities */
-        .glass {
-          background: rgba(255, 255, 255, 0.08);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        /* Dark Theme Variables */
-        .dark-theme {
-          --bg-primary: #0f172a;
-          --bg-secondary: #1e293b;
-          --text-primary: #f1f5f9;
-          --text-secondary: #94a3b8;
-          --card-bg: rgba(30, 41, 59, 0.8);
-          --border-color: rgba(51, 65, 85, 0.5);
-        }
-        
-        .dark-theme .min-h-screen {
-          background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-        }
-        
-        .dark-theme header {
-          background: rgba(15, 23, 42, 0.95) !important;
-          border-bottom-color: rgba(51, 65, 85, 0.5) !important;
-        }
-        
-        .dark-theme aside {
-          background: rgba(15, 23, 42, 0.98) !important;
-          border-right-color: rgba(51, 65, 85, 0.5) !important;
-        }
-        
-        .dark-theme .text-gray-900 { color: #f1f5f9 !important; }
-        .dark-theme .text-gray-700 { color: #cbd5e1 !important; }
-        .dark-theme .text-gray-500 { color: #94a3b8 !important; }
-        .dark-theme .bg-white { background: rgba(30, 41, 59, 0.8) !important; }
-        .dark-theme .border-gray-200 { border-color: rgba(51, 65, 85, 0.5) !important; }
-        .dark-theme .bg-gray-50 { background: rgba(30, 41, 59, 0.5) !important; }
-        .dark-theme .bg-gray-100 { background: rgba(51, 65, 85, 0.3) !important; }
-        
-        /* Custom Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(156, 163, 175, 0.3);
-          border-radius: 3px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(156, 163, 175, 0.5);
-        }
-        
-        /* Animations */
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .content-area > div {
-          animation: fadeIn 0.3s ease-out;
-        }
-        
-        /* Card Hover Effects */
-        .stat-card-hover:hover {
-          transform: translateY(-4px);
-        }
-        
-        .dept-card-hover:hover {
-          transform: translateY(-4px);
-        }
-        
-        .action-card-hover:hover {
-          transform: translateY(-4px);
-        }
-        
-        /* Sidebar Shadow */
-        .sidebar-shadow {
-          box-shadow: 4px 0 20px rgba(0, 0, 0, 0.05);
-        }
-        
-        /* Header Shadow */
-        .header-shadow {
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-        }
-        
-        /* Footer Sticky */
-        .footer-sticky {
-          position: sticky;
-          bottom: 0;
-        }
-        
-        /* Logo Glow Effect */
-        .logo-glow {
-          box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
-        }
-        
-        /* Banner Gradient Animation */
-        .banner-gradient {
-          position: relative;
-          overflow: hidden;
-        }
-        .banner-gradient::before {
-          content: '';
-          position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
-          background: linear-gradient(
-            45deg,
-            transparent,
-            rgba(255, 255, 255, 0.1),
-            transparent
-          );
-          animation: shimmer 3s infinite;
-        }
-        
-        @keyframes shimmer {
-          0% { transform: translateX(-100%) rotate(45deg); }
-          100% { transform: translateX(100%) rotate(45deg); }
-        }
-        
-        /* Notification Dropdown Animation */
-        .notification-dropdown {
-          animation: dropIn 0.2s ease-out;
-        }
-        
-        @keyframes dropIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px) scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-        
-        /* Mobile Nav Animation */
-        .mobile-nav-animate {
-          animation: slideInLeft 0.3s ease-out;
-        }
-        
-        @keyframes slideInLeft {
-          from {
-            transform: translateX(-100%);
-          }
-          to {
-            transform: translateX(0);
-          }
-        }
-        
-        /* Main Content Wrapper */
-        .main-content-wrapper {
-          background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-          min-height: 100vh;
-          width: 100%;
-        }
-        
-        .dark-theme .main-content-wrapper {
-          background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-        }
-        
-        /* Mobile Responsive Styles */
-        @media (max-width: 1024px) {
-          /* On mobile/tablet, main content takes full width (no margin for overlay sidebar) */
-          .main-content-wrapper {
-            margin-left: 0 !important;
-          }
-          
-          /* Ensure content doesn't overflow */
-          .content-area {
-            padding: 16px;
-          }
-          
-          /* Grid adjustments for mobile */
-          .grid-cols-3, .grid-cols-4 {
-            grid-template-columns: 1fr;
-          }
-          
-          /* Cards full width on mobile - disable hover transforms */
-          .stat-card-hover:hover,
-          .dept-card-hover:hover,
-          .action-card-hover:hover {
-            transform: none !important;
-          }
-        }
-        
-        @media (min-width: 640px) and (max-width: 1024px) {
-          /* Tablet: 2 columns for grids */
-          .grid-cols-3, .grid-cols-4 {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-        
-        @media (max-width: 640px) {
-          /* Mobile specific adjustments */
-          header .hidden.md\\:flex {
-            display: none !important;
-          }
-          
-          /* Smaller text on mobile */
-          .text-lg {
-            font-size: 1rem;
-          }
-          
-          /* Full width inputs on mobile */
-          input[type="text"], 
-          input[type="email"], 
-          input[type="password"],
-          input[type="number"],
-          input[type="url"],
-          select,
-          textarea {
-            font-size: 16px; /* Prevent zoom on iOS */
-          }
-        }
-        
-        /* Smooth transitions for sidebar */
-        aside {
-          transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-                      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        /* Mobile sidebar slide animation */
-        @media (max-width: 1024px) {
-          aside {
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          }
-        }
-      `}</style>
+      {/* Styles removed for debugging */}
     </div>
   )
 }
@@ -20008,7 +19750,7 @@ function AcademicHierarchyPage({
         params.set('semester', yearToSemester[hierarchyState.year] || hierarchyState.year)
       }
       
-      const res = await fetch(`/api/students?${params}`)
+      const res = await fetch('/api/students?' + params)
       const data = await res.json()
       if (data.success) {
         let filteredStudents = data.students || []
@@ -20038,7 +19780,7 @@ function AcademicHierarchyPage({
       crumbs.push({ label: hierarchyState.year })
     }
     if (hierarchyState.section) {
-      crumbs.push({ label: `Section ${hierarchyState.section}` })
+      crumbs.push({ label: 'Section ' + hierarchyState.section })
     }
     if (hierarchyState.level === 'students') {
       crumbs.push({ label: 'Students' })
@@ -20122,7 +19864,7 @@ function AcademicHierarchyPage({
                 <p className="text-emerald-100 mt-1">
                   {user.role === 'ADMIN' 
                     ? 'Navigate through all departments and their academic structure'
-                    : `Browse ${user.departmentName} - Year → Class → Students`
+                    : 'Browse ' + user.departmentName + ' - Year → Class → Students'
                   }
                 </p>
               </div>
@@ -20208,9 +19950,9 @@ function AcademicHierarchyPage({
                 <button
                   key={year}
                   onClick={() => navigateToLevel('section', { year })}
-                  className={"group ${bgColors[idx]} rounded-2xl p-6 border border-gray-200 hover:border-current hover:shadow-xl transition-all duration-300 text-left`}
+                  className={'group ' + bgColors[idx] + ' rounded-2xl p-6 border border-gray-200 hover:border-current hover:shadow-xl transition-all duration-300 text-left'}
                 >
-                  <div className={"w-14 h-14 rounded-xl bg-gradient-to-br ${colors[idx]} flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform`}>
+                  <div className={'w-14 h-14 rounded-xl bg-gradient-to-br ' + colors[idx] + ' flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform'}>
                     <School className="w-7 h-7 text-white" />
                   </div>
                   
@@ -20221,7 +19963,7 @@ function AcademicHierarchyPage({
                   
                   <div className="mt-4 pt-4 border-t border-gray-200/50 flex items-center justify-between">
                     <span className="text-sm text-gray-600">
-                      {loading ? '...' : `${getYearCount(year)} students`}
+                      {loading ? '...' : getYearCount(year) + ' students'}
                     </span>
                     <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-1 transition-all" />
                   </div>
@@ -20269,11 +20011,11 @@ function AcademicHierarchyPage({
                   key={section}
                   onClick={() => setHierarchyState(prev => ({ ...prev, level: 'students', section }))}
                   disabled={count === 0}
-                  className={"group bg-white rounded-2xl p-6 border ${
+                  className={'group bg-white rounded-2xl p-6 border ' + 
                     count === 0 
                       ? 'border-gray-100 opacity-60 cursor-not-allowed' 
                       : 'border-gray-200 hover:border-emerald-300 hover:shadow-xl'
-                  } transition-all duration-300 text-left`}
+                   + ' transition-all duration-300 text-left'}
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg">
@@ -20288,7 +20030,7 @@ function AcademicHierarchyPage({
                   
                   <h3 className="font-bold text-gray-900">Section {section}</h3>
                   <p className="text-sm text-gray-500 mt-1">
-                    {count === 0 ? 'No students' : `${count} student${count !== 1 ? 's' : ''}`}
+                    {count === 0 ? 'No students' : count + ' student' + (count !== 1 ? 's' : '')}
                   </p>
                 </button>
               )
@@ -20322,8 +20064,8 @@ function AcademicHierarchyPage({
             <div className="flex-1">
               <h2 className="text-xl font-bold text-gray-900">
                 {hierarchyState.departmentName}
-                {hierarchyState.year && ` • ${hierarchyState.year}`}
-                {hierarchyState.section && ` • Section ${hierarchyState.section}`}
+                {hierarchyState.year && ' \u2022 ' + hierarchyState.year}
+                {hierarchyState.section && ' \u2022 Section ' + hierarchyState.section}
               </h2>
               <p className="text-sm text-gray-500">
                 {students.length} student{students.length !== 1 ? 's' : ''} found
@@ -20407,7 +20149,7 @@ function AcademicHierarchyPage({
                           <span className="text-xs text-gray-500">
                             Sec {student.section || 'A'}
                           </span>
-                          <span className={"text-xs font-semibold ${getCGPAColor(student.cgpa)}`}>
+                          <span className={'text-xs font-semibold ' + getCGPAColor(student.cgpa) + ''}>
                             CGPA: {student.cgpa || '-'}
                           </span>
                         </div>
@@ -20454,12 +20196,12 @@ function StudentProfilePage({
   const fetchStudentData = async () => {
     try {
       setLoading(true)
-      const res = await fetch(`/api/students/${studentId}`)
+      const res = await fetch('/api/students/' + studentId)
       const data = await res.json()
       if (data.success) {
         setStudentData(data.student)
         // Load achievements from localStorage (simulated)
-        const savedAchievements = localStorage.getItem(`achievements_${data.student?.registerNumber}`)
+        const savedAchievements = localStorage.getItem('achievements_' + (data.student?.registerNumber || ''))
         if (savedAchievements) {
           setAchievements(JSON.parse(savedAchievements))
         }
@@ -20565,7 +20307,7 @@ function StudentProfilePage({
           {/* CGPA Display */}
           <div className="flex flex-col items-center">
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg">
-              <span className={"text-2xl font-bold text-white`}>{studentData.cgpa || '-'}</span>
+              <span className={"text-2xl font-bold text-white"}>{studentData.cgpa || '-'}</span>
             </div>
             <p className="text-xs text-gray-500 mt-1">CGPA</p>
           </div>
@@ -20640,11 +20382,11 @@ function StudentProfilePage({
             <button
               key={tab.id}
               onClick={() => setProfileActiveTab(tab.id as any)}
-              className={"flex items-center gap-2 px-6 py-4 font-medium text-sm transition-colors ${
+              className={'flex items-center gap-2 px-6 py-4 font-medium text-sm transition-colors ' + 
                 profileActiveTab === tab.id
                   ? 'text-emerald-600 border-b-2 border-emerald-600 bg-emerald-50/50'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
+               + ''}
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}
@@ -20717,7 +20459,7 @@ function StudentProfilePage({
                 return (
                   <div key={key} className="border border-gray-200 rounded-xl p-4 hover:border-emerald-300 transition-colors">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className={"w-10 h-10 rounded-lg bg-gradient-to-br ${type.color} flex items-center justify-center`}>
+                      <div className={'w-10 h-10 rounded-lg bg-gradient-to-br ' + type.color + ' flex items-center justify-center'}>
                         <Icon className="w-5 h-5 text-white" />
                       </div>
                       <div className="flex-1">
@@ -20769,8 +20511,8 @@ function StudentProfilePage({
                           <span className="text-sm text-gray-600 w-28 truncate">{type.label.split(' ')[0]}</span>
                           <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                             <div 
-                              className={"h-full bg-gradient-to-r ${type.color} rounded-full`}
-                              style={{ width: `${percentage}%` }}
+                              className={'h-full bg-gradient-to-r ' + type.color + ' rounded-full'}
+                              style={{ width: (percentage || 0) + '%' }}
                             />
                           </div>
                           <span className="text-sm font-medium text-gray-700 w-8 text-right">{count}</span>
@@ -21033,16 +20775,16 @@ function CMSPortalPage({ user }: { user: User }) {
                   <button
                     key={section.id}
                     onClick={() => setActiveSection(section.id)}
-                    className={"w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 ${
+                    className={'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 ' + 
                       isActive 
                         ? 'bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 font-medium shadow-sm' 
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
+                     + ''}
                   >
-                    <div className={"w-8 h-8 rounded-lg flex items-center justify-center ${
+                    <div className={'w-8 h-8 rounded-lg flex items-center justify-center ' + 
                       isActive ? 'bg-gradient-to-br from-indigo-500 to-purple-500 text-white shadow-md' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      <Icon className={"w-4 h-4 ${isActive ? '' : ''}`} />
+                     + ''}>
+                      <Icon className={'w-4 h-4 ' + isActive ? '' : '' + ''} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <span className="text-sm block truncate">{section.label}</span>
@@ -21114,13 +20856,13 @@ function CmsStatCard({ title, value, icon: Icon, color, trend }: any) {
   }
   
   return (
-    <div className={"${bgColors[color]} rounded-xl p-4 border border-gray-100 hover:shadow-md transition-shadow`}>
+    <div className={'' + bgColors[color] + ' rounded-xl p-4 border border-gray-100 hover:shadow-md transition-shadow'}>
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{title}</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
         </div>
-        <div className={"w-11 h-11 rounded-xl bg-gradient-to-br ${colors[color]} flex items-center justify-center shadow-lg`}>
+        <div className={'w-11 h-11 rounded-xl bg-gradient-to-br ' + colors[color] + ' flex items-center justify-center shadow-lg'}>
           <Icon className="w-5 h-5 text-white" />
         </div>
       </div>
@@ -21209,7 +20951,7 @@ function CmsOverviewSection({ stats }: any) {
               purple: 'hover:bg-purple-50 hover:border-purple-200 hover:text-purple-600',
             }
             return (
-              <button key={i} className={"flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 transition-all ${colors[action.color]}`}>
+              <button key={i} className={'flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 transition-all ' + colors[action.color] + ''}>
                 <Icon className="w-6 h-6" />
                 <span className="text-xs font-medium">{action.label}</span>
               </button>
@@ -21381,7 +21123,7 @@ function CmsAnnouncementsSection({ announcements, onAdd }: any) {
             <div key={i} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
-                  <div className={"px-2 py-1 rounded text-xs font-medium ${typeColors[ann.type] || 'bg-gray-100 text-gray-700'}`}>
+                  <div className={'px-2 py-1 rounded text-xs font-medium ' + typeColors[ann.type] || 'bg-gray-100 text-gray-700' + ''}>
                     {ann.type}
                   </div>
                   <div>
@@ -21684,9 +21426,9 @@ function CmsIntegrationsSection() {
           <div key={i} className="border border-gray-200 rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-semibold text-gray-900 text-sm">{integration.name}</h4>
-              <span className={"px-2 py-0.5 text-xs font-medium rounded-full ${
+              <span className={'px-2 py-0.5 text-xs font-medium rounded-full ' + 
                 integration.connected ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
-              }`}>
+               + ''}>
                 {integration.connected ? 'Connected' : 'Not Connected'}
               </span>
             </div>
