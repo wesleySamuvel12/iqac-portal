@@ -16060,7 +16060,7 @@ function Sidebar({
     )}
 
     {/* ====== MENU ITEMS ====== */}
-    <nav className={'flex-1 ' + open ? 'p-3' : 'p-2' + ' space-y-1 overflow-y-auto custom-scrollbar'}>
+    <nav className={['flex-1', open ? 'p-3' : 'p-2', 'space-y-1 sidebar-scrollbar'].join(' ')}>
       {menuItems.map((item, index) => {
         const Icon = item.icon
         const isActive = activeTab === item.id

@@ -173,6 +173,59 @@ html {
   display: none;
 }
 
+/* Sidebar Auto-Hide Scrollbar - Only shows on hover */
+.sidebar-scrollbar {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+}
+
+.sidebar-scrollbar:hover {
+  scrollbar-color: oklch(0.8 0.02 260) transparent;
+}
+
+/* Webkit browsers - Sidebar scrollbar */
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.sidebar-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: oklch(0.8 0.02 260);
+}
+
+.sidebar-scrollbar:hover::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.7 0.02 260);
+}
+
+/* Main content area scrollbar - always visible but subtle */
+.content-area::-webkit-scrollbar {
+  width: 8px;
+}
+
+.content-area::-webkit-scrollbar-track {
+  background: oklch(0.97 0.002 260);
+}
+
+.content-area::-webkit-scrollbar-thumb {
+  background: oklch(0.85 0.02 260);
+  border-radius: 4px;
+}
+
+.content-area::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.75 0.02 260);
+}
+
 /* Responsive Breakpoint for Extra Small screens */
 @media (max-width: 375px) {
   .xs\:inline {
