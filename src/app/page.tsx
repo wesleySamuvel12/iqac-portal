@@ -15999,11 +15999,11 @@ function Sidebar({
       ].join(' ')}>
     
     {/* ====== ROLE-BASED HEADER ====== */}
-    <div className={'p-4 border-b border-gray-100 bg-gradient-to-r ${roleConfig.brandColor} bg-opacity-5 relative ' + !open ? 'flex items-center justify-center' : '' + ''}>
+    <div className={`p-4 border-b border-gray-100 bg-gradient-to-r ${roleConfig.brandColor} bg-opacity-5 relative ${!open ? 'flex items-center justify-center' : ''}`}>
       {/* Toggle Button */}
       <button
         onClick={onToggle}
-        className={'absolute top-3 right-3 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100/80 transition-colors z-10 ' + !open ? 'top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2' : '' + ''}
+        className={`absolute top-3 right-3 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100/80 transition-colors z-10 ${!open ? 'top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2' : ''}`}
         title={open ? "Collapse Sidebar" : "Expand Sidebar"}
       >
         {open ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -16019,7 +16019,7 @@ function Sidebar({
           <div className="overflow-hidden flex-1">
             <div className="flex items-center gap-2">
               <span className="font-bold text-gray-900 text-sm block truncate">NIET IQAC</span>
-              <span className={'px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full ${roleConfig.bgColor} ' + roleConfig.textColor + ''}>
+              <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full ${roleConfig.bgColor} ${roleConfig.textColor}`}>
                 {user.role}
               </span>
             </div>
@@ -16115,7 +16115,7 @@ function Sidebar({
     {open && (
       <div className="p-3 border-t border-gray-100 space-y-2">
         {/* Quick Stats Card */}
-        <div className={'p-3 rounded-xl bg-gradient-to-br ${roleConfig.brandColor} bg-opacity-5 border border-' + roleConfig.accentColor + '-100'}>
+        <div className={`p-3 rounded-xl bg-gradient-to-br ${roleConfig.brandColor} bg-opacity-5 border border-${roleConfig.accentColor}-100`}>
           <div className="flex items-center gap-2 mb-2">
             <Zap className={'w-4 h-4 ' + roleConfig.textColor + ''} />
             <span className={'text-xs font-bold ' + roleConfig.textColor + ''}>Quick Info</span>
