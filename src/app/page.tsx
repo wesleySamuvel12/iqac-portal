@@ -3694,7 +3694,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
 
     // Default Admin Dashboard with Departments Grid
     return (
-      <div className="space-y-6">
+      <div className="w-full space-y-6">
         {/* Welcome Banner */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0a2a5e] via-blue-700 to-indigo-700 p-8 text-white banner-gradient">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl" />
@@ -3894,7 +3894,7 @@ function StudentDashboardContent({ user, setActiveTab }: { user: User; setActive
     : []
 
   return (
-    <div className="space-y-6">
+    <div className="w-full space-y-6">
       {/* Stats Cards Row - With Real Data */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Records */}
@@ -4538,7 +4538,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
   })).filter(t => t.count > 0).sort((a, b) => b.count - a.count)
 
   return (
-    <div className="space-y-6">
+    <div className="w-full space-y-6">
       {/* Professional Header with Department Info */}
       <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 rounded-2xl p-8 text-white shadow-xl">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -5636,7 +5636,7 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
     : []
 
   return (
-    <div className="space-y-6">
+    <div className="w-full space-y-6">
       {/* Stats Cards Row - With Real Data */}
       <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-white">
         <h2 className="text-2xl font-bold mb-2">Staff Portal</h2>
@@ -19867,7 +19867,7 @@ export default function IQACPortal() {
   }
 
   return (
-    <div className={'min-h-screen flex ' + darkMode ? 'dark-theme' : '' + ''} suppressHydrationWarning>
+    <div className={'min-h-screen flex w-full overflow-x-hidden ' + (darkMode ? 'dark-theme' : '') + ''} suppressHydrationWarning>
       {/* Sidebar */}
       <Sidebar 
         activeTab={activeTab} 
@@ -19878,9 +19878,9 @@ export default function IQACPortal() {
       />
       
       {/* Main Content Area - responsive margins based on screen size and sidebar state */}
-      <div className={'flex-1 flex flex-col min-h-screen main-content-wrapper transition-all duration-300 ' + 
+      <div className={'flex-1 flex flex-col min-w-0 min-h-screen main-content-wrapper transition-all duration-300 ' + 
         // Mobile: no margin (sidebar is overlay), Desktop: margin based on sidebar state
-        sidebarOpen ? 'lg:ml-72' : 'lg:ml-20'
+        (sidebarOpen ? 'lg:ml-[288px]' : 'lg:ml-[80px]')
        + ''}>
         {/* Header */}
         <header className="bg-white/95 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-30 header-shadow">
@@ -19952,8 +19952,10 @@ export default function IQACPortal() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 p-4 lg:p-6 pb-20 content-area">
-          {renderContent()}
+        <main className="flex-1 p-4 lg:p-6 pb-20 content-area w-full overflow-x-hidden">
+          <div className="w-full max-w-full">
+            {renderContent()}
+          </div>
         </main>
 
         {/* Footer */}
