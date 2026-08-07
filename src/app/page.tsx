@@ -15989,18 +15989,14 @@ function Sidebar({
           onClick={onToggle}
         />
       )}
-      <aside className={'' + 
-        // Mobile behavior:
-        // - open: full width overlay (w-72), visible
-        // - closed: hidden off-screen (-translate-x-full)
-        //
-        // Desktop behavior (lg+):
-        // - open: expanded (w-72) with labels
-        // - closed: icon-only mode (w-20), always visible
+      <aside className={[
+        // Width based on state
         open 
           ? 'w-72 max-lg:w-72 translate-x-0' 
-          : 'max-lg:-translate-x-full max-lg:w-72 lg:w-20 lg:translate-x-0'
-       + ' bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col z-50 transition-all duration-300 fixed inset-y-0 left-0 shadow-2xl sidebar-shadow'}>
+          : 'max-lg:-translate-x-full max-lg:w-72 lg:w-20 lg:translate-x-0',
+        // Common styles
+        'bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col z-50 transition-all duration-300 fixed top-0 bottom-0 left-0 shadow-2xl sidebar-shadow'
+      ].join(' ')}>
     
     {/* ====== ROLE-BASED HEADER ====== */}
     <div className={'p-4 border-b border-gray-100 bg-gradient-to-r ${roleConfig.brandColor} bg-opacity-5 relative ' + !open ? 'flex items-center justify-center' : '' + ''}>
@@ -19867,8 +19863,8 @@ export default function IQACPortal() {
   }
 
   return (
-    <div className={'min-h-screen flex w-full overflow-x-hidden ' + (darkMode ? 'dark-theme' : '') + ''} suppressHydrationWarning>
-      {/* Sidebar */}
+    <div className={'min-h-screen overflow-x-hidden ' + (darkMode ? 'dark-theme' : '') + ''} suppressHydrationWarning>
+      {/* Sidebar - Fixed Position */}
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
@@ -19877,13 +19873,14 @@ export default function IQACPortal() {
         onToggle={() => setSidebarOpen(!sidebarOpen)}
       />
       
-      {/* Main Content Area - responsive margins based on screen size and sidebar state */}
-      <div className={'flex-1 flex flex-col min-w-0 min-h-screen main-content-wrapper transition-all duration-300 ' + 
-        // Mobile: no margin (sidebar is overlay), Desktop: margin based on sidebar state
-        (sidebarOpen ? 'lg:ml-[288px]' : 'lg:ml-[80px]')
+      {/* Main Content Area - Offset by sidebar width using margin */}
+      <div className={
+        'min-h-screen flex flex-col transition-all duration-300 ' +
+        // Desktop: Add left margin equal to sidebar width  
+        (sidebarOpen ? 'lg:ml-72' : 'lg:ml-20')
        + ''}>
-        {/* Header */}
-        <header className="bg-white/95 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-30 header-shadow">
+        {/* Header - Full width within container */}
+        <header className="bg-white/95 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-30 header-shadow flex-shrink-0">
           <div className="flex items-center justify-between px-4 lg:px-6 h-16">
             {/* Sidebar Toggle Button - Top Left with Logo */}
             <div className="flex items-center gap-3">
@@ -19952,10 +19949,8 @@ export default function IQACPortal() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 p-4 lg:p-6 pb-20 content-area w-full overflow-x-hidden">
-          <div className="w-full max-w-full">
-            {renderContent()}
-          </div>
+        <main className="flex-1 p-4 lg:p-6 pb-20 content-area overflow-x-hidden">
+          {renderContent()}
         </main>
 
         {/* Footer */}
