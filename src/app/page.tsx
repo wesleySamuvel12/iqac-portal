@@ -19863,7 +19863,7 @@ export default function IQACPortal() {
   }
 
   return (
-    <div className={'min-h-screen overflow-x-hidden ' + (darkMode ? 'dark-theme' : '') + ''} suppressHydrationWarning>
+    <div className={'min-h-screen ' + (darkMode ? 'dark-theme' : '')} suppressHydrationWarning>
       {/* Sidebar - Fixed Position */}
       <Sidebar 
         activeTab={activeTab} 
@@ -19873,15 +19873,15 @@ export default function IQACPortal() {
         onToggle={() => setSidebarOpen(!sidebarOpen)}
       />
       
-      {/* Main Content Area - Offset by sidebar width using margin */}
-      <div className={
-        'min-h-screen flex flex-col transition-all duration-300 ' +
-        // Desktop: Add left margin equal to sidebar width  
-        (sidebarOpen ? 'lg:ml-72' : 'lg:ml-20')
-       + ''}>
+      {/* Main Content Area - Offset by sidebar width using padding */}
+      <div className={[
+        'min-h-screen flex flex-col transition-all duration-300',
+        // Desktop: Add left padding equal to sidebar width  
+        sidebarOpen ? 'lg:pl-72' : 'lg:pl-20'
+      ].join(' ')}>
         {/* Header - Full width within container */}
-        <header className="bg-white/95 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-30 header-shadow flex-shrink-0">
-          <div className="flex items-center justify-between px-4 lg:px-6 h-16">
+        <header className="bg-white/95 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-30 header-shadow flex-shrink-0 w-full">
+          <div className="flex items-center justify-between px-4 lg:px-6 h-16 w-full">
             {/* Sidebar Toggle Button - Top Left with Logo */}
             <div className="flex items-center gap-3">
               <button
@@ -19949,12 +19949,12 @@ export default function IQACPortal() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 p-4 lg:p-6 pb-20 content-area overflow-x-hidden">
+        <main className="flex-1 p-4 lg:p-6 pb-20 content-area w-full overflow-x-hidden">
           {renderContent()}
         </main>
 
         {/* Footer */}
-        <footer className="py-4 px-6 border-t border-gray-200 bg-white/80 backdrop-blur-sm mt-auto footer-sticky">
+        <footer className="py-4 px-6 border-t border-gray-200 bg-white/80 backdrop-blur-sm mt-auto footer-sticky w-full">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-gray-500">
             <p>© 2024 NIET IQAC Enterprise Management System</p>
             <p>Nehru Institute of Engineering and Technology (Autonomous)</p>
