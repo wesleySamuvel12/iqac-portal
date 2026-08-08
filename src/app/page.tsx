@@ -4573,26 +4573,35 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
       </div>
 
       {/* Navigation Tabs - Expanded & Better Aligned */}
-      <div className="flex gap-1 bg-gray-100 p-1.5 rounded-2xl overflow-x-auto">
+      <div className="flex gap-2 bg-gradient-to-r from-slate-100 to-gray-100 p-2 rounded-2xl shadow-sm border border-gray-200/50">
         {[
-          { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-          { id: 'students', label: 'Students', icon: GraduationCap, count: totalStudents },
-          { id: 'staff', label: 'Staff', icon: Users, count: totalStaff },
+          { id: 'overview', label: 'Overview', icon: LayoutDashboard, desc: 'Department Stats' },
+          { id: 'students', label: 'Students', icon: GraduationCap, count: totalStudents, desc: 'Enrolled Students' },
+          { id: 'staff', label: 'Staff', icon: Users, count: totalStaff, desc: 'Faculty Members' },
         ].map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTabLocal(tab.id as typeof activeTab)}
-            className={`flex items-center gap-2.5 px-6 py-3 rounded-xl font-semibold text-sm transition-all whitespace-nowrap min-w-[120px] justify-center ${
+            className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all whitespace-nowrap flex-1 justify-center group ${
               activeTab === tab.id
-                ? 'bg-white text-violet-700 shadow-lg shadow-violet-200/50'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-white/60'
+                ? 'bg-white text-violet-700 shadow-lg shadow-violet-300/40 scale-[1.02] border border-violet-200'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-white/70 hover:scale-[1.01] border border-transparent'
             }`}
           >
-            <tab.icon className="w-5 h-5" />
-            <span>{tab.label}</span>
+            <div className={`p-2 rounded-lg transition-colors ${
+              activeTab === tab.id ? 'bg-violet-100 text-violet-600' : 'bg-gray-200/70 text-gray-500 group-hover:bg-gray-200'
+            }`}>
+              <tab.icon className="w-6 h-6" />
+            </div>
+            <div className="flex flex-col items-start">
+              <span className="text-base">{tab.label}</span>
+              <span className={`text-xs font-normal ${activeTab === tab.id ? 'text-violet-500' : 'text-gray-400'}`}>
+                {'count' in tab ? `${tab.count} ${tab.desc}` : tab.desc}
+              </span>
+            </div>
             {'count' in tab && (
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                activeTab === tab.id ? 'bg-violet-100 text-violet-700' : 'bg-gray-200 text-gray-600'
+              <span className={`px-3 py-1 rounded-full text-sm font-bold ml-1 ${
+                activeTab === tab.id ? 'bg-violet-600 text-white shadow-md' : 'bg-gray-300 text-gray-600'
               }`}>
                 {tab.count}
               </span>
