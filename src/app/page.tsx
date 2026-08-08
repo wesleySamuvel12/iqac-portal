@@ -550,18 +550,19 @@ function LoginPage() {
   }
 
   // Generate particles for ambient effect
+  // Use deterministic values for particles to avoid hydration mismatch
   const particles = Array.from({ length: 30 }, (_, i) => ({
     id: i,
-    size: Math.random() * 4 + 2,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    delay: Math.random() * 10,
-    duration: 15 + Math.random() * 20,
-    opacity: 0.1 + Math.random() * 0.4
+    size: ((i * 7 + 3) % 4) + 2,  // Deterministic size: 2-6
+    x: ((i * 13 + 7) % 100),       // Deterministic x: 0-99
+    y: ((i * 17 + 11) % 100),      // Deterministic y: 0-99
+    delay: (i * 0.33) % 10,         // Deterministic delay: 0-10
+    duration: 15 + (i * 0.67) % 20, // Deterministic duration: 15-35
+    opacity: 0.1 + (i * 0.13) % 0.4 // Deterministic opacity: 0.1-0.5
   }))
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 flex flex-col">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 flex flex-col" suppressHydrationWarning>
       {/* ====== PREMIUM AMBIENT BACKGROUND ====== */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Multi-layer Gradient Mesh */}
