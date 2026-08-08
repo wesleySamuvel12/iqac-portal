@@ -329,3 +329,64 @@ Stage Summary:
   - CMS Portal button shows with "Manager Access • System Configuration"
   - SECURE badge displayed on button
   - Credentials shown: Manager / Manager@1234
+
+---
+Task ID: 8
+Agent: Main Developer (Z.ai Code)
+Task: Add Sort + Achievement Popup to Academic Hierarchy (Staff & HOD Portals) + Ensure All Data Visible
+
+Work Log:
+- Enhanced AcademicHierarchyPage component with new state variables:
+  - hierarchySortField, hierarchySortOrder, showHierarchySortDropdown for sorting
+  - selectedStudentForAchievements, showStudentAchievementModal for achievement popup
+  - allAchievements state to store achievements from localStorage
+- Added useEffect to load achievements from localStorage on component mount
+- Replaced student cards grid with enhanced table view featuring:
+  - **Sort Button** with dropdown menu (7 sort options):
+    1. Name (A-Z)
+    2. Register Number
+    3. Year of Study
+    4. Section
+    5. Achievement Count
+    6. CGPA
+    7. Status
+  - Toggle Order button (Ascending/Descending)
+  - Clickable column headers for quick sorting
+  - Search box for filtering students
+- Enhanced student table rows with:
+  - Student avatar with initials
+  - Name, email, register number display
+  - Year badge, Section indicator (A, B, C, D)
+  - CGPA with color coding (9+ green, 8+ blue, 7+ yellow, <7 red)
+  - Status badge (Active/Inactive)
+  - Achievement count button (clickable to open popup)
+  - View Achievements and View Full Profile action buttons
+- Added comprehensive **Student Achievement Modal** popup:
+  - Gradient header (emerald-teal) with student avatar, name, reg no, year, section
+  - Stats bar showing Total/Approved/Pending achievement counts
+  - Achievements grouped by type with icons and status badges
+  - Empty state when no achievements exist
+  - Close and View Full Profile footer buttons
+- Table footer showing section breakdown (A, B, C, D counts)
+- Fixed parsing errors caused by escape sequences in edited code
+- Verified functionality via browser automation testing
+
+Stage Summary:
+- **Academic Hierarchy page now has full Sort + Achievement Popup functionality**
+- Both HOD and Staff portals have access to the same enhanced Student view
+- **All sections (A, B, C, D) visible** in student data
+- **Sort options**: Name, Reg No, Year, Section, Achievement Count, CGPA, Status
+- **Achievement Popup**: Shows all achievements grouped by type with status indicators
+- Database students properly displayed with real data from API
+- Browser testing confirmed:
+  - HOD Portal: Academic Hierarchy → Students table working with sort + popup
+  - Staff Portal: Same Academic Hierarchy functionality available
+  - Sort dropdown opens with all 7 options
+  - Achievement popup modal displays correctly with grouped achievements
+  - Multiple sections (A, B, C) visible in data
+- Demo credentials for testing:
+  - Admin: admin@niet.ac.in / admin123
+  - HOD: hod_cse@niet.ac.in / hod123
+  - Staff: staff_cse1@niet.ac.in / staff123
+  - Student: student_cse1@niet.ac.in / student123
+  - CMS Manager: manager@niet.ac.in / Manager@1234

@@ -20891,8 +20891,18 @@ function AcademicHierarchyPage({
 }) {
   const [departments, setDepartments] = useState<any[]>([])
   const [students, setStudents] = useState<any[]>([])
+  const [allAchievements, setAllAchievements] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  
+  // Student Sorting State
+  const [hierarchySortField, setHierarchySortField] = useState<string>('name')
+  const [hierarchySortOrder, setHierarchySortOrder] = useState<'asc' | 'desc'>('asc')
+  const [showHierarchySortDropdown, setShowHierarchySortDropdown] = useState(false)
+  
+  // Student Achievement View State
+  const [selectedStudentForAchievements, setSelectedStudentForAchievements] = useState<any>(null)
+  const [showStudentAchievementModal, setShowStudentAchievementModal] = useState(false)
 
   useEffect(() => {
     fetchDepartments()
@@ -20903,6 +20913,31 @@ function AcademicHierarchyPage({
       fetchStudents()
     }
   }, [hierarchyState.level, hierarchyState.departmentId, hierarchyState.year, hierarchyState.section])
+  
+  // Load achievements from localStorage
+  useEffect(() => {
+    try {
+      const savedStudent = localStorage.getItem('student_achievements')
+      if (savedStudent) {
+        const parsed = JSON.parse(savedStudent)
+        // Filter for current department or get all for admin
+        let deptAchievements = parsed
+        if (user.role !== 'ADMIN') {
+          deptAchievements = parsed.filter((a: any) => a.dept === user.departmentName || a.department === user.departmentName)
+        }
+        setAllAchievements(deptAchievements)
+      }
+      
+      // Also check achievements key
+      const savedAchievements = localStorage.getItem('achievements')
+      if (savedAchievements && allAchievements.length === 0) {
+        const parsed = JSON.parse(savedAchievements)
+        setAllAchievements(parsed)
+      }
+    } catch (e) {
+      console.error('Failed to parse achievements:', e)
+    }
+  }, [user.departmentName, user.role])
 
   const fetchDepartments = async () => {
     try {
@@ -21244,7 +21279,7 @@ function AcademicHierarchyPage({
       {/* STUDENTS LEVEL - Show student list */}
       {hierarchyState.level === 'students' && (
         <div className="space-y-6">
-          {/* Back Navigation */}
+          {/* Back Navigation with Sort & Search */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <button
               onClick={() => navigateToLevel(hierarchyState.section ? 'section' : 'year')}
@@ -21263,6 +21298,91 @@ function AcademicHierarchyPage({
               </p>
             </div>
             
+            {/* Sort Button with Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowHierarchySortDropdown(!showHierarchySortDropdown)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-emerald-300 transition-colors"
+              >
+                <ArrowUpDown className="w-4 h-4 text-emerald-500" />
+                Sort
+                {hierarchySortField !== 'name' && (
+                  <span className="text-xs text-emerald-600 font-semibold">({hierarchySortField})</span>
+                )}
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showHierarchySortDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {/* Sort Dropdown */}
+              {showHierarchySortDropdown && (
+                <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+                  <div className="p-2">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-2">Sort Students By</p>
+                    
+                    {[
+                      { id: 'name', label: 'Name (A-Z)', icon: User },
+                      { id: 'regNo', label: 'Register Number', icon: Hash },
+                      { id: 'year', label: 'Year of Study', icon: GraduationCap },
+                      { id: 'section', label: 'Section', icon: FolderOpen },
+                      { id: 'achievementCount', label: 'Achievement Count', icon: Trophy },
+                      { id: 'cgpa', label: 'CGPA', icon: Star },
+                      { id: 'status', label: 'Status', icon: CheckCircle },
+                    ].map(option => {
+                      const Icon = option.icon
+                      const isSelected = hierarchySortField === option.id
+                      return (
+                        <button
+                          key={option.id}
+                          onClick={() => {
+                            if (isSelected) {
+                              setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+                            } else {
+                              setHierarchySortField(option.id)
+                              setHierarchySortOrder('asc')
+                            }
+                            setShowHierarchySortDropdown(false)
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-colors ${
+                            isSelected ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-gray-50 text-gray-700'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Icon className={`w-4 h-4 ${isSelected ? 'text-emerald-600' : 'text-gray-400'}`} />
+                            <span className="text-sm font-medium">{option.label}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {isSelected && (
+                              <>
+                                <Check className="w-4 h-4 text-emerald-600" />
+                                <span className={`text-xs font-bold ${hierarchySortOrder === 'asc' ? 'text-emerald-600' : 'text-gray-400'}`}>A-Z</span>
+                                <span className={`text-xs font-bold ${hierarchySortOrder === 'desc' ? 'text-emerald-600' : 'text-gray-400'}`}>Z-A</span>
+                              </>
+                            )}
+                          </div>
+                        </button>
+                      )
+                    })}
+                    
+                    {/* Divider */}
+                    <div className="border-t border-gray-100 my-2" />
+                    
+                    {/* Quick Sort Order Toggle */}
+                    <button
+                      onClick={() => {
+                        setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+                        setShowHierarchySortDropdown(false)
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors"
+                    >
+                      <ArrowLeftRight className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm font-medium">
+                        Toggle Order: <strong>{hierarchySortOrder === 'asc' ? 'Ascending (A→Z)' : 'Descending (Z→A)'}</strong>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            
             {/* Search */}
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -21276,11 +21396,17 @@ function AcademicHierarchyPage({
             </div>
           </div>
 
-          {/* Student Cards Grid */}
+          {/* Student List with Table View - Enhanced with Sorting & Achievement Popup */}
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
               {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="animate-pulse bg-white rounded-xl p-4 border border-gray-200 h-32" />
+                <div key={i} className="animate-pulse flex items-center gap-4 p-4 border-b border-gray-100 last:border-0">
+                  <div className="w-10 h-10 rounded-full bg-gray-200" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-1/3" />
+                    <div className="h-3 bg-gray-200 rounded w-1/4" />
+                  </div>
+                </div>
               ))}
             </div>
           ) : students.length === 0 ? (
@@ -21290,67 +21416,447 @@ function AcademicHierarchyPage({
               <p className="text-sm text-gray-500 mt-1">Try adjusting your filters or search query</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {students.map((student) => {
-                const getYearFromSemester = (sem: number | undefined) => {
-                  if (!sem) return '1st Year'
-                  if (sem <= 2) return '1st Year'
-                  if (sem <= 4) return '2nd Year'
-                  if (sem <= 6) return '3rd Year'
-                  return '4th Year'
-                }
-                
-                const getCGPAColor = (cgpa: number | undefined) => {
-                  if (!cgpa) return 'text-gray-400'
-                  if (cgpa >= 9) return 'text-emerald-600'
-                  if (cgpa >= 8) return 'text-blue-600'
-                  if (cgpa >= 7) return 'text-yellow-600'
-                  return 'text-red-500'
-                }
-
-                return (
-                  <button
-                    key={student.id}
-                    onClick={() => setHierarchyState(prev => ({
-                      ...prev,
-                      level: 'profile',
-                      studentId: student.id,
-                      studentName: student.user?.name || student.name || 'Student'
-                    }))}
-                    className="group bg-white rounded-xl p-5 border border-gray-200 hover:border-emerald-300 hover:shadow-lg hover:shadow-emerald-500/10 transition-all duration-300 text-left"
-                  >
-                    <div className="flex items-start gap-4">
-                      {/* Avatar */}
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
-                        <UserCircle className="w-6 h-6 text-white" />
-                      </div>
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              {/* Students Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100/50">
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-emerald-600 transition-colors" onClick={() => { setHierarchySortField('regNo'); setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+                        <div className="flex items-center gap-1">Reg No {hierarchySortField === 'regNo' && <ArrowUpDown className="w-3 h-3" />}</div>
+                      </th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-emerald-600 transition-colors" onClick={() => { setHierarchySortField('name'); setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+                        <div className="flex items-center gap-1">Student Name {hierarchySortField === 'name' && <ArrowUpDown className="w-3 h-3" />}</div>
+                      </th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-emerald-600 transition-colors" onClick={() => { setHierarchySortField('year'); setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+                        <div className="flex items-center gap-1">Year {hierarchySortField === 'year' && <ArrowUpDown className="w-3 h-3" />}</div>
+                      </th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-emerald-600 transition-colors" onClick={() => { setHierarchySortField('section'); setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+                        <div className="flex items-center gap-1">Sec {hierarchySortField === 'section' && <ArrowUpDown className="w-3 h-3" />}</div>
+                      </th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-emerald-600 transition-colors" onClick={() => { setHierarchySortField('cgpa'); setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+                        <div className="flex items-center gap-1">CGPA {hierarchySortField === 'cgpa' && <ArrowUpDown className="w-3 h-3" />}</div>
+                      </th>
+                      <th className="text-center py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        Status
+                      </th>
+                      <th className="text-right py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-emerald-600 transition-colors" onClick={() => { setHierarchySortField('achievementCount'); setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+                        <div className="flex items-center justify-end gap-1"><Trophy className="w-3 h-3 inline" /> Achievements {hierarchySortField === 'achievementCount' && <ArrowUpDown className="w-3 h-3" />}</div>
+                      </th>
+                      <th className="text-right py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      // Apply search filter
+                      let filteredStudents = [...students]
                       
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-gray-900 truncate group-hover:text-emerald-700 transition-colors">
-                          {student.user?.name || student.name || 'Student'}
-                        </h4>
-                        <p className="text-sm text-gray-500 font-mono truncate">
-                          {student.registerNumber}
-                        </p>
+                      if (searchQuery.trim()) {
+                        filteredStudents = filteredStudents.filter(s => 
+                          (s.user?.name || s.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (s.registerNumber || '').toLowerCase().includes(searchQuery.toLowerCase())
+                        )
+                      }
+                      
+                      // Apply Sorting
+                      filteredStudents.sort((a, b) => {
+                        let comparison = 0
+                        const getYearFromSemester = (sem: number | undefined) => {
+                          if (!sem) return '1st Year'
+                          if (sem <= 2) return '1st Year'
+                          if (sem <= 4) return '2nd Year'
+                          if (sem <= 6) return '3rd Year'
+                          return '4th Year'
+                        }
+                        const yearOrder: Record<string, number> = { '1st Year': 1, '2nd Year': 2, '3rd Year': 3, '4th Year': 4 }
                         
-                        <div className="flex items-center gap-3 mt-2">
-                          <Badge variant="outline" className="text-xs">
-                            {getYearFromSemester(student.semester)}
-                          </Badge>
-                          <span className="text-xs text-gray-500">
-                            Sec {student.section || 'A'}
-                          </span>
-                          <span className={'text-xs font-semibold ' + getCGPAColor(student.cgpa) + ''}>
-                            CGPA: {student.cgpa || '-'}
-                          </span>
+                        switch (hierarchySortField) {
+                          case 'name':
+                            comparison = (a.user?.name || a.name || '').localeCompare(b.user?.name || b.name || '')
+                            break
+                          case 'regNo':
+                            comparison = (a.registerNumber || '').localeCompare(b.registerNumber || '')
+                            break
+                          case 'year':
+                            const yearA = getYearFromSemester(a.semester)
+                            const yearB = getYearFromSemester(b.semester)
+                            comparison = (yearOrder[yearA] || 0) - (yearOrder[yearB] || 0)
+                            break
+                          case 'section':
+                            comparison = (a.section || 'A').localeCompare(b.section || 'A')
+                            break
+                          case 'cgpa':
+                            comparison = (a.cgpa || 0) - (b.cgpa || 0)
+                            break
+                          case 'achievementCount': {
+                            const studentName = a.user?.name || a.name || ''
+                            const regNo = a.registerNumber || ''
+                            const studentNameB = b.user?.name || b.name || ''
+                            const regNoB = b.registerNumber || ''
+                            const countA = allAchievements.filter(ach => ach.studentName === studentName || ach.reg === regNo).length
+                            const countB = allAchievements.filter(ach => ach.studentName === studentNameB || ach.reg === regNoB).length
+                            comparison = countA - countB
+                            break
+                          }
+                          case 'status':
+                            comparison = (a.isActive !== false ? 'active' : 'inactive').localeCompare(b.isActive !== false ? 'active' : 'inactive')
+                            break
+                          default:
+                            comparison = (a.user?.name || a.name || '').localeCompare(b.user?.name || b.name || '')
+                        }
+                        return hierarchySortOrder === 'asc' ? comparison : -comparison
+                      })
+                      
+                      return filteredStudents.map((student) => {
+                        const getYearFromSemester = (sem: number | undefined) => {
+                          if (!sem) return '1st Year'
+                          if (sem <= 2) return '1st Year'
+                          if (sem <= 4) return '2nd Year'
+                          if (sem <= 6) return '3rd Year'
+                          return '4th Year'
+                        }
+                        
+                        const getCGPAColor = (cgpa: number | undefined) => {
+                          if (!cgpa) return 'text-gray-400'
+                          if (cgpa >= 9) return 'text-emerald-600'
+                          if (cgpa >= 8) return 'text-blue-600'
+                          if (cgpa >= 7) return 'text-yellow-600'
+                          return 'text-red-500'
+                        }
+                        
+                        const studentName = student.user?.name || student.name || 'Student'
+                        const regNo = student.registerNumber || ''
+                        const studentAchievementCount = allAchievements.filter(
+                          a => a.studentName === studentName || a.reg === regNo
+                        ).length
+                        
+                        return (
+                          <tr 
+                            key={student.id} 
+                            className="border-b border-gray-100 hover:bg-emerald-50/60 transition-colors group"
+                          >
+                            <td className="py-3 px-4 text-xs font-mono text-gray-700 font-medium">{regNo}</td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md">
+                                  <span className="text-white text-xs font-bold">{studentName.split(' ').map(n => n[0]).join('').substring(0, 2)}</span>
+                                </div>
+                                <div>
+                                  <p className="text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors">{studentName}</p>
+                                  <p className="text-[10px] text-gray-400">{student.user?.email || student.email || ''}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <Badge variant="outline" className="text-xs font-medium">
+                                {getYearFromSemester(student.semester)}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold">
+                                {student.section || 'A'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className={'text-sm font-bold ' + getCGPAColor(student.cgpa)}>
+                                {student.cgpa?.toFixed(1) || '-'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <Badge className={
+                                student.isActive === false ? 'bg-gray-100 text-gray-600 text-[10px]' : 'bg-green-100 text-green-700 text-[10px]'
+                              }>
+                                {student.isActive === false ? 'Inactive' : 'Active'}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <button
+                                onClick={() => {
+                                  setSelectedStudentForAchievements({
+                                    ...student,
+                                    name: studentName,
+                                    regNo: regNo,
+                                    year: getYearFromSemester(student.semester),
+                                    section: student.section || 'A'
+                                  })
+                                  setShowStudentAchievementModal(true)
+                                }}
+                                className={'inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-full transition-all hover:scale-105 ' + (
+                                  studentAchievementCount > 0 
+                                    ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' 
+                                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                )}
+                              >
+                                <Trophy className="w-3 h-3" />
+                                {studentAchievementCount}
+                              </button>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  onClick={() => {
+                                    setSelectedStudentForAchievements({
+                                      ...student,
+                                      name: studentName,
+                                      regNo: regNo,
+                                      year: getYearFromSemester(student.semester),
+                                      section: student.section || 'A'
+                                    })
+                                    setShowStudentAchievementModal(true)
+                                  }}
+                                  className="p-2 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+                                  title="View Achievements"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => setHierarchyState(prev => ({
+                                    ...prev,
+                                    level: 'profile',
+                                    studentId: student.id,
+                                    studentName: studentName
+                                  }))}
+                                  className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="View Full Profile"
+                                >
+                                  <ExternalLink className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Table Footer Summary */}
+              <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                <p className="text-xs text-gray-500">
+                  Showing <strong>{students.length}</strong> students
+                  {hierarchyState.section && <span> in <strong>Section {hierarchyState.section}</strong></span>}
+                  {hierarchyState.year && <span> from <strong>{hierarchyState.year}</strong></span>}
+                </p>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-500">Sections:</span>
+                  {['A', 'B', 'C', 'D'].map(sec => {
+                    const count = students.filter(s => (s.section || 'A') === sec).length
+                    return count > 0 ? (
+                      <span key={sec} className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 text-[10px] font-bold">
+                        {sec}: {count}
+                      </span>
+                    ) : null
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* STUDENT ACHIEVEMENT MODAL - Popup when clicking achievement button */}
+          {showStudentAchievementModal && selectedStudentForAchievements && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              {/* Backdrop */}
+              <div 
+                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                onClick={() => {
+                  setShowStudentAchievementModal(false)
+                  setSelectedStudentForAchievements(null)
+                }}
+              />
+              
+              {/* Modal Content */}
+              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+                {/* Modal Header - Gradient */}
+                <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-5 flex items-center justify-between shrink-0">
+                  <div className="flex items-center gap-4">
+                    {/* Student Avatar */}
+                    <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-xl border-2 border-white/30">
+                      {(selectedStudentForAchievements.name || '').split(' ').map(n => n[0]).join('')}
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-white">{selectedStudentForAchievements.name}</h2>
+                      <p className="text-emerald-200 text-sm flex items-center gap-2 mt-0.5">
+                        <span>{selectedStudentForAchievements.regNo}</span>
+                        <span className="w-1 h-1 rounded-full bg-emerald-300" />
+                        <span>{selectedStudentForAchievements.year}</span>
+                        <span className="w-1 h-1 rounded-full bg-emerald-300" />
+                        <span>Section {selectedStudentForAchievements.section || 'A'}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowStudentAchievementModal(false)
+                      setSelectedStudentForAchievements(null)
+                    }}
+                    className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                {/* Achievement Stats Bar */}
+                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex items-center gap-6 shrink-0">
+                  {(() => {
+                    const studentAchievementsList = allAchievements.filter(
+                      a => a.studentName === selectedStudentForAchievements.name || a.reg === selectedStudentForAchievements.regNo
+                    )
+                    const total = studentAchievementsList.length
+                    const approved = studentAchievementsList.filter(a => a.status?.includes('approved')).length
+                    const pending = studentAchievementsList.filter(a => a.status === 'pending_hod' || a.status === 'pending' || a.status === 'pending_staff').length
+                    return (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <Trophy className="w-5 h-5 text-amber-500" />
+                          <div>
+                            <p className="text-xs text-gray-500">Total</p>
+                            <p className="text-lg font-bold text-gray-800">{total}</p>
+                          </div>
+                        </div>
+                        <div className="w-px h-10 bg-gray-200" />
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-5 h-5 text-green-500" />
+                          <div>
+                            <p className="text-xs text-gray-500">Approved</p>
+                            <p className="text-lg font-bold text-green-600">{approved}</p>
+                          </div>
+                        </div>
+                        <div className="w-px h-10 bg-gray-200" />
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-5 h-5 text-orange-500" />
+                          <div>
+                            <p className="text-xs text-gray-500">Pending</p>
+                            <p className="text-lg font-bold text-orange-600">{pending}</p>
+                          </div>
+                        </div>
+                      </>
+                    )
+                  })()}
+                </div>
+
+                {/* Achievements List */}
+                <div className="flex-1 overflow-y-auto p-6">
+                  {(() => {
+                    const studentAchievementsList = allAchievements.filter(
+                      a => a.studentName === selectedStudentForAchievements.name || a.reg === selectedStudentForAchievements.regNo
+                    )
+
+                    if (studentAchievementsList.length === 0) {
+                      return (
+                        <div className="text-center py-12">
+                          <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                            <Trophy className="w-10 h-10 text-gray-300" />
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-700 mb-2">No Achievements Yet</h3>
+                          <p className="text-sm text-gray-500 max-w-xs mx-auto">
+                            {selectedStudentForAchievements.name} hasn't submitted any achievements yet.
+                          </p>
+                        </div>
+                      )
+                    }
+
+                    // Group achievements by type
+                    const groupedByType = studentAchievementsList.reduce((acc, achievement) => {
+                      const type = achievement.typeName || achievement.type || 'Other'
+                      if (!acc[type]) acc[type] = []
+                      acc[type].push(achievement)
+                      return acc
+                    }, {} as Record<string, typeof studentAchievementsList>)
+
+                    return Object.entries(groupedByType).map(([type, achievements]) => (
+                      <div key={type} className="mb-6 last:mb-0">
+                        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+                          <FolderOpen className="w-4 h-4 text-emerald-500" />
+                          {type}
+                          <Badge variant="outline" className="text-xs ml-auto">{achievements.length}</Badge>
+                        </h3>
+                        <div className="space-y-3">
+                          {achievements.map((achievement, idx) => {
+                            // Get icon based on type
+                            const typeInfo = Object.values(ACHIEVEMENT_TYPES).find(t => t.label === type)
+                            const Icon = typeInfo?.icon || Trophy
+                            
+                            return (
+                              <div 
+                                key={achievement.id || idx} 
+                                className={`p-4 rounded-xl border transition-all hover:shadow-md ${
+                                  achievement.status?.includes('approved') ? 'border-green-200 bg-green-50/50' :
+                                  achievement.status?.includes('pending') ? 'border-amber-200 bg-amber-50/50' :
+                                  'border-gray-200 bg-white'
+                                }`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                                    achievement.status?.includes('approved') ? 'bg-green-100' :
+                                    achievement.status?.includes('pending') ? 'bg-amber-100' : 'bg-gray-100'
+                                  }`}>
+                                    <Icon className={`w-5 h-5 ${
+                                      achievement.status?.includes('approved') ? 'text-green-600' :
+                                      achievement.status?.includes('pending') ? 'text-amber-600' : 'text-gray-500'
+                                    }`} />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div>
+                                        <h4 className="font-semibold text-gray-800 text-sm">{achievement.title || achievement.description?.substring(0, 80)}</h4>
+                                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{achievement.description}</p>
+                                      </div>
+                                      <Badge className={
+                                        achievement.status?.includes('approved') ? 'bg-green-100 text-green-700 text-[10px]' :
+                                        achievement.status?.includes('pending') ? 'bg-amber-100 text-amber-700 text-[10px]' :
+                                        'bg-gray-100 text-gray-600 text-[10px]'
+                                      }>
+                                        {achievement.status?.replace('_', ' ') || 'Submitted'}
+                                      </Badge>
+                                    </div>
+                                    {achievement.date && (
+                                      <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
+                                        <Calendar className="w-3 h-3" /> {achievement.date}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
                         </div>
                       </div>
-                      
-                      <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" />
-                    </div>
-                  </button>
-                )
-              })}
+                    ))
+                  })()}
+                </div>
+
+                {/* Modal Footer */}
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3 shrink-0">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowStudentAchievementModal(false)
+                      setSelectedStudentForAchievements(null)
+                    }}
+                    className="px-4"
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowStudentAchievementModal(false)
+                      setHierarchyState(prev => ({
+                        ...prev,
+                        level: 'profile',
+                        studentId: selectedStudentForAchievements.id,
+                        studentName: selectedStudentForAchievements.name
+                      }))
+                    }}
+                    className="px-4 bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    View Full Profile
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </div>
