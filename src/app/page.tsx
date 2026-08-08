@@ -4285,6 +4285,15 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
   const [studentSortField, setStudentSortField] = useState<string>('name')
   const [studentSortOrder, setStudentSortOrder] = useState<'asc' | 'desc'>('asc')
   const [showSortDropdown, setShowSortDropdown] = useState(false)
+  
+  // Staff Achievement View State
+  const [selectedStaffForAchievements, setSelectedStaffForAchievements] = useState<any>(null)
+  const [showStaffAchievementModal, setShowStaffAchievementModal] = useState(false)
+  
+  // Staff Sorting State
+  const [staffSortField, setStaffSortField] = useState<string>('name')
+  const [staffSortOrder, setStaffSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [showStaffSortDropdown, setShowStaffSortDropdown] = useState(false)
 
   // Load achievements from localStorage on mount
   useEffect(() => {
@@ -4361,6 +4370,77 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
     
     // Save to localStorage
     localStorage.setItem(storageKey, JSON.stringify({ students: demoStudents, staff: demoStaff }))
+    
+    // Initialize sample achievement data if not exists
+    const studentAchievementsKey = 'student_achievements'
+    const staffAchievementsKey = 'staff_achievements'
+    
+    if (!localStorage.getItem(studentAchievementsKey)) {
+      // Sample Student Achievements
+      const sampleStudentAchievements = [
+        // Arun Kumar (4th Year) - Multiple achievements
+        { id: 1, studentName: 'Arun Kumar', reg: 'CSE001', type: 'Paper Presentation', typeName: 'Paper Presentation', title: 'AI in Healthcare', description: 'Presented a paper on "Machine Learning Applications in Healthcare Diagnosis" at IEEE International Conference', date: '2024-08-15', status: 'approved_hod', level: 'National', dept: user.departmentName, submittedAt: '2024-08-10' },
+        { id: 2, studentName: 'Arun Kumar', reg: 'CSE001', type: 'Hackathon', typeName: 'Hackathon', title: 'Smart India Hackathon 2024', description: 'Participated in Smart India Hackathon Grand Finale with project "AgriTech Solution"', date: '2024-12-20', status: 'approved', level: 'National', dept: user.departmentName, submittedAt: '2024-12-15' },
+        { id: 3, studentName: 'Arun Kumar', reg: 'CSE001', type: 'Certification', typeName: 'Certification', title: 'AWS Cloud Practitioner', description: 'Completed AWS Cloud Practitioner Certification with 85% score', date: '2024-10-05', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-10-01' },
+        // Rahul V (4th Year) - Achievements
+        { id: 4, studentName: 'Rahul V', reg: 'CSE002', type: 'Internship', typeName: 'Internship', title: 'Software Development Intern at TCS', description: 'Completed 6-month internship at Tata Consultancy Services working on Java Spring Boot applications', date: '2024-07-30', status: 'approved_hod', level: 'National', dept: user.departmentName, submittedAt: '2024-07-25' },
+        { id: 5, studentName: 'Rahul V', reg: 'CSE002', type: 'Competition', typeName: 'Technical Competition', title: 'CodeChef Challenge Winner', description: 'Won 2nd place in CodeChef Monthly Challenge - Division 2', date: '2024-11-10', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-11-08' },
+        // Bhavani S (4th Year) - Achievements
+        { id: 6, studentName: 'Bhavani S', reg: 'CSE003', type: 'Workshop', typeName: 'Workshop', title: 'Data Science Workshop', description: 'Attended 5-day intensive workshop on Data Science and Machine Learning at IIT Madras', date: '2024-09-20', status: 'approved', level: 'National', dept: user.departmentName, submittedAt: '2024-09-18' },
+        { id: 7, studentName: 'Bhavani S', reg: 'CSE003', type: 'Project', typeName: 'Project', title: 'Smart Campus Navigation App', description: 'Developed AR-based campus navigation app as final year project', date: '2025-01-15', status: 'pending_hod', level: 'Department', dept: user.departmentName, submittedAt: '2025-01-12' },
+        // Deepa L (3rd Year) - Achievements
+        { id: 8, studentName: 'Deepa L', reg: 'CSE004', type: 'Certification', typeName: 'Certification', title: 'Python Programming Certificate', description: 'Completed Python Specialization from Coursera with distinction', date: '2024-06-15', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-06-10' },
+        { id: 9, studentName: 'Deepa L', reg: 'CSE004', type: 'Symposium', typeName: 'Symposium', title: 'Tech Symposium Coordinator', description: 'Coordinated National Level Technical Symposium "Technovate 2k24" with 500+ participants', date: '2024-03-25', status: 'approved_hod', level: 'National', dept: user.departmentName, submittedAt: '2024-03-20' },
+        // Priya R (3rd Year) - Achievements
+        { id: 10, studentName: 'Priya R', reg: 'CSE005', type: 'Paper Publication', typeName: 'Paper Publication', title: 'IoT Research Paper Published', description: 'Research paper published in Springer Journal on IoT-based Smart Agriculture Systems', date: '2024-11-05', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-11-01' },
+        // Sneha K (3rd Year) - Achievements
+        { id: 11, studentName: 'Sneha K', reg: 'CSE006', type: 'Event Participation', typeName: 'Event Participation', title: 'Cultural Fest Volunteer Lead', description: 'Led team of 50 volunteers for annual college cultural fest "Utsav 2k24"', date: '2024-04-10', status: 'approved', level: 'Department', dept: user.departmentName, submittedAt: '2024-04-05' },
+        // Karthik M (3rd Year) - Achievements
+        { id: 12, studentName: 'Karthik M', reg: 'CSE007', type: 'Competition', typeName: 'Coding Competition', title: 'Google Kickstart Qualifier', description: 'Qualified for Google Kickstart Round C by solving 3/4 problems', date: '2024-09-28', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-09-25' },
+        { id: 13, studentName: 'Karthik M', reg: 'CSE007', type: 'Certification', typeName: 'Certification', title: 'Google Data Analytics Certificate', description: 'Completed Google Data Analytics Professional Certificate on Coursera', date: '2024-08-20', status: 'approved_hod', level: 'International', dept: user.departmentName, submittedAt: '2024-08-15' },
+        // Vijay S (2nd Year) - Achievements
+        { id: 14, studentName: 'Vijay S', reg: 'CSE008', type: 'Workshop', typeName: 'Workshop', title: 'Web Development Bootcamp', description: 'Completed 2-week full-stack web development bootcamp covering React, Node.js, MongoDB', date: '2024-12-01', status: 'pending_hod', level: 'State', dept: user.departmentName, submittedAt: '2024-11-28' },
+        // Divya P (2nd Year) - Achievements
+        { id: 15, studentName: 'Divya P', reg: 'CSE009', type: 'Competition', typeName: 'Quiz Competition', title: 'Inter-College Quiz Winner', description: 'Won 1st place in Inter-college Technical Quiz Competition organized by Anna University', date: '2024-10-18', status: 'approved', level: 'State', dept: user.departmentName, submittedAt: '2024-10-15' },
+        // Manoj T (2nd Year) - Achievements
+        { id: 16, studentName: 'Manoj T', reg: 'CSE010', type: 'Internship', typeName: 'Virtual Internship', title: 'AI/ML Virtual Internship', description: 'Completed 8-week virtual AI/ML internship from AICTE SPICE board', date: '2024-07-31', status: 'approved', level: 'National', dept: user.departmentName, submittedAt: '2024-07-28' },
+        // Nisha R (2nd Year) - Achievements
+        { id: 17, studentName: 'Nisha R', reg: 'CSE011', type: 'Certification', typeName: 'Certification', title: 'Microsoft Azure Fundamentals', description: 'Passed AZ-900 Microsoft Azure Fundamentals certification exam', date: '2024-09-10', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-09-05' },
+        // Lakshmi M (1st Year) - Achievement
+        { id: 18, studentName: 'Lakshmi M', reg: 'CSE015', type: 'Event Participation', typeName: 'Event Participation', title: 'Freshers Day Event Organizer', description: 'Organized freshers day welcome event for batch of 2024-2028', date: '2024-09-01', status: 'approved', level: 'Department', dept: user.departmentName, submittedAt: '2024-08-28' },
+      ]
+      localStorage.setItem(studentAchievementsKey, JSON.stringify(sampleStudentAchievements))
+      // Set to state
+      const deptStudentAch = sampleStudentAchievements.filter(a => a.dept === user.departmentName || a.department === user.departmentName)
+      setStudentAchievements(deptStudentAch)
+    }
+    
+    if (!localStorage.getItem(staffAchievementsKey)) {
+      // Sample Staff Achievements
+      const sampleStaffAchievements = [
+        // Dr. Ramesh Kumar (HOD) - Achievements
+        { id: 101, submittedBy: 'Dr. Ramesh Kumar', type: 'Research Paper', typeName: 'Research Paper', title: 'Published paper in IEEE Transactions', description: 'Research publication on "Deep Learning Approaches for Natural Language Processing" in IEEE Transactions journal with Impact Factor 8.0', date: '2024-10-15', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-10-10' },
+        { id: 102, submittedBy: 'Dr. Ramesh Kumar', type: 'FDP', typeName: 'Faculty Development Program', title: 'Attended AICTE FDP at IIT Bombay', description: 'Completed 2-week Faculty Development Program on Advanced Machine Learning Techniques at IIT Bombay', date: '2024-07-20', status: 'approved', level: 'National', dept: user.departmentName, submittedAt: '2024-07-15' },
+        { id: 103, submittedBy: 'Dr. Ramesh Kumar', type: 'Conference', typeName: 'Conference Organization', title: 'Organized International Conference', description: 'Chief organizer for ICICC 2024 - International Conference on Intelligent Computing and Communication', date: '2024-03-22', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-02-28' },
+        // Dr. Lakshmi Devi - Achievements
+        { id: 104, submittedBy: 'Dr. Lakshmi Devi', type: 'Research Paper', typeName: 'Research Paper', title: 'Springer Publication on Cloud Computing', description: 'Published research paper on "Secure Cloud Storage using Homomorphic Encryption" in Springer Nature journal', date: '2024-09-05', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-09-01' },
+        { id: 105, submittedBy: 'Dr. Lakshmi Devi', type: 'Patent', typeName: 'Patent Filed', title: 'Patent filed for IoT Device', description: 'Filed patent for "Smart Energy Monitoring System using IoT and Edge Computing"', date: '2024-11-30', status: 'pending_hod', level: 'National', dept: user.departmentName, submittedAt: '2024-11-25' },
+        { id: 106, submittedBy: 'Dr. Lakshmi Devi', type: 'Workshop', typeName: 'Workshop Conducted', title: 'Conducted Workshop on Cybersecurity', description: 'Conducted 3-day hands-on workshop on Ethical Hacking and Cybersecurity for students', date: '2024-08-15', status: 'approved', level: 'Department', dept: user.departmentName, submittedAt: '2024-08-10' },
+        // Mr. Suresh Babu - Achievements
+        { id: 107, submittedBy: 'Mr. Suresh Babu', type: 'Certification', typeName: 'Professional Certification', title: 'Oracle Certified Professional', description: 'Achieved Oracle Certified Professional: Java SE 11 Developer certification', date: '2024-06-10', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-06-05' },
+        { id: 108, submittedBy: 'Mr. Suresh Babu', type: 'Project Mentor', typeName: 'Project Mentoring', title: 'Mentored 5 Final Year Projects', description: 'Successfully mentored 5 final year projects, 2 of which won awards at national competitions', date: '2024-12-20', status: 'approved', level: 'Department', dept: user.departmentName, submittedAt: '2024-12-18' },
+        // Ms. Anitha Reddy - Achievements
+        { id: 109, submittedBy: 'Ms. Anitha Reddy', type: 'Online Course', typeName: 'Online Course Completion', title: 'Stanford Machine Learning Course', description: 'Completed Stanford Machine Learning specialization course on Coursera with 95% score', date: '2024-08-25', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-08-20' },
+        // Dr. Venkat Rao - Achievements
+        { id: 110, submittedBy: 'Dr. Venkat Rao', type: 'Book Chapter', typeName: 'Book Chapter Published', title: 'Chapter in CRC Press Book', description: 'Authored chapter on "Blockchain Applications in Supply Chain Management" in CRC Press publication', date: '2024-12-01', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-11-28' },
+        { id: 111, submittedBy: 'Dr. Venkat Rao', type: 'Funding', typeName: 'Research Funding Received', title: 'SERB Project Funding Approved', description: 'Received SERB Core Research Grant worth Rs. 25 Lakhs for research on Quantum Computing', date: '2024-10-01', status: 'approved', level: 'National', dept: user.departmentName, submittedAt: '2024-09-25' },
+        { id: 112, submittedBy: 'Dr. Venkat Rao', type: 'Invited Talk', typeName: 'Invited Lecture', title: 'Invited Speaker at NIT Trichy', description: 'Delivered invited talk on "Future of AI in Education" at NIT Trichy technical symposium', date: '2024-04-15', status: 'approved', level: 'National', dept: user.departmentName, submittedAt: '2024-04-10' },
+      ]
+      localStorage.setItem(staffAchievementsKey, JSON.stringify(sampleStaffAchievements))
+      // Set to state
+      const deptStaffAch = sampleStaffAchievements.filter(a => a.dept === user.departmentName || a.department === user.departmentName)
+      setStaffAchievements(deptStaffAch)
+    }
   }, [user.departmentName])
 
   // Save department users to localStorage whenever they change
@@ -5622,7 +5702,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
       {/* STAFF TAB - User Management with CRUD */}
       {activeTab === 'staff' && (
         <div className="space-y-6">
-          {/* Search and Add Button */}
+          {/* Search, Sort and Add Button */}
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -5634,6 +5714,90 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
               />
             </div>
+            
+            {/* Sort Button with Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowStaffSortDropdown(!showStaffSortDropdown)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-emerald-300 transition-colors"
+              >
+                <ArrowUpDown className="w-4 h-4 text-emerald-500" />
+                Sort
+                {staffSortField !== 'name' && (
+                  <span className="text-xs text-emerald-600 font-semibold">({staffSortField})</span>
+                )}
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showStaffSortDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {/* Sort Dropdown */}
+              {showStaffSortDropdown && (
+                <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+                  <div className="p-2">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-2">Sort Faculty By</p>
+                    
+                    {[
+                      { id: 'name', label: 'Name (A-Z)', icon: User },
+                      { id: 'designation', label: 'Designation', icon: Briefcase },
+                      { id: 'email', label: 'Email', icon: Mail },
+                      { id: 'status', label: 'Status', icon: CheckCircle },
+                      { id: 'achievementCount', label: 'Achievement Count', icon: Trophy },
+                    ].map(option => {
+                      const Icon = option.icon
+                      const isSelected = staffSortField === option.id
+                      return (
+                        <button
+                          key={option.id}
+                          onClick={() => {
+                            if (isSelected) {
+                              setStaffSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+                            } else {
+                              setStaffSortField(option.id)
+                              setStaffSortOrder('asc')
+                            }
+                            setShowStaffSortDropdown(false)
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-colors ${
+                            isSelected ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-gray-50 text-gray-700'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Icon className={`w-4 h-4 ${isSelected ? 'text-emerald-600' : 'text-gray-400'}`} />
+                            <span className="text-sm font-medium">{option.label}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {isSelected && (
+                              <>
+                                <Check className="w-4 h-4 text-emerald-600" />
+                                <span className={`text-xs font-bold ${staffSortOrder === 'asc' ? 'text-emerald-600' : 'text-gray-400'}`}>A-Z</span>
+                                <span className={`text-xs font-bold ${staffSortOrder === 'desc' ? 'text-emerald-600' : 'text-gray-400'}`}>Z-A</span>
+                              </>
+                            )}
+                          </div>
+                        </button>
+                      )
+                    })}
+                    
+                    {/* Divider */}
+                    <div className="border-t border-gray-100 my-2" />
+                    
+                    {/* Quick Sort Order Toggle */}
+                    <button
+                      onClick={() => {
+                        setStaffSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+                        setShowStaffSortDropdown(false)
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors"
+                    >
+                      <ArrowLeftRight className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm font-medium">
+                        Toggle Order: <strong>{staffSortOrder === 'asc' ? 'Ascending (A→Z)' : 'Descending (Z→A)'}</strong>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            
             <Button
               onClick={handleAddStaff}
               className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2"
@@ -5656,62 +5820,109 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {filteredStaffList.map(staffMember => {
-                    const staffAchievementCount = staffAchievements.filter(
-                      a => a.submittedBy === staffMember.name
-                    ).length
-                    return (
-                      <div key={staffMember.id} className="p-4 border border-gray-200 rounded-xl hover:shadow-md transition-shadow bg-white">
-                        <div className="flex items-start gap-3">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                            {staffMember.name.split(' ').map(n => n[0]).join('')}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <p className="font-semibold text-gray-800 text-sm">{staffMember.name}</p>
-                                <p className="text-xs text-gray-500">{staffMember.designation}</p>
-                                <p className="text-xs text-gray-400 mt-1">{staffMember.email}</p>
-                                {staffMember.phone && (
-                                  <p className="text-xs text-gray-400">{staffMember.phone}</p>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={() => handleEditStaff(staffMember)}
-                                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                  title="Edit Staff"
-                                >
-                                  <Edit3 className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteStaff(staffMember.id)}
-                                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                  title="Delete Staff"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
+                <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                  {(() => {
+                    // Create a sorted copy of filteredStaffList
+                    const sortedStaff = [...filteredStaffList].sort((a, b) => {
+                      let comparison = 0
+                      switch (staffSortField) {
+                        case 'name':
+                          comparison = a.name.localeCompare(b.name)
+                          break
+                        case 'designation':
+                          comparison = (a.designation || '').localeCompare(b.designation || '')
+                          break
+                        case 'email':
+                          comparison = (a.email || '').localeCompare(b.email || '')
+                          break
+                        case 'status':
+                          comparison = (a.status || '').localeCompare(b.status || '')
+                          break
+                        case 'achievementCount': {
+                          const countA = staffAchievements.filter(ach => ach.submittedBy === a.name).length
+                          const countB = staffAchievements.filter(ach => ach.submittedBy === b.name).length
+                          comparison = countA - countB
+                          break
+                        }
+                        default:
+                          comparison = a.name.localeCompare(b.name)
+                      }
+                      return staffSortOrder === 'asc' ? comparison : -comparison
+                    })
+                    
+                    return sortedStaff.map(staffMember => {
+                      const staffAchievementCount = staffAchievements.filter(
+                        a => a.submittedBy === staffMember.name
+                      ).length
+                      return (
+                        <div 
+                          key={staffMember.id} 
+                          className="p-4 border border-gray-200 rounded-xl hover:shadow-lg hover:border-emerald-200 transition-all bg-white cursor-pointer group"
+                          onClick={() => {
+                            setSelectedStaffForAchievements(staffMember)
+                            setShowStaffAchievementModal(true)
+                          }}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0 group-hover:scale-105 transition-transform">
+                              {staffMember.name.split(' ').map(n => n[0]).join('')}
                             </div>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Badge className={
-                                staffMember.status === 'active' ? 'bg-green-100 text-green-700' : 
-                                staffMember.status === 'on_leave' ? 'bg-amber-100 text-amber-700' :
-                                'bg-gray-100 text-gray-600'
-                              }>
-                                {staffMember.status.replace('_', ' ')}
-                              </Badge>
-                              <span className="text-xs text-emerald-600 font-medium">
-                                <Trophy className="w-3 h-3 inline mr-1" />
-                                {staffAchievementCount} achievements
-                              </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <p className="font-semibold text-gray-800 text-sm group-hover:text-emerald-700 transition-colors">{staffMember.name}</p>
+                                  <p className="text-xs text-gray-500">{staffMember.designation}</p>
+                                  <p className="text-xs text-gray-400 mt-1">{staffMember.email}</p>
+                                  {staffMember.phone && (
+                                    <p className="text-xs text-gray-400">{staffMember.phone}</p>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedStaffForAchievements(staffMember)
+                                      setShowStaffAchievementModal(true)
+                                    }}
+                                    className="p-1.5 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+                                    title="View Achievements"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleEditStaff(staffMember)}
+                                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                    title="Edit Staff"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteStaff(staffMember.id)}
+                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="Delete Staff"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 mt-2">
+                                <Badge className={
+                                  staffMember.status === 'active' ? 'bg-green-100 text-green-700' : 
+                                  staffMember.status === 'on_leave' ? 'bg-amber-100 text-amber-700' :
+                                  'bg-gray-100 text-gray-600'
+                                }>
+                                  {staffMember.status.replace('_', ' ')}
+                                </Badge>
+                                <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${staffAchievementCount > 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
+                                  <Trophy className="w-3 h-3" />
+                                  {staffAchievementCount}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    )
-                  })}
+                      )
+                    })
+                  })()}
                 </div>
                 {filteredStaffList.length === 0 && (
                   <div className="text-center py-12">
@@ -5759,6 +5970,232 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                 </div>
               </CardContent>
             </Card>
+          </div>
+        </div>
+      )}
+
+      {/* STAFF ACHIEVEMENT MODAL - Popup when clicking a staff member */}
+      {showStaffAchievementModal && selectedStaffForAchievements && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => {
+              setShowStaffAchievementModal(false)
+              setSelectedStaffForAchievements(null)
+            }}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+            {/* Modal Header - Gradient (Emerald for Staff) */}
+            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-5 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-4">
+                {/* Staff Avatar */}
+                <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-xl border-2 border-white/30">
+                  {selectedStaffForAchievements.name.split(' ').map(n => n[0]).join('')}
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">{selectedStaffForAchievements.name}</h2>
+                  <p className="text-emerald-100 text-sm flex items-center gap-2 mt-0.5">
+                    <span>{selectedStaffForAchievements.designation}</span>
+                    <span className="w-1 h-1 rounded-full bg-emerald-300" />
+                    <span>{selectedStaffForAchievements.email}</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowStaffAchievementModal(false)
+                  setSelectedStaffForAchievements(null)
+                }}
+                className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Achievement Stats Bar */}
+            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex items-center gap-6 shrink-0">
+              {(() => {
+                const staffAchievementsList = staffAchievements.filter(
+                  a => a.submittedBy === selectedStaffForAchievements.name
+                )
+                const total = staffAchievementsList.length
+                const approved = staffAchievementsList.filter(a => a.status?.includes('approved')).length
+                const pending = staffAchievementsList.filter(a => a.status === 'pending_hod' || a.status === 'pending').length
+                return (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-amber-500" />
+                      <div>
+                        <p className="text-xs text-gray-500">Total</p>
+                        <p className="text-lg font-bold text-gray-800">{total}</p>
+                      </div>
+                    </div>
+                    <div className="w-px h-10 bg-gray-200" />
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      <div>
+                        <p className="text-xs text-gray-500">Approved</p>
+                        <p className="text-lg font-bold text-green-600">{approved}</p>
+                      </div>
+                    </div>
+                    <div className="w-px h-10 bg-gray-200" />
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-orange-500" />
+                      <div>
+                        <p className="text-xs text-gray-500">Pending</p>
+                        <p className="text-lg font-bold text-orange-600">{pending}</p>
+                      </div>
+                    </div>
+                  </>
+                )
+              })()}
+            </div>
+
+            {/* Achievements List */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {(() => {
+                const staffAchievementsList = staffAchievements.filter(
+                  a => a.submittedBy === selectedStaffForAchievements.name
+                )
+
+                if (staffAchievementsList.length === 0) {
+                  return (
+                    <div className="text-center py-12">
+                      <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                        <Trophy className="w-10 h-10 text-gray-300" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">No Achievements Yet</h3>
+                      <p className="text-sm text-gray-500 max-w-xs mx-auto">
+                        {selectedStaffForAchievements.name} hasn't submitted any achievements yet.
+                      </p>
+                    </div>
+                  )
+                }
+
+                // Group achievements by type
+                const groupedByType = staffAchievementsList.reduce((acc, achievement) => {
+                  const type = achievement.typeName || achievement.type || 'Other'
+                  if (!acc[type]) acc[type] = []
+                  acc[type].push(achievement)
+                  return acc
+                }, {} as Record<string, typeof staffAchievementsList>)
+
+                return Object.entries(groupedByType).map(([type, achievements]) => (
+                  <div key={type} className="mb-6 last:mb-0">
+                    <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+                      <FolderOpen className="w-4 h-4 text-emerald-500" />
+                      {type}
+                      <Badge variant="outline" className="text-xs ml-auto">{achievements.length}</Badge>
+                    </h3>
+                    <div className="space-y-3">
+                      {achievements.map((achievement, idx) => {
+                        // Get icon based on type
+                        const typeInfo = Object.values(ACHIEVEMENT_TYPES).find(t => t.label === type)
+                        const Icon = typeInfo?.icon || Trophy
+                        
+                        return (
+                          <div 
+                            key={achievement.id || idx} 
+                            className={`p-4 rounded-xl border transition-all hover:shadow-md ${
+                              achievement.status === 'approved' || achievement.status === 'approved_hod' ? 'border-green-200 bg-green-50/50' :
+                              achievement.status === 'pending_hod' || achievement.status === 'pending' ? 'border-amber-200 bg-amber-50/50' :
+                              'border-gray-200 bg-white'
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                                achievement.status === 'approved' || achievement.status === 'approved_hod' ? 'bg-green-100' :
+                                achievement.status === 'pending_hod' || achievement.status === 'pending' ? 'bg-amber-100' : 'bg-gray-100'
+                              }`}>
+                                <Icon className={`w-5 h-5 ${
+                                  achievement.status === 'approved' || achievement.status === 'approved_hod' ? 'text-green-600' :
+                                  achievement.status === 'pending_hod' || achievement.status === 'pending' ? 'text-amber-600' : 'text-gray-500'
+                                }`} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div>
+                                    <h4 className="font-semibold text-gray-800 text-sm">{achievement.title || achievement.description?.substring(0, 60)}</h4>
+                                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{achievement.description}</p>
+                                  </div>
+                                  <Badge className={
+                                    achievement.status === 'approved' || achievement.status === 'approved_hod' ? 'bg-green-100 text-green-700 text-[10px]' :
+                                    achievement.status === 'pending_hod' || achievement.status === 'pending' ? 'bg-amber-100 text-amber-700 text-[10px]' :
+                                    'bg-gray-100 text-gray-600 text-[10px]'
+                                  }>
+                                    {achievement.status?.replace('_', ' ') || 'Pending'}
+                                  </Badge>
+                                </div>
+                                
+                                {/* Achievement Meta */}
+                                <div className="flex items-center gap-4 mt-3 flex-wrap">
+                                  {achievement.date && (
+                                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                                      <Calendar className="w-3 h-3" />
+                                      {new Date(achievement.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                    </span>
+                                  )}
+                                  {achievement.submittedAt && (
+                                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      Submitted {new Date(achievement.submittedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                    </span>
+                                  )}
+                                  {achievement.level && (
+                                    <Badge variant="outline" className="text-[10px]">{achievement.level}</Badge>
+                                  )}
+                                </div>
+
+                                {/* Evidence/Proof (if any) */}
+                                {achievement.evidenceUrl && (
+                                  <div className="mt-3">
+                                    <a 
+                                      href={achievement.evidenceUrl} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800"
+                                    >
+                                      <ExternalLink className="w-3 h-3" />
+                                      View Evidence
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))
+              })()}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between shrink-0">
+              <button
+                onClick={() => {
+                  setShowStaffAchievementModal(false)
+                  setSelectedStaffForAchievements(null)
+                }}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors text-sm font-medium"
+              >
+                Close
+              </button>
+              <Button
+                onClick={() => {
+                  setShowStaffAchievementModal(false)
+                  setActiveTabLocal('analytics')
+                }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+              >
+                <BarChart3 className="w-4 h-4" />
+                View Full Analytics
+              </Button>
+            </div>
           </div>
         </div>
       )}
