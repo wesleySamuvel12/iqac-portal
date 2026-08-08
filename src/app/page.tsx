@@ -15937,7 +15937,6 @@ const ROLE_SIDEBAR_CONFIG = {
     roleIcon: BookOpen,
     menuItems: [
       { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'Overview & Stats' },
-      { id: 'hierarchy_dept', icon: Layers, label: 'Academic Hierarchy', badge: 'New', description: 'Year → Class → Student Flow' },
       { id: 'staff_management', icon: Users, label: 'Class Management', badge: 'My Class', description: 'Manage your class students' },
       { id: 'staff_achievement', icon: Award, label: 'Staff Achievements', badge: 'New', description: 'Your achievements' },
       { id: 'student_achievement_view', icon: GraduationCap, label: 'Student Achievements', badge: 'View', description: 'View student data' },
