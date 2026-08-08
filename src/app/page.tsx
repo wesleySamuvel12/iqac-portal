@@ -7392,52 +7392,85 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
         </Card>
       </div>
 
-      {/* Section Toggle & Chart View Toggle - Responsive */}
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center justify-between">
-        <div className="flex gap-1.5 bg-gray-100 p-1.5 rounded-xl overflow-x-auto scrollbar-hide">
-          <button
-            onClick={() => setActiveSection('overview')}
-            className={'flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ' + 
-              activeSection === 'overview'
-                ? 'bg-white text-violet-700 shadow-md'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-             + ''}
-          >
-            <PieChartIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            Overview
-          </button>
-          <button
-            onClick={() => setActiveSection('students')}
-            className={'flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ' + 
-              activeSection === 'students'
-                ? 'bg-white text-blue-700 shadow-md'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-             + ''}
-          >
-            <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            Students
-            <span className={'px-1.5 sm:px-2 py-0.5 rounded-full text-xs ' + 
-              activeSection === 'students' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'
-             + ''}>{totalStudentAchievements}</span>
-          </button>
-          <button
-            onClick={() => setActiveSection('staff')}
-            className={'flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ' + 
-              activeSection === 'staff'
-                ? 'bg-white text-emerald-700 shadow-md'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-             + ''}
-          >
-            <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            Staff
-            <span className={'px-1.5 sm:px-2 py-0.5 rounded-full text-xs ' + 
-              activeSection === 'staff' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'
-             + ''}>{totalStaffAchievements}</span>
-          </button>
-        </div>
+      {/* Section Toggle - Expanded Navigation Tabs */}
+      <div className="flex gap-2 bg-gradient-to-r from-slate-100 to-gray-100 p-2 rounded-2xl shadow-sm border border-gray-200/50">
+        <button
+          onClick={() => setActiveSection('overview')}
+          className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all flex-1 justify-center group ${
+            activeSection === 'overview'
+              ? 'bg-white text-violet-700 shadow-lg shadow-violet-300/40 scale-[1.02] border border-violet-200'
+              : 'text-gray-500 hover:text-gray-700 hover:bg-white/70 hover:scale-[1.01] border border-transparent'
+          }`}
+        >
+          <div className={`p-2 rounded-lg transition-colors ${
+            activeSection === 'overview' ? 'bg-violet-100 text-violet-600' : 'bg-gray-200/70 text-gray-500 group-hover:bg-gray-200'
+          }`}>
+            <PieChartIcon className="w-6 h-6" />
+          </div>
+          <div className="flex flex-col items-start">
+            <span className="text-base">Overview</span>
+            <span className={`text-xs font-normal ${activeSection === 'overview' ? 'text-violet-500' : 'text-gray-400'}`}>
+              All Analytics
+            </span>
+          </div>
+        </button>
 
-        {(activeSection === 'students' || activeSection === 'staff') && (
-          <div className="flex gap-1.5 bg-gray-100 p-1.5 rounded-xl overflow-x-auto scrollbar-hide">
+        <button
+          onClick={() => setActiveSection('students')}
+          className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all flex-1 justify-center group ${
+            activeSection === 'students'
+              ? 'bg-white text-blue-700 shadow-lg shadow-blue-300/40 scale-[1.02] border border-blue-200'
+              : 'text-gray-500 hover:text-gray-700 hover:bg-white/70 hover:scale-[1.01] border border-transparent'
+          }`}
+        >
+          <div className={`p-2 rounded-lg transition-colors ${
+            activeSection === 'students' ? 'bg-blue-100 text-blue-600' : 'bg-gray-200/70 text-gray-500 group-hover:bg-gray-200'
+          }`}>
+            <GraduationCap className="w-6 h-6" />
+          </div>
+          <div className="flex flex-col items-start">
+            <span className="text-base">Students</span>
+            <span className={`text-xs font-normal ${activeSection === 'students' ? 'text-blue-500' : 'text-gray-400'}`}>
+              {totalStudentAchievements} Records
+            </span>
+          </div>
+          <span className={`px-3 py-1 rounded-full text-sm font-bold ml-1 ${
+            activeSection === 'students' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-300 text-gray-600'
+          }`}>
+            {totalStudentAchievements}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveSection('staff')}
+          className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all flex-1 justify-center group ${
+            activeSection === 'staff'
+              ? 'bg-white text-emerald-700 shadow-lg shadow-emerald-300/40 scale-[1.02] border border-emerald-200'
+              : 'text-gray-500 hover:text-gray-700 hover:bg-white/70 hover:scale-[1.01] border border-transparent'
+          }`}
+        >
+          <div className={`p-2 rounded-lg transition-colors ${
+            activeSection === 'staff' ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-200/70 text-gray-500 group-hover:bg-gray-200'
+          }`}>
+            <Users className="w-6 h-6" />
+          </div>
+          <div className="flex flex-col items-start">
+            <span className="text-base">Staff</span>
+            <span className={`text-xs font-normal ${activeSection === 'staff' ? 'text-emerald-500' : 'text-gray-400'}`}>
+              {totalStaffAchievements} Records
+            </span>
+          </div>
+          <span className={`px-3 py-1 rounded-full text-sm font-bold ml-1 ${
+            activeSection === 'staff' ? 'bg-emerald-600 text-white shadow-md' : 'bg-gray-300 text-gray-600'
+          }`}>
+            {totalStaffAchievements}
+          </span>
+        </button>
+      </div>
+
+      {/* Chart View Toggle - Only show for Students/Staff sections */}
+      {(activeSection === 'students' || activeSection === 'staff') && (
+        <div className="flex gap-1.5 bg-gray-100 p-1.5 rounded-xl overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setChartView('bar')}
               className={'flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ' + 
@@ -7470,7 +7503,6 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
             </button>
           </div>
         )}
-      </div>
 
       {/* ==================== OVERVIEW SECTION - Responsive ==================== */}
       {activeSection === 'overview' && (
