@@ -4603,8 +4603,15 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
       {/* OVERVIEW TAB */}
       {activeTab === 'overview' && (
         <>
-          {/* Stats Cards - Updated with Active Batches instead of Pending Approvals */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Section Header - Standalone Title Above Cards */}
+          <div className="flex items-center gap-3 mb-4">
+            <LayoutDashboard className="w-5 h-5 text-slate-500" />
+            <h3 className="text-lg font-semibold text-slate-700">Overview: Students & Staff</h3>
+            <div className="flex-1 h-px bg-gradient-to-r from-slate-200 to-transparent ml-2" />
+          </div>
+
+          {/* Stats Cards - 4 Column Responsive Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-4">
             <Card className="border border-gray-200 hover:shadow-lg transition-all overflow-hidden">
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
@@ -4671,7 +4678,15 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
           </div>
 
           {/* Mini Analytics Section - Students by Year & Achievement Breakdown */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="mt-8">
+            {/* Section Header - Standalone Title */}
+            <div className="flex items-center gap-3 mb-4">
+              <BarChart3 className="w-5 h-5 text-slate-500" />
+              <h3 className="text-lg font-semibold text-slate-700">Department Analytics</h3>
+              <div className="flex-1 h-px bg-gradient-to-r from-slate-200 to-transparent ml-2" />
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Students by Year Distribution (Bar Chart) */}
             <Card className="border border-gray-200">
               <CardHeader className="pb-3">
@@ -4737,6 +4752,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                 </div>
               </CardContent>
             </Card>
+          </div>
           </div>
 
           {/* Quick Actions & Recent Activity - Updated Actions */}
@@ -18844,8 +18860,15 @@ function HODStudentApprovalPage({ user }: { user: User }) {
         </Badge>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Section Header - Standalone Title Above Stats Cards */}
+      <div className="flex items-center gap-3 mb-4">
+        <FileText className="w-5 h-5 text-slate-500" />
+        <h3 className="text-lg font-semibold text-slate-700">Approval Statistics</h3>
+        <div className="flex-1 h-px bg-gradient-to-r from-slate-200 to-transparent ml-2" />
+      </div>
+
+      {/* Stats Cards - 4 Column Responsive Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <Card className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 border-slate-200">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-slate-600 flex items-center justify-center">
@@ -19379,8 +19402,15 @@ function HODStaffApprovalPage({ user }: { user: User }) {
         </Badge>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Section Header - Standalone Title Above Stats Cards */}
+      <div className="flex items-center gap-3 mb-4">
+        <FileText className="w-5 h-5 text-slate-500" />
+        <h3 className="text-lg font-semibold text-slate-700">Approval Statistics</h3>
+        <div className="flex-1 h-px bg-gradient-to-r from-slate-200 to-transparent ml-2" />
+      </div>
+
+      {/* Stats Cards - 4 Column Responsive Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <Card className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 border-slate-200">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-slate-600 flex items-center justify-center">
