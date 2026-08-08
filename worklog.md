@@ -378,12 +378,19 @@ Stage Summary:
 - **Sort options**: Name, Reg No, Year, Section, Achievement Count, CGPA, Status
 - **Achievement Popup**: Shows all achievements grouped by type with status indicators
 - Database students properly displayed with real data from API
+- **NEW: Clicking any Year directly shows student list** (like Dashboard)
+  - No need to drill down through Section level
+  - Year cards show student counts and highlight when selected
+  - "All Years" option shows complete student list
+  - Section filter pills (All, A, B, C, D) for quick filtering
+  - Mini table preview with "View Full List" button
 - Browser testing confirmed:
   - HOD Portal: Academic Hierarchy → Students table working with sort + popup
   - Staff Portal: Same Academic Hierarchy functionality available
   - Sort dropdown opens with all 7 options
   - Achievement popup modal displays correctly with grouped achievements
   - Multiple sections (A, B, C) visible in data
+  - Clicking year directly shows filtered student list
 - Demo credentials for testing:
   - Admin: admin@niet.ac.in / admin123
   - HOD: hod_cse@niet.ac.in / hod123

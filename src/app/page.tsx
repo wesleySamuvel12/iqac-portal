@@ -21144,7 +21144,7 @@ function AcademicHierarchyPage({
         </div>
       )}
 
-      {/* YEAR LEVEL - Show academic years */}
+      {/* YEAR LEVEL - Show academic years + Direct Student List */}
       {hierarchyState.level === 'year' && (
         <div className="space-y-6">
           {/* Back Button & Header */}
@@ -21157,12 +21157,12 @@ function AcademicHierarchyPage({
             </button>
             <div className="flex-1">
               <h2 className="text-xl font-bold text-gray-900">{hierarchyState.departmentName}</h2>
-              <p className="text-sm text-gray-500">Select Academic Year</p>
+              <p className="text-sm text-gray-500">Select Academic Year to view students</p>
             </div>
           </div>
 
-          {/* Year Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Year Cards - Click to show students directly */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {years.map((year, idx) => {
               const colors = [
                 'from-orange-500 to-amber-500',
@@ -21170,44 +21170,230 @@ function AcademicHierarchyPage({
                 'from-blue-500 to-indigo-500',
                 'from-purple-500 to-pink-500'
               ]
-              const bgColors = ['bg-orange-50', 'bg-emerald-50', 'bg-blue-50', 'bg-purple-50']
+              
+              const count = getYearCount(year)
+              const isSelected = hierarchyState.year === year
               
               return (
                 <button
                   key={year}
-                  onClick={() => navigateToLevel('section', { year })}
-                  className={'group ' + bgColors[idx] + ' rounded-2xl p-6 border border-gray-200 hover:border-current hover:shadow-xl transition-all duration-300 text-left'}
+                  onClick={() => {
+                    if (isSelected) {
+                      // If already selected, go back to showing all
+                      setHierarchyState(prev => ({ ...prev, year: undefined }))
+                    } else {
+                      // Select this year and show students
+                      setHierarchyState(prev => ({ ...prev, year, level: 'students' }))
+                    }
+                  }}
+                  className={`p-4 rounded-xl transition-all duration-300 text-left ${
+                    isSelected 
+                      ? 'bg-gradient-to-br from-violet-600 to-purple-600 text-white shadow-xl scale-[1.02] ring-4 ring-offset-2 ring-violet-400' 
+                      : 'bg-white border border-gray-200 hover:border-violet-300 hover:shadow-lg'
+                  }`}
                 >
-                  <div className={'w-14 h-14 rounded-xl bg-gradient-to-br ' + colors[idx] + ' flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform'}>
-                    <School className="w-7 h-7 text-white" />
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${isSelected ? 'bg-white/20' : 'bg-gradient-to-br ' + colors[idx] + ' text-white'}`}>
+                    <School className={`w-5 h-5 ${isSelected ? 'text-white' : ''}`} />
                   </div>
                   
-                  <h3 className="font-bold text-gray-900 text-lg">{year}</h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Semester {idx * 2 + 1} - {idx * 2 + 2}
+                  <p className={`font-bold ${isSelected ? 'text-white' : 'text-gray-900'}`}>{year}</p>
+                  <p className={`text-sm mt-0.5 ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+                    {count} student{count !== 1 ? 's' : ''}
                   </p>
-                  
-                  <div className="mt-4 pt-4 border-t border-gray-200/50 flex items-center justify-between">
-                    <span className="text-sm text-gray-600">
-                      {loading ? '...' : getYearCount(year) + ' students'}
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-1 transition-all" />
-                  </div>
                 </button>
               )
             })}
-          </div>
-
-          {/* Quick View: All Students in Department */}
-          <div className="mt-8">
+            
+            {/* "All Years" option */}
             <button
-              onClick={() => setHierarchyState(prev => ({ ...prev, level: 'students' }))}
-              className="w-full bg-white rounded-2xl p-6 border-2 border-dashed border-gray-300 hover:border-emerald-400 hover:bg-emerald-50/50 transition-all duration-300 flex items-center justify-center gap-3"
+              onClick={() => setHierarchyState(prev => ({ ...prev, level: 'students', year: undefined }))}
+              className={`p-4 rounded-xl transition-all duration-300 text-left ${
+                !hierarchyState.year && hierarchyState.level === 'students'
+                  ? 'bg-gradient-to-br from-slate-700 to-slate-600 text-white shadow-xl scale-[1.02]'
+                  : 'bg-white border border-gray-200 hover:border-slate-300 hover:shadow-lg'
+              }`}
             >
-              <Users className="w-5 h-5 text-emerald-600" />
-              <span className="font-medium text-emerald-700">View All Students in Department</span>
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${!hierarchyState.year ? 'bg-white/20' : 'bg-slate-600 text-white'}`}>
+                <Users className={`w-5 h-5 ${!hierarchyState.year ? 'text-white' : ''}`} />
+              </div>
+              <p className={`font-bold ${!hierarchyState.year ? 'text-white' : 'text-gray-900'}`}>All Years</p>
+              <p className={`text-sm mt-0.5 ${!hierarchyState.year ? 'text-white/80' : 'text-gray-500'}`}>
+                {students.length} total
+              </p>
             </button>
           </div>
+
+          {/* Show Student List Directly (when a year is selected or viewing all) */}
+          {(hierarchyState.year || hierarchyState.level === 'students') && (
+            <>
+              {/* Section Quick Filters */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-sm font-medium text-gray-600">Sections:</span>
+                <button
+                  onClick={() => setHierarchyState(prev => ({ ...prev, section: undefined }))}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    !hierarchyState.section 
+                      ? 'bg-violet-600 text-white shadow-md' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  All
+                </button>
+                {['A', 'B', 'C', 'D'].map(sec => {
+                  const secCount = students.filter(s => (s.section || 'A') === sec && (
+                    !hierarchyState.year || getYearFromSemester(s.semester) === hierarchyState.year
+                  )).length
+                  const isSelected = hierarchyState.section === sec
+                  return secCount > 0 ? (
+                    <button
+                      key={sec}
+                      onClick={() => setHierarchyState(prev => ({ ...prev, section: isSelected ? undefined : sec }))}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                        isSelected 
+                          ? 'bg-indigo-600 text-white shadow-md' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Sec {sec} ({secCount})
+                    </button>
+                  ) : null
+                })}
+              </div>
+
+              {/* Mini Student Table Preview */}
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100/50 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-800 text-sm">
+                    {hierarchyState.year ? hierarchyState.year + ' Students' : 'All Students'}
+                    {hierarchyState.section && ' • Section ' + hierarchyState.section}
+                  </h3>
+                  <Badge variant="outline" className="text-xs">
+                    {(() => {
+                      let filtered = students
+                      if (hierarchyState.year) filtered = filtered.filter(s => getYearFromSemester(s.semester) === hierarchyState.year)
+                      if (hierarchyState.section) filtered = filtered.filter(s => (s.section || 'A') === hierarchyState.section)
+                      return filtered.length + ' students'
+                    })()}
+                  </Badge>
+                </div>
+                
+                <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+                  <table className="w-full">
+                    <thead className="sticky top-0 bg-white z-10">
+                      <tr className="border-b border-gray-200 bg-gray-50/80">
+                        <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Reg No</th>
+                        <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Name</th>
+                        <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Year</th>
+                        <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Sec</th>
+                        <th className="text-right py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">CGPA</th>
+                        <th className="text-center py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        let filteredStudents = [...students]
+                        if (hierarchyState.year) filteredStudents = filteredStudents.filter(s => getYearFromSemester(s.semester) === hierarchyState.year)
+                        if (hierarchyState.section) filteredStudents = filteredStudents.filter(s => (s.section || 'A') === hierarchyState.section)
+                        
+                        if (filteredStudents.length === 0) {
+                          return (
+                            <tr>
+                              <td colSpan={6} className="py-8 text-center text-gray-400 text-sm">
+                                No students found for this selection
+                              </td>
+                            </tr>
+                          )
+                        }
+                        
+                        return filteredStudents.slice(0, 15).map((student) => {
+                          const studentName = student.user?.name || student.name || 'Student'
+                          const regNo = student.registerNumber || ''
+                          
+                          return (
+                            <tr 
+                              key={student.id} 
+                              className="border-b border-gray-50 hover:bg-violet-50/40 transition-colors cursor-pointer"
+                              onClick={() => {
+                                setSelectedStudentForAchievements({
+                                  ...student,
+                                  name: studentName,
+                                  regNo: regNo,
+                                  year: getYearFromSemester(student.semester),
+                                  section: student.section || 'A'
+                                })
+                                setShowStudentAchievementModal(true)
+                              }}
+                            >
+                              <td className="py-2.5 px-3 text-xs font-mono text-gray-600">{regNo}</td>
+                              <td className="py-2.5 px-3">
+                                <p className="text-xs font-medium text-gray-800">{studentName}</p>
+                              </td>
+                              <td className="py-2.5 px-3">
+                                <Badge variant="outline" className="text-[10px]">{getYearFromSemester(student.semester)}</Badge>
+                              </td>
+                              <td className="py-2.5 px-3">
+                                <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold">
+                                  {student.section || 'A'}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-right">
+                                <span className={'text-xs font-bold ' + (student.cgpa >= 9 ? 'text-emerald-600' : student.cgpa >= 8 ? 'text-blue-600' : 'text-gray-600')}>
+                                  {student.cgpa?.toFixed(1) || '-'}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3">
+                                <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedStudentForAchievements({
+                                        ...student,
+                                        name: studentName,
+                                        regNo: regNo,
+                                        year: getYearFromSemester(student.semester),
+                                        section: student.section || 'A'
+                                      })
+                                      setShowStudentAchievementModal(true)
+                                    }}
+                                    className="p-1.5 text-violet-500 hover:text-violet-700 hover:bg-violet-50 rounded"
+                                    title="View Achievements"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => setHierarchyState(prev => ({
+                                      ...prev,
+                                      level: 'profile',
+                                      studentId: student.id,
+                                      studentName: studentName
+                                    }))}
+                                    className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded"
+                                    title="View Profile"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* View All Button */}
+                <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+                  <button
+                    onClick={() => setHierarchyState(prev => ({ ...prev, level: 'students' }))}
+                    className="w-full py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                    View Full Student List with Sort & Filters
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
