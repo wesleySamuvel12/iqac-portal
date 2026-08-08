@@ -36,7 +36,9 @@ import {
   // Login icon
   LogIn,
   // Admin icons
-  FileCheck
+  FileCheck,
+  // Additional icons for HOD student features
+  Check, Hash, User, ExternalLink, ArrowLeftRight
 } from 'lucide-react'
 
 // Premium Components (only ones that export correctly)
@@ -4274,6 +4276,15 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
   const [selectedStudentYear, setSelectedStudentYear] = useState<string>('all')
   const [selectedSection, setSelectedSection] = useState<string>('all')
   const [showInlineAnalytics, setShowInlineAnalytics] = useState(false)
+  
+  // Student Achievement View State
+  const [selectedStudentForAchievements, setSelectedStudentForAchievements] = useState<any>(null)
+  const [showStudentAchievementModal, setShowStudentAchievementModal] = useState(false)
+  
+  // Student Sorting State
+  const [studentSortField, setStudentSortField] = useState<string>('name')
+  const [studentSortOrder, setStudentSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [showSortDropdown, setShowSortDropdown] = useState(false)
 
   // Load achievements from localStorage on mount
   useEffect(() => {
@@ -4885,7 +4896,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
       {/* STUDENTS TAB - Year > Section > Batch Hierarchy Navigation */}
       {activeTab === 'students' && (
         <div className="space-y-6">
-          {/* Search, Filter and Add Button */}
+          {/* Search, Sort and Add Button */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -4897,6 +4908,92 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none"
               />
             </div>
+            
+            {/* Sort Button with Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-violet-300 transition-colors"
+              >
+                <ArrowUpDown className="w-4 h-4 text-violet-500" />
+                Sort
+                {studentSortField !== 'name' && (
+                  <span className="text-xs text-violet-600 font-semibold">({studentSortField})</span>
+                )}
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {/* Sort Dropdown */}
+              {showSortDropdown && (
+                <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+                  <div className="p-2">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-2">Sort Students By</p>
+                    
+                    {[
+                      { id: 'name', label: 'Name (A-Z)', icon: User },
+                      { id: 'regNo', label: 'Register Number', icon: Hash },
+                      { id: 'year', label: 'Year of Study', icon: GraduationCap },
+                      { id: 'section', label: 'Section', icon: FolderOpen },
+                      { id: 'batch', label: 'Batch', icon: Calendar },
+                      { id: 'achievementCount', label: 'Achievement Count', icon: Trophy },
+                      { id: 'status', label: 'Status', icon: CheckCircle },
+                    ].map(option => {
+                      const Icon = option.icon
+                      const isSelected = studentSortField === option.id
+                      return (
+                        <button
+                          key={option.id}
+                          onClick={() => {
+                            if (isSelected) {
+                              setStudentSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+                            } else {
+                              setStudentSortField(option.id)
+                              setStudentSortOrder('asc')
+                            }
+                            setShowSortDropdown(false)
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-colors ${
+                            isSelected ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-50 text-gray-700'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Icon className={`w-4 h-4 ${isSelected ? 'text-violet-600' : 'text-gray-400'}`} />
+                            <span className="text-sm font-medium">{option.label}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {isSelected && (
+                              <>
+                                <Check className="w-4 h-4 text-violet-600" />
+                                <span className={`text-xs font-bold ${studentSortOrder === 'asc' ? 'text-violet-600' : 'text-gray-400'}`}>A-Z</span>
+                                <span className={`text-xs font-bold ${studentSortOrder === 'desc' ? 'text-violet-600' : 'text-gray-400'}`}>Z-A</span>
+                              </>
+                            )}
+                          </div>
+                        </button>
+                      )
+                    })}
+                    
+                    {/* Divider */}
+                    <div className="border-t border-gray-100 my-2" />
+                    
+                    {/* Quick Sort Order Toggle */}
+                    <button
+                      onClick={() => {
+                        setStudentSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+                        setShowSortDropdown(false)
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors"
+                    >
+                      <ArrowLeftRight className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm font-medium">
+                        Toggle Order: <strong>{studentSortOrder === 'asc' ? 'Ascending (A→Z)' : 'Descending (Z→A)'}</strong>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            
             <Button
               onClick={handleAddStudent}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2"
@@ -5037,7 +5134,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                   {/* Group students by batch for Level 3 display */}
                   {(() => {
                     // Apply hierarchy filters
-                    let filteredForDisplay = departmentStudents
+                    let filteredForDisplay = [...departmentStudents]
                     
                     // Apply search filter
                     if (searchUser.trim()) {
@@ -5056,6 +5153,41 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                     if (selectedSection !== 'all') {
                       filteredForDisplay = filteredForDisplay.filter(s => (s.section || 'A') === selectedSection)
                     }
+                    
+                    // Apply Sorting
+                    filteredForDisplay.sort((a, b) => {
+                      let comparison = 0
+                      switch (studentSortField) {
+                        case 'name':
+                          comparison = a.name.localeCompare(b.name)
+                          break
+                        case 'regNo':
+                          comparison = a.regNo.localeCompare(b.regNo)
+                          break
+                        case 'year':
+                          const yearOrder = { '1st Year': 1, '2nd Year': 2, '3rd Year': 3, '4th Year': 4 }
+                          comparison = (yearOrder[a.year as keyof typeof yearOrder] || 0) - (yearOrder[b.year as keyof typeof yearOrder] || 0)
+                          break
+                        case 'section':
+                          comparison = (a.section || 'A').localeCompare(b.section || 'A')
+                          break
+                        case 'batch':
+                          comparison = (a.batch || '').localeCompare(b.batch || '')
+                          break
+                        case 'achievementCount': {
+                          const countA = studentAchievements.filter(ach => ach.studentName === a.name || ach.reg === a.regNo).length
+                          const countB = studentAchievements.filter(ach => ach.studentName === b.name || ach.reg === b.regNo).length
+                          comparison = countA - countB
+                          break
+                        }
+                        case 'status':
+                          comparison = a.status.localeCompare(b.status)
+                          break
+                        default:
+                          comparison = a.name.localeCompare(b.name)
+                      }
+                      return studentSortOrder === 'asc' ? comparison : -comparison
+                    })
                     
                     // Group by batch
                     const groupedByBatch = filteredForDisplay.reduce((acc, student) => {
@@ -5103,11 +5235,20 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                           <table className="w-full">
                             <thead>
                               <tr className="border-b border-gray-100 bg-gray-50">
-                                <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Reg No</th>
-                                <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Name</th>
-                                <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Year</th>
+                                <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase cursor-pointer hover:text-violet-600 transition-colors" onClick={() => { setStudentSortField('regNo'); setStudentSortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+                                  <div className="flex items-center gap-1">Reg No {studentSortField === 'regNo' && <ArrowUpDown className="w-3 h-3" />}</div>
+                                </th>
+                                <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase cursor-pointer hover:text-violet-600 transition-colors" onClick={() => { setStudentSortField('name'); setStudentSortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+                                  <div className="flex items-center gap-1">Name {studentSortField === 'name' && <ArrowUpDown className="w-3 h-3" />}</div>
+                                </th>
+                                <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase cursor-pointer hover:text-violet-600 transition-colors" onClick={() => { setStudentSortField('year'); setStudentSortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+                                  <div className="flex items-center gap-1">Year {studentSortField === 'year' && <ArrowUpDown className="w-3 h-3" />}</div>
+                                </th>
                                 <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Sec</th>
                                 <th className="text-center py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Status</th>
+                                <th className="text-right py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase cursor-pointer hover:text-violet-600 transition-colors" onClick={() => { setStudentSortField('achievementCount'); setStudentSortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+                                  <div className="flex items-center justify-end gap-1"><Trophy className="w-3 h-3 inline" /> {studentSortField === 'achievementCount' && <ArrowUpDown className="w-3 h-3" />}</div>
+                                </th>
                                 <th className="text-right py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Actions</th>
                               </tr>
                             </thead>
@@ -5117,29 +5258,48 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                                   a => a.studentName === student.name || a.reg === student.regNo
                                 ).length
                                 return (
-                                  <tr key={student.id} className="border-b border-gray-50 hover:bg-violet-50/30 transition-colors">
-                                    <td className="py-2 px-3 text-xs font-mono text-gray-700">{student.regNo}</td>
-                                    <td className="py-2 px-3">
+                                  <tr 
+                                    key={student.id} 
+                                    className="border-b border-gray-50 hover:bg-violet-50/50 transition-colors cursor-pointer group"
+                                    onClick={() => {
+                                      setSelectedStudentForAchievements(student)
+                                      setShowStudentAchievementModal(true)
+                                    }}
+                                  >
+                                    <td className="py-2.5 px-3 text-xs font-mono text-gray-700">{student.regNo}</td>
+                                    <td className="py-2.5 px-3">
                                       <div>
-                                        <p className="text-xs font-medium text-gray-800">{student.name}</p>
+                                        <p className="text-xs font-medium text-gray-800 group-hover:text-violet-700 transition-colors">{student.name}</p>
                                         <p className="text-[10px] text-gray-400">{student.email}</p>
                                       </div>
                                     </td>
-                                    <td className="py-2 px-3 text-xs text-gray-600">{student.year}</td>
-                                    <td className="py-2 px-3 text-xs text-gray-600">{student.section || 'A'}</td>
-                                    <td className="py-2 px-3 text-center">
+                                    <td className="py-2.5 px-3 text-xs text-gray-600">{student.year}</td>
+                                    <td className="py-2.5 px-3 text-xs text-gray-600">{student.section || 'A'}</td>
+                                    <td className="py-2.5 px-3 text-center">
                                       <Badge className={
                                         student.status === 'active' ? 'bg-green-100 text-green-700 text-[10px]' : 'bg-gray-100 text-gray-600 text-[10px]'
                                       }>
                                         {student.status}
                                       </Badge>
                                     </td>
-                                    <td className="py-2 px-3">
-                                      <div className="flex items-center justify-end gap-1">
-                                        <span className="inline-flex items-center gap-0.5 text-[10px] text-blue-600 font-medium">
-                                          <Trophy className="w-3 h-3" />
-                                          {studentAchievementCount}
-                                        </span>
+                                    <td className="py-2.5 px-3 text-right">
+                                      <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${studentAchievementCount > 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
+                                        <Trophy className="w-3 h-3" />
+                                        {studentAchievementCount}
+                                      </span>
+                                    </td>
+                                    <td className="py-2.5 px-3">
+                                      <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                                        <button
+                                          onClick={() => {
+                                            setSelectedStudentForAchievements(student)
+                                            setShowStudentAchievementModal(true)
+                                          }}
+                                          className="p-1.5 text-violet-500 hover:text-violet-700 hover:bg-violet-50 rounded-lg transition-colors"
+                                          title="View Achievements"
+                                        >
+                                          <Eye className="w-3.5 h-3.5" />
+                                        </button>
                                         <button
                                           onClick={() => handleEditStudent(student)}
                                           className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
@@ -5226,6 +5386,235 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                 </div>
               </CardContent>
             </Card>
+          </div>
+        </div>
+      )}
+
+      {/* STUDENT ACHIEVEMENT MODAL - Popup when clicking a student */}
+      {showStudentAchievementModal && selectedStudentForAchievements && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => {
+              setShowStudentAchievementModal(false)
+              setSelectedStudentForAchievements(null)
+            }}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+            {/* Modal Header - Gradient */}
+            <div className="bg-gradient-to-r from-violet-600 to-purple-600 px-6 py-5 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-4">
+                {/* Student Avatar */}
+                <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-xl border-2 border-white/30">
+                  {selectedStudentForAchievements.name.split(' ').map(n => n[0]).join('')}
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">{selectedStudentForAchievements.name}</h2>
+                  <p className="text-violet-200 text-sm flex items-center gap-2 mt-0.5">
+                    <span>{selectedStudentForAchievements.regNo}</span>
+                    <span className="w-1 h-1 rounded-full bg-violet-300" />
+                    <span>{selectedStudentForAchievements.year}</span>
+                    <span className="w-1 h-1 rounded-full bg-violet-300" />
+                    <span>Section {selectedStudentForAchievements.section || 'A'}</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowStudentAchievementModal(false)
+                  setSelectedStudentForAchievements(null)
+                }}
+                className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Achievement Stats Bar */}
+            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex items-center gap-6 shrink-0">
+              {(() => {
+                const studentAchievementsList = studentAchievements.filter(
+                  a => a.studentName === selectedStudentForAchievements.name || a.reg === selectedStudentForAchievements.regNo
+                )
+                const total = studentAchievementsList.length
+                const approved = studentAchievementsList.filter(a => a.status?.includes('approved')).length
+                const pending = studentAchievementsList.filter(a => a.status === 'pending_hod' || a.status === 'pending').length
+                return (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-amber-500" />
+                      <div>
+                        <p className="text-xs text-gray-500">Total</p>
+                        <p className="text-lg font-bold text-gray-800">{total}</p>
+                      </div>
+                    </div>
+                    <div className="w-px h-10 bg-gray-200" />
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      <div>
+                        <p className="text-xs text-gray-500">Approved</p>
+                        <p className="text-lg font-bold text-green-600">{approved}</p>
+                      </div>
+                    </div>
+                    <div className="w-px h-10 bg-gray-200" />
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-orange-500" />
+                      <div>
+                        <p className="text-xs text-gray-500">Pending</p>
+                        <p className="text-lg font-bold text-orange-600">{pending}</p>
+                      </div>
+                    </div>
+                  </>
+                )
+              })()}
+            </div>
+
+            {/* Achievements List */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {(() => {
+                const studentAchievementsList = studentAchievements.filter(
+                  a => a.studentName === selectedStudentForAchievements.name || a.reg === selectedStudentForAchievements.regNo
+                )
+
+                if (studentAchievementsList.length === 0) {
+                  return (
+                    <div className="text-center py-12">
+                      <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                        <Trophy className="w-10 h-10 text-gray-300" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">No Achievements Yet</h3>
+                      <p className="text-sm text-gray-500 max-w-xs mx-auto">
+                        {selectedStudentForAchievements.name} hasn't submitted any achievements yet.
+                      </p>
+                    </div>
+                  )
+                }
+
+                // Group achievements by type
+                const groupedByType = studentAchievementsList.reduce((acc, achievement) => {
+                  const type = achievement.typeName || achievement.type || 'Other'
+                  if (!acc[type]) acc[type] = []
+                  acc[type].push(achievement)
+                  return acc
+                }, {} as Record<string, typeof studentAchievementsList>)
+
+                return Object.entries(groupedByType).map(([type, achievements]) => (
+                  <div key={type} className="mb-6 last:mb-0">
+                    <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+                      <FolderOpen className="w-4 h-4 text-violet-500" />
+                      {type}
+                      <Badge variant="outline" className="text-xs ml-auto">{achievements.length}</Badge>
+                    </h3>
+                    <div className="space-y-3">
+                      {achievements.map((achievement, idx) => {
+                        // Get icon based on type
+                        const typeInfo = Object.values(ACHIEVEMENT_TYPES).find(t => t.label === type)
+                        const Icon = typeInfo?.icon || Trophy
+                        
+                        return (
+                          <div 
+                            key={achievement.id || idx} 
+                            className={`p-4 rounded-xl border transition-all hover:shadow-md ${
+                              achievement.status === 'approved' || achievement.status === 'approved_hod' ? 'border-green-200 bg-green-50/50' :
+                              achievement.status === 'pending_hod' || achievement.status === 'pending' ? 'border-amber-200 bg-amber-50/50' :
+                              'border-gray-200 bg-white'
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                                achievement.status === 'approved' || achievement.status === 'approved_hod' ? 'bg-green-100' :
+                                achievement.status === 'pending_hod' || achievement.status === 'pending' ? 'bg-amber-100' : 'bg-gray-100'
+                              }`}>
+                                <Icon className={`w-5 h-5 ${
+                                  achievement.status === 'approved' || achievement.status === 'approved_hod' ? 'text-green-600' :
+                                  achievement.status === 'pending_hod' || achievement.status === 'pending' ? 'text-amber-600' : 'text-gray-500'
+                                }`} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div>
+                                    <h4 className="font-semibold text-gray-800 text-sm">{achievement.title || achievement.description?.substring(0, 60)}</h4>
+                                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{achievement.description}</p>
+                                  </div>
+                                  <Badge className={
+                                    achievement.status === 'approved' || achievement.status === 'approved_hod' ? 'bg-green-100 text-green-700 text-[10px]' :
+                                    achievement.status === 'pending_hod' || achievement.status === 'pending' ? 'bg-amber-100 text-amber-700 text-[10px]' :
+                                    'bg-gray-100 text-gray-600 text-[10px]'
+                                  }>
+                                    {achievement.status?.replace('_', ' ') || 'Pending'}
+                                  </Badge>
+                                </div>
+                                
+                                {/* Achievement Meta */}
+                                <div className="flex items-center gap-4 mt-3 flex-wrap">
+                                  {achievement.date && (
+                                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                                      <Calendar className="w-3 h-3" />
+                                      {new Date(achievement.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                    </span>
+                                  )}
+                                  {achievement.submittedAt && (
+                                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      Submitted {new Date(achievement.submittedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                    </span>
+                                  )}
+                                  {achievement.level && (
+                                    <Badge variant="outline" className="text-[10px]">{achievement.level}</Badge>
+                                  )}
+                                </div>
+
+                                {/* Evidence/Proof (if any) */}
+                                {achievement.evidenceUrl && (
+                                  <div className="mt-3">
+                                    <a 
+                                      href={achievement.evidenceUrl} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800"
+                                    >
+                                      <ExternalLink className="w-3 h-3" />
+                                      View Evidence
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))
+              })()}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between shrink-0">
+              <button
+                onClick={() => {
+                  setShowStudentAchievementModal(false)
+                  setSelectedStudentForAchievements(null)
+                }}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors text-sm font-medium"
+              >
+                Close
+              </button>
+              <Button
+                onClick={() => {
+                  setShowStudentAchievementModal(false)
+                  // Navigate to analytics tab for this student's department
+                  setActiveTabLocal('analytics')
+                }}
+                className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+              >
+                <BarChart3 className="w-4 h-4" />
+                View Full Analytics
+              </Button>
+            </div>
           </div>
         </div>
       )}
