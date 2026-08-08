@@ -4571,8 +4571,8 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex gap-2 bg-gray-100 p-1 rounded-xl overflow-x-auto">
+      {/* Navigation Tabs - Expanded & Better Aligned */}
+      <div className="flex gap-1 bg-gray-100 p-1.5 rounded-2xl overflow-x-auto">
         {[
           { id: 'overview', label: 'Overview', icon: LayoutDashboard },
           { id: 'students', label: 'Students', icon: GraduationCap, count: totalStudents },
@@ -4581,18 +4581,18 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
           <button
             key={tab.id}
             onClick={() => setActiveTabLocal(tab.id as typeof activeTab)}
-            className={'flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all whitespace-nowrap ' + 
+            className={`flex items-center gap-2.5 px-6 py-3 rounded-xl font-semibold text-sm transition-all whitespace-nowrap min-w-[120px] justify-center ${
               activeTab === tab.id
-                ? 'bg-white text-violet-700 shadow-md'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-             + ''}
+                ? 'bg-white text-violet-700 shadow-lg shadow-violet-200/50'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-white/60'
+            }`}
           >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
+            <tab.icon className="w-5 h-5" />
+            <span>{tab.label}</span>
             {'count' in tab && (
-              <span className={'px-2 py-0.5 rounded-full text-xs ' + 
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
                 activeTab === tab.id ? 'bg-violet-100 text-violet-700' : 'bg-gray-200 text-gray-600'
-               + ''}>
+              }`}>
                 {tab.count}
               </span>
             )}
@@ -4886,19 +4886,19 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
 
           {/* LEVEL 1: Year Selection (1st, 2nd, 3rd, 4th Year) */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-              <GraduationCap className="w-4 h-4 text-violet-500" />
+            <h3 className="text-base font-semibold text-slate-700 mb-4 flex items-center gap-2">
+              <GraduationCap className="w-5 h-5 text-violet-500" />
               Select Year of Study
               {selectedStudentYear !== 'all' && (
                 <button 
                   onClick={() => { setSelectedStudentYear('all'); setSelectedSection('all'); }}
-                  className="text-xs text-violet-600 hover:text-violet-800 flex items-center gap-1"
+                  className="text-xs text-violet-600 hover:text-violet-800 flex items-center gap-1 ml-2 px-2 py-1 bg-violet-50 rounded-full"
                 >
                   <X className="w-3 h-3" /> Clear
                 </button>
               )}
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {['1st Year', '2nd Year', '3rd Year', '4th Year'].map((year, idx) => {
                 const count = departmentStudents.filter(s => s.year === year).length
                 const colors = [
@@ -4915,22 +4915,22 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                       setSelectedStudentYear(isSelected ? 'all' : year)
                       setSelectedSection('all') // Reset section when year changes
                     }}
-                    className={'p-4 rounded-xl bg-gradient-to-br ${colors[idx]} text-left transition-all hover:shadow-lg ' + isSelected ? 'ring-4 ring-offset-2 ring-gray-800 scale-105' : '' + ''}
+                    className={`p-5 rounded-xl bg-gradient-to-br ${colors[idx]} text-left transition-all hover:shadow-xl hover:scale-[1.02] ${isSelected ? 'ring-4 ring-offset-2 ring-gray-800 scale-105 shadow-xl' : 'shadow-md'}`}
                   >
-                    <p className="text-white/90 text-sm font-medium">{year}</p>
-                    <p className="text-2xl font-bold text-white mt-1">{count}</p>
-                    <p className="text-white/70 text-xs">students</p>
+                    <p className="text-white/90 text-sm font-semibold">{year}</p>
+                    <p className="text-3xl font-bold text-white mt-1">{count}</p>
+                    <p className="text-white/70 text-xs mt-0.5">students</p>
                   </button>
                 )
               })}
               {/* All Years Option */}
               <button
                 onClick={() => { setSelectedStudentYear('all'); setSelectedSection('all'); }}
-                className={'p-4 rounded-xl bg-gradient-to-br from-gray-500 to-gray-400 text-left transition-all hover:shadow-lg ' + selectedStudentYear === 'all' ? 'ring-4 ring-offset-2 ring-gray-800' : '' + ''}
+                className={`p-5 rounded-xl bg-gradient-to-br from-slate-600 to-slate-500 text-left transition-all hover:shadow-xl hover:scale-[1.02] ${selectedStudentYear === 'all' ? 'ring-4 ring-offset-2 ring-slate-700 scale-105 shadow-xl' : 'shadow-md'}`}
               >
-                <p className="text-white/90 text-sm font-medium">All Years</p>
-                <p className="text-2xl font-bold text-white mt-1">{totalStudents}</p>
-                <p className="text-white/70 text-xs">total students</p>
+                <p className="text-white/90 text-sm font-semibold">All Years</p>
+                <p className="text-3xl font-bold text-white mt-1">{totalStudents}</p>
+                <p className="text-white/70 text-xs mt-0.5">total students</p>
               </button>
             </div>
           </div>
@@ -4938,19 +4938,19 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
           {/* LEVEL 2: Section Selection (A, B) - Only shown when a year is selected */}
           {selectedStudentYear !== 'all' && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                <FolderOpen className="w-4 h-4 text-emerald-500" />
+              <h3 className="text-base font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                <FolderOpen className="w-5 h-5 text-emerald-500" />
                 Select Section
                 {selectedSection !== 'all' && (
                   <button 
                     onClick={() => setSelectedSection('all')}
-                    className="text-xs text-emerald-600 hover:text-emerald-800 flex items-center gap-1"
+                    className="text-xs text-emerald-600 hover:text-emerald-800 flex items-center gap-1 ml-2 px-2 py-1 bg-emerald-50 rounded-full"
                   >
                     <X className="w-3 h-3" /> Clear
                   </button>
                 )}
               </h3>
-              <div className="flex gap-3">
+              <div className="flex gap-4">
                 {['A', 'B'].map(section => {
                   const count = departmentStudents.filter(s => s.year === selectedStudentYear && (s.section || 'A') === section).length
                   const isSelected = selectedSection === section
@@ -4958,32 +4958,32 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                     <button
                       key={section}
                       onClick={() => setSelectedSection(isSelected ? 'all' : section)}
-                      className={'flex-1 max-w-[200px] p-4 rounded-xl transition-all hover:shadow-lg ' + 
+                      className={`flex-1 max-w-[200px] p-5 rounded-xl transition-all hover:shadow-lg hover:scale-[1.02] ${
                         isSelected 
-                          ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white ring-4 ring-offset-2 ring-emerald-400 scale-105' 
-                          : 'bg-white border-2 border-gray-200 hover:border-emerald-300'
-                       + ''}
+                          ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white ring-4 ring-offset-2 ring-emerald-400 scale-105 shadow-xl' 
+                          : 'bg-white border-2 border-gray-200 hover:border-emerald-300 shadow-md'
+                      }`}
                     >
-                      <p className={'text-sm font-bold ' + isSelected ? 'text-white' : 'text-gray-700' + ''}>Section {section}</p>
-                      <p className={'text-xl font-bold mt-1 ' + isSelected ? 'text-white' : 'text-gray-900' + ''}>{count}</p>
-                      <p className={'text-xs ' + isSelected ? 'text-white/70' : 'text-gray-500' + ''}>students</p>
+                      <p className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-gray-700'}`}>Section {section}</p>
+                      <p className={`text-2xl font-bold mt-1 ${isSelected ? 'text-white' : 'text-gray-900'}`}>{count}</p>
+                      <p className={`text-xs ${isSelected ? 'text-white/70' : 'text-gray-500'}`}>students</p>
                     </button>
                   )
                 })}
                 {/* All Sections Option */}
                 <button
                   onClick={() => setSelectedSection('all')}
-                  className={'flex-1 max-w-[200px] p-4 rounded-xl transition-all hover:shadow-lg ' + 
+                  className={`flex-1 max-w-[200px] p-5 rounded-xl transition-all hover:shadow-lg hover:scale-[1.02] ${
                     selectedSection === 'all' 
-                      ? 'bg-gradient-to-br from-gray-500 to-gray-400 text-white ring-4 ring-offset-2 ring-gray-300' 
-                      : 'bg-white border-2 border-gray-200 hover:border-gray-300'
-                   + ''}
+                      ? 'bg-gradient-to-br from-slate-600 to-slate-500 text-white ring-4 ring-offset-2 ring-slate-400 scale-105 shadow-xl' 
+                      : 'bg-white border-2 border-gray-200 hover:border-gray-300 shadow-md'
+                  }`}
                 >
-                  <p className={'text-sm font-bold ' + selectedSection === 'all' ? 'text-white' : 'text-gray-700' + ''}>All Sections</p>
-                  <p className={'text-xl font-bold mt-1 ' + selectedSection === 'all' ? 'text-white' : 'text-gray-900' + ''}>
+                  <p className={`text-sm font-bold ${selectedSection === 'all' ? 'text-white' : 'text-gray-700'}`}>All Sections</p>
+                  <p className={`text-2xl font-bold mt-1 ${selectedSection === 'all' ? 'text-white' : 'text-gray-900'}`}>
                     {departmentStudents.filter(s => s.year === selectedStudentYear).length}
                   </p>
-                  <p className={'text-xs ' + selectedSection === 'all' ? 'text-white/70' : 'text-gray-500' + ''}>students</p>
+                  <p className={`text-xs ${selectedSection === 'all' ? 'text-white/70' : 'text-gray-500'}`}>students</p>
                 </button>
               </div>
             </div>
