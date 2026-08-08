@@ -4112,13 +4112,13 @@ function StudentDashboardContent({ user, setActiveTab }: { user: User; setActive
                 <div 
                   key={key} 
                   onClick={() => setSelectedDashboardType(isSelected ? null : key)}
-                  className={'p-3 rounded-xl bg-gradient-to-br ${type.color} hover:shadow-lg transition-all cursor-pointer ' + isSelected ? 'ring-4 ring-cyan-400 scale-105' : 'hover:scale-102' + ''}
+                  className={`p-4 rounded-xl bg-gradient-to-br ${type.color} hover:shadow-lg transition-all cursor-pointer ${isSelected ? 'ring-4 ring-cyan-400 scale-105' : 'hover:scale-102'}`}
                 >
-                  <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
-                    <Icon className="w-4 h-4 text-white" />
+                  <div className="w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
+                    <Icon className="w-5 h-5 text-white" />
                   </div>
-                  <p className="text-lg font-bold text-white">{count}</p>
-                  <p className="text-[10px] text-white/80 leading-tight line-clamp-2">{type.label}</p>
+                  <p className="text-xl font-bold text-white">{count}</p>
+                  <p className="text-[11px] text-white/90 leading-tight line-clamp-2 font-medium">{type.label}</p>
                 </div>
               )
             })}
@@ -4610,70 +4610,82 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
             <div className="flex-1 h-px bg-gradient-to-r from-slate-200 to-transparent ml-2" />
           </div>
 
-          {/* Stats Cards - 4 Column Responsive Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-4">
-            <Card className="border border-gray-200 hover:shadow-lg transition-all overflow-hidden">
-              <CardContent className="p-5">
+          {/* Stats Cards - 4 Column Responsive Grid - Expanded */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-4">
+            <Card className="border border-gray-200 hover:shadow-lg transition-all overflow-hidden group">
+              <CardContent className="p-6">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Total Students</p>
-                    <p className="text-3xl font-bold text-gray-800 mt-1">{totalStudents}</p>
-                    <p className="text-xs text-green-600 mt-1">{studentsByYear['4th Year'] || 0} Final Year</p>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-500 font-semibold uppercase tracking-wide mb-2">Total Students</p>
+                    <p className="text-4xl font-bold text-gray-800 mt-1">{totalStudents}</p>
+                    <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                      {studentsByYear['4th Year'] || 0} Final Year
+                    </p>
                   </div>
-                  <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center">
-                    <GraduationCap className="w-5 h-5 text-blue-600" />
+                  <div className="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <GraduationCap className="w-7 h-7 text-blue-600" />
                   </div>
                 </div>
               </CardContent>
-              <div className="h-1 bg-gradient-to-r from-blue-400 to-blue-500" />
+              <div className="h-1.5 bg-gradient-to-r from-blue-400 to-blue-500" />
             </Card>
 
-            <Card className="border border-gray-200 hover:shadow-lg transition-all overflow-hidden">
-              <CardContent className="p-5">
+            <Card className="border border-gray-200 hover:shadow-lg transition-all overflow-hidden group">
+              <CardContent className="p-6">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Faculty Members</p>
-                    <p className="text-3xl font-bold text-gray-800 mt-1">{totalStaff}</p>
-                    <p className="text-xs text-green-600 mt-1">{departmentStaff.filter(s => s.status === 'active').length} Active</p>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-500 font-semibold uppercase tracking-wide mb-2">Faculty Members</p>
+                    <p className="text-4xl font-bold text-gray-800 mt-1">{totalStaff}</p>
+                    <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                      {departmentStaff.filter(s => s.status === 'active').length} Active
+                    </p>
                   </div>
-                  <div className="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center">
-                    <Users className="w-5 h-5 text-emerald-600" />
+                  <div className="w-14 h-14 rounded-xl bg-emerald-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Users className="w-7 h-7 text-emerald-600" />
                   </div>
                 </div>
               </CardContent>
-              <div className="h-1 bg-gradient-to-r from-emerald-400 to-emerald-500" />
+              <div className="h-1.5 bg-gradient-to-r from-emerald-400 to-emerald-500" />
             </Card>
 
-            <Card className="border border-gray-200 hover:shadow-lg transition-all overflow-hidden cursor-pointer" onClick={() => setActiveTab('analytics')}>
-              <CardContent className="p-5">
+            <Card className="border border-gray-200 hover:shadow-lg transition-all overflow-hidden cursor-pointer group" onClick={() => setActiveTab('analytics')}>
+              <CardContent className="p-6">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Total Achievements</p>
-                    <p className="text-3xl font-bold text-gray-800 mt-1">{totalStudentAchievements + totalStaffAchievements}</p>
-                    <p className="text-xs text-violet-600 mt-1">{totalStudentAchievements} Students • {totalStaffAchievements} Staff</p>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-500 font-semibold uppercase tracking-wide mb-2">Total Achievements</p>
+                    <p className="text-4xl font-bold text-gray-800 mt-1">{totalStudentAchievements + totalStaffAchievements}</p>
+                    <p className="text-sm text-violet-600 mt-2 flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-violet-500"></span>
+                      {totalStudentAchievements} Students • {totalStaffAchievements} Staff
+                    </p>
                   </div>
-                  <div className="w-11 h-11 rounded-xl bg-violet-50 flex items-center justify-center">
-                    <Trophy className="w-5 h-5 text-violet-600" />
+                  <div className="w-14 h-14 rounded-xl bg-violet-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Trophy className="w-7 h-7 text-violet-600" />
                   </div>
                 </div>
               </CardContent>
-              <div className="h-1 bg-gradient-to-r from-violet-400 to-violet-500" />
+              <div className="h-1.5 bg-gradient-to-r from-violet-400 to-violet-500" />
             </Card>
 
-            <Card className="border border-gray-200 hover:shadow-lg transition-all overflow-hidden cursor-pointer" onClick={() => setActiveTab('students')}>
-              <CardContent className="p-5">
+            <Card className="border border-gray-200 hover:shadow-lg transition-all overflow-hidden cursor-pointer group" onClick={() => setActiveTab('students')}>
+              <CardContent className="p-6">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Active Batches</p>
-                    <p className="text-3xl font-bold text-gray-800 mt-1">{activeBatches.length}</p>
-                    <p className="text-xs text-cyan-600 mt-1">{Object.keys(studentsBySection).length} Sections</p>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-500 font-semibold uppercase tracking-wide mb-2">Active Batches</p>
+                    <p className="text-4xl font-bold text-gray-800 mt-1">{activeBatches.length}</p>
+                    <p className="text-sm text-cyan-600 mt-2 flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
+                      {Object.keys(studentsBySection).length} Sections
+                    </p>
                   </div>
-                  <div className="w-11 h-11 rounded-xl bg-cyan-50 flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-cyan-600" />
+                  <div className="w-14 h-14 rounded-xl bg-cyan-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Calendar className="w-7 h-7 text-cyan-600" />
                   </div>
                 </div>
               </CardContent>
-              <div className="h-1 bg-gradient-to-r from-cyan-400 to-cyan-500" />
+              <div className="h-1.5 bg-gradient-to-r from-cyan-400 to-cyan-500" />
             </Card>
           </div>
 
@@ -5864,13 +5876,13 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
                 <div 
                   key={key} 
                   onClick={() => setSelectedDashboardType(isSelected ? null : key)}
-                  className={'p-3 rounded-xl bg-gradient-to-br ${type.color} hover:shadow-lg transition-all cursor-pointer ' + isSelected ? 'ring-4 ring-emerald-400 scale-105' : 'hover:scale-102' + ''}
+                  className={`p-4 rounded-xl bg-gradient-to-br ${type.color} hover:shadow-lg transition-all cursor-pointer ${isSelected ? 'ring-4 ring-emerald-400 scale-105' : 'hover:scale-102'}`}
                 >
-                  <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
-                    <Icon className="w-4 h-4 text-white" />
+                  <div className="w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
+                    <Icon className="w-5 h-5 text-white" />
                   </div>
-                  <p className="text-lg font-bold text-white">{count}</p>
-                  <p className="text-[10px] text-white/80 leading-tight line-clamp-2">{type.label}</p>
+                  <p className="text-xl font-bold text-white">{count}</p>
+                  <p className="text-[11px] text-white/90 leading-tight line-clamp-2 font-medium">{type.label}</p>
                 </div>
               )
             })}
@@ -16507,7 +16519,7 @@ function StudentAchievementsPage({ user }: { user: User }) {
                       </div>
                       
                       {/* Type Icon */}
-                      <div className={'w-12 h-12 rounded-xl bg-gradient-to-br ${typeConfig.color} flex items-center justify-center mb-3 transition-transform group-hover:scale-110 ' + isDragging ? 'scale-90' : '' + ''}>
+                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${typeConfig.color} flex items-center justify-center mb-3 transition-transform group-hover:scale-110 ${isDragging ? 'scale-90' : ''}`}>
                         <Icon className="w-6 h-6 text-white" />
                       </div>
                       
