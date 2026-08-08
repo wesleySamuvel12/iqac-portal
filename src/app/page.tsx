@@ -20275,8 +20275,8 @@ export default function IQACPortal() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center" suppressHydrationWarning>
+        <div className="text-center" suppressHydrationWarning>
           <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-4" />
           <p className="text-gray-500">Loading IQAC Portal...</p>
         </div>
