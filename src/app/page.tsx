@@ -20916,6 +20916,12 @@ function AcademicHierarchyPage({
     achievementType?: string  // Specific achievement type like 'journal', 'conference', etc.
   }>({ isOpen: false, type: 'total' })
 
+  // NEW: Selected Student Detail View (shows all achievements of clicked student)
+  const [selectedStudentDetail, setSelectedStudentDetail] = useState<{
+    student: any | null
+    achievements: any[]
+  }>({ student: null, achievements: [] })
+
   useEffect(() => {
     fetchDepartments()
   }, [user.role, user.departmentId])
@@ -20958,7 +20964,29 @@ function AcademicHierarchyPage({
 
   // Generate sample achievement data for demonstration
   const generateSampleAchievements = () => {
-    const departments = ['Computer Science and Engineering', 'Electronics & Communication', 'Mechanical Engineering', 'Civil Engineering', 'Information Technology']
+    // Use comprehensive list of ALL departments
+    const allDepartments = [
+      'Computer Science and Engineering',
+      'Electronics & Communication Engineering', 
+      'Mechanical Engineering',
+      'Civil Engineering',
+      'Information Technology',
+      'Electrical & Electronics Engineering',
+      'Artificial Intelligence & Data Science',
+      'Cyber Security',
+      'Biomedical Engineering',
+      'Biotechnology',
+      'Chemical Engineering',
+      'Aeronautical Engineering',
+      'Automobile Engineering',
+      'Agricultural Engineering',
+      'Food Technology',
+      'Pharmacy',
+      'MBA',
+      'MCA',
+      'Science & Humanities'
+    ]
+    
     const sections = ['A', 'B', 'C', 'D']
     const years = ['1st Year', '2nd Year', '3rd Year', '4th Year']
     
@@ -20967,58 +20995,87 @@ function AcademicHierarchyPage({
       typeLabel: config.label
     }))
     
-    const maleNames = ['Rahul Kumar', 'Arjun Sharma', 'Vikram Singh', 'Amit Patel', 'Karthik Reddy', 'Sanjay Gupta', 'Deepak Joshi', 'Rajesh Verma', 'Nikhil Das', 'Praveen Kumar']
-    const femaleNames = ['Priya Sharma', 'Sneha Reddy', 'Ananya Iyer', 'Divya Nair', 'Kavya Krishnan', 'Meera Suresh', 'Lakshmi Priya', 'Sunita Devi', 'Pooja Singh', 'Ritu Kapoor']
+    const maleNames = ['Rahul Kumar', 'Arjun Sharma', 'Vikram Singh', 'Amit Patel', 'Karthik Reddy', 
+                       'Sanjay Gupta', 'Deepak Joshi', 'Rajesh Verma', 'Nikhil Das', 'Praveen Kumar',
+                       'Suresh Babu', 'Manoj Tiwari', 'Ravi Shankar', 'Anil Kumar', 'Sunil Verma',
+                       'Mohammed Ali', 'David Raj', 'Thomas John', 'Kiran Kumar', 'Venkat Raman']
+    const femaleNames = ['Priya Sharma', 'Sneha Reddy', 'Ananya Iyer', 'Divya Nair', 'Kavya Krishnan', 
+                         'Meera Suresh', 'Lakshmi Priya', 'Sunita Devi', 'Pooja Singh', 'Ritu Kapoor',
+                         'Anjali Menon', 'Bhavani K', 'Chitra Lakshmi', 'Deepika Rani', 'Eesha Gupta',
+                         'Fatima Begum', 'Geetha Raj', 'Harini S', 'Indira P', 'Jyothi Lakshmi']
     
     const sampleData: any[] = []
     let id = 1
     
-    // Generate ~50 sample achievements across departments
-    departments.forEach((dept, deptIdx) => {
-      const numAchievements = Math.floor(Math.random() * 15) + 5 // 5-20 per department
+    // Generate ~8-15 sample achievements per department for realistic data
+    allDepartments.forEach((dept, deptIdx) => {
+      const numAchievements = Math.floor(Math.random() * 10) + 8 // 8-18 per department
+      
+      // Create some consistent students per department for better demo
+      const deptStudents: {name: string, regNo: string, gender: string}[] = []
+      
+      for (let s = 0; s < 12; s++) { // 12 students per department
+        const isFemale = Math.random() > 0.65
+        const nameList = isFemale ? femaleNames : maleNames
+        const section = sections[s % 4]
+        const regNo = `${String(deptIdx + 1).padStart(2, '0')}${String(s + 1).padStart(3, '0')}${section}${String(Math.floor(s/4) + 1).padStart(2, '0')}`
+        
+        deptStudents.push({
+          name: nameList[s % nameList.length] + ` (${dept.substring(0,3)}${s+1})`,
+          regNo,
+          gender: isFemale ? 'female' : 'male'
+        })
+      }
       
       for (let i = 0; i < numAchievements; i++) {
-        const isFemale = Math.random() > 0.6
-        const nameList = isFemale ? femaleNames : maleNames
-        const name = nameList[Math.floor(Math.random() * nameList.length)]
-        const section = sections[Math.floor(Math.random() * sections.length)]
+        const student = deptStudents[Math.floor(Math.random() * deptStudents.length)]
         const year = years[Math.floor(Math.random() * years.length)]
         const typeInfo = achievementTypes[Math.floor(Math.random() * achievementTypes.length)]
-        
-        const regNo = `${deptIdx + 1}1${Math.floor(Math.random() * 900) + 100}${section}${String(Math.floor(Math.random() * 50) + 1).padStart(2, '0')}`
         
         // Generate title based on type
         let title = ''
         switch (typeInfo.typeKey) {
           case 'journal':
-            title = `Research Paper on ${['AI/ML', 'Cloud Computing', 'Cybersecurity', 'IoT', 'Blockchain'][Math.floor(Math.random() * 5)]}`
+            title = `Research Paper on ${['AI/ML', 'Cloud Computing', 'Cybersecurity', 'IoT', 'Blockchain', 'Quantum Computing', 'Edge Computing'][Math.floor(Math.random() * 7)]}`
             break
           case 'conference':
-            title = `Paper Presented at ${['IEEE Conference', 'ACM Symposium', 'International Summit', 'Tech Forum'][Math.floor(Math.random() * 4)]}`
+            title = `Paper Presented at ${['IEEE International Conference', 'ACM Symposium', 'Global Tech Summit', 'National Forum on Computing', 'International Congress'][Math.floor(Math.random() * 5)]}`
             break
           case 'patent':
-            title = `Patent: ${['Smart Device', 'Novel Algorithm', 'Efficient System', 'Innovative Method'][Math.floor(Math.random() * 4)]}`
+            title = `Patent Filed: ${['Smart Device for Healthcare', 'Novel AI Algorithm', 'Efficient Energy System', 'Innovative Manufacturing Process', 'Autonomous Vehicle Component'][Math.floor(Math.random() * 5)]}`
             break
           case 'nptel':
-            title = `NPTEL Course: ${['Data Structures', 'Machine Learning', 'Database Systems', 'Computer Networks'][Math.floor(Math.random() * 4)]}`
+            title = `NPTEL Certification: ${['Data Structures & Algorithms', 'Machine Learning', 'Database Management Systems', 'Computer Networks', 'Operating Systems', 'Software Engineering', 'Cloud Computing'][Math.floor(Math.random() * 7)]}`
             break
           case 'hackathon':
-            title = `${['Smart India Hackathon', 'Code Sprint', 'Innovation Challenge'][Math.floor(Math.random() * 3)]} - ${['Winner', 'Finalist', 'Participant'][Math.floor(Math.random() * 3)]}`
+            title = `${['Smart India Hackathon', 'Code Sprint', 'Innovation Challenge', 'HackIT', 'DevFest Hackathon'][Math.floor(Math.random() * 5)]} - ${['Winner 🏆', 'Runner Up', 'Finalist', 'Best Innovation Award', 'Participants'][Math.floor(Math.random() * 5)]}`
             break
           case 'competition':
-            title = `${['Coding Contest', 'Technical Quiz', 'Project Expo'][Math.floor(Math.random() * 3)]} Achievement`
+            title = `${['Coding Contest', 'Technical Quiz', 'Project Expo', 'Paper Presentation', 'Debugging Challenge'][Math.floor(Math.random() * 5)]} - ${['Gold Medal', 'Silver Medal', 'Bronze', 'Participation Certificate'][Math.floor(Math.random() * 4)]}`
             break
           case 'certification':
-            title = `${['AWS Certified', 'Google Cloud', 'Python Developer', 'Data Science'][Math.floor(Math.random() * 4)]} Certificate`
+            title = `${['AWS Solutions Architect', 'Google Cloud Professional', 'Python Developer (PCPP)', 'Data Science Professional', 'Azure Administrator', 'Oracle Java Certified', 'Cisco CCNA'][Math.floor(Math.random() * 7)]}`
             break
           case 'internship':
-            title = `Internship at ${['Google', 'Microsoft', 'Amazon', 'TCS', 'Infosys'][Math.floor(Math.random() * 5)]}`
+            title = `Internship at ${['Google', 'Microsoft', 'Amazon', 'TCS', 'Infosys', 'Wipro', 'HCL Technologies', 'Cognizant', 'Accenture', 'IBM'][Math.floor(Math.random() * 10)]}`
             break
           case 'workshop':
-            title = `Workshop on ${['Web Development', 'App Development', 'Data Science', 'DevOps'][Math.floor(Math.random() * 4)]}`
+            title = `Workshop on ${['Full Stack Web Development', 'Mobile App Development', 'Data Science with Python', 'DevOps & Cloud', 'Blockchain Development', 'IoT Systems', 'Robotics & Automation'][Math.floor(Math.random() * 7)]}`
             break
           case 'project':
-            title = `Project: ${['E-Commerce App', 'Healthcare System', 'Smart City Solution', 'AI Assistant'][Math.floor(Math.random() * 4)]}`
+            title = `Project: ${['E-Commerce Platform', 'Healthcare Management System', 'Smart City IoT Solution', 'AI Chatbot Application', 'Blockchain Voting System', 'Farm Automation System', 'Traffic Management App'][Math.floor(Math.random() * 7)]}`
+            break
+          case 'training':
+            title = `Industrial Training: ${['4-week Summer Training', '6-month Internship Program', 'Industry Certification Course', 'Technical Skill Development'][Math.floor(Math.random() * 4)]}`
+            break
+          case 'award':
+            title = `${['Academic Excellence Award', 'Best Project Award', 'Outstanding Student Award', 'Sports Achievement', 'Cultural Event Winner', 'Department Topper Award'][Math.floor(Math.random() * 6)]}`
+            break
+          case 'placement':
+            title = `Placement at ${['TCS (₹7 LPA)', 'Infosys (₹6.5 LPA)', 'Wipro (₹5.5 LPA)', 'Cognizant (₹6 LPA)', 'Accenture (₹7.5 LPA)', 'Amazon (₹20+ LPA)', 'Microsoft (₹25+ LPA)'][Math.floor(Math.random() * 7)]}`
+            break
+          case 'startup':
+            title = `Startup: ${['Launched Tech Startup', 'Founded E-Commerce Venture', 'Developed Mobile App Business', 'Created EdTech Platform', 'Built SaaS Product'][Math.floor(Math.random() * 5)]}`
             break
           default:
             title = `${typeInfo.typeLabel} Achievement #${id}`
@@ -21028,20 +21085,20 @@ function AcademicHierarchyPage({
         
         sampleData.push({
           id: id,
-          regNo: regNo,
-          registerNumber: regNo,
-          studentName: name,
-          studentEmail: `${name.toLowerCase().replace(' ', '.')}@niet.ac.in`,
+          regNo: student.regNo,
+          registerNumber: student.regNo,
+          studentName: student.name,
+          studentEmail: `${student.name.toLowerCase().replace(/[^a-z]/g, '.').replace(/\.{2,}/g, '.')}@niet.ac.in`,
           title: title,
           type: typeInfo.typeLabel,
           achievementType: typeInfo.typeKey,
           dept: dept,
           department: dept,
-          section: section,
+          section: student.regNo.charAt(5) || 'A',
           year: year,
           date: `${months[Math.floor(Math.random() * 12)]} ${2023 + Math.floor(Math.random() * 2)}`,
-          status: Math.random() > 0.3 ? 'verified' : 'pending',
-          gender: isFemale ? 'female' : 'male'
+          status: Math.random() > 0.25 ? 'verified' : 'pending',
+          gender: student.gender
         })
         
         id++
@@ -21242,7 +21299,6 @@ function AcademicHierarchyPage({
 
   // Get students list for a specific achievement filter
   const getStudentsForAchievementFilter = () => {
-    let filteredStudents = [...students]
     let filteredAchievements = [...allAchievements]
     
     // Apply department filter
@@ -21253,33 +21309,15 @@ function AcademicHierarchyPage({
       )
     }
     
-    // Apply year filter
+    // Apply year filter (filter by year field in achievement)
     if (achievementDetailView.year) {
-      const yearToSemester: Record<string, number> = { '1st Year': 1, '2nd Year': 3, '3rd Year': 5, '4th Year': 7 }
-      const sem = yearToSemester[achievementDetailView.year]
-      
-      // Get student IDs in this year
-      const yearStudentIds = new Set(
-        filteredStudents
-          .filter(s => s.semester >= sem && s.semester <= sem + 1)
-          .map(s => s.registerNumber)
-      )
-      
-      filteredAchievements = filteredAchievements.filter(a => 
-        yearStudentIds.has(a.regNo) || yearStudentIds.has(a.registerNumber)
-      )
+      filteredAchievements = filteredAchievements.filter(a => a.year === achievementDetailView.year)
     }
     
     // Apply section filter
     if (achievementDetailView.section) {
-      const sectionStudentIds = new Set(
-        filteredStudents
-          .filter(s => (s.section || 'A') === achievementDetailView.section)
-          .map(s => s.registerNumber)
-      )
-      
       filteredAchievements = filteredAchievements.filter(a => 
-        sectionStudentIds.has(a.regNo) || sectionStudentIds.has(a.registerNumber)
+        (a.section || 'A') === achievementDetailView.section
       )
     }
     
@@ -21294,23 +21332,55 @@ function AcademicHierarchyPage({
     // Apply gender filter
     if (achievementDetailView.type !== 'total') {
       const gender = achievementDetailView.type // 'male' or 'female'
-      const genderStudentIds = new Set(
-        filteredStudents
-          .filter(s => getStudentGender(s) === gender)
-          .map(s => s.registerNumber)
-      )
-      
-      filteredAchievements = filteredAchievements.filter(a => 
-        genderStudentIds.has(a.regNo) || genderStudentIds.has(a.registerNumber)
-      )
+      filteredAchievements = filteredAchievements.filter(a => a.gender === gender)
     }
     
-    // Get unique student register numbers from filtered achievements
-    const studentRegNos = new Set(filteredAchievements.map(a => a.regNo || a.registerNumber))
+    // Get unique students FROM the achievements data itself
+    const uniqueStudentsMap = new Map<string, any>()
     
-    // Return students who have achievements in the filtered set
-    return filteredStudents.filter(s => 
-      studentRegNos.has(s.registerNumber)
+    filteredAchievements.forEach(ach => {
+      const regNo = ach.regNo || ach.registerNumber
+      if (!regNo || uniqueStudentsMap.has(regNo)) return
+      
+      // Create a student object from achievement data
+      uniqueStudentsMap.set(regNo, {
+        id: `ach_${ach.id}`,
+        registerNumber: regNo,
+        name: ach.studentName || 'Unknown Student',
+        user: { name: ach.studentName || 'Unknown Student' },
+        gender: ach.gender || 'male',
+        section: ach.section || 'A',
+        semester: 1,
+        cgpa: 0,
+        departmentId: achievementDetailView.departmentId,
+        // Store original data for display
+        _fromAchievement: true,
+        _studentEmail: ach.studentEmail,
+        _year: ach.year,
+        _dept: ach.dept || ach.department
+      })
+    })
+    
+    // Also try to match with real database students and merge info
+    const resultStudents = Array.from(uniqueStudentsMap.values())
+    
+    resultStudents.forEach((achStudent, idx) => {
+      const realStudent = students.find(s => s.registerNumber === achStudent.registerNumber)
+      if (realStudent) {
+        Object.assign(achStudent, realStudent)
+      } else {
+        // Keep achievement-derived data but add an ID for React keys
+        achStudent.id = `derived_${idx}_${Date.now()}`
+      }
+    })
+    
+    return resultStudents
+  }
+
+  // Get all achievements for a specific student (for detail view)
+  const getStudentAllAchievements = (regNo: string) => {
+    return allAchievements.filter(a => 
+      (a.regNo === regNo || a.registerNumber === regNo)
     )
   }
 
@@ -22740,17 +22810,20 @@ function AcademicHierarchyPage({
                           return (
                             <div 
                               key={student.id} 
-                              className="p-4 bg-white border border-gray-200 rounded-xl hover:border-violet-300 hover:shadow-md transition-all cursor-pointer"
+                              className="p-4 bg-white border border-gray-200 rounded-xl hover:border-violet-300 hover:shadow-md transition-all cursor-pointer group"
                               onClick={() => {
-                                closeAchievementDetailView()
-                                setSelectedStudentForAchievements({
-                                  ...student,
-                                  name: studentName,
-                                  regNo: regNo,
-                                  year: getYearFromSemester(student.semester),
-                                  section: student.section || 'A'
+                                // Show all achievements for this student
+                                const studentAllAchievements = allAchievements.filter(a => 
+                                  a.regNo === regNo || a.registerNumber === regNo
+                                )
+                                setSelectedStudentDetail({
+                                  student: {
+                                    ...student,
+                                    name: studentName,
+                                    registerNumber: regNo
+                                  },
+                                  achievements: studentAllAchievements
                                 })
-                                setShowStudentAchievementModal(true)
                               }}
                             >
                               <div className="flex items-center gap-4">
@@ -22764,7 +22837,7 @@ function AcademicHierarchyPage({
                                 {/* Info */}
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    <p className="font-semibold text-gray-900">{studentName}</p>
+                                    <p className="font-semibold text-gray-900 group-hover:text-violet-700 transition-colors">{studentName}</p>
                                     <Badge variant="outline" className={
                                       gender === 'female' 
                                         ? 'bg-pink-50 text-pink-600 border-pink-200 text-[10px]' 
@@ -22792,9 +22865,100 @@ function AcademicHierarchyPage({
                                   <p className="text-[10px] text-gray-400">achievements</p>
                                 </div>
                                 
-                                {/* Arrow */}
-                                <ChevronRight className="w-5 h-5 text-gray-300" />
+                                {/* Arrow - shows on hover */}
+                                <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-violet-500 transition-colors" />
                               </div>
+
+                              {/* Student Achievement Detail - Shown when clicked */}
+                              {selectedStudentDetail.student?.id === student.id && (
+                                <div className="mt-4 pt-4 border-t border-gray-100 animate-in slide-in-from-top-2 duration-300">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <h4 className="font-semibold text-sm text-violet-700 flex items-center gap-2">
+                                      <Trophy className="w-4 h-4" />
+                                      All Achievements ({selectedStudentDetail.achievements.length})
+                                    </h4>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setSelectedStudentDetail({ student: null, achievements: [] })
+                                      }}
+                                      className="text-xs text-gray-500 hover:text-gray-700"
+                                    >
+                                      <X className="w-4 h-4" /> Hide
+                                    </button>
+                                  </div>
+                                  
+                                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                                    {selectedStudentDetail.achievements.length > 0 ? (
+                                      selectedStudentDetail.achievements.map((ach, idx) => {
+                                        // Find type config
+                                        const typeEntry = Object.entries(ACHIEVEMENT_TYPES).find(([_, config]) => config.label === ach.type)
+                                        const TypeIcon = typeEntry ? typeEntry[1].icon : FileText
+                                        const typeColor = typeEntry ? typeEntry[1].color : 'from-gray-400 to-gray-500'
+                                        
+                                        return (
+                                          <div 
+                                            key={idx}
+                                            className={`p-3 rounded-lg border ${ach.status === 'verified' ? 'border-green-200 bg-green-50' : 'border-yellow-200 bg-yellow-50'}`}
+                                          >
+                                            <div className="flex items-start gap-3">
+                                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${typeColor}`}>
+                                                <TypeIcon className="w-4 h-4 text-white" />
+                                              </div>
+                                              <div className="flex-1 min-w-0">
+                                                <p className="font-medium text-sm text-gray-900">{ach.title || 'Untitled Achievement'}</p>
+                                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                                  <Badge variant="secondary" className="text-[9px]">{ach.type || 'General'}</Badge>
+                                                  <span className="text-[10px] text-gray-500">{ach.dept || ''}</span>
+                                                  <span className="text-[10px] text-gray-400">{ach.year || ''}</span>
+                                                  <span className="text-[10px] text-gray-400">Section {ach.section || ''}</span>
+                                                </div>
+                                                {ach.date && (
+                                                  <p className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1">
+                                                    <Calendar className="w-3 h-3" /> {ach.date}
+                                                  </p>
+                                                )}
+                                              </div>
+                                              <Badge className={
+                                                ach.status === 'verified' 
+                                                  ? 'bg-green-100 text-green-700 text-[9px]' 
+                                                  : 'bg-yellow-100 text-yellow-700 text-[9px]'
+                                              }>
+                                                {ach.status || 'pending'}
+                                              </Badge>
+                                            </div>
+                                          </div>
+                                        )
+                                      })
+                                    ) : (
+                                      <div className="text-center py-6 text-gray-500">
+                                        <Trophy className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                        <p className="text-sm">No achievements found</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Summary Stats */}
+                                  <div className="mt-3 pt-3 border-t border-gray-200 grid grid-cols-3 gap-2">
+                                    <div className="text-center p-2 bg-violet-50 rounded-lg">
+                                      <p className="text-lg font-bold text-violet-700">{selectedStudentDetail.achievements.length}</p>
+                                      <p className="text-[9px] text-violet-500">Total</p>
+                                    </div>
+                                    <div className="text-center p-2 bg-blue-50 rounded-lg">
+                                      <p className="text-lg font-bold text-blue-700">
+                                        {selectedStudentDetail.achievements.filter((a: any) => a.gender !== 'female').length}
+                                      </p>
+                                      <p className="text-[9px] text-blue-500">Verified</p>
+                                    </div>
+                                    <div className="text-center p-2 bg-amber-50 rounded-lg">
+                                      <p className="text-lg font-bold text-amber-700">
+                                        {new Set(selectedStudentDetail.achievements.map((a: any) => a.type)).size}
+                                      </p>
+                                      <p className="text-[9px] text-amber-500">Categories</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )
                         })}
