@@ -3877,6 +3877,390 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
               </div>
             </div>
           )}
+
+          {/* ========== CUMULATIVE GRAPHS SECTION ========== */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-[#0a2a5e] flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-green-500" />
+                Cumulative Module Analysis
+                {selectedDept !== 'ALL' && (
+                  <span className="ml-2 text-sm font-normal text-gray-500 bg-[#0a2a5e]/5 px-3 py-1 rounded-full">
+                    {getDeptShortCode(selectedDept)}
+                  </span>
+                )}
+              </h3>
+              <div className="flex items-center gap-4 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-gradient-to-r from-blue-500 to-blue-400"></div>
+                  <span className="text-gray-600">Faculty R&D</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-gradient-to-r from-purple-500 to-purple-400"></div>
+                  <span className="text-gray-600">Student Achievement</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Combined Cumulative Bar Chart - All Modules */}
+            <div className="mb-8">
+              <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" /> Module-wise Cumulative Count (Stacked View)
+              </h4>
+              
+              {/* Calculate cumulative data for all modules */}
+              {(() => {
+                const allModules = [
+                  ...facultyModules.map(m => ({ ...m, category: 'faculty' })),
+                  ...studentModules.map(m => ({ ...m, category: 'student' }))
+                ]
+                const maxCount = Math.max(...allModules.map(m => m.count), 1)
+                const cumulativeTotal = allModules.reduce((sum, m) => sum + m.count, 0)
+                
+                return (
+                  <div className="space-y-3">
+                    {/* Horizontal stacked bar showing cumulative progression */}
+                    <div className="relative bg-gray-50 rounded-xl p-4 overflow-hidden">
+                      {/* Background track */}
+                      <div className="h-10 bg-gray-200/50 rounded-lg relative overflow-hidden">
+                        {/* Cumulative segments */}
+                        <div className="absolute inset-y-0 left-0 flex">
+                          {allModules.filter(m => m.count > 0).map((module, idx) => {
+                            const width = (module.count / Math.max(cumulativeTotal, 1)) * 100
+                            const colors = [
+                              'bg-blue-500', 'bg-indigo-500', 'bg-violet-500', 'bg-purple-500', 
+                              'bg-fuchsia-500', 'bg-pink-500', 'bg-rose-500', 'bg-red-500',
+                              'bg-orange-500', 'bg-amber-500', 'bg-yellow-500', 'bg-lime-500',
+                              'bg-green-500', 'bg-emerald-500', 'bg-teal-500', 'bg-cyan-500',
+                              'bg-sky-500', 'bg-blue-400', 'bg-indigo-400', 'bg-violet-400',
+                              'bg-purple-400', 'bg-fuchsia-400', 'bg-pink-400', 'bg-rose-400'
+                            ]
+                            return (
+                              <div
+                                key={idx}
+                                className={`h-full ${colors[idx % colors.length]} transition-all duration-500 flex items-center justify-center`}
+                                style={{ width: `${Math.max(width, 1.5)}%` }}
+                                title={`${module.name}: ${module.count}`}
+                              >
+                                {width > 5 && (
+                                  <span className="text-[9px] font-bold text-white truncate px-0.5">
+                                    {module.count}
+                                  </span>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                        {/* Total label in center if enough space */}
+                        {cumulativeTotal > 0 && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <span className="bg-black/70 text-white text-xs font-bold px-2 py-1 rounded-full">
+                              Total: {cumulativeTotal}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Individual module bars with cumulative effect */}
+                    <div className="grid gap-2">
+                      {allModules.map((module, idx) => {
+                        const percentage = (module.count / maxCount) * 100
+                        const isFaculty = module.category === 'faculty'
+                        const cumSumBefore = allModules.slice(0, idx).reduce((s, m) => s + m.count, 0)
+                        const cumPercentage = (cumSumBefore / Math.max(cumulativeTotal, 1)) * 100
+                        
+                        return (
+                          <div key={idx} className="group flex items-center gap-3 hover:bg-gray-50 rounded-lg p-2 -mx-2 transition-colors">
+                            <div className="w-24 sm:w-28 flex-shrink-0">
+                              <span className={`text-xs font-medium truncate block ${isFaculty ? 'text-blue-700' : 'text-purple-700'}`}>
+                                {module.name}
+                              </span>
+                            </div>
+                            
+                            {/* Progress bar */}
+                            <div className="flex-1 h-7 bg-gray-100 rounded-full overflow-hidden relative">
+                              {/* Cumulative background indicator */}
+                              <div 
+                                className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ${isFaculty ? 'bg-blue-100' : 'bg-purple-100'}`}
+                                style={{ width: `${cumPercentage}%` }}
+                              ></div>
+                              
+                              {/* Actual value bar */}
+                              <div 
+                                className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 flex items-center pr-2 ${
+                                  isFaculty 
+                                    ? 'bg-gradient-to-r from-blue-500 to-blue-400' 
+                                    : 'bg-gradient-to-r from-purple-500 to-purple-400'
+                                }`}
+                                style={{ width: `${Math.max(percentage, module.count > 0 ? 3 : 0)}%` }}
+                              >
+                                {percentage > 15 && (
+                                  <span className="ml-auto text-[10px] font-bold text-white">
+                                    {module.count}
+                                  </span>
+                                )}
+                              </div>
+                              
+                              {/* Value label outside if bar too small */}
+                              {percentage <= 15 && module.count > 0 && (
+                                <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold ${isFaculty ? 'text-blue-600' : 'text-purple-600'}`}>
+                                  {module.count}
+                                </span>
+                              )}
+                            </div>
+                            
+                            {/* Cumulative running total */}
+                            <div className="w-16 sm:w-20 text-right flex-shrink-0">
+                              <span className="text-xs text-gray-500">
+                                Σ {cumSumBefore + module.count}
+                              </span>
+                            </div>
+                            
+                            {/* Percentage of total */}
+                            <div className="w-12 text-right flex-shrink-0">
+                              <span className={`text-xs font-medium ${module.count > 0 ? (isFaculty ? 'text-blue-600' : 'text-purple-600') : 'text-gray-400'}`}>
+                                {cumulativeTotal > 0 ? ((module.count / cumulativeTotal) * 100).toFixed(1) : 0}%
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+
+            {/* Cumulative Trend Line Graph */}
+            <div className="mt-8 pt-6 border-t border-gray-100">
+              <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <Activity className="w-4 h-4" /> Cumulative Growth Trend (Running Total)
+              </h4>
+              
+              {(() => {
+                // Sort modules by count for visual effect
+                const sortedModules = [...facultyModules, ...studentModules]
+                  .map((m, i) => ({ ...m, originalIndex: i }))
+                  .sort((a, b) => a.count - b.count)
+                
+                const maxCumulative = sortedModules.reduce((sum, m) => sum + m.count, 0)
+                const points = []
+                let runningTotal = 0
+                
+                sortedModules.forEach((module, idx) => {
+                  runningTotal += module.count
+                  const x = (idx / Math.max(sortedModules.length - 1, 1)) * 100
+                  const y = 100 - (runningTotal / Math.max(maxCumulative, 1)) * 100
+                  points.push({ x, y, value: runningTotal, name: module.name })
+                })
+                
+                // Generate SVG path
+                const pathD = points.map((p, i) => 
+                  `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
+                ).join(' ')
+                
+                const areaD = pathD + ` L ${points[points.length - 1]?.x || 0} 100 L 0 100 Z`
+                
+                return (
+                  <div className="relative bg-gradient-to-b from-gray-50 to-white rounded-xl p-4 border border-gray-100">
+                    <svg viewBox="0 0 100 100" className="w-full h-48 sm:h-56" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="cumGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" stopColor="#0a2a5e" stopOpacity="0.3" />
+                          <stop offset="100%" stopColor="#0a2a5e" stopOpacity="0.02" />
+                        </linearGradient>
+                        <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="#0a2a5e" />
+                          <stop offset="50%" stopColor="#2563eb" />
+                          <stop offset="100%" stopColor="#06b6d4" />
+                        </linearGradient>
+                      </defs>
+                      
+                      {/* Grid lines */}
+                      {[0, 25, 50, 75, 100].map(y => (
+                        <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="#e5e7eb" strokeWidth="0.2" strokeDasharray="1,1" />
+                      ))}
+                      {[0, 25, 50, 75, 100].map(x => (
+                        <line key={x} x1={x} y1="0" x2={x} y2="100" stroke="#e5e7eb" strokeWidth="0.2" strokeDasharray="1,1" />
+                      ))}
+                      
+                      {/* Area fill */}
+                      <path d={areaD} fill="url(#cumGrad)" />
+                      
+                      {/* Line */}
+                      <path d={pathD} fill="none" stroke="url(#lineGrad)" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round" />
+                      
+                      {/* Data points with values */}
+                      {points.map((p, i) => (
+                        <g key={i}>
+                          <circle cx={p.x} cy={p.y} r="1.5" fill="white" stroke="#0a2a5e" strokeWidth="0.5" />
+                          {i % Math.ceil(points.length / 8) === 0 && (
+                            <text x={p.x} y={p.y - 3} fontSize="3" fill="#374151" textAnchor="middle" fontWeight="bold">
+                              {p.value}
+                            </text>
+                          )}
+                        </g>
+                      ))}
+                    </svg>
+                    
+                    {/* X-axis labels */}
+                    <div className="flex justify-between mt-2 px-1 overflow-x-auto">
+                      {sortedModules.filter((_, i) => i % Math.ceil(sortedModules.length / 8) === 0).map((m, i) => (
+                        <span key={i} className="text-[9px] text-gray-400 whitespace-nowrap flex-shrink-0">
+                          {m.name.substring(0, 6)}
+                        </span>
+                      ))}
+                    </div>
+                    
+                    {/* Legend */}
+                    <div className="flex items-center justify-center gap-6 mt-3 pt-3 border-t border-gray-100">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-8 h-0.5 bg-gradient-to-r from-[#0a2a5e] to-cyan-500 rounded"></div>
+                        <span className="text-xs text-gray-600">Running Total: <strong className="text-[#0a2a5e]">{maxCumulative}</strong></span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <TrendingUp className="w-3.5 h-3.5 text-green-500" />
+                        <span className="text-xs text-green-600 font-medium">
+                          +{maxCumulative} Total Achievements
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+
+            {/* Faculty vs Student Comparison Pie-like Visualization */}
+            <div className="mt-8 pt-6 border-t border-gray-100">
+              <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <PieChartIcon className="w-4 h-4" /> Category Distribution Overview
+              </h4>
+              
+              {(() => {
+                const facultyTotal = facultyModules.reduce((s, m) => s + m.count, 0)
+                const studentTotal = studentModules.reduce((s, m) => s + m.count, 0)
+                const grandTotal = facultyTotal + studentTotal
+                
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Donut-style bars */}
+                    <div className="space-y-4">
+                      {/* Faculty R&D Bar */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-blue-700">📊 Faculty & R&D Modules</span>
+                          <span className="text-lg font-bold text-blue-600">{facultyTotal}</span>
+                        </div>
+                        <div className="h-4 bg-gray-100 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full transition-all duration-700 flex items-center justify-end pr-2"
+                            style={{ width: `${grandTotal > 0 ? (facultyTotal / grandTotal) * 100 : 0}%` }}
+                          >
+                            {facultyTotal > 0 && (
+                              <span className="text-[10px] font-bold text-white">
+                                {((facultyTotal / grandTotal) * 100).toFixed(0)}%
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {/* Sub-items */}
+                        <div className="grid grid-cols-3 gap-2 pl-2">
+                          {facultyModules.filter(m => m.count > 0).slice(0, 6).map((m, i) => (
+                            <div key={i} className="text-center bg-blue-50 rounded px-2 py-1.5">
+                              <p className="text-xs font-bold text-blue-600">{m.count}</p>
+                              <p className="text-[9px] text-blue-500 truncate">{m.name}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Student Achievement Bar */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-purple-700">🎓 Student Achievements</span>
+                          <span className="text-lg font-bold text-purple-600">{studentTotal}</span>
+                        </div>
+                        <div className="h-4 bg-gray-100 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-purple-600 to-purple-400 rounded-full transition-all duration-700 flex items-center justify-end pr-2"
+                            style={{ width: `${grandTotal > 0 ? (studentTotal / grandTotal) * 100 : 0}%` }}
+                          >
+                            {studentTotal > 0 && (
+                              <span className="text-[10px] font-bold text-white">
+                                {((studentTotal / grandTotal) * 100).toFixed(0)}%
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {/* Sub-items */}
+                        <div className="grid grid-cols-3 gap-2 pl-2">
+                          {studentModules.filter(m => m.count > 0).slice(0, 6).map((m, i) => (
+                            <div key={i} className="text-center bg-purple-50 rounded px-2 py-1.5">
+                              <p className="text-xs font-bold text-purple-600">{m.count}</p>
+                              <p className="text-[9px] text-purple-500 truncate">{m.name}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Summary Stats Cards */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-4 border border-blue-200/50">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
+                            <BookOpen className="w-4 h-4 text-white" />
+                          </div>
+                          <span className="text-sm font-medium text-blue-800">Faculty R&D</span>
+                        </div>
+                        <p className="text-2xl font-bold text-blue-700">{facultyTotal}</p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <TrendingUp className="w-3 h-3 text-blue-500" />
+                          <span className="text-xs text-blue-600">{facultyModules.filter(m => m.count > 0).length} active</span>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl p-4 border border-purple-200/50">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center">
+                            <GraduationCap className="w-4 h-4 text-white" />
+                          </div>
+                          <span className="text-sm font-medium text-purple-800">Students</span>
+                        </div>
+                        <p className="text-2xl font-bold text-purple-700">{studentTotal}</p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <TrendingUp className="w-3 h-3 text-purple-500" />
+                          <span className="text-xs text-purple-600">{studentModules.filter(m => m.count > 0).length} active</span>
+                        </div>
+                      </div>
+                      
+                      <div className="col-span-2 bg-gradient-to-r from-[#0a2a5e] to-blue-800 rounded-xl p-4 text-white">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-blue-200">Grand Total Achievements</p>
+                            <p className="text-3xl font-bold mt-1">{grandTotal}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-blue-200">Departments</p>
+                            <p className="text-xl font-bold mt-1">{departments.length}</p>
+                          </div>
+                        </div>
+                        {selectedDept !== 'ALL' && (
+                          <div className="mt-3 pt-3 border-t border-white/20 flex items-center justify-between">
+                            <span className="text-xs text-blue-200">Showing data for:</span>
+                            <span className="text-sm font-semibold bg-white/20 px-3 py-1 rounded-full">
+                              {getDeptShortCode(selectedDept)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+          </div>
         </div>
       </div>
     )
