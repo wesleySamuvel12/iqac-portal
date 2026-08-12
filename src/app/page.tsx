@@ -3549,7 +3549,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
     )
   }
 
-  // ============ ANIMATED CUMULATIVE LIST COMPONENT ============
+  // ============ ANIMATED CUMULATIVE LIST COMPONENT WITH HORIZONTAL BARS ============
   function AnimatedCumulativeList({ modules, type }: { modules: any[]; type: 'faculty' | 'student' }) {
     const [animatedValues, setAnimatedValues] = useState<number[]>([])
     const [mounted, setMounted] = useState(false)
@@ -3562,6 +3562,9 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
         return sum
       })
     }, [modules])
+    
+    // Get max value for bar width calculation (use last cumulative value as 100%)
+    const maxValue = cumValues.length > 0 ? Math.max(...cumValues, 1) : 1
     
     useEffect(() => {
       setMounted(true)
@@ -3597,33 +3600,61 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
     const displayValues = mounted ? animatedValues : cumValues
     
     return (
-      <div className="space-y-0">
+      <div className="space-y-2">
         {modules.map((module, index) => {
           const cumVal = displayValues[index] ?? 0
           const targetVal = cumValues[index]
+          const barWidth = maxValue > 0 ? (cumVal / maxValue) * 100 : 0
+          
           return (
-            <div 
-              key={index} 
-              className={`flex items-center justify-between py-2.5 px-3 transition-all duration-300 ${
-                index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white'
-              } ${isFaculty ? 'hover:bg-blue-50/30' : 'hover:bg-purple-50/30'} ${mounted ? 'opacity-100 translate-x-0' : 'opacity-100 translate-x-0'}`}
-            >
-              <span className="text-xs font-medium text-gray-600">{module.name}</span>
-              <span className={`text-sm font-bold ${cumVal > 0 ? (isFaculty ? 'text-[#0a2a5e]' : 'text-[#0a2a5e]') : 'text-gray-400'}`}>
-                {cumVal}
-              </span>
+            <div key={index} className="group">
+              {/* Row with name and value */}
+              <div className={`flex items-center justify-between mb-1 px-1 ${
+                index % 2 === 0 ? '' : ''
+              }`}>
+                <span className="text-xs font-medium text-gray-600 truncate mr-2">{module.name}</span>
+                <span className={`text-sm font-bold flex-shrink-0 ${cumVal > 0 ? (isFaculty ? 'text-blue-700' : 'text-purple-700') : 'text-gray-400'}`}>
+                  {cumVal}
+                </span>
+              </div>
+              
+              {/* Horizontal Progress Bar */}
+              <div className={`h-2 rounded-full overflow-hidden transition-all duration-300 ${
+                isFaculty ? 'bg-blue-100' : 'bg-purple-100'
+              }`}>
+                <div 
+                  className={`h-full rounded-full transition-all duration-500 ease-out ${
+                    isFaculty 
+                      ? 'bg-gradient-to-r from-blue-400 to-blue-600' 
+                      : 'bg-gradient-to-r from-purple-400 to-purple-600'
+                  }`}
+                  style={{ width: `${barWidth}%` }}
+                />
+              </div>
             </div>
           )
         })}
         
-        {/* Total row */}
-        <div className={`flex items-center justify-between py-2.5 px-3 mt-1 border-t ${
-          isFaculty ? 'bg-blue-50/60 border-blue-100' : 'bg-purple-50/60 border-purple-100'
-        }`}>
-          <span className={`text-xs font-semibold ${isFaculty ? 'text-blue-700' : 'text-purple-700'}`}>Total</span>
-          <span className={`text-sm font-bold ${isFaculty ? 'text-blue-700' : 'text-purple-700'}`}>
-            {mounted ? animatedTotal : totalValue}
-          </span>
+        {/* Total row with full-width bar */}
+        <div className="pt-2 mt-2 border-t border-gray-200">
+          <div className="flex items-center justify-between mb-1 px-1">
+            <span className={`text-xs font-semibold ${isFaculty ? 'text-blue-700' : 'text-purple-700'}`}>Total</span>
+            <span className={`text-sm font-bold ${isFaculty ? 'text-blue-700' : 'text-purple-700'}`}>
+              {mounted ? animatedTotal : totalValue}
+            </span>
+          </div>
+          <div className={`h-2.5 rounded-full overflow-hidden ${
+            isFaculty ? 'bg-blue-100' : 'bg-purple-100'
+          }`}>
+            <div 
+              className={`h-full rounded-full ${
+                isFaculty 
+                  ? 'bg-gradient-to-r from-blue-500 via-blue-600 to-cyan-500' 
+                  : 'bg-gradient-to-r from-purple-500 via-purple-600 to-pink-500'
+              }`}
+              style={{ width: '100%' }}
+            />
+          </div>
         </div>
       </div>
     )
