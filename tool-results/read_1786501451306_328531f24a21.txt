@@ -1,0 +1,502 @@
+     1→ 21300→                            <tr>
+     2→ 21301→                              <td colSpan={6} className="py-8 text-center text-gray-400 text-sm">
+     3→ 21302→                                No students found for this selection
+     4→ 21303→                              </td>
+     5→ 21304→                            </tr>
+     6→ 21305→                          )
+     7→ 21306→                        }
+     8→ 21307→                        
+     9→ 21308→                        return filteredStudents.slice(0, 15).map((student) => {
+    10→ 21309→                          const studentName = student.user?.name || student.name || 'Student'
+    11→ 21310→                          const regNo = student.registerNumber || ''
+    12→ 21311→                          
+    13→ 21312→                          return (
+    14→ 21313→                            <tr 
+    15→ 21314→                              key={student.id} 
+    16→ 21315→                              className="border-b border-gray-50 hover:bg-violet-50/40 transition-colors cursor-pointer"
+    17→ 21316→                              onClick={() => {
+    18→ 21317→                                setSelectedStudentForAchievements({
+    19→ 21318→                                  ...student,
+    20→ 21319→                                  name: studentName,
+    21→ 21320→                                  regNo: regNo,
+    22→ 21321→                                  year: getYearFromSemester(student.semester),
+    23→ 21322→                                  section: student.section || 'A'
+    24→ 21323→                                })
+    25→ 21324→                                setShowStudentAchievementModal(true)
+    26→ 21325→                              }}
+    27→ 21326→                            >
+    28→ 21327→                              <td className="py-2.5 px-3 text-xs font-mono text-gray-600">{regNo}</td>
+    29→ 21328→                              <td className="py-2.5 px-3">
+    30→ 21329→                                <p className="text-xs font-medium text-gray-800">{studentName}</p>
+    31→ 21330→                              </td>
+    32→ 21331→                              <td className="py-2.5 px-3">
+    33→ 21332→                                <Badge variant="outline" className="text-[10px]">{getYearFromSemester(student.semester)}</Badge>
+    34→ 21333→                              </td>
+    35→ 21334→                              <td className="py-2.5 px-3">
+    36→ 21335→                                <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold">
+    37→ 21336→                                  {student.section || 'A'}
+    38→ 21337→                                </span>
+    39→ 21338→                              </td>
+    40→ 21339→                              <td className="py-2.5 px-3 text-right">
+    41→ 21340→                                <span className={'text-xs font-bold ' + (student.cgpa >= 9 ? 'text-emerald-600' : student.cgpa >= 8 ? 'text-blue-600' : 'text-gray-600')}>
+    42→ 21341→                                  {student.cgpa?.toFixed(1) || '-'}
+    43→ 21342→                                </span>
+    44→ 21343→                              </td>
+    45→ 21344→                              <td className="py-2.5 px-3">
+    46→ 21345→                                <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+    47→ 21346→                                  <button
+    48→ 21347→                                    onClick={() => {
+    49→ 21348→                                      setSelectedStudentForAchievements({
+    50→ 21349→                                        ...student,
+    51→ 21350→                                        name: studentName,
+    52→ 21351→                                        regNo: regNo,
+    53→ 21352→                                        year: getYearFromSemester(student.semester),
+    54→ 21353→                                        section: student.section || 'A'
+    55→ 21354→                                      })
+    56→ 21355→                                      setShowStudentAchievementModal(true)
+    57→ 21356→                                    }}
+    58→ 21357→                                    className="p-1.5 text-violet-500 hover:text-violet-700 hover:bg-violet-50 rounded"
+    59→ 21358→                                    title="View Achievements"
+    60→ 21359→                                  >
+    61→ 21360→                                    <Eye className="w-3.5 h-3.5" />
+    62→ 21361→                                  </button>
+    63→ 21362→                                  <button
+    64→ 21363→                                    onClick={() => setHierarchyState(prev => ({
+    65→ 21364→                                      ...prev,
+    66→ 21365→                                      level: 'profile',
+    67→ 21366→                                      studentId: student.id,
+    68→ 21367→                                      studentName: studentName
+    69→ 21368→                                    }))}
+    70→ 21369→                                    className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded"
+    71→ 21370→                                    title="View Profile"
+    72→ 21371→                                  >
+    73→ 21372→                                    <ExternalLink className="w-3.5 h-3.5" />
+    74→ 21373→                                  </button>
+    75→ 21374→                                </div>
+    76→ 21375→                              </td>
+    77→ 21376→                            </tr>
+    78→ 21377→                          )
+    79→ 21378→                        })
+    80→ 21379→                      })()}
+    81→ 21380→                    </tbody>
+    82→ 21381→                  </table>
+    83→ 21382→                </div>
+    84→ 21383→                
+    85→ 21384→                {/* View All Button */}
+    86→ 21385→                <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+    87→ 21386→                  <button
+    88→ 21387→                    onClick={() => setHierarchyState(prev => ({ ...prev, level: 'students' }))}
+    89→ 21388→                    className="w-full py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+    90→ 21389→                  >
+    91→ 21390→                    <ArrowRight className="w-4 h-4" />
+    92→ 21391→                    View Full Student List with Sort & Filters
+    93→ 21392→                  </button>
+    94→ 21393→                </div>
+    95→ 21394→              </div>
+    96→ 21395→            </>
+    97→ 21396→          )}
+    98→ 21397→        </div>
+    99→ 21398→      )}
+   100→ 21399→
+   101→ 21400→      {/* SECTION LEVEL - Show class sections */}
+   102→ 21401→      {hierarchyState.level === 'section' && (
+   103→ 21402→        <div className="space-y-6">
+   104→ 21403→          {/* Back Navigation */}
+   105→ 21404→          <div className="flex items-center gap-4">
+   106→ 21405→            <button
+   107→ 21406→              onClick={() => navigateToLevel('year')}
+   108→ 21407→              className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+   109→ 21408→            >
+   110→ 21409→              <ArrowLeft className="w-5 h-5 text-gray-600" />
+   111→ 21410→            </button>
+   112→ 21411→            <div className="flex-1">
+   113→ 21412→              <h2 className="text-xl font-bold text-gray-900">{hierarchyState.departmentName}</h2>
+   114→ 21413→              <p className="text-sm text-gray-500">{hierarchyState.year} → Select Section</p>
+   115→ 21414→            </div>
+   116→ 21415→          </div>
+   117→ 21416→
+   118→ 21417→          {/* Section Cards */}
+   119→ 21418→          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+   120→ 21419→            {sections.map((section, idx) => {
+   121→ 21420→              const count = getSectionCount(section)
+   122→ 21421→              return (
+   123→ 21422→                <button
+   124→ 21423→                  key={section}
+   125→ 21424→                  onClick={() => setHierarchyState(prev => ({ ...prev, level: 'students', section }))}
+   126→ 21425→                  disabled={count === 0}
+   127→ 21426→                  className={'group bg-white rounded-2xl p-6 border ' + 
+   128→ 21427→                    count === 0 
+   129→ 21428→                      ? 'border-gray-100 opacity-60 cursor-not-allowed' 
+   130→ 21429→                      : 'border-gray-200 hover:border-emerald-300 hover:shadow-xl'
+   131→ 21430→                   + ' transition-all duration-300 text-left'}
+   132→ 21431→                >
+   133→ 21432→                  <div className="flex items-center justify-between mb-4">
+   134→ 21433→                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg">
+   135→ 21434→                      <span className="text-2xl font-bold text-white">{section}</span>
+   136→ 21435→                    </div>
+   137→ 21436→                    {count > 0 && (
+   138→ 21437→                      <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
+   139→ 21438→                        {count}
+   140→ 21439→                      </Badge>
+   141→ 21440→                    )}
+   142→ 21441→                  </div>
+   143→ 21442→                  
+   144→ 21443→                  <h3 className="font-bold text-gray-900">Section {section}</h3>
+   145→ 21444→                  <p className="text-sm text-gray-500 mt-1">
+   146→ 21445→                    {count === 0 ? 'No students' : count + ' student' + (count !== 1 ? 's' : '')}
+   147→ 21446→                  </p>
+   148→ 21447→                </button>
+   149→ 21448→              )
+   150→ 21449→            })}
+   151→ 21450→          </div>
+   152→ 21451→
+   153→ 21452→          {/* View All Sections Button */}
+   154→ 21453→          <div className="mt-4">
+   155→ 21454→            <button
+   156→ 21455→              onClick={() => setHierarchyState(prev => ({ ...prev, level: 'students' }))}
+   157→ 21456→              className="w-full bg-white rounded-2xl p-4 border-2 border-dashed border-gray-300 hover:border-emerald-400 hover:bg-emerald-50/50 transition-all flex items-center justify-center gap-2"
+   158→ 21457→            >
+   159→ 21458→              <Users className="w-5 h-5 text-emerald-600" />
+   160→ 21459→              <span className="font-medium text-emerald-700">View All Sections</span>
+   161→ 21460→            </button>
+   162→ 21461→          </div>
+   163→ 21462→        </div>
+   164→ 21463→      )}
+   165→ 21464→
+   166→ 21465→      {/* STUDENTS LEVEL - Show student list */}
+   167→ 21466→      {hierarchyState.level === 'students' && (
+   168→ 21467→        <div className="space-y-6">
+   169→ 21468→          {/* Back Navigation with Sort & Search */}
+   170→ 21469→          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+   171→ 21470→            <button
+   172→ 21471→              onClick={() => navigateToLevel(hierarchyState.section ? 'section' : 'year')}
+   173→ 21472→              className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition-colors w-fit"
+   174→ 21473→            >
+   175→ 21474→              <ArrowLeft className="w-5 h-5 text-gray-600" />
+   176→ 21475→            </button>
+   177→ 21476→            <div className="flex-1">
+   178→ 21477→              <h2 className="text-xl font-bold text-gray-900">
+   179→ 21478→                {hierarchyState.departmentName}
+   180→ 21479→                {hierarchyState.year && ' \u2022 ' + hierarchyState.year}
+   181→ 21480→                {hierarchyState.section && ' \u2022 Section ' + hierarchyState.section}
+   182→ 21481→              </h2>
+   183→ 21482→              <p className="text-sm text-gray-500">
+   184→ 21483→                {students.length} student{students.length !== 1 ? 's' : ''} found
+   185→ 21484→              </p>
+   186→ 21485→            </div>
+   187→ 21486→            
+   188→ 21487→            {/* Sort Button with Dropdown */}
+   189→ 21488→            <div className="relative">
+   190→ 21489→              <button
+   191→ 21490→                onClick={() => setShowHierarchySortDropdown(!showHierarchySortDropdown)}
+   192→ 21491→                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-emerald-300 transition-colors"
+   193→ 21492→              >
+   194→ 21493→                <ArrowUpDown className="w-4 h-4 text-emerald-500" />
+   195→ 21494→                Sort
+   196→ 21495→                {hierarchySortField !== 'name' && (
+   197→ 21496→                  <span className="text-xs text-emerald-600 font-semibold">({hierarchySortField})</span>
+   198→ 21497→                )}
+   199→ 21498→                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showHierarchySortDropdown ? 'rotate-180' : ''}`} />
+   200→ 21499→              </button>
+   201→ 21500→              
+   202→ 21501→              {/* Sort Dropdown */}
+   203→ 21502→              {showHierarchySortDropdown && (
+   204→ 21503→                <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+   205→ 21504→                  <div className="p-2">
+   206→ 21505→                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-2">Sort Students By</p>
+   207→ 21506→                    
+   208→ 21507→                    {[
+   209→ 21508→                      { id: 'name', label: 'Name (A-Z)', icon: User },
+   210→ 21509→                      { id: 'regNo', label: 'Register Number', icon: Hash },
+   211→ 21510→                      { id: 'year', label: 'Year of Study', icon: GraduationCap },
+   212→ 21511→                      { id: 'section', label: 'Section', icon: FolderOpen },
+   213→ 21512→                      { id: 'achievementCount', label: 'Achievement Count', icon: Trophy },
+   214→ 21513→                      { id: 'cgpa', label: 'CGPA', icon: Star },
+   215→ 21514→                      { id: 'status', label: 'Status', icon: CheckCircle },
+   216→ 21515→                    ].map(option => {
+   217→ 21516→                      const Icon = option.icon
+   218→ 21517→                      const isSelected = hierarchySortField === option.id
+   219→ 21518→                      return (
+   220→ 21519→                        <button
+   221→ 21520→                          key={option.id}
+   222→ 21521→                          onClick={() => {
+   223→ 21522→                            if (isSelected) {
+   224→ 21523→                              setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+   225→ 21524→                            } else {
+   226→ 21525→                              setHierarchySortField(option.id)
+   227→ 21526→                              setHierarchySortOrder('asc')
+   228→ 21527→                            }
+   229→ 21528→                            setShowHierarchySortDropdown(false)
+   230→ 21529→                          }}
+   231→ 21530→                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-colors ${
+   232→ 21531→                            isSelected ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-gray-50 text-gray-700'
+   233→ 21532→                          }`}
+   234→ 21533→                        >
+   235→ 21534→                          <div className="flex items-center gap-2.5">
+   236→ 21535→                            <Icon className={`w-4 h-4 ${isSelected ? 'text-emerald-600' : 'text-gray-400'}`} />
+   237→ 21536→                            <span className="text-sm font-medium">{option.label}</span>
+   238→ 21537→                          </div>
+   239→ 21538→                          <div className="flex items-center gap-1">
+   240→ 21539→                            {isSelected && (
+   241→ 21540→                              <>
+   242→ 21541→                                <Check className="w-4 h-4 text-emerald-600" />
+   243→ 21542→                                <span className={`text-xs font-bold ${hierarchySortOrder === 'asc' ? 'text-emerald-600' : 'text-gray-400'}`}>A-Z</span>
+   244→ 21543→                                <span className={`text-xs font-bold ${hierarchySortOrder === 'desc' ? 'text-emerald-600' : 'text-gray-400'}`}>Z-A</span>
+   245→ 21544→                              </>
+   246→ 21545→                            )}
+   247→ 21546→                          </div>
+   248→ 21547→                        </button>
+   249→ 21548→                      )
+   250→ 21549→                    })}
+   251→ 21550→                    
+   252→ 21551→                    {/* Divider */}
+   253→ 21552→                    <div className="border-t border-gray-100 my-2" />
+   254→ 21553→                    
+   255→ 21554→                    {/* Quick Sort Order Toggle */}
+   256→ 21555→                    <button
+   257→ 21556→                      onClick={() => {
+   258→ 21557→                        setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+   259→ 21558→                        setShowHierarchySortDropdown(false)
+   260→ 21559→                      }}
+   261→ 21560→                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors"
+   262→ 21561→                    >
+   263→ 21562→                      <ArrowLeftRight className="w-4 h-4 text-gray-400" />
+   264→ 21563→                      <span className="text-sm font-medium">
+   265→ 21564→                        Toggle Order: <strong>{hierarchySortOrder === 'asc' ? 'Ascending (A→Z)' : 'Descending (Z→A)'}</strong>
+   266→ 21565→                      </span>
+   267→ 21566→                    </button>
+   268→ 21567→                  </div>
+   269→ 21568→                </div>
+   270→ 21569→              )}
+   271→ 21570→            </div>
+   272→ 21571→            
+   273→ 21572→            {/* Search */}
+   274→ 21573→            <div className="relative w-full sm:w-72">
+   275→ 21574→              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+   276→ 21575→              <input
+   277→ 21576→                type="text"
+   278→ 21577→                placeholder="Search students..."
+   279→ 21578→                value={searchQuery}
+   280→ 21579→                onChange={(e) => setSearchQuery(e.target.value)}
+   281→ 21580→                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none"
+   282→ 21581→              />
+   283→ 21582→            </div>
+   284→ 21583→          </div>
+   285→ 21584→
+   286→ 21585→          {/* Student List with Table View - Enhanced with Sorting & Achievement Popup */}
+   287→ 21586→          {loading ? (
+   288→ 21587→            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+   289→ 21588→              {[1, 2, 3, 4, 5, 6].map(i => (
+   290→ 21589→                <div key={i} className="animate-pulse flex items-center gap-4 p-4 border-b border-gray-100 last:border-0">
+   291→ 21590→                  <div className="w-10 h-10 rounded-full bg-gray-200" />
+   292→ 21591→                  <div className="flex-1 space-y-2">
+   293→ 21592→                    <div className="h-4 bg-gray-200 rounded w-1/3" />
+   294→ 21593→                    <div className="h-3 bg-gray-200 rounded w-1/4" />
+   295→ 21594→                  </div>
+   296→ 21595→                </div>
+   297→ 21596→              ))}
+   298→ 21597→            </div>
+   299→ 21598→          ) : students.length === 0 ? (
+   300→ 21599→            <div className="text-center py-16 bg-white rounded-2xl border border-gray-200">
+   301→ 21600→              <GraduationCap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+   302→ 21601→              <h3 className="text-lg font-semibold text-gray-700">No Students Found</h3>
+   303→ 21602→              <p className="text-sm text-gray-500 mt-1">Try adjusting your filters or search query</p>
+   304→ 21603→            </div>
+   305→ 21604→          ) : (
+   306→ 21605→            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+   307→ 21606→              {/* Students Table */}
+   308→ 21607→              <div className="overflow-x-auto">
+   309→ 21608→                <table className="w-full">
+   310→ 21609→                  <thead>
+   311→ 21610→                    <tr className="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100/50">
+   312→ 21611→                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-emerald-600 transition-colors" onClick={() => { setHierarchySortField('regNo'); setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+   313→ 21612→                        <div className="flex items-center gap-1">Reg No {hierarchySortField === 'regNo' && <ArrowUpDown className="w-3 h-3" />}</div>
+   314→ 21613→                      </th>
+   315→ 21614→                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-emerald-600 transition-colors" onClick={() => { setHierarchySortField('name'); setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+   316→ 21615→                        <div className="flex items-center gap-1">Student Name {hierarchySortField === 'name' && <ArrowUpDown className="w-3 h-3" />}</div>
+   317→ 21616→                      </th>
+   318→ 21617→                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-emerald-600 transition-colors" onClick={() => { setHierarchySortField('year'); setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+   319→ 21618→                        <div className="flex items-center gap-1">Year {hierarchySortField === 'year' && <ArrowUpDown className="w-3 h-3" />}</div>
+   320→ 21619→                      </th>
+   321→ 21620→                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-emerald-600 transition-colors" onClick={() => { setHierarchySortField('section'); setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+   322→ 21621→                        <div className="flex items-center gap-1">Sec {hierarchySortField === 'section' && <ArrowUpDown className="w-3 h-3" />}</div>
+   323→ 21622→                      </th>
+   324→ 21623→                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-emerald-600 transition-colors" onClick={() => { setHierarchySortField('cgpa'); setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+   325→ 21624→                        <div className="flex items-center gap-1">CGPA {hierarchySortField === 'cgpa' && <ArrowUpDown className="w-3 h-3" />}</div>
+   326→ 21625→                      </th>
+   327→ 21626→                      <th className="text-center py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+   328→ 21627→                        Status
+   329→ 21628→                      </th>
+   330→ 21629→                      <th className="text-right py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-emerald-600 transition-colors" onClick={() => { setHierarchySortField('achievementCount'); setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+   331→ 21630→                        <div className="flex items-center justify-end gap-1"><Trophy className="w-3 h-3 inline" /> Achievements {hierarchySortField === 'achievementCount' && <ArrowUpDown className="w-3 h-3" />}</div>
+   332→ 21631→                      </th>
+   333→ 21632→                      <th className="text-right py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+   334→ 21633→                        Actions
+   335→ 21634→                      </th>
+   336→ 21635→                    </tr>
+   337→ 21636→                  </thead>
+   338→ 21637→                  <tbody>
+   339→ 21638→                    {(() => {
+   340→ 21639→                      // Apply search filter
+   341→ 21640→                      let filteredStudents = [...students]
+   342→ 21641→                      
+   343→ 21642→                      if (searchQuery.trim()) {
+   344→ 21643→                        filteredStudents = filteredStudents.filter(s => 
+   345→ 21644→                          (s.user?.name || s.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+   346→ 21645→                          (s.registerNumber || '').toLowerCase().includes(searchQuery.toLowerCase())
+   347→ 21646→                        )
+   348→ 21647→                      }
+   349→ 21648→                      
+   350→ 21649→                      // Apply Sorting
+   351→ 21650→                      filteredStudents.sort((a, b) => {
+   352→ 21651→                        let comparison = 0
+   353→ 21652→                        const getYearFromSemester = (sem: number | undefined) => {
+   354→ 21653→                          if (!sem) return '1st Year'
+   355→ 21654→                          if (sem <= 2) return '1st Year'
+   356→ 21655→                          if (sem <= 4) return '2nd Year'
+   357→ 21656→                          if (sem <= 6) return '3rd Year'
+   358→ 21657→                          return '4th Year'
+   359→ 21658→                        }
+   360→ 21659→                        const yearOrder: Record<string, number> = { '1st Year': 1, '2nd Year': 2, '3rd Year': 3, '4th Year': 4 }
+   361→ 21660→                        
+   362→ 21661→                        switch (hierarchySortField) {
+   363→ 21662→                          case 'name':
+   364→ 21663→                            comparison = (a.user?.name || a.name || '').localeCompare(b.user?.name || b.name || '')
+   365→ 21664→                            break
+   366→ 21665→                          case 'regNo':
+   367→ 21666→                            comparison = (a.registerNumber || '').localeCompare(b.registerNumber || '')
+   368→ 21667→                            break
+   369→ 21668→                          case 'year':
+   370→ 21669→                            const yearA = getYearFromSemester(a.semester)
+   371→ 21670→                            const yearB = getYearFromSemester(b.semester)
+   372→ 21671→                            comparison = (yearOrder[yearA] || 0) - (yearOrder[yearB] || 0)
+   373→ 21672→                            break
+   374→ 21673→                          case 'section':
+   375→ 21674→                            comparison = (a.section || 'A').localeCompare(b.section || 'A')
+   376→ 21675→                            break
+   377→ 21676→                          case 'cgpa':
+   378→ 21677→                            comparison = (a.cgpa || 0) - (b.cgpa || 0)
+   379→ 21678→                            break
+   380→ 21679→                          case 'achievementCount': {
+   381→ 21680→                            const studentName = a.user?.name || a.name || ''
+   382→ 21681→                            const regNo = a.registerNumber || ''
+   383→ 21682→                            const studentNameB = b.user?.name || b.name || ''
+   384→ 21683→                            const regNoB = b.registerNumber || ''
+   385→ 21684→                            const countA = allAchievements.filter(ach => ach.studentName === studentName || ach.reg === regNo).length
+   386→ 21685→                            const countB = allAchievements.filter(ach => ach.studentName === studentNameB || ach.reg === regNoB).length
+   387→ 21686→                            comparison = countA - countB
+   388→ 21687→                            break
+   389→ 21688→                          }
+   390→ 21689→                          case 'status':
+   391→ 21690→                            comparison = (a.isActive !== false ? 'active' : 'inactive').localeCompare(b.isActive !== false ? 'active' : 'inactive')
+   392→ 21691→                            break
+   393→ 21692→                          default:
+   394→ 21693→                            comparison = (a.user?.name || a.name || '').localeCompare(b.user?.name || b.name || '')
+   395→ 21694→                        }
+   396→ 21695→                        return hierarchySortOrder === 'asc' ? comparison : -comparison
+   397→ 21696→                      })
+   398→ 21697→                      
+   399→ 21698→                      return filteredStudents.map((student) => {
+   400→ 21699→                        const getYearFromSemester = (sem: number | undefined) => {
+   401→ 21700→                          if (!sem) return '1st Year'
+   402→ 21701→                          if (sem <= 2) return '1st Year'
+   403→ 21702→                          if (sem <= 4) return '2nd Year'
+   404→ 21703→                          if (sem <= 6) return '3rd Year'
+   405→ 21704→                          return '4th Year'
+   406→ 21705→                        }
+   407→ 21706→                        
+   408→ 21707→                        const getCGPAColor = (cgpa: number | undefined) => {
+   409→ 21708→                          if (!cgpa) return 'text-gray-400'
+   410→ 21709→                          if (cgpa >= 9) return 'text-emerald-600'
+   411→ 21710→                          if (cgpa >= 8) return 'text-blue-600'
+   412→ 21711→                          if (cgpa >= 7) return 'text-yellow-600'
+   413→ 21712→                          return 'text-red-500'
+   414→ 21713→                        }
+   415→ 21714→                        
+   416→ 21715→                        const studentName = student.user?.name || student.name || 'Student'
+   417→ 21716→                        const regNo = student.registerNumber || ''
+   418→ 21717→                        const studentAchievementCount = allAchievements.filter(
+   419→ 21718→                          a => a.studentName === studentName || a.reg === regNo
+   420→ 21719→                        ).length
+   421→ 21720→                        
+   422→ 21721→                        return (
+   423→ 21722→                          <tr 
+   424→ 21723→                            key={student.id} 
+   425→ 21724→                            className="border-b border-gray-100 hover:bg-emerald-50/60 transition-colors group"
+   426→ 21725→                          >
+   427→ 21726→                            <td className="py-3 px-4 text-xs font-mono text-gray-700 font-medium">{regNo}</td>
+   428→ 21727→                            <td className="py-3 px-4">
+   429→ 21728→                              <div className="flex items-center gap-3">
+   430→ 21729→                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md">
+   431→ 21730→                                  <span className="text-white text-xs font-bold">{studentName.split(' ').map(n => n[0]).join('').substring(0, 2)}</span>
+   432→ 21731→                                </div>
+   433→ 21732→                                <div>
+   434→ 21733→                                  <p className="text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors">{studentName}</p>
+   435→ 21734→                                  <p className="text-[10px] text-gray-400">{student.user?.email || student.email || ''}</p>
+   436→ 21735→                                </div>
+   437→ 21736→                              </div>
+   438→ 21737→                            </td>
+   439→ 21738→                            <td className="py-3 px-4">
+   440→ 21739→                              <Badge variant="outline" className="text-xs font-medium">
+   441→ 21740→                                {getYearFromSemester(student.semester)}
+   442→ 21741→                              </Badge>
+   443→ 21742→                            </td>
+   444→ 21743→                            <td className="py-3 px-4">
+   445→ 21744→                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold">
+   446→ 21745→                                {student.section || 'A'}
+   447→ 21746→                              </span>
+   448→ 21747→                            </td>
+   449→ 21748→                            <td className="py-3 px-4">
+   450→ 21749→                              <span className={'text-sm font-bold ' + getCGPAColor(student.cgpa)}>
+   451→ 21750→                                {student.cgpa?.toFixed(1) || '-'}
+   452→ 21751→                              </span>
+   453→ 21752→                            </td>
+   454→ 21753→                            <td className="py-3 px-4 text-center">
+   455→ 21754→                              <Badge className={
+   456→ 21755→                                student.isActive === false ? 'bg-gray-100 text-gray-600 text-[10px]' : 'bg-green-100 text-green-700 text-[10px]'
+   457→ 21756→                              }>
+   458→ 21757→                                {student.isActive === false ? 'Inactive' : 'Active'}
+   459→ 21758→                              </Badge>
+   460→ 21759→                            </td>
+   461→ 21760→                            <td className="py-3 px-4 text-right">
+   462→ 21761→                              <button
+   463→ 21762→                                onClick={() => {
+   464→ 21763→                                  setSelectedStudentForAchievements({
+   465→ 21764→                                    ...student,
+   466→ 21765→                                    name: studentName,
+   467→ 21766→                                    regNo: regNo,
+   468→ 21767→                                    year: getYearFromSemester(student.semester),
+   469→ 21768→                                    section: student.section || 'A'
+   470→ 21769→                                  })
+   471→ 21770→                                  setShowStudentAchievementModal(true)
+   472→ 21771→                                }}
+   473→ 21772→                                className={'inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-full transition-all hover:scale-105 ' + (
+   474→ 21773→                                  studentAchievementCount > 0 
+   475→ 21774→                                    ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' 
+   476→ 21775→                                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+   477→ 21776→                                )}
+   478→ 21777→                              >
+   479→ 21778→                                <Trophy className="w-3 h-3" />
+   480→ 21779→                                {studentAchievementCount}
+   481→ 21780→                              </button>
+   482→ 21781→                            </td>
+   483→ 21782→                            <td className="py-3 px-4">
+   484→ 21783→                              <div className="flex items-center justify-end gap-1">
+   485→ 21784→                                <button
+   486→ 21785→                                  onClick={() => {
+   487→ 21786→                                    setSelectedStudentForAchievements({
+   488→ 21787→                                      ...student,
+   489→ 21788→                                      name: studentName,
+   490→ 21789→                                      regNo: regNo,
+   491→ 21790→                                      year: getYearFromSemester(student.semester),
+   492→ 21791→                                      section: student.section || 'A'
+   493→ 21792→                                    })
+   494→ 21793→                                    setShowStudentAchievementModal(true)
+   495→ 21794→                                  }}
+   496→ 21795→                                  className="p-2 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+   497→ 21796→                                  title="View Achievements"
+   498→ 21797→                                >
+   499→ 21798→                                  <Eye className="w-4 h-4" />
+   500→ 21799→                                </button>
+   501→
+   502→[showing lines 21300-21799 of 23341; use offset=21800 with limit to continue reading]

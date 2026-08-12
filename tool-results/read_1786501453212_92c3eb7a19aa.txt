@@ -1,0 +1,502 @@
+ 21600→              <GraduationCap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+ 21601→              <h3 className="text-lg font-semibold text-gray-700">No Students Found</h3>
+ 21602→              <p className="text-sm text-gray-500 mt-1">Try adjusting your filters or search query</p>
+ 21603→            </div>
+ 21604→          ) : (
+ 21605→            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+ 21606→              {/* Students Table */}
+ 21607→              <div className="overflow-x-auto">
+ 21608→                <table className="w-full">
+ 21609→                  <thead>
+ 21610→                    <tr className="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100/50">
+ 21611→                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-emerald-600 transition-colors" onClick={() => { setHierarchySortField('regNo'); setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+ 21612→                        <div className="flex items-center gap-1">Reg No {hierarchySortField === 'regNo' && <ArrowUpDown className="w-3 h-3" />}</div>
+ 21613→                      </th>
+ 21614→                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-emerald-600 transition-colors" onClick={() => { setHierarchySortField('name'); setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+ 21615→                        <div className="flex items-center gap-1">Student Name {hierarchySortField === 'name' && <ArrowUpDown className="w-3 h-3" />}</div>
+ 21616→                      </th>
+ 21617→                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-emerald-600 transition-colors" onClick={() => { setHierarchySortField('year'); setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+ 21618→                        <div className="flex items-center gap-1">Year {hierarchySortField === 'year' && <ArrowUpDown className="w-3 h-3" />}</div>
+ 21619→                      </th>
+ 21620→                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-emerald-600 transition-colors" onClick={() => { setHierarchySortField('section'); setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+ 21621→                        <div className="flex items-center gap-1">Sec {hierarchySortField === 'section' && <ArrowUpDown className="w-3 h-3" />}</div>
+ 21622→                      </th>
+ 21623→                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-emerald-600 transition-colors" onClick={() => { setHierarchySortField('cgpa'); setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+ 21624→                        <div className="flex items-center gap-1">CGPA {hierarchySortField === 'cgpa' && <ArrowUpDown className="w-3 h-3" />}</div>
+ 21625→                      </th>
+ 21626→                      <th className="text-center py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+ 21627→                        Status
+ 21628→                      </th>
+ 21629→                      <th className="text-right py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-emerald-600 transition-colors" onClick={() => { setHierarchySortField('achievementCount'); setHierarchySortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); }}>
+ 21630→                        <div className="flex items-center justify-end gap-1"><Trophy className="w-3 h-3 inline" /> Achievements {hierarchySortField === 'achievementCount' && <ArrowUpDown className="w-3 h-3" />}</div>
+ 21631→                      </th>
+ 21632→                      <th className="text-right py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+ 21633→                        Actions
+ 21634→                      </th>
+ 21635→                    </tr>
+ 21636→                  </thead>
+ 21637→                  <tbody>
+ 21638→                    {(() => {
+ 21639→                      // Apply search filter
+ 21640→                      let filteredStudents = [...students]
+ 21641→                      
+ 21642→                      if (searchQuery.trim()) {
+ 21643→                        filteredStudents = filteredStudents.filter(s => 
+ 21644→                          (s.user?.name || s.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+ 21645→                          (s.registerNumber || '').toLowerCase().includes(searchQuery.toLowerCase())
+ 21646→                        )
+ 21647→                      }
+ 21648→                      
+ 21649→                      // Apply Sorting
+ 21650→                      filteredStudents.sort((a, b) => {
+ 21651→                        let comparison = 0
+ 21652→                        const getYearFromSemester = (sem: number | undefined) => {
+ 21653→                          if (!sem) return '1st Year'
+ 21654→                          if (sem <= 2) return '1st Year'
+ 21655→                          if (sem <= 4) return '2nd Year'
+ 21656→                          if (sem <= 6) return '3rd Year'
+ 21657→                          return '4th Year'
+ 21658→                        }
+ 21659→                        const yearOrder: Record<string, number> = { '1st Year': 1, '2nd Year': 2, '3rd Year': 3, '4th Year': 4 }
+ 21660→                        
+ 21661→                        switch (hierarchySortField) {
+ 21662→                          case 'name':
+ 21663→                            comparison = (a.user?.name || a.name || '').localeCompare(b.user?.name || b.name || '')
+ 21664→                            break
+ 21665→                          case 'regNo':
+ 21666→                            comparison = (a.registerNumber || '').localeCompare(b.registerNumber || '')
+ 21667→                            break
+ 21668→                          case 'year':
+ 21669→                            const yearA = getYearFromSemester(a.semester)
+ 21670→                            const yearB = getYearFromSemester(b.semester)
+ 21671→                            comparison = (yearOrder[yearA] || 0) - (yearOrder[yearB] || 0)
+ 21672→                            break
+ 21673→                          case 'section':
+ 21674→                            comparison = (a.section || 'A').localeCompare(b.section || 'A')
+ 21675→                            break
+ 21676→                          case 'cgpa':
+ 21677→                            comparison = (a.cgpa || 0) - (b.cgpa || 0)
+ 21678→                            break
+ 21679→                          case 'achievementCount': {
+ 21680→                            const studentName = a.user?.name || a.name || ''
+ 21681→                            const regNo = a.registerNumber || ''
+ 21682→                            const studentNameB = b.user?.name || b.name || ''
+ 21683→                            const regNoB = b.registerNumber || ''
+ 21684→                            const countA = allAchievements.filter(ach => ach.studentName === studentName || ach.reg === regNo).length
+ 21685→                            const countB = allAchievements.filter(ach => ach.studentName === studentNameB || ach.reg === regNoB).length
+ 21686→                            comparison = countA - countB
+ 21687→                            break
+ 21688→                          }
+ 21689→                          case 'status':
+ 21690→                            comparison = (a.isActive !== false ? 'active' : 'inactive').localeCompare(b.isActive !== false ? 'active' : 'inactive')
+ 21691→                            break
+ 21692→                          default:
+ 21693→                            comparison = (a.user?.name || a.name || '').localeCompare(b.user?.name || b.name || '')
+ 21694→                        }
+ 21695→                        return hierarchySortOrder === 'asc' ? comparison : -comparison
+ 21696→                      })
+ 21697→                      
+ 21698→                      return filteredStudents.map((student) => {
+ 21699→                        const getYearFromSemester = (sem: number | undefined) => {
+ 21700→                          if (!sem) return '1st Year'
+ 21701→                          if (sem <= 2) return '1st Year'
+ 21702→                          if (sem <= 4) return '2nd Year'
+ 21703→                          if (sem <= 6) return '3rd Year'
+ 21704→                          return '4th Year'
+ 21705→                        }
+ 21706→                        
+ 21707→                        const getCGPAColor = (cgpa: number | undefined) => {
+ 21708→                          if (!cgpa) return 'text-gray-400'
+ 21709→                          if (cgpa >= 9) return 'text-emerald-600'
+ 21710→                          if (cgpa >= 8) return 'text-blue-600'
+ 21711→                          if (cgpa >= 7) return 'text-yellow-600'
+ 21712→                          return 'text-red-500'
+ 21713→                        }
+ 21714→                        
+ 21715→                        const studentName = student.user?.name || student.name || 'Student'
+ 21716→                        const regNo = student.registerNumber || ''
+ 21717→                        const studentAchievementCount = allAchievements.filter(
+ 21718→                          a => a.studentName === studentName || a.reg === regNo
+ 21719→                        ).length
+ 21720→                        
+ 21721→                        return (
+ 21722→                          <tr 
+ 21723→                            key={student.id} 
+ 21724→                            className="border-b border-gray-100 hover:bg-emerald-50/60 transition-colors group"
+ 21725→                          >
+ 21726→                            <td className="py-3 px-4 text-xs font-mono text-gray-700 font-medium">{regNo}</td>
+ 21727→                            <td className="py-3 px-4">
+ 21728→                              <div className="flex items-center gap-3">
+ 21729→                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md">
+ 21730→                                  <span className="text-white text-xs font-bold">{studentName.split(' ').map(n => n[0]).join('').substring(0, 2)}</span>
+ 21731→                                </div>
+ 21732→                                <div>
+ 21733→                                  <p className="text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors">{studentName}</p>
+ 21734→                                  <p className="text-[10px] text-gray-400">{student.user?.email || student.email || ''}</p>
+ 21735→                                </div>
+ 21736→                              </div>
+ 21737→                            </td>
+ 21738→                            <td className="py-3 px-4">
+ 21739→                              <Badge variant="outline" className="text-xs font-medium">
+ 21740→                                {getYearFromSemester(student.semester)}
+ 21741→                              </Badge>
+ 21742→                            </td>
+ 21743→                            <td className="py-3 px-4">
+ 21744→                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold">
+ 21745→                                {student.section || 'A'}
+ 21746→                              </span>
+ 21747→                            </td>
+ 21748→                            <td className="py-3 px-4">
+ 21749→                              <span className={'text-sm font-bold ' + getCGPAColor(student.cgpa)}>
+ 21750→                                {student.cgpa?.toFixed(1) || '-'}
+ 21751→                              </span>
+ 21752→                            </td>
+ 21753→                            <td className="py-3 px-4 text-center">
+ 21754→                              <Badge className={
+ 21755→                                student.isActive === false ? 'bg-gray-100 text-gray-600 text-[10px]' : 'bg-green-100 text-green-700 text-[10px]'
+ 21756→                              }>
+ 21757→                                {student.isActive === false ? 'Inactive' : 'Active'}
+ 21758→                              </Badge>
+ 21759→                            </td>
+ 21760→                            <td className="py-3 px-4 text-right">
+ 21761→                              <button
+ 21762→                                onClick={() => {
+ 21763→                                  setSelectedStudentForAchievements({
+ 21764→                                    ...student,
+ 21765→                                    name: studentName,
+ 21766→                                    regNo: regNo,
+ 21767→                                    year: getYearFromSemester(student.semester),
+ 21768→                                    section: student.section || 'A'
+ 21769→                                  })
+ 21770→                                  setShowStudentAchievementModal(true)
+ 21771→                                }}
+ 21772→                                className={'inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-full transition-all hover:scale-105 ' + (
+ 21773→                                  studentAchievementCount > 0 
+ 21774→                                    ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' 
+ 21775→                                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+ 21776→                                )}
+ 21777→                              >
+ 21778→                                <Trophy className="w-3 h-3" />
+ 21779→                                {studentAchievementCount}
+ 21780→                              </button>
+ 21781→                            </td>
+ 21782→                            <td className="py-3 px-4">
+ 21783→                              <div className="flex items-center justify-end gap-1">
+ 21784→                                <button
+ 21785→                                  onClick={() => {
+ 21786→                                    setSelectedStudentForAchievements({
+ 21787→                                      ...student,
+ 21788→                                      name: studentName,
+ 21789→                                      regNo: regNo,
+ 21790→                                      year: getYearFromSemester(student.semester),
+ 21791→                                      section: student.section || 'A'
+ 21792→                                    })
+ 21793→                                    setShowStudentAchievementModal(true)
+ 21794→                                  }}
+ 21795→                                  className="p-2 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+ 21796→                                  title="View Achievements"
+ 21797→                                >
+ 21798→                                  <Eye className="w-4 h-4" />
+ 21799→                                </button>
+ 21800→                                <button
+ 21801→                                  onClick={() => setHierarchyState(prev => ({
+ 21802→                                    ...prev,
+ 21803→                                    level: 'profile',
+ 21804→                                    studentId: student.id,
+ 21805→                                    studentName: studentName
+ 21806→                                  }))}
+ 21807→                                  className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+ 21808→                                  title="View Full Profile"
+ 21809→                                >
+ 21810→                                  <ExternalLink className="w-4 h-4" />
+ 21811→                                </button>
+ 21812→                              </div>
+ 21813→                            </td>
+ 21814→                          </tr>
+ 21815→                        )
+ 21816→                      })
+ 21817→                    })()}
+ 21818→                  </tbody>
+ 21819→                </table>
+ 21820→              </div>
+ 21821→              
+ 21822→              {/* Table Footer Summary */}
+ 21823→              <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+ 21824→                <p className="text-xs text-gray-500">
+ 21825→                  Showing <strong>{students.length}</strong> students
+ 21826→                  {hierarchyState.section && <span> in <strong>Section {hierarchyState.section}</strong></span>}
+ 21827→                  {hierarchyState.year && <span> from <strong>{hierarchyState.year}</strong></span>}
+ 21828→                </p>
+ 21829→                <div className="flex items-center gap-3">
+ 21830→                  <span className="text-xs text-gray-500">Sections:</span>
+ 21831→                  {['A', 'B', 'C', 'D'].map(sec => {
+ 21832→                    const count = students.filter(s => (s.section || 'A') === sec).length
+ 21833→                    return count > 0 ? (
+ 21834→                      <span key={sec} className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 text-[10px] font-bold">
+ 21835→                        {sec}: {count}
+ 21836→                      </span>
+ 21837→                    ) : null
+ 21838→                  })}
+ 21839→                </div>
+ 21840→              </div>
+ 21841→            </div>
+ 21842→          )}
+ 21843→          
+ 21844→          {/* STUDENT ACHIEVEMENT MODAL - Popup when clicking achievement button */}
+ 21845→          {showStudentAchievementModal && selectedStudentForAchievements && (
+ 21846→            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+ 21847→              {/* Backdrop */}
+ 21848→              <div 
+ 21849→                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+ 21850→                onClick={() => {
+ 21851→                  setShowStudentAchievementModal(false)
+ 21852→                  setSelectedStudentForAchievements(null)
+ 21853→                }}
+ 21854→              />
+ 21855→              
+ 21856→              {/* Modal Content */}
+ 21857→              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+ 21858→                {/* Modal Header - Gradient */}
+ 21859→                <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-5 flex items-center justify-between shrink-0">
+ 21860→                  <div className="flex items-center gap-4">
+ 21861→                    {/* Student Avatar */}
+ 21862→                    <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-xl border-2 border-white/30">
+ 21863→                      {(selectedStudentForAchievements.name || '').split(' ').map(n => n[0]).join('')}
+ 21864→                    </div>
+ 21865→                    <div>
+ 21866→                      <h2 className="text-xl font-bold text-white">{selectedStudentForAchievements.name}</h2>
+ 21867→                      <p className="text-emerald-200 text-sm flex items-center gap-2 mt-0.5">
+ 21868→                        <span>{selectedStudentForAchievements.regNo}</span>
+ 21869→                        <span className="w-1 h-1 rounded-full bg-emerald-300" />
+ 21870→                        <span>{selectedStudentForAchievements.year}</span>
+ 21871→                        <span className="w-1 h-1 rounded-full bg-emerald-300" />
+ 21872→                        <span>Section {selectedStudentForAchievements.section || 'A'}</span>
+ 21873→                      </p>
+ 21874→                    </div>
+ 21875→                  </div>
+ 21876→                  <button
+ 21877→                    onClick={() => {
+ 21878→                      setShowStudentAchievementModal(false)
+ 21879→                      setSelectedStudentForAchievements(null)
+ 21880→                    }}
+ 21881→                    className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-colors"
+ 21882→                  >
+ 21883→                    <X className="w-6 h-6" />
+ 21884→                  </button>
+ 21885→                </div>
+ 21886→
+ 21887→                {/* Achievement Stats Bar */}
+ 21888→                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex items-center gap-6 shrink-0">
+ 21889→                  {(() => {
+ 21890→                    const studentAchievementsList = allAchievements.filter(
+ 21891→                      a => a.studentName === selectedStudentForAchievements.name || a.reg === selectedStudentForAchievements.regNo
+ 21892→                    )
+ 21893→                    const total = studentAchievementsList.length
+ 21894→                    const approved = studentAchievementsList.filter(a => a.status?.includes('approved')).length
+ 21895→                    const pending = studentAchievementsList.filter(a => a.status === 'pending_hod' || a.status === 'pending' || a.status === 'pending_staff').length
+ 21896→                    return (
+ 21897→                      <>
+ 21898→                        <div className="flex items-center gap-2">
+ 21899→                          <Trophy className="w-5 h-5 text-amber-500" />
+ 21900→                          <div>
+ 21901→                            <p className="text-xs text-gray-500">Total</p>
+ 21902→                            <p className="text-lg font-bold text-gray-800">{total}</p>
+ 21903→                          </div>
+ 21904→                        </div>
+ 21905→                        <div className="w-px h-10 bg-gray-200" />
+ 21906→                        <div className="flex items-center gap-2">
+ 21907→                          <CheckCircle className="w-5 h-5 text-green-500" />
+ 21908→                          <div>
+ 21909→                            <p className="text-xs text-gray-500">Approved</p>
+ 21910→                            <p className="text-lg font-bold text-green-600">{approved}</p>
+ 21911→                          </div>
+ 21912→                        </div>
+ 21913→                        <div className="w-px h-10 bg-gray-200" />
+ 21914→                        <div className="flex items-center gap-2">
+ 21915→                          <Clock className="w-5 h-5 text-orange-500" />
+ 21916→                          <div>
+ 21917→                            <p className="text-xs text-gray-500">Pending</p>
+ 21918→                            <p className="text-lg font-bold text-orange-600">{pending}</p>
+ 21919→                          </div>
+ 21920→                        </div>
+ 21921→                      </>
+ 21922→                    )
+ 21923→                  })()}
+ 21924→                </div>
+ 21925→
+ 21926→                {/* Achievements List */}
+ 21927→                <div className="flex-1 overflow-y-auto p-6">
+ 21928→                  {(() => {
+ 21929→                    const studentAchievementsList = allAchievements.filter(
+ 21930→                      a => a.studentName === selectedStudentForAchievements.name || a.reg === selectedStudentForAchievements.regNo
+ 21931→                    )
+ 21932→
+ 21933→                    if (studentAchievementsList.length === 0) {
+ 21934→                      return (
+ 21935→                        <div className="text-center py-12">
+ 21936→                          <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+ 21937→                            <Trophy className="w-10 h-10 text-gray-300" />
+ 21938→                          </div>
+ 21939→                          <h3 className="text-lg font-semibold text-gray-700 mb-2">No Achievements Yet</h3>
+ 21940→                          <p className="text-sm text-gray-500 max-w-xs mx-auto">
+ 21941→                            {selectedStudentForAchievements.name} hasn't submitted any achievements yet.
+ 21942→                          </p>
+ 21943→                        </div>
+ 21944→                      )
+ 21945→                    }
+ 21946→
+ 21947→                    // Group achievements by type
+ 21948→                    const groupedByType = studentAchievementsList.reduce((acc, achievement) => {
+ 21949→                      const type = achievement.typeName || achievement.type || 'Other'
+ 21950→                      if (!acc[type]) acc[type] = []
+ 21951→                      acc[type].push(achievement)
+ 21952→                      return acc
+ 21953→                    }, {} as Record<string, typeof studentAchievementsList>)
+ 21954→
+ 21955→                    return Object.entries(groupedByType).map(([type, achievements]) => (
+ 21956→                      <div key={type} className="mb-6 last:mb-0">
+ 21957→                        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+ 21958→                          <FolderOpen className="w-4 h-4 text-emerald-500" />
+ 21959→                          {type}
+ 21960→                          <Badge variant="outline" className="text-xs ml-auto">{achievements.length}</Badge>
+ 21961→                        </h3>
+ 21962→                        <div className="space-y-3">
+ 21963→                          {achievements.map((achievement, idx) => {
+ 21964→                            // Get icon based on type
+ 21965→                            const typeInfo = Object.values(ACHIEVEMENT_TYPES).find(t => t.label === type)
+ 21966→                            const Icon = typeInfo?.icon || Trophy
+ 21967→                            
+ 21968→                            return (
+ 21969→                              <div 
+ 21970→                                key={achievement.id || idx} 
+ 21971→                                className={`p-4 rounded-xl border transition-all hover:shadow-md ${
+ 21972→                                  achievement.status?.includes('approved') ? 'border-green-200 bg-green-50/50' :
+ 21973→                                  achievement.status?.includes('pending') ? 'border-amber-200 bg-amber-50/50' :
+ 21974→                                  'border-gray-200 bg-white'
+ 21975→                                }`}
+ 21976→                              >
+ 21977→                                <div className="flex items-start gap-3">
+ 21978→                                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+ 21979→                                    achievement.status?.includes('approved') ? 'bg-green-100' :
+ 21980→                                    achievement.status?.includes('pending') ? 'bg-amber-100' : 'bg-gray-100'
+ 21981→                                  }`}>
+ 21982→                                    <Icon className={`w-5 h-5 ${
+ 21983→                                      achievement.status?.includes('approved') ? 'text-green-600' :
+ 21984→                                      achievement.status?.includes('pending') ? 'text-amber-600' : 'text-gray-500'
+ 21985→                                    }`} />
+ 21986→                                  </div>
+ 21987→                                  <div className="flex-1 min-w-0">
+ 21988→                                    <div className="flex items-start justify-between gap-2">
+ 21989→                                      <div>
+ 21990→                                        <h4 className="font-semibold text-gray-800 text-sm">{achievement.title || achievement.description?.substring(0, 80)}</h4>
+ 21991→                                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{achievement.description}</p>
+ 21992→                                      </div>
+ 21993→                                      <Badge className={
+ 21994→                                        achievement.status?.includes('approved') ? 'bg-green-100 text-green-700 text-[10px]' :
+ 21995→                                        achievement.status?.includes('pending') ? 'bg-amber-100 text-amber-700 text-[10px]' :
+ 21996→                                        'bg-gray-100 text-gray-600 text-[10px]'
+ 21997→                                      }>
+ 21998→                                        {achievement.status?.replace('_', ' ') || 'Submitted'}
+ 21999→                                      </Badge>
+ 22000→                                    </div>
+ 22001→                                    {achievement.date && (
+ 22002→                                      <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
+ 22003→                                        <Calendar className="w-3 h-3" /> {achievement.date}
+ 22004→                                      </p>
+ 22005→                                    )}
+ 22006→                                  </div>
+ 22007→                                </div>
+ 22008→                              </div>
+ 22009→                            )
+ 22010→                          })}
+ 22011→                        </div>
+ 22012→                      </div>
+ 22013→                    ))
+ 22014→                  })()}
+ 22015→                </div>
+ 22016→
+ 22017→                {/* Modal Footer */}
+ 22018→                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3 shrink-0">
+ 22019→                  <Button
+ 22020→                    variant="outline"
+ 22021→                    onClick={() => {
+ 22022→                      setShowStudentAchievementModal(false)
+ 22023→                      setSelectedStudentForAchievements(null)
+ 22024→                    }}
+ 22025→                    className="px-4"
+ 22026→                  >
+ 22027→                    Close
+ 22028→                  </Button>
+ 22029→                  <Button
+ 22030→                    onClick={() => {
+ 22031→                      setShowStudentAchievementModal(false)
+ 22032→                      setHierarchyState(prev => ({
+ 22033→                        ...prev,
+ 22034→                        level: 'profile',
+ 22035→                        studentId: selectedStudentForAchievements.id,
+ 22036→                        studentName: selectedStudentForAchievements.name
+ 22037→                      }))
+ 22038→                    }}
+ 22039→                    className="px-4 bg-emerald-600 hover:bg-emerald-700"
+ 22040→                  >
+ 22041→                    <ExternalLink className="w-4 h-4 mr-2" />
+ 22042→                    View Full Profile
+ 22043→                  </Button>
+ 22044→                </div>
+ 22045→              </div>
+ 22046→            </div>
+ 22047→          )}
+ 22048→        </div>
+ 22049→      )}
+ 22050→    </div>
+ 22051→  )
+ 22052→}
+ 22053→
+ 22054→// ============ COMPREHENSIVE STUDENT PROFILE PAGE ============
+ 22055→function StudentProfilePage({ 
+ 22056→  user, 
+ 22057→  studentId, 
+ 22058→  hierarchyState, 
+ 22059→  setHierarchyState,
+ 22060→  setActiveTab 
+ 22061→}: { 
+ 22062→  user: User
+ 22063→  studentId: string
+ 22064→  hierarchyState: HierarchyState
+ 22065→  setHierarchyState: (s: HierarchyState) => void
+ 22066→  setActiveTab: (t: TabType) => void
+ 22067→}) {
+ 22068→  const [studentData, setStudentData] = useState<any>(null)
+ 22069→  const [achievements, setAchievements] = useState<any[]>([])
+ 22070→  const [loading, setLoading] = useState(true)
+ 22071→  const [profileActiveTab, setProfileActiveTab] = useState<'overview' | 'achievements' | 'documents' | 'analytics'>('overview')
+ 22072→
+ 22073→  useEffect(() => {
+ 22074→    if (studentId) {
+ 22075→      fetchStudentData()
+ 22076→    }
+ 22077→  }, [studentId])
+ 22078→
+ 22079→  const fetchStudentData = async () => {
+ 22080→    try {
+ 22081→      setLoading(true)
+ 22082→      const res = await fetch('/api/students/' + studentId)
+ 22083→      const data = await res.json()
+ 22084→      if (data.success) {
+ 22085→        setStudentData(data.student)
+ 22086→        // Load achievements from localStorage (simulated)
+ 22087→        const savedAchievements = localStorage.getItem('achievements_' + (data.student?.registerNumber || ''))
+ 22088→        if (savedAchievements) {
+ 22089→          setAchievements(JSON.parse(savedAchievements))
+ 22090→        }
+ 22091→      }
+ 22092→    } catch (error) {
+ 22093→      console.error('Error fetching student:', error)
+ 22094→    } finally {
+ 22095→      setLoading(false)
+ 22096→    }
+ 22097→  }
+ 22098→
+ 22099→  const getCGPAColor = (cgpa: number | undefined) => {
+
+[showing lines 21600-22099 of 23341; use offset=22100 with limit to continue reading]

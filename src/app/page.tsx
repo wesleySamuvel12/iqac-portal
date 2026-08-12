@@ -38,7 +38,8 @@ import {
   // Admin icons
   FileCheck,
   // Additional icons for HOD student features
-  Check, Hash, User, ExternalLink, ArrowLeftRight
+  Check, Hash, User, UserRound, ExternalLink, ArrowLeftRight,
+  ListChecks
 } from 'lucide-react'
 
 // Premium Components (only ones that export correctly)
@@ -87,7 +88,7 @@ type TabType = 'dashboard' | 'departments' | 'faculty' | 'students' | 'activitie
   | 'cms_portal'
 
 // ============ HIERARCHY NAVIGATION TYPES ============
-type HierarchyLevel = 'department' | 'year' | 'section' | 'students' | 'profile'
+type HierarchyLevel = 'department' | 'year' | 'section' | 'achievements' | 'students' | 'profile'
 
 interface HierarchyState {
   level: HierarchyLevel
@@ -20903,6 +20904,16 @@ function AcademicHierarchyPage({
   // Student Achievement View State
   const [selectedStudentForAchievements, setSelectedStudentForAchievements] = useState<any>(null)
   const [showStudentAchievementModal, setShowStudentAchievementModal] = useState(false)
+  
+  // NEW: Achievement Statistics View State
+  const [achievementDetailView, setAchievementDetailView] = useState<{
+    isOpen: boolean
+    type: 'total' | 'male' | 'female'
+    departmentId?: string
+    departmentName?: string
+    year?: string
+    section?: string
+  }>({ isOpen: false, type: 'total' })
 
   useEffect(() => {
     fetchDepartments()
@@ -21044,6 +21055,179 @@ function AcademicHierarchyPage({
     return students.filter(s => s.section === section).length
   }
 
+  // ============ NEW: ACHIEVEMENT STATISTICS HELPERS ============
+  
+  // Get gender from student data (check multiple possible fields)
+  const getStudentGender = (student: any): 'male' | 'female' => {
+    const gender = (student.gender || student.user?.gender || '').toLowerCase()
+    return gender === 'female' ? 'female' : 'male'
+  }
+
+  // Get achievements for a specific department
+  const getDeptAchievements = (deptName: string) => {
+    return allAchievements.filter(a => 
+      a.dept === deptName || a.department === deptName
+    )
+  }
+
+  // Get achievements for a specific year within a department
+  const getYearAchievements = (deptName: string, year: string) => {
+    const yearToSemester: Record<string, number> = { '1st Year': 1, '2nd Year': 3, '3rd Year': 5, '4th Year': 7 }
+    const sem = yearToSemester[year]
+    
+    return allAchievements.filter(a => {
+      const isDept = a.dept === deptName || a.department === deptName
+      // Filter by matching students in that year
+      const matchingStudent = students.find(s => 
+        s.registerNumber === a.regNo || 
+        s.registerNumber === a.registerNumber ||
+        s.user?.email === a.studentEmail
+      )
+      if (!matchingStudent) return isDept // Include if we can't determine
+      return isDept && matchingStudent.semester >= sem && matchingStudent.semester <= sem + 1
+    })
+  }
+
+  // Get achievements for a specific section within a department/year
+  const getSectionAchievements = (deptName: string, year: string, section: string) => {
+    const yearToSemester: Record<string, number> = { '1st Year': 1, '2nd Year': 3, '3rd Year': 5, '4th Year': 7 }
+    const sem = yearToSemester[year]
+    
+    return allAchievements.filter(a => {
+      const isDept = a.dept === deptName || a.department === deptName
+      const matchingStudent = students.find(s => 
+        s.registerNumber === a.regNo || 
+        s.registerNumber === a.registerNumber ||
+        s.user?.email === a.studentEmail
+      )
+      if (!matchingStudent) return isDept
+      return isDept && 
+             matchingStudent.semester >= sem && 
+             matchingStudent.semester <= sem + 1 &&
+             (matchingStudent.section || 'A') === section
+    })
+  }
+
+  // Get gender breakdown for achievements
+  const getGenderBreakdown = (achievements: any[]) => {
+    let maleCount = 0
+    let femaleCount = 0
+    
+    achievements.forEach(ach => {
+      // Find the student for this achievement
+      const student = students.find(s => 
+        s.registerNumber === ach.regNo || 
+        s.registerNumber === ach.registerNumber ||
+        s.user?.email === ach.studentEmail
+      )
+      if (student) {
+        if (getStudentGender(student) === 'female') {
+          femaleCount++
+        } else {
+          maleCount++
+        }
+      } else {
+        // If no student found, count as male by default
+        maleCount++
+      }
+    })
+    
+    return {
+      total: achievements.length,
+      male: maleCount,
+      female: femaleCount
+    }
+  }
+
+  // Get students list for a specific achievement filter
+  const getStudentsForAchievementFilter = () => {
+    let filteredStudents = [...students]
+    let filteredAchievements = [...allAchievements]
+    
+    // Apply department filter
+    if (achievementDetailView.departmentName) {
+      filteredAchievements = filteredAchievements.filter(a => 
+        a.dept === achievementDetailView.departmentName || 
+        a.department === achievementDetailView.departmentName
+      )
+    }
+    
+    // Apply year filter
+    if (achievementDetailView.year) {
+      const yearToSemester: Record<string, number> = { '1st Year': 1, '2nd Year': 3, '3rd Year': 5, '4th Year': 7 }
+      const sem = yearToSemester[achievementDetailView.year]
+      
+      // Get student IDs in this year
+      const yearStudentIds = new Set(
+        filteredStudents
+          .filter(s => s.semester >= sem && s.semester <= sem + 1)
+          .map(s => s.registerNumber)
+      )
+      
+      filteredAchievements = filteredAchievements.filter(a => 
+        yearStudentIds.has(a.regNo) || yearStudentIds.has(a.registerNumber)
+      )
+    }
+    
+    // Apply section filter
+    if (achievementDetailView.section) {
+      const sectionStudentIds = new Set(
+        filteredStudents
+          .filter(s => (s.section || 'A') === achievementDetailView.section)
+          .map(s => s.registerNumber)
+      )
+      
+      filteredAchievements = filteredAchievements.filter(a => 
+        sectionStudentIds.has(a.regNo) || sectionStudentIds.has(a.registerNumber)
+      )
+    }
+    
+    // Apply gender filter
+    if (achievementDetailView.type !== 'total') {
+      const gender = achievementDetailView.type // 'male' or 'female'
+      const genderStudentIds = new Set(
+        filteredStudents
+          .filter(s => getStudentGender(s) === gender)
+          .map(s => s.registerNumber)
+      )
+      
+      filteredAchievements = filteredAchievements.filter(a => 
+        genderStudentIds.has(a.regNo) || genderStudentIds.has(a.registerNumber)
+      )
+    }
+    
+    // Get unique student register numbers from filtered achievements
+    const studentRegNos = new Set(filteredAchievements.map(a => a.regNo || a.registerNumber))
+    
+    // Return students who have achievements in the filtered set
+    return filteredStudents.filter(s => 
+      studentRegNos.has(s.registerNumber)
+    )
+  }
+
+  // Open achievement detail view
+  const openAchievementDetailView = (
+    type: 'total' | 'male' | 'female',
+    departmentId?: string,
+    departmentName?: string,
+    year?: string,
+    section?: string
+  ) => {
+    setAchievementDetailView({
+      isOpen: true,
+      type,
+      departmentId,
+      departmentName,
+      year,
+      section
+    })
+  }
+
+  // Close achievement detail view
+  const closeAchievementDetailView = () => {
+    setAchievementDetailView({ isOpen: false, type: 'total' })
+  }
+
   return (
     <div className="space-y-6 p-4 lg:p-6 animate-fadeIn">
       {/* Simple Breadcrumb Navigation */}
@@ -21076,7 +21260,7 @@ function AcademicHierarchyPage({
         )}
       </div>
 
-      {/* DEPARTMENT LEVEL - Show all accessible departments */}
+      {/* DEPARTMENT LEVEL - Show all accessible departments WITH ACHIEVEMENT STATS */}
       {hierarchyState.level === 'department' && (
         <div className="space-y-6">
           {/* Header */}
@@ -21089,62 +21273,104 @@ function AcademicHierarchyPage({
                 <h1 className="text-2xl font-bold">Academic Hierarchy</h1>
                 <p className="text-emerald-100 mt-1">
                   {user.role === 'ADMIN' 
-                    ? 'Navigate through all departments and their academic structure'
-                    : 'Browse ' + user.departmentName + ' - Year → Class → Students'
+                    ? 'View achievement statistics by Department → Year → Section'
+                    : 'Browse ' + user.departmentName + ' achievements by Year → Section'
                   }
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Department Cards Grid */}
+          {/* Department Cards Grid - With Achievement Statistics */}
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map(i => (
-                <div key={i} className="animate-pulse bg-white rounded-2xl p-6 border border-gray-200 h-48" />
+                <div key={i} className="animate-pulse bg-white rounded-2xl p-6 border border-gray-200 h-64" />
               ))}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {departments.map((dept) => (
-                <button
-                  key={dept.id}
-                  onClick={() => navigateToLevel('year', { 
-                    departmentId: dept.id, 
-                    departmentName: dept.name 
-                  })}
-                  className="group bg-white rounded-2xl p-6 border border-gray-200 hover:border-emerald-300 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 text-left"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
-                      <Building2 className="w-6 h-6 text-white" />
+              {departments.map((dept) => {
+                const deptAchievements = getDeptAchievements(dept.name)
+                const stats = getGenderBreakdown(deptAchievements)
+                
+                return (
+                  <button
+                    key={dept.id}
+                    onClick={() => navigateToLevel('year', { 
+                      departmentId: dept.id, 
+                      departmentName: dept.name 
+                    })}
+                    className="group bg-white rounded-2xl p-6 border border-gray-200 hover:border-emerald-300 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 text-left"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
+                        <Building2 className="w-6 h-6 text-white" />
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
                     </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
-                  </div>
-                  
-                  <h3 className="font-bold text-gray-900 text-lg mb-1 group-hover:text-emerald-700 transition-colors">
-                    {dept.name}
-                  </h3>
-                  <p className="text-sm text-gray-500 mb-4">{dept.code}</p>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-blue-50 rounded-lg p-2.5 text-center">
-                      <p className="text-lg font-bold text-blue-700">{dept._aggr_count_students || 0}</p>
-                      <p className="text-xs text-blue-600">Students</p>
+                    
+                    <h3 className="font-bold text-gray-900 text-lg mb-1 group-hover:text-emerald-700 transition-colors">
+                      {dept.name}
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-4">{dept.code}</p>
+                    
+                    {/* Achievement Statistics */}
+                    <div className="space-y-2">
+                      {/* Total Achievements - Clickable */}
+                      <div 
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openAchievementDetailView('total', dept.id, dept.name)
+                        }}
+                        className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-3 cursor-pointer hover:from-amber-100 hover:to-orange-100 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-amber-700">Total Achievements</span>
+                          <Trophy className="w-4 h-4 text-amber-500" />
+                        </div>
+                        <p className="text-xl font-bold text-amber-800">{stats.total}</p>
+                      </div>
+                      
+                      {/* Male & Female Achievements - Clickable */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div 
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openAchievementDetailView('male', dept.id, dept.name)
+                          }}
+                          className="bg-blue-50 rounded-lg p-2.5 cursor-pointer hover:bg-blue-100 transition-colors"
+                        >
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <User className="w-3 h-3 text-blue-500" />
+                            <span className="text-[10px] font-medium text-blue-600">Male</span>
+                          </div>
+                          <p className="text-lg font-bold text-blue-700">{stats.male}</p>
+                        </div>
+                        <div 
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openAchievementDetailView('female', dept.id, dept.name)
+                          }}
+                          className="bg-pink-50 rounded-lg p-2.5 cursor-pointer hover:bg-pink-100 transition-colors"
+                        >
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <UserRound className="w-3 h-3 text-pink-500" />
+                            <span className="text-[10px] font-medium text-pink-600">Female</span>
+                          </div>
+                          <p className="text-lg font-bold text-pink-700">{stats.female}</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="bg-purple-50 rounded-lg p-2.5 text-center">
-                      <p className="text-lg font-bold text-purple-700">{dept._aggr_count_faculty || 0}</p>
-                      <p className="text-xs text-purple-600">Faculty</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
       )}
 
-      {/* YEAR LEVEL - Show academic years + Direct Student List */}
+      {/* YEAR LEVEL - Show academic years WITH ACHIEVEMENT STATS */}
       {hierarchyState.level === 'year' && (
         <div className="space-y-6">
           {/* Back Button & Header */}
@@ -21157,12 +21383,12 @@ function AcademicHierarchyPage({
             </button>
             <div className="flex-1">
               <h2 className="text-xl font-bold text-gray-900">{hierarchyState.departmentName}</h2>
-              <p className="text-sm text-gray-500">Select Academic Year to view students</p>
+              <p className="text-sm text-gray-500">Select Academic Year to view achievement statistics by section</p>
             </div>
           </div>
 
-          {/* Year Cards - Click to show students directly */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Year Cards - With Achievement Statistics */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {years.map((year, idx) => {
               const colors = [
                 'from-orange-500 to-amber-500',
@@ -21172,293 +21398,372 @@ function AcademicHierarchyPage({
               ]
               
               const count = getYearCount(year)
-              const isSelected = hierarchyState.year === year
+              const yearAchievements = getYearAchievements(hierarchyState.departmentName || '', year)
+              const yearStats = getGenderBreakdown(yearAchievements)
               
               return (
                 <button
                   key={year}
-                  onClick={() => {
-                    if (isSelected) {
-                      // If already selected, go back to showing all
-                      setHierarchyState(prev => ({ ...prev, year: undefined }))
-                    } else {
-                      // Select this year and show students
-                      setHierarchyState(prev => ({ ...prev, year, level: 'students' }))
-                    }
-                  }}
-                  className={`p-4 rounded-xl transition-all duration-300 text-left ${
-                    isSelected 
-                      ? 'bg-gradient-to-br from-violet-600 to-purple-600 text-white shadow-xl scale-[1.02] ring-4 ring-offset-2 ring-violet-400' 
-                      : 'bg-white border border-gray-200 hover:border-violet-300 hover:shadow-lg'
+                  onClick={() => setHierarchyState(prev => ({ ...prev, year, level: 'section' }))}
+                  className={`bg-white rounded-xl border transition-all duration-300 text-left overflow-hidden ${
+                    hierarchyState.year === year 
+                      ? 'border-violet-300 shadow-lg shadow-violet-500/20 ring-2 ring-violet-200' 
+                      : 'border-gray-200 hover:border-violet-300 hover:shadow-lg'
                   }`}
                 >
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${isSelected ? 'bg-white/20' : 'bg-gradient-to-br ' + colors[idx] + ' text-white'}`}>
-                    <School className={`w-5 h-5 ${isSelected ? 'text-white' : ''}`} />
+                  {/* Year Header */}
+                  <div className={`p-4 bg-gradient-to-br ${colors[idx]} text-white`}>
+                    <div className="flex items-center justify-between">
+                      <School className="w-6 h-6" />
+                      <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
+                        {count} students
+                      </span>
+                    </div>
+                    <p className="font-bold text-lg mt-2">{year}</p>
                   </div>
                   
-                  <p className={`font-bold ${isSelected ? 'text-white' : 'text-gray-900'}`}>{year}</p>
-                  <p className={`text-sm mt-0.5 ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
-                    {count} student{count !== 1 ? 's' : ''}
-                  </p>
+                  {/* Achievement Stats */}
+                  <div className="p-3 space-y-2">
+                    {/* Total - Clickable */}
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openAchievementDetailView('total', hierarchyState.departmentId, hierarchyState.departmentName, year)
+                      }}
+                      className="bg-amber-50 rounded-lg p-2 cursor-pointer hover:bg-amber-100 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-medium text-amber-700">Total Achievements</span>
+                        <Trophy className="w-3 h-3 text-amber-500" />
+                      </div>
+                      <p className="text-base font-bold text-amber-800">{yearStats.total}</p>
+                    </div>
+                    
+                    {/* Male/Female - Clickable */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div 
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openAchievementDetailView('male', hierarchyState.departmentId, hierarchyState.departmentName, year)
+                        }}
+                        className="bg-blue-50 rounded-lg p-2 cursor-pointer hover:bg-blue-100 transition-colors"
+                      >
+                        <span className="text-[9px] font-medium text-blue-600">Male</span>
+                        <p className="text-sm font-bold text-blue-700">{yearStats.male}</p>
+                      </div>
+                      <div 
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openAchievementDetailView('female', hierarchyState.departmentId, hierarchyState.departmentName, year)
+                        }}
+                        className="bg-pink-50 rounded-lg p-2 cursor-pointer hover:bg-pink-100 transition-colors"
+                      >
+                        <span className="text-[9px] font-medium text-pink-600">Female</span>
+                        <p className="text-sm font-bold text-pink-700">{yearStats.female}</p>
+                      </div>
+                    </div>
+                  </div>
                 </button>
               )
             })}
-            
-            {/* "All Years" option */}
-            <button
-              onClick={() => setHierarchyState(prev => ({ ...prev, level: 'students', year: undefined }))}
-              className={`p-4 rounded-xl transition-all duration-300 text-left ${
-                !hierarchyState.year && hierarchyState.level === 'students'
-                  ? 'bg-gradient-to-br from-slate-700 to-slate-600 text-white shadow-xl scale-[1.02]'
-                  : 'bg-white border border-gray-200 hover:border-slate-300 hover:shadow-lg'
-              }`}
-            >
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${!hierarchyState.year ? 'bg-white/20' : 'bg-slate-600 text-white'}`}>
-                <Users className={`w-5 h-5 ${!hierarchyState.year ? 'text-white' : ''}`} />
-              </div>
-              <p className={`font-bold ${!hierarchyState.year ? 'text-white' : 'text-gray-900'}`}>All Years</p>
-              <p className={`text-sm mt-0.5 ${!hierarchyState.year ? 'text-white/80' : 'text-gray-500'}`}>
-                {students.length} total
-              </p>
-            </button>
           </div>
-
-          {/* Show Student List Directly (when a year is selected or viewing all) */}
-          {(hierarchyState.year || hierarchyState.level === 'students') && (
-            <>
-              {/* Section Quick Filters */}
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-sm font-medium text-gray-600">Sections:</span>
-                <button
-                  onClick={() => setHierarchyState(prev => ({ ...prev, section: undefined }))}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    !hierarchyState.section 
-                      ? 'bg-violet-600 text-white shadow-md' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  All
-                </button>
-                {['A', 'B', 'C', 'D'].map(sec => {
-                  const secCount = students.filter(s => (s.section || 'A') === sec && (
-                    !hierarchyState.year || getYearFromSemester(s.semester) === hierarchyState.year
-                  )).length
-                  const isSelected = hierarchyState.section === sec
-                  return secCount > 0 ? (
-                    <button
-                      key={sec}
-                      onClick={() => setHierarchyState(prev => ({ ...prev, section: isSelected ? undefined : sec }))}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                        isSelected 
-                          ? 'bg-indigo-600 text-white shadow-md' 
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      Sec {sec} ({secCount})
-                    </button>
-                  ) : null
-                })}
-              </div>
-
-              {/* Mini Student Table Preview */}
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100/50 border-b border-gray-200 flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-800 text-sm">
-                    {hierarchyState.year ? hierarchyState.year + ' Students' : 'All Students'}
-                    {hierarchyState.section && ' • Section ' + hierarchyState.section}
-                  </h3>
-                  <Badge variant="outline" className="text-xs">
-                    {(() => {
-                      let filtered = students
-                      if (hierarchyState.year) filtered = filtered.filter(s => getYearFromSemester(s.semester) === hierarchyState.year)
-                      if (hierarchyState.section) filtered = filtered.filter(s => (s.section || 'A') === hierarchyState.section)
-                      return filtered.length + ' students'
-                    })()}
-                  </Badge>
-                </div>
-                
-                <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-                  <table className="w-full">
-                    <thead className="sticky top-0 bg-white z-10">
-                      <tr className="border-b border-gray-200 bg-gray-50/80">
-                        <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Reg No</th>
-                        <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Name</th>
-                        <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Year</th>
-                        <th className="text-left py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Sec</th>
-                        <th className="text-right py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">CGPA</th>
-                        <th className="text-center py-2 px-3 text-[10px] font-semibold text-gray-500 uppercase">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(() => {
-                        let filteredStudents = [...students]
-                        if (hierarchyState.year) filteredStudents = filteredStudents.filter(s => getYearFromSemester(s.semester) === hierarchyState.year)
-                        if (hierarchyState.section) filteredStudents = filteredStudents.filter(s => (s.section || 'A') === hierarchyState.section)
-                        
-                        if (filteredStudents.length === 0) {
-                          return (
-                            <tr>
-                              <td colSpan={6} className="py-8 text-center text-gray-400 text-sm">
-                                No students found for this selection
-                              </td>
-                            </tr>
-                          )
-                        }
-                        
-                        return filteredStudents.slice(0, 15).map((student) => {
-                          const studentName = student.user?.name || student.name || 'Student'
-                          const regNo = student.registerNumber || ''
-                          
-                          return (
-                            <tr 
-                              key={student.id} 
-                              className="border-b border-gray-50 hover:bg-violet-50/40 transition-colors cursor-pointer"
-                              onClick={() => {
-                                setSelectedStudentForAchievements({
-                                  ...student,
-                                  name: studentName,
-                                  regNo: regNo,
-                                  year: getYearFromSemester(student.semester),
-                                  section: student.section || 'A'
-                                })
-                                setShowStudentAchievementModal(true)
-                              }}
-                            >
-                              <td className="py-2.5 px-3 text-xs font-mono text-gray-600">{regNo}</td>
-                              <td className="py-2.5 px-3">
-                                <p className="text-xs font-medium text-gray-800">{studentName}</p>
-                              </td>
-                              <td className="py-2.5 px-3">
-                                <Badge variant="outline" className="text-[10px]">{getYearFromSemester(student.semester)}</Badge>
-                              </td>
-                              <td className="py-2.5 px-3">
-                                <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold">
-                                  {student.section || 'A'}
-                                </span>
-                              </td>
-                              <td className="py-2.5 px-3 text-right">
-                                <span className={'text-xs font-bold ' + (student.cgpa >= 9 ? 'text-emerald-600' : student.cgpa >= 8 ? 'text-blue-600' : 'text-gray-600')}>
-                                  {student.cgpa?.toFixed(1) || '-'}
-                                </span>
-                              </td>
-                              <td className="py-2.5 px-3">
-                                <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                                  <button
-                                    onClick={() => {
-                                      setSelectedStudentForAchievements({
-                                        ...student,
-                                        name: studentName,
-                                        regNo: regNo,
-                                        year: getYearFromSemester(student.semester),
-                                        section: student.section || 'A'
-                                      })
-                                      setShowStudentAchievementModal(true)
-                                    }}
-                                    className="p-1.5 text-violet-500 hover:text-violet-700 hover:bg-violet-50 rounded"
-                                    title="View Achievements"
-                                  >
-                                    <Eye className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button
-                                    onClick={() => setHierarchyState(prev => ({
-                                      ...prev,
-                                      level: 'profile',
-                                      studentId: student.id,
-                                      studentName: studentName
-                                    }))}
-                                    className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded"
-                                    title="View Profile"
-                                  >
-                                    <ExternalLink className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          )
-                        })
-                      })()}
-                    </tbody>
-                  </table>
-                </div>
-                
-                {/* View All Button */}
-                <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
-                  <button
-                    onClick={() => setHierarchyState(prev => ({ ...prev, level: 'students' }))}
-                    className="w-full py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
-                  >
-                    <ArrowRight className="w-4 h-4" />
-                    View Full Student List with Sort & Filters
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
         </div>
       )}
 
-      {/* SECTION LEVEL - Show class sections */}
-      {hierarchyState.level === 'section' && (
+      {/* SECTION LEVEL - Show sections WITH ACHIEVEMENT STATS */}
+      {hierarchyState.level === 'section' && hierarchyState.year && (
         <div className="space-y-6">
-          {/* Back Navigation */}
+          {/* Back Button & Header */}
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigateToLevel('year')}
+              onClick={() => setHierarchyState(prev => ({ ...prev, level: 'year', year: undefined }))}
               className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
             >
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
             <div className="flex-1">
               <h2 className="text-xl font-bold text-gray-900">{hierarchyState.departmentName}</h2>
-              <p className="text-sm text-gray-500">{hierarchyState.year} → Select Section</p>
+              <p className="text-sm text-gray-500">{hierarchyState.year} → Select Section to view achievements</p>
             </div>
           </div>
 
-          {/* Section Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {sections.map((section, idx) => {
-              const count = getSectionCount(section)
+          {/* Section Cards - With Achievement Statistics */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {['A', 'B', 'C', 'D'].map((section, idx) => {
+              const sectionColors = [
+                'from-cyan-500 to-blue-500',
+                'from-emerald-500 to-green-500',
+                'from-orange-500 to-red-500',
+                'from-purple-500 to-indigo-500'
+              ]
+              
+              const secCount = students.filter(s => (s.section || 'A') === section && (
+                getYearFromSemester(s.semester) === hierarchyState.year
+              )).length
+              
+              const secAchievements = getSectionAchievements(
+                hierarchyState.departmentName || '', 
+                hierarchyState.year || '', 
+                section
+              )
+              const secStats = getGenderBreakdown(secAchievements)
+              
+              if (secCount === 0 && secStats.total === 0) return null
+              
               return (
                 <button
                   key={section}
-                  onClick={() => setHierarchyState(prev => ({ ...prev, level: 'students', section }))}
-                  disabled={count === 0}
-                  className={'group bg-white rounded-2xl p-6 border ' + 
-                    count === 0 
-                      ? 'border-gray-100 opacity-60 cursor-not-allowed' 
-                      : 'border-gray-200 hover:border-emerald-300 hover:shadow-xl'
-                   + ' transition-all duration-300 text-left'}
+                  onClick={() => setHierarchyState(prev => ({ ...prev, section, level: 'achievements' }))}
+                  className={`bg-white rounded-xl border transition-all duration-300 text-left overflow-hidden ${
+                    hierarchyState.section === section 
+                      ? 'border-violet-300 shadow-lg shadow-violet-500/20 ring-2 ring-violet-200' 
+                      : 'border-gray-200 hover:border-violet-300 hover:shadow-lg'
+                  }`}
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg">
-                      <span className="text-2xl font-bold text-white">{section}</span>
+                  {/* Section Header */}
+                  <div className={`p-4 bg-gradient-to-br ${sectionColors[idx]} text-white`}>
+                    <div className="flex items-center justify-between">
+                      <BookOpen className="w-6 h-6" />
+                      <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
+                        {secCount} students
+                      </span>
                     </div>
-                    {count > 0 && (
-                      <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
-                        {count}
-                      </Badge>
-                    )}
+                    <p className="font-bold text-lg mt-2">Section {section}</p>
                   </div>
                   
-                  <h3 className="font-bold text-gray-900">Section {section}</h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {count === 0 ? 'No students' : count + ' student' + (count !== 1 ? 's' : '')}
-                  </p>
+                  {/* Achievement Stats */}
+                  <div className="p-3 space-y-2">
+                    {/* Total - Clickable */}
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openAchievementDetailView('total', hierarchyState.departmentId, hierarchyState.departmentName, hierarchyState.year, section)
+                      }}
+                      className="bg-amber-50 rounded-lg p-2 cursor-pointer hover:bg-amber-100 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-medium text-amber-700">Total Achievements</span>
+                        <Trophy className="w-3 h-3 text-amber-500" />
+                      </div>
+                      <p className="text-base font-bold text-amber-800">{secStats.total}</p>
+                    </div>
+                    
+                    {/* Male/Female - Clickable */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div 
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openAchievementDetailView('male', hierarchyState.departmentId, hierarchyState.departmentName, hierarchyState.year, section)
+                        }}
+                        className="bg-blue-50 rounded-lg p-2 cursor-pointer hover:bg-blue-100 transition-colors"
+                      >
+                        <span className="text-[9px] font-medium text-blue-600">Male</span>
+                        <p className="text-sm font-bold text-blue-700">{secStats.male}</p>
+                      </div>
+                      <div 
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openAchievementDetailView('female', hierarchyState.departmentId, hierarchyState.departmentName, hierarchyState.year, section)
+                        }}
+                        className="bg-pink-50 rounded-lg p-2 cursor-pointer hover:bg-pink-100 transition-colors"
+                      >
+                        <span className="text-[9px] font-medium text-pink-600">Female</span>
+                        <p className="text-sm font-bold text-pink-700">{secStats.female}</p>
+                      </div>
+                    </div>
+                  </div>
                 </button>
               )
             })}
           </div>
+        </div>
+      )}
 
-          {/* View All Sections Button */}
-          <div className="mt-4">
+      {/* ACHIEVEMENTS LEVEL - Show all achievements for selected section with gender breakdown */}
+      {hierarchyState.level === 'achievements' && (
+        <div className="space-y-6">
+          {/* Back Button & Header */}
+          <div className="flex items-center gap-4">
             <button
-              onClick={() => setHierarchyState(prev => ({ ...prev, level: 'students' }))}
-              className="w-full bg-white rounded-2xl p-4 border-2 border-dashed border-gray-300 hover:border-emerald-400 hover:bg-emerald-50/50 transition-all flex items-center justify-center gap-2"
+              onClick={() => setHierarchyState(prev => ({ ...prev, level: 'section', section: undefined }))}
+              className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
             >
-              <Users className="w-5 h-5 text-emerald-600" />
-              <span className="font-medium text-emerald-700">View All Sections</span>
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-gray-900">{hierarchyState.departmentName}</h2>
+              <p className="text-sm text-gray-500">
+                {hierarchyState.year} → Section {hierarchyState.section} → All Achievements
+              </p>
+            </div>
           </div>
+
+          {/* Achievement Summary Stats at Top */}
+          {(() => {
+            const sectionAchs = getSectionAchievements(
+              hierarchyState.departmentName || '',
+              hierarchyState.year || '',
+              hierarchyState.section || ''
+            )
+            const summaryStats = getGenderBreakdown(sectionAchs)
+            
+            return (
+              <div className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl p-6 text-white shadow-xl">
+                <h3 className="font-semibold mb-4 flex items-center gap-2">
+                  <Trophy className="w-5 h-5" />
+                  Achievement Summary - Section {hierarchyState.section}
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                  {/* Total - Clickable */}
+                  <div 
+                    onClick={() => openAchievementDetailView('total', hierarchyState.departmentId, hierarchyState.departmentName, hierarchyState.year, hierarchyState.section)}
+                    className="bg-white/15 backdrop-blur-sm rounded-xl p-4 cursor-pointer hover:bg-white/25 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Trophy className="w-4 h-4 text-amber-300" />
+                      <span className="text-xs text-violet-200">Total</span>
+                    </div>
+                    <p className="text-3xl font-bold">{summaryStats.total}</p>
+                  </div>
+                  
+                  {/* Male - Clickable */}
+                  <div 
+                    onClick={() => openAchievementDetailView('male', hierarchyState.departmentId, hierarchyState.departmentName, hierarchyState.year, hierarchyState.section)}
+                    className="bg-white/15 backdrop-blur-sm rounded-xl p-4 cursor-pointer hover:bg-white/25 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <User className="w-4 h-4 text-blue-300" />
+                      <span className="text-xs text-violet-200">Male</span>
+                    </div>
+                    <p className="text-3xl font-bold">{summaryStats.male}</p>
+                  </div>
+                  
+                  {/* Female - Clickable */}
+                  <div 
+                    onClick={() => openAchievementDetailView('female', hierarchyState.departmentId, hierarchyState.departmentName, hierarchyState.year, hierarchyState.section)}
+                    className="bg-white/15 backdrop-blur-sm rounded-xl p-4 cursor-pointer hover:bg-white/25 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <UserRound className="w-4 h-4 text-pink-300" />
+                      <span className="text-xs text-violet-200">Female</span>
+                    </div>
+                    <p className="text-3xl font-bold">{summaryStats.female}</p>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* Achievement List */}
+          {(() => {
+            const sectionAchs = getSectionAchievements(
+              hierarchyState.departmentName || '',
+              hierarchyState.year || '',
+              hierarchyState.section || ''
+            )
+            
+            if (sectionAchs.length === 0) {
+              return (
+                <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                  <Trophy className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-700">No Achievements Found</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    No achievements recorded for Section {hierarchyState.section} in {hierarchyState.year}
+                  </p>
+                </div>
+              )
+            }
+            
+            return (
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100/50 border-b border-gray-200">
+                  <h3 className="font-semibold text-gray-800 text-sm flex items-center gap-2">
+                    <ListChecks className="w-4 h-4" />
+                    All Achievements ({sectionAchs.length})
+                  </h3>
+                </div>
+                
+                <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
+                  {sectionAchs.map((ach, idx) => {
+                    // Find the student for this achievement
+                    const student = students.find(s => 
+                      s.registerNumber === ach.regNo || 
+                      s.registerNumber === ach.registerNumber ||
+                      s.user?.email === ach.studentEmail
+                    )
+                    const studentName = student?.user?.name || student?.name || ach.studentName || 'Unknown'
+                    const gender = student ? getStudentGender(student) : 'male'
+                    
+                    return (
+                      <div key={idx} className="p-4 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            gender === 'female' ? 'bg-pink-100' : 'bg-blue-100'
+                          }`}>
+                            {gender === 'female' ? 
+                              <UserRound className="w-5 h-5 text-pink-600" /> :
+                              <User className="w-5 h-5 text-blue-600" />
+                            }
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-medium text-gray-900 text-sm">{ach.title || 'Untitled Achievement'}</p>
+                              <Badge variant="outline" className={
+                                gender === 'female' 
+                                  ? 'bg-pink-50 text-pink-700 border-pink-200 text-[10px]' 
+                                  : 'bg-blue-50 text-blue-700 border-blue-200 text-[10px]'
+                              }>
+                                {gender === 'female' ? '♀ Female' : '♂ Male'}
+                              </Badge>
+                              <Badge variant="secondary" className="text-[10px]">
+                                {ach.type || 'General'}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {studentName} • {ach.regNo || ach.registerNumber || 'N/A'}
+                            </p>
+                            {ach.date && (
+                              <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {ach.date}
+                              </p>
+                            )}
+                          </div>
+                          {ach.status && (
+                            <Badge className={
+                              ach.status === 'verified' 
+                                ? 'bg-green-100 text-green-700 text-[10px]'
+                                : 'bg-yellow-100 text-yellow-700 text-[10px]'
+                            }>
+                              {ach.status}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                
+                {/* Bottom Summary Stats */}
+                <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100/50 border-t border-gray-200">
+                  <div className="flex items-center justify-center gap-6 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="w-4 h-4 text-amber-500" />
+                      <span className="font-medium text-gray-700">Total: <strong>{getGenderBreakdown(sectionAchs).total}</strong></span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-blue-500" />
+                      <span className="font-medium text-gray-700">Male: <strong>{getGenderBreakdown(sectionAchs).male}</strong></span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <UserRound className="w-4 h-4 text-pink-500" />
+                      <span className="font-medium text-gray-700">Female: <strong>{getGenderBreakdown(sectionAchs).female}</strong></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
         </div>
       )}
 
@@ -22040,6 +22345,185 @@ function AcademicHierarchyPage({
                   >
                     <ExternalLink className="w-4 h-4 mr-2" />
                     View Full Profile
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ACHIEVEMENT DETAIL VIEW MODAL - Shows students list when clicking Total/Male/Female stat */}
+          {achievementDetailView.isOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              {/* Backdrop */}
+              <div 
+                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                onClick={closeAchievementDetailView}
+              />
+              
+              {/* Modal Content */}
+              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+                {/* Modal Header */}
+                <div className="bg-gradient-to-r from-violet-600 to-purple-600 px-6 py-5 flex items-center justify-between shrink-0">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <Trophy className="w-7 h-7 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-white">
+                        {achievementDetailView.type === 'total' ? 'All Achievements' : 
+                         achievementDetailView.type === 'male' ? 'Male Student Achievements' : 
+                         'Female Student Achievements'}
+                      </h2>
+                      <p className="text-violet-200 text-sm mt-0.5">
+                        {achievementDetailView.departmentName}
+                        {achievementDetailView.year && ' → ' + achievementDetailView.year}
+                        {achievementDetailView.section && ' → Section ' + achievementDetailView.section}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={closeAchievementDetailView}
+                    className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                {/* Filter Pills */}
+                <div className="px-6 py-3 bg-gray-50 border-b border-gray-200 flex items-center gap-2 flex-wrap shrink-0">
+                  <span className="text-xs font-medium text-gray-500">Filter:</span>
+                  <Badge variant="outline" className={
+                    achievementDetailView.type === 'total' 
+                      ? 'bg-amber-100 text-amber-700 border-amber-300' 
+                      : 'bg-gray-100 text-gray-600'
+                  }>
+                    <Trophy className="w-3 h-3 mr-1" />
+                    Total
+                  </Badge>
+                  <Badge variant="outline" className={
+                    achievementDetailView.type === 'male' 
+                      ? 'bg-blue-100 text-blue-700 border-blue-300' 
+                      : 'bg-gray-100 text-gray-600'
+                  }>
+                    <User className="w-3 h-3 mr-1" />
+                    Male
+                  </Badge>
+                  <Badge variant="outline" className={
+                    achievementDetailView.type === 'female' 
+                      ? 'bg-pink-100 text-pink-700 border-pink-300' 
+                      : 'bg-gray-100 text-gray-600'
+                  }>
+                    <UserRound className="w-3 h-3 mr-1" />
+                    Female
+                  </Badge>
+                </div>
+
+                {/* Students List */}
+                <div className="flex-1 overflow-y-auto p-6">
+                  {(() => {
+                    const filteredStudents = getStudentsForAchievementFilter()
+                    
+                    if (filteredStudents.length === 0) {
+                      return (
+                        <div className="text-center py-12">
+                          <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                          <h3 className="text-lg font-semibold text-gray-700 mb-2">No Students Found</h3>
+                          <p className="text-sm text-gray-500 max-w-xs mx-auto">
+                            No students found matching this achievement filter criteria.
+                          </p>
+                        </div>
+                      )
+                    }
+
+                    return (
+                      <div className="space-y-3">
+                        {filteredStudents.map((student) => {
+                          const studentName = student.user?.name || student.name || 'Student'
+                          const regNo = student.registerNumber || ''
+                          const gender = getStudentGender(student)
+                          
+                          // Count achievements for this student
+                          const studentAchs = allAchievements.filter(a => 
+                            a.regNo === regNo || a.registerNumber === regNo
+                          )
+                          
+                          return (
+                            <div 
+                              key={student.id} 
+                              className="p-4 bg-white border border-gray-200 rounded-xl hover:border-violet-300 hover:shadow-md transition-all cursor-pointer"
+                              onClick={() => {
+                                closeAchievementDetailView()
+                                setSelectedStudentForAchievements({
+                                  ...student,
+                                  name: studentName,
+                                  regNo: regNo,
+                                  year: getYearFromSemester(student.semester),
+                                  section: student.section || 'A'
+                                })
+                                setShowStudentAchievementModal(true)
+                              }}
+                            >
+                              <div className="flex items-center gap-4">
+                                {/* Avatar */}
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
+                                  gender === 'female' ? 'bg-gradient-to-br from-pink-400 to-rose-500' : 'bg-gradient-to-br from-blue-400 to-indigo-500'
+                                }`}>
+                                  {studentName.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                                </div>
+                                
+                                {/* Info */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="font-semibold text-gray-900">{studentName}</p>
+                                    <Badge variant="outline" className={
+                                      gender === 'female' 
+                                        ? 'bg-pink-50 text-pink-600 border-pink-200 text-[10px]' 
+                                        : 'bg-blue-50 text-blue-600 border-blue-200 text-[10px]'
+                                    }>
+                                      {gender === 'female' ? '♀' : '♂'} {gender}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm text-gray-500">{regNo}</p>
+                                  <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
+                                    <span>{getYearFromSemester(student.semester)}</span>
+                                    <span>•</span>
+                                    <span>Section {student.section || 'A'}</span>
+                                    <span>•</span>
+                                    <span>CGPA: {student.cgpa?.toFixed(1) || '-'}</span>
+                                  </div>
+                                </div>
+                                
+                                {/* Achievement Count */}
+                                <div className="text-right">
+                                  <div className="flex items-center gap-1.5 text-amber-600">
+                                    <Trophy className="w-4 h-4" />
+                                    <span className="text-lg font-bold">{studentAchs.length}</span>
+                                  </div>
+                                  <p className="text-[10px] text-gray-400">achievements</p>
+                                </div>
+                                
+                                {/* Arrow */}
+                                <ChevronRight className="w-5 h-5 text-gray-300" />
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )
+                  })()}
+                </div>
+
+                {/* Modal Footer */}
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between shrink-0">
+                  <p className="text-sm text-gray-500">
+                    Showing {getStudentsForAchievementFilter().length} students
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={closeAchievementDetailView}
+                    className="px-4"
+                  >
+                    Close
                   </Button>
                 </div>
               </div>
