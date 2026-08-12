@@ -21508,8 +21508,7 @@ function AcademicHierarchyPage({
               )
               const secStats = getGenderBreakdown(secAchievements)
               
-              if (secCount === 0 && secStats.total === 0) return null
-              
+              // Always show all sections - don't filter out empty ones
               return (
                 <button
                   key={section}
