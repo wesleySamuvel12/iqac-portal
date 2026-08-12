@@ -3552,7 +3552,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
   // ============ ANIMATED CUMULATIVE LIST COMPONENT ============
   function AnimatedCumulativeList({ modules, type }: { modules: any[]; type: 'faculty' | 'student' }) {
     const [animatedValues, setAnimatedValues] = useState<number[]>([])
-    const [isVisible, setIsVisible] = useState(false)
+    const [mounted, setMounted] = useState(false)
     
     // Calculate cumulative values
     const cumValues = useMemo(() => {
@@ -3564,24 +3564,24 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
     }, [modules])
     
     useEffect(() => {
-      setIsVisible(true)
-      // Start animation after a small delay
+      setMounted(true)
+      
+      // Start animation after mount
       const timer = setTimeout(() => {
         let currentStep = 0
-        const totalSteps = 30 // Animation frames
+        const totalSteps = 30
         const interval = setInterval(() => {
           currentStep++
           const progress = currentStep / totalSteps
-          // Easing function for smooth animation
-          const eased = 1 - Math.pow(1 - progress, 3) // easeOutCubic
+          const eased = 1 - Math.pow(1 - progress, 3)
           
           setAnimatedValues(cumValues.map(val => Math.round(val * eased)))
           
           if (currentStep >= totalSteps) {
             clearInterval(interval)
-            setAnimatedValues(cumValues) // Ensure final values are exact
+            setAnimatedValues(cumValues)
           }
-        }, 30) // ~1 second total animation
+        }, 30)
         
         return () => clearInterval(interval)
       }, 100)
@@ -3593,46 +3593,36 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
     const totalValue = cumValues.length > 0 ? cumValues[cumValues.length - 1] : 0
     const animatedTotal = animatedValues.length > 0 ? animatedValues[animatedValues.length - 1] : 0
     
+    // Use final values when not mounted (SSR) to avoid hydration mismatch
+    const displayValues = mounted ? animatedValues : cumValues
+    
     return (
       <div className="space-y-0">
         {modules.map((module, index) => {
-          const cumVal = animatedValues[index] ?? 0
+          const cumVal = displayValues[index] ?? 0
           const targetVal = cumValues[index]
           return (
             <div 
               key={index} 
               className={`flex items-center justify-between py-2.5 px-3 transition-all duration-300 ${
                 index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white'
-              } ${isFaculty ? 'hover:bg-blue-50/30' : 'hover:bg-purple-50/30'} ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}
-              style={{ transitionDelay: `${index * 50}ms` }}
+              } ${isFaculty ? 'hover:bg-blue-50/30' : 'hover:bg-purple-50/30'} ${mounted ? 'opacity-100 translate-x-0' : 'opacity-100 translate-x-0'}`}
             >
               <span className="text-xs font-medium text-gray-600">{module.name}</span>
-              <span 
-                className={`text-sm font-bold transition-all duration-200 ${
-                  cumVal > 0 && cumVal === targetVal 
-                    ? (isFaculty ? 'text-[#0a2a5e]' : 'text-[#0a2a5e]') 
-                    : (isFaculty ? 'text-blue-500' : 'text-purple-500')
-                } ${isVisible ? 'scale-100' : 'scale-50'}`}
-                style={{ transitionDelay: `${index * 50 + 200}ms` }}
-              >
+              <span className={`text-sm font-bold ${cumVal > 0 ? (isFaculty ? 'text-[#0a2a5e]' : 'text-[#0a2a5e]') : 'text-gray-400'}`}>
                 {cumVal}
               </span>
             </div>
           )
         })}
         
-        {/* Total row with animation */}
-        <div 
-          className={`flex items-center justify-between py-2.5 px-3 mt-1 border-t transition-all duration-500 ${
-            isFaculty ? 'bg-blue-50/60 border-blue-100' : 'bg-purple-50/60 border-purple-100'
-          } ${isVisible ? 'opacity-100' : 'opacity-0'}`}
-          style={{ transitionDelay: `${modules.length * 50 + 300}ms` }}
-        >
+        {/* Total row */}
+        <div className={`flex items-center justify-between py-2.5 px-3 mt-1 border-t ${
+          isFaculty ? 'bg-blue-50/60 border-blue-100' : 'bg-purple-50/60 border-purple-100'
+        }`}>
           <span className={`text-xs font-semibold ${isFaculty ? 'text-blue-700' : 'text-purple-700'}`}>Total</span>
-          <span 
-            className={`text-sm font-bold ${isFaculty ? 'text-blue-700' : 'text-purple-700'} transition-all duration-300`}
-          >
-            {animatedTotal}
+          <span className={`text-sm font-bold ${isFaculty ? 'text-blue-700' : 'text-purple-700'}`}>
+            {mounted ? animatedTotal : totalValue}
           </span>
         </div>
       </div>
