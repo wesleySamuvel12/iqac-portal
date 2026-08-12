@@ -3672,18 +3672,30 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
     const [selectedDept, setSelectedDept] = useState<string>('ALL') // 'ALL' or department name
     const [allAchievements, setAllAchievements] = useState<any[]>([])
 
-    // Only these 11 departments should be shown
+    // Only these 11+ departments should be shown
     const ALLOWED_DEPARTMENTS = [
       'Aeronautical Engineering',
+      'AER',
       'Artificial Intelligence & Data Science',
+      'AI & DS',
+      'AI&DS',
       'Cyber Security',
+      'CSBS',
       'Computer Science and Engineering',
+      'CSE',
       'Electronics & Communication Engineering',
+      'ECE',
       'Electrical & Electronics Engineering',
+      'EEE',
       'Information Technology',
+      'IT',
       'Mechanical Engineering',
+      'MECH',
+      'Mechatronics',
+      'MCT',
       'MBA',
-      'Science & Humanities'
+      'Science & Humanities',
+      'S&H'
     ]
 
     useEffect(() => {
@@ -3755,6 +3767,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
     // Department short codes mapping - only for the 11 allowed departments
     const getDeptShortCode = (name: string) => {
       const codeMap: Record<string, string> = {
+        // Full names
         'Aeronautical Engineering': 'Aero',
         'Artificial Intelligence & Data Science': 'AI&DS',
         'Cyber Security': 'CSBS',
@@ -3762,9 +3775,22 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
         'Electronics & Communication Engineering': 'ECE',
         'Electrical & Electronics Engineering': 'EEE',
         'Information Technology': 'IT',
-        'Mechanical Engineering': 'MCT',
+        'Mechanical Engineering': 'MECH',
+        'Mechatronics': 'MCT',
         'MBA': 'MBA',
         'Science & Humanities': 'S&H',
+        // Short codes / abbreviations
+        'AER': 'Aero',
+        'AI & DS': 'AI&DS',
+        'AI&DS': 'AI&DS',
+        'CSBS': 'CSBS',
+        'CSE': 'CSE',
+        'ECE': 'ECE',
+        'EEE': 'EEE',
+        'IT': 'IT',
+        'MECH': 'MECH',
+        'MCT': 'MCT',
+        'S&H': 'S&H',
       }
       return codeMap[name] || name.substring(0, 4).toUpperCase()
     }
