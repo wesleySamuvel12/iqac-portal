@@ -20927,7 +20927,8 @@ function AcademicHierarchyPage({
   }, [user.role, user.departmentId])
 
   useEffect(() => {
-    if (hierarchyState.level === 'students' && hierarchyState.departmentId) {
+    // Fetch students for section, achievements, and students levels
+    if ((hierarchyState.level === 'students' || hierarchyState.level === 'section' || hierarchyState.level === 'achievements') && hierarchyState.departmentId) {
       fetchStudents()
     }
   }, [hierarchyState.level, hierarchyState.departmentId, hierarchyState.year, hierarchyState.section])
@@ -20998,84 +20999,156 @@ function AcademicHierarchyPage({
     const maleNames = ['Rahul Kumar', 'Arjun Sharma', 'Vikram Singh', 'Amit Patel', 'Karthik Reddy', 
                        'Sanjay Gupta', 'Deepak Joshi', 'Rajesh Verma', 'Nikhil Das', 'Praveen Kumar',
                        'Suresh Babu', 'Manoj Tiwari', 'Ravi Shankar', 'Anil Kumar', 'Sunil Verma',
-                       'Mohammed Ali', 'David Raj', 'Thomas John', 'Kiran Kumar', 'Venkat Raman']
+                       'Mohammed Ali', 'David Raj', 'Thomas John', 'Kiran Kumar', 'Venkat Raman',
+                       'Harsh Patel', 'Aditya Verma', 'Rohit Mehta', 'Varun Kapoor', 'Gautham Reddy']
     const femaleNames = ['Priya Sharma', 'Sneha Reddy', 'Ananya Iyer', 'Divya Nair', 'Kavya Krishnan', 
                          'Meera Suresh', 'Lakshmi Priya', 'Sunita Devi', 'Pooja Singh', 'Ritu Kapoor',
                          'Anjali Menon', 'Bhavani K', 'Chitra Lakshmi', 'Deepika Rani', 'Eesha Gupta',
-                         'Fatima Begum', 'Geetha Raj', 'Harini S', 'Indira P', 'Jyothi Lakshmi']
+                         'Fatima Begum', 'Geetha Raj', 'Harini S', 'Indira P', 'Jyothi Lakshmi',
+                         'Keerthi V', 'Lavanya R', 'Madhuri S', 'Nandhini K', 'Oviya S']
     
     const sampleData: any[] = []
     let id = 1
     
-    // Generate ~8-15 sample achievements per department for realistic data
+    // Enhanced sample data generation with more comprehensive coverage
     allDepartments.forEach((dept, deptIdx) => {
-      const numAchievements = Math.floor(Math.random() * 10) + 8 // 8-18 per department
+      // Generate 20-35 achievements per department for richer data
+      const numAchievements = Math.floor(Math.random() * 16) + 20
       
-      // Create some consistent students per department for better demo
-      const deptStudents: {name: string, regNo: string, gender: string}[] = []
+      // Create more consistent students per department (24 students - 6 per section)
+      const deptStudents: {name: string, regNo: string, gender: string, section: string, year: string}[] = []
       
-      for (let s = 0; s < 12; s++) { // 12 students per department
-        const isFemale = Math.random() > 0.65
+      // Create students distributed across all sections and years
+      for (let s = 0; s < 24; s++) {
+        const isFemale = Math.random() > 0.55 // More balanced gender ratio
         const nameList = isFemale ? femaleNames : maleNames
-        const section = sections[s % 4]
-        const regNo = `${String(deptIdx + 1).padStart(2, '0')}${String(s + 1).padStart(3, '0')}${section}${String(Math.floor(s/4) + 1).padStart(2, '0')}`
+        const section = sections[s % 4] // Distribute across A, B, C, D
+        const yearIdx = Math.floor(s / 6) // 6 students per year
+        const year = years[yearIdx]
+        const regNo = `${String(deptIdx + 1).padStart(2, '0')}${String(s + 1).padStart(3, '0')}${section}${String(yearIdx + 1).padStart(2, '0')}`
         
         deptStudents.push({
-          name: nameList[s % nameList.length] + ` (${dept.substring(0,3)}${s+1})`,
+          name: nameList[s % nameList.length],
           regNo,
-          gender: isFemale ? 'female' : 'male'
+          gender: isFemale ? 'female' : 'male',
+          section,
+          year
         })
       }
       
+      // Generate achievements ensuring good distribution across types, sections, and years
       for (let i = 0; i < numAchievements; i++) {
         const student = deptStudents[Math.floor(Math.random() * deptStudents.length)]
-        const year = years[Math.floor(Math.random() * years.length)]
         const typeInfo = achievementTypes[Math.floor(Math.random() * achievementTypes.length)]
         
-        // Generate title based on type
+        // Generate detailed title based on type and department
         let title = ''
+        const deptPrefix = dept.substring(0, 4).toUpperCase()
+        
         switch (typeInfo.typeKey) {
           case 'journal':
-            title = `Research Paper on ${['AI/ML', 'Cloud Computing', 'Cybersecurity', 'IoT', 'Blockchain', 'Quantum Computing', 'Edge Computing'][Math.floor(Math.random() * 7)]}`
+            const journalTopics = ['AI/ML Applications', 'Cloud Computing Architecture', 'Cybersecurity Frameworks', 
+                'IoT Integration', 'Blockchain Technology', 'Quantum Computing', 'Edge Computing', 
+                '5G Networks', 'Renewable Energy Systems', 'Smart Manufacturing', 'Bioinformatics',
+                'Data Analytics', 'Neural Networks', 'Robotics Automation', 'Sustainable Development']
+            title = `Research Paper on ${journalTopics[Math.floor(Math.random() * journalTopics.length)]} in ${dept}`
             break
           case 'conference':
-            title = `Paper Presented at ${['IEEE International Conference', 'ACM Symposium', 'Global Tech Summit', 'National Forum on Computing', 'International Congress'][Math.floor(Math.random() * 5)]}`
+            const conferences = ['IEEE International Conference', 'ACM Symposium', 'Global Tech Summit', 
+                'National Forum on Computing', 'International Congress', 'Annual Technical Conference',
+                'Research Symposium', 'Innovation Summit', 'Engineering Congress']
+            title = `Paper Presented at ${conferences[Math.floor(Math.random() * conferences.length)]} - ${dept}`
             break
           case 'patent':
-            title = `Patent Filed: ${['Smart Device for Healthcare', 'Novel AI Algorithm', 'Efficient Energy System', 'Innovative Manufacturing Process', 'Autonomous Vehicle Component'][Math.floor(Math.random() * 5)]}`
+            const patentIdeas = ['Smart Device for Healthcare', 'Novel AI Algorithm', 'Efficient Energy System',
+                'Innovative Manufacturing Process', 'Autonomous Vehicle Component', 'Green Technology Solution',
+                'Advanced Material Composition', 'Digital Security Framework', 'Smart Agriculture System']
+            title = `Patent Filed: ${patentIdeas[Math.floor(Math.random() * patentIdeas.length)]}`
             break
           case 'nptel':
-            title = `NPTEL Certification: ${['Data Structures & Algorithms', 'Machine Learning', 'Database Management Systems', 'Computer Networks', 'Operating Systems', 'Software Engineering', 'Cloud Computing'][Math.floor(Math.random() * 7)]}`
+            const nptelCourses = ['Data Structures & Algorithms', 'Machine Learning', 'Database Management Systems',
+                'Computer Networks', 'Operating Systems', 'Software Engineering', 'Cloud Computing',
+                'Python Programming', 'Java Development', 'Web Technologies', 'Mobile App Development',
+                'Cybersecurity Fundamentals', 'AI Basics', 'Data Science Introduction']
+            title = `NPTEL Certification: ${nptelCourses[Math.floor(Math.random() * nptelCourses.length)]}`
             break
           case 'hackathon':
-            title = `${['Smart India Hackathon', 'Code Sprint', 'Innovation Challenge', 'HackIT', 'DevFest Hackathon'][Math.floor(Math.random() * 5)]} - ${['Winner 🏆', 'Runner Up', 'Finalist', 'Best Innovation Award', 'Participants'][Math.floor(Math.random() * 5)]}`
+            const hackathons = ['Smart India Hackathon', 'Code Sprint', 'Innovation Challenge', 'HackIT',
+                'DevFest Hackathon', 'SIH Grand Finale', 'State Level Hackathon', 'Corporate Hackathon']
+            const positions = ['Winner 🏆', 'Runner Up 🥈', 'Finalist', 'Best Innovation Award 💡', 'Participants', 'Special Mention ⭐']
+            title = `${hackathons[Math.floor(Math.random() * hackathons.length)]} - ${positions[Math.floor(Math.random() * positions.length)]}`
             break
           case 'competition':
-            title = `${['Coding Contest', 'Technical Quiz', 'Project Expo', 'Paper Presentation', 'Debugging Challenge'][Math.floor(Math.random() * 5)]} - ${['Gold Medal', 'Silver Medal', 'Bronze', 'Participation Certificate'][Math.floor(Math.random() * 4)]}`
+            const competitions = ['Coding Contest', 'Technical Quiz', 'Project Expo', 'Paper Presentation',
+                'Debugging Challenge', 'Hackathon', 'Case Study Competition', 'Model Making Contest',
+                'Poster Presentation', 'Technical Debate']
+            const awards = ['Gold Medal 🥇', 'Silver Medal 🥈', 'Bronze 🥉', 'Participation Certificate', 'First Prize 🏆', 'Second Prize', 'Third Prize']
+            title = `${competitions[Math.floor(Math.random() * competitions.length)]} - ${awards[Math.floor(Math.random() * awards.length)]}`
             break
           case 'certification':
-            title = `${['AWS Solutions Architect', 'Google Cloud Professional', 'Python Developer (PCPP)', 'Data Science Professional', 'Azure Administrator', 'Oracle Java Certified', 'Cisco CCNA'][Math.floor(Math.random() * 7)]}`
+            const certs = ['AWS Solutions Architect Associate', 'Google Cloud Professional', 'Python Developer (PCPP1)',
+                'Data Science Professional', 'Azure Administrator Associate', 'Oracle Java SE 11 Developer',
+                'Cisco CCNA', 'CompTIA Security+', 'MongoDB Developer', 'TensorFlow Developer',
+                'Tableau Desktop Specialist', 'Salesforce Administrator', 'PMI-ACP Agile Certification']
+            title = `${certs[Math.floor(Math.random() * certs.length)]}`
             break
           case 'internship':
-            title = `Internship at ${['Google', 'Microsoft', 'Amazon', 'TCS', 'Infosys', 'Wipro', 'HCL Technologies', 'Cognizant', 'Accenture', 'IBM'][Math.floor(Math.random() * 10)]}`
+            const companies = ['Google', 'Microsoft', 'Amazon', 'TCS', 'Infosys', 'Wipro', 'HCL Technologies',
+                'Cognizant', 'Accenture', 'IBM', 'Tech Mahindra', 'Mindtree', 'Mphasis', 'Zoho Corporation',
+                'Freshworks', 'Swiggy', 'Flipkart', 'Paytm', 'Ola', 'Byju\'s']
+            title = `Internship at ${companies[Math.floor(Math.random() * companies.length)]}`
             break
           case 'workshop':
-            title = `Workshop on ${['Full Stack Web Development', 'Mobile App Development', 'Data Science with Python', 'DevOps & Cloud', 'Blockchain Development', 'IoT Systems', 'Robotics & Automation'][Math.floor(Math.random() * 7)]}`
+            const workshops = ['Full Stack Web Development', 'Mobile App Development', 'Data Science with Python',
+                'DevOps & Cloud', 'Blockchain Development', 'IoT Systems', 'Robotics & Automation',
+                'Cybersecurity Essentials', 'AI/ML Bootcamp', 'UI/UX Design', 'React.js Advanced',
+                'Node.js Backend', 'Docker & Kubernetes', 'AWS Cloud Practitioner']
+            title = `Workshop on ${workshops[Math.floor(Math.random() * workshops.length)]}`
             break
           case 'project':
-            title = `Project: ${['E-Commerce Platform', 'Healthcare Management System', 'Smart City IoT Solution', 'AI Chatbot Application', 'Blockchain Voting System', 'Farm Automation System', 'Traffic Management App'][Math.floor(Math.random() * 7)]}`
+            const projects = ['E-Commerce Platform', 'Healthcare Management System', 'Smart City IoT Solution',
+                'AI Chatbot Application', 'Blockchain Voting System', 'Farm Automation System',
+                'Traffic Management App', 'Online Learning Platform', 'Inventory Management System',
+                'Social Media Dashboard', 'Weather Prediction ML Model', 'Restaurant Booking App',
+                'Fitness Tracker Application', 'Real Estate Portal', 'Waste Management System']
+            title = `Project: ${projects[Math.floor(Math.random() * projects.length)]}`
             break
           case 'training':
-            title = `Industrial Training: ${['4-week Summer Training', '6-month Internship Program', 'Industry Certification Course', 'Technical Skill Development'][Math.floor(Math.random() * 4)]}`
+            const trainings = ['4-week Summer Industrial Training', '6-month Internship Program',
+                'Industry Certification Course', 'Technical Skill Development Workshop',
+                'Corporate Training Program', 'Research Methodology Training',
+                'Entrepreneurship Development Program', 'Soft Skills & Communication Training']
+            title = `${trainings[Math.floor(Math.random() * trainings.length)]}`
             break
           case 'award':
-            title = `${['Academic Excellence Award', 'Best Project Award', 'Outstanding Student Award', 'Sports Achievement', 'Cultural Event Winner', 'Department Topper Award'][Math.floor(Math.random() * 6)]}`
+            const awardList = ['Academic Excellence Award 🎓', 'Best Project Award 🏆', 'Outstanding Student Award ⭐',
+                'Sports Achievement 🏅', 'Cultural Event Winner 🎭', 'Department Topper Award 👑',
+                'Innovation Award 💡', 'Leadership Award 🎖️', 'Community Service Award 🤝',
+                'Research Excellence Award 🔬', 'All Rounder Student Award 🌟']
+            title = `${awardList[Math.floor(Math.random() * awardList.length)]}`
             break
           case 'placement':
-            title = `Placement at ${['TCS (₹7 LPA)', 'Infosys (₹6.5 LPA)', 'Wipro (₹5.5 LPA)', 'Cognizant (₹6 LPA)', 'Accenture (₹7.5 LPA)', 'Amazon (₹20+ LPA)', 'Microsoft (₹25+ LPA)'][Math.floor(Math.random() * 7)]}`
+            const placements = [
+              { company: 'TCS', package: '₹7 LPA' },
+              { company: 'Infosys', package: '₹6.5 LPA' },
+              { company: 'Wipro', package: '₹5.5 LPA' },
+              { company: 'Cognizant', package: '₹6 LPA' },
+              { company: 'Accenture', package: '₹7.5 LPA' },
+              { company: 'Amazon', package: '₹22 LPA' },
+              { company: 'Microsoft', package: '₹28 LPA' },
+              { company: 'Google', package: '₹35 LPA' },
+              { company: 'Flipkart', package: '₹18 LPA' },
+              { company: 'Zoho', package: '₹10 LPA' }
+            ]
+            const placement = placements[Math.floor(Math.random() * placements.length)]
+            title = `Placement at ${placement.company} (${placement.package})`
             break
           case 'startup':
-            title = `Startup: ${['Launched Tech Startup', 'Founded E-Commerce Venture', 'Developed Mobile App Business', 'Created EdTech Platform', 'Built SaaS Product'][Math.floor(Math.random() * 5)]}`
+            const startups = ['Launched Tech Startup', 'Founded E-Commerce Venture', 'Developed Mobile App Business',
+                'Created EdTech Platform', 'Built SaaS Product', 'Started AI Consulting Firm',
+                'Founded HealthTech Company', 'Launched FinTech Solution', 'Created AgriTech Platform',
+                'Developed CleanTech Initiative']
+            title = `${startups[Math.floor(Math.random() * startups.length)]}`
             break
           default:
             title = `${typeInfo.typeLabel} Achievement #${id}`
@@ -21088,23 +21161,26 @@ function AcademicHierarchyPage({
           regNo: student.regNo,
           registerNumber: student.regNo,
           studentName: student.name,
-          studentEmail: `${student.name.toLowerCase().replace(/[^a-z]/g, '.').replace(/\.{2,}/g, '.')}@niet.ac.in`,
+          studentEmail: `${student.name.toLowerCase().replace(/\s+/g, '.').replace(/[^a-z.]/g, '')}@niet.ac.in`,
           title: title,
           type: typeInfo.typeLabel,
           achievementType: typeInfo.typeKey,
           dept: dept,
           department: dept,
-          section: student.regNo.charAt(5) || 'A',
-          year: year,
-          date: `${months[Math.floor(Math.random() * 12)]} ${2023 + Math.floor(Math.random() * 2)}`,
-          status: Math.random() > 0.25 ? 'verified' : 'pending',
-          gender: student.gender
+          section: student.section,
+          year: student.year,
+          date: `${months[Math.floor(Math.random() * 12)]} ${2023 + Math.floor(Math.random() * 3)}`,
+          description: `This is a detailed description of the achievement: ${title}. The student demonstrated exceptional skills and dedication in completing this milestone.`,
+          status: Math.random() > 0.2 ? 'verified' : 'pending',
+          gender: student.gender,
+          score: Math.floor(Math.random() * 30) + 70 // Score between 70-100
         })
         
         id++
       }
     })
     
+    console.log(`Generated ${sampleData.length} sample achievements across ${allDepartments.length} departments`)
     return sampleData
   }
 
@@ -21219,6 +21295,15 @@ function AcademicHierarchyPage({
   const getStudentGender = (student: any): 'male' | 'female' => {
     const gender = (student.gender || student.user?.gender || '').toLowerCase()
     return gender === 'female' ? 'female' : 'male'
+  }
+
+  // Helper function to get year from semester
+  const getYearFromSemester = (sem: number | undefined): string => {
+    if (!sem) return '1st Year'
+    if (sem <= 2) return '1st Year'
+    if (sem <= 4) return '2nd Year'
+    if (sem <= 6) return '3rd Year'
+    return '4th Year'
   }
 
   // Get achievements for a specific department
