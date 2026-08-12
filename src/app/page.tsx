@@ -20938,6 +20938,11 @@ function AcademicHierarchyPage({
           deptAchievements = parsed.filter((a: any) => a.dept === user.departmentName || a.department === user.departmentName)
         }
         setAllAchievements(deptAchievements)
+      } else {
+        // Generate sample achievement data for demonstration
+        const sampleAchievements = generateSampleAchievements()
+        localStorage.setItem('student_achievements', JSON.stringify(sampleAchievements))
+        setAllAchievements(user.role === 'ADMIN' ? sampleAchievements : sampleAchievements)
       }
       
       // Also check achievements key
@@ -20950,6 +20955,101 @@ function AcademicHierarchyPage({
       console.error('Failed to parse achievements:', e)
     }
   }, [user.departmentName, user.role])
+
+  // Generate sample achievement data for demonstration
+  const generateSampleAchievements = () => {
+    const departments = ['Computer Science and Engineering', 'Electronics & Communication', 'Mechanical Engineering', 'Civil Engineering', 'Information Technology']
+    const sections = ['A', 'B', 'C', 'D']
+    const years = ['1st Year', '2nd Year', '3rd Year', '4th Year']
+    
+    const achievementTypes = Object.entries(ACHIEVEMENT_TYPES).map(([key, config]) => ({
+      typeKey: key,
+      typeLabel: config.label
+    }))
+    
+    const maleNames = ['Rahul Kumar', 'Arjun Sharma', 'Vikram Singh', 'Amit Patel', 'Karthik Reddy', 'Sanjay Gupta', 'Deepak Joshi', 'Rajesh Verma', 'Nikhil Das', 'Praveen Kumar']
+    const femaleNames = ['Priya Sharma', 'Sneha Reddy', 'Ananya Iyer', 'Divya Nair', 'Kavya Krishnan', 'Meera Suresh', 'Lakshmi Priya', 'Sunita Devi', 'Pooja Singh', 'Ritu Kapoor']
+    
+    const sampleData: any[] = []
+    let id = 1
+    
+    // Generate ~50 sample achievements across departments
+    departments.forEach((dept, deptIdx) => {
+      const numAchievements = Math.floor(Math.random() * 15) + 5 // 5-20 per department
+      
+      for (let i = 0; i < numAchievements; i++) {
+        const isFemale = Math.random() > 0.6
+        const nameList = isFemale ? femaleNames : maleNames
+        const name = nameList[Math.floor(Math.random() * nameList.length)]
+        const section = sections[Math.floor(Math.random() * sections.length)]
+        const year = years[Math.floor(Math.random() * years.length)]
+        const typeInfo = achievementTypes[Math.floor(Math.random() * achievementTypes.length)]
+        
+        const regNo = `${deptIdx + 1}1${Math.floor(Math.random() * 900) + 100}${section}${String(Math.floor(Math.random() * 50) + 1).padStart(2, '0')}`
+        
+        // Generate title based on type
+        let title = ''
+        switch (typeInfo.typeKey) {
+          case 'journal':
+            title = `Research Paper on ${['AI/ML', 'Cloud Computing', 'Cybersecurity', 'IoT', 'Blockchain'][Math.floor(Math.random() * 5)]}`
+            break
+          case 'conference':
+            title = `Paper Presented at ${['IEEE Conference', 'ACM Symposium', 'International Summit', 'Tech Forum'][Math.floor(Math.random() * 4)]}`
+            break
+          case 'patent':
+            title = `Patent: ${['Smart Device', 'Novel Algorithm', 'Efficient System', 'Innovative Method'][Math.floor(Math.random() * 4)]}`
+            break
+          case 'nptel':
+            title = `NPTEL Course: ${['Data Structures', 'Machine Learning', 'Database Systems', 'Computer Networks'][Math.floor(Math.random() * 4)]}`
+            break
+          case 'hackathon':
+            title = `${['Smart India Hackathon', 'Code Sprint', 'Innovation Challenge'][Math.floor(Math.random() * 3)]} - ${['Winner', 'Finalist', 'Participant'][Math.floor(Math.random() * 3)]}`
+            break
+          case 'competition':
+            title = `${['Coding Contest', 'Technical Quiz', 'Project Expo'][Math.floor(Math.random() * 3)]} Achievement`
+            break
+          case 'certification':
+            title = `${['AWS Certified', 'Google Cloud', 'Python Developer', 'Data Science'][Math.floor(Math.random() * 4)]} Certificate`
+            break
+          case 'internship':
+            title = `Internship at ${['Google', 'Microsoft', 'Amazon', 'TCS', 'Infosys'][Math.floor(Math.random() * 5)]}`
+            break
+          case 'workshop':
+            title = `Workshop on ${['Web Development', 'App Development', 'Data Science', 'DevOps'][Math.floor(Math.random() * 4)]}`
+            break
+          case 'project':
+            title = `Project: ${['E-Commerce App', 'Healthcare System', 'Smart City Solution', 'AI Assistant'][Math.floor(Math.random() * 4)]}`
+            break
+          default:
+            title = `${typeInfo.typeLabel} Achievement #${id}`
+        }
+        
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        
+        sampleData.push({
+          id: id,
+          regNo: regNo,
+          registerNumber: regNo,
+          studentName: name,
+          studentEmail: `${name.toLowerCase().replace(' ', '.')}@niet.ac.in`,
+          title: title,
+          type: typeInfo.typeLabel,
+          achievementType: typeInfo.typeKey,
+          dept: dept,
+          department: dept,
+          section: section,
+          year: year,
+          date: `${months[Math.floor(Math.random() * 12)]} ${2023 + Math.floor(Math.random() * 2)}`,
+          status: Math.random() > 0.3 ? 'verified' : 'pending',
+          gender: isFemale ? 'female' : 'male'
+        })
+        
+        id++
+      }
+    })
+    
+    return sampleData
+  }
 
   const fetchDepartments = async () => {
     try {
@@ -21684,7 +21784,7 @@ function AcademicHierarchyPage({
 
             // Also add "Other" category for unmatched types
             const matchedTypes = new Set(Object.values(ACHIEVEMENT_TYPES).map(t => t.label))
-            const otherAchievements = sectionAchs.filter(a => !matchedTypes.includes(a.type))
+            const otherAchievements = sectionAchs.filter(a => !matchedTypes.has(a.type))
             if (otherAchievements.length > 0) {
               achievementsByType['other'] = otherAchievements
             }
