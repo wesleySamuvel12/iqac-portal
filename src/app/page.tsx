@@ -3778,6 +3778,82 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
             </div>
           </div>
 
+          {/* Overall Achievement - Increasing Bar Chart */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-[#0a2a5e] flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-green-500" />
+                Overall Achievement Progress
+              </h3>
+              <div className="flex items-center gap-4 text-xs">
+                <span className="text-blue-600">● Faculty R&D</span>
+                <span className="text-purple-600">● Student</span>
+              </div>
+            </div>
+
+            {(() => {
+              // Combine all modules
+              const allModules = [
+                ...facultyModules.map(m => ({ ...m, category: 'faculty' })),
+                ...studentModules.map(m => ({ ...m, category: 'student' }))
+              ]
+              const maxValue = Math.max(...allModules.map(m => m.count), 1)
+              
+              return (
+                <div className="space-y-1.5">
+                  {allModules.map((module, idx) => {
+                    const percentage = (module.count / maxValue) * 100
+                    const isFaculty = module.category === 'faculty'
+                    
+                    return (
+                      <div key={idx} className="flex items-center gap-3 group">
+                        <span className="w-20 sm:w-24 text-xs font-medium text-gray-600 truncate flex-shrink-0" title={module.name}>
+                          {module.name}
+                        </span>
+                        <div className="flex-1 h-6 bg-gray-100 rounded-md overflow-hidden relative">
+                          <div 
+                            className={`absolute inset-y-0 left-0 rounded-md transition-all duration-500 flex items-center justify-end pr-2 ${
+                              module.count > 0 
+                                ? (isFaculty ? 'bg-gradient-to-r from-blue-500 to-cyan-400' : 'bg-gradient-to-r from-purple-500 to-pink-400')
+                                : 'bg-gray-200'
+                            }`}
+                            style={{ width: `${Math.max(percentage, module.count > 0 ? 8 : 0)}%` }}
+                          >
+                            {percentage > 15 && module.count > 0 && (
+                              <span className="text-[10px] font-bold text-white">{module.count}</span>
+                            )}
+                          </div>
+                          {percentage <= 15 && module.count > 0 && (
+                            <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold ${isFaculty ? 'text-blue-600' : 'text-purple-600'}`}>
+                              {module.count}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                  
+                  {/* Total bar */}
+                  <div className="pt-3 mt-2 border-t border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <span className="w-20 sm:w-24 text-xs font-bold text-gray-700 flex-shrink-0">Total</span>
+                      <div className="flex-1 h-7 bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 rounded-md overflow-hidden relative">
+                        <div 
+                          className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 rounded-md flex items-center justify-center"
+                          style={{ width: '100%' }}
+                        >
+                          <span className="text-xs font-bold text-white">
+                            {allModules.reduce((s, m) => s + m.count, 0)} Total Achievements
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
+
           {/* Department Cards Grid - Only 11 Departments */}
           <div>
             <h3 className="text-base font-semibold text-[#0a2a5e] mb-4 flex items-center gap-2">
