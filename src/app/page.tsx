@@ -3557,8 +3557,6 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
   // ============ ADMIN DASHBOARD COMPONENT ============
   function AdminDashboardContent({ user, setActiveTab, stats }: { user: User; setActiveTab: (tab: TabType) => void; stats: DashboardStats }) {
     const [departments, setDepartments] = useState<any[]>([])
-    const [selectedDept, setSelectedDept] = useState<any>(null)
-    const [deptDetails, setDeptDetails] = useState<any>(null)
     const [loadingDepts, setLoadingDepts] = useState(true)
 
     useEffect(() => {
@@ -3572,261 +3570,171 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
         .finally(() => setLoadingDepts(false))
     }, [])
 
-    useEffect(() => {
-      if (!selectedDept) {
-        setDeptDetails(null)
-        return
+    // Faculty & R&D Modules data
+    const facultyModules = [
+      { name: 'Events', count: 0 },
+      { name: 'Organizer', count: 0 },
+      { name: 'Resource', count: 0 },
+      { name: 'NPTEL', count: 0 },
+      { name: 'Seminar', count: 0 },
+      { name: 'Awards', count: 0 },
+      { name: 'IndVisit', count: 0 },
+      { name: 'Journals', count: 0 },
+      { name: 'Patents', count: 0 },
+      { name: 'Books', count: 0 },
+      { name: 'BookCh.', count: 0 },
+      { name: 'Conf.Pub', count: 0 },
+    ]
+
+    // Student Achievement Modules data
+    const studentModules = [
+      { name: 'Journals', count: 0 },
+      { name: 'Conf.Pub', count: 0 },
+      { name: 'Patents', count: 0 },
+      { name: 'NPTEL', count: 0 },
+      { name: 'Seminar', count: 0 },
+      { name: 'Intern', count: 0 },
+      { name: 'Training', count: 0 },
+      { name: 'Awards', count: 0 },
+      { name: 'Co-Curr', count: 0 },
+      { name: 'Placement', count: 0 },
+      { name: 'Startup', count: 0 },
+      { name: 'Hackathon', count: 0 },
+    ]
+
+    // Department short codes mapping
+    const getDeptShortCode = (name: string) => {
+      const codeMap: Record<string, string> = {
+        'Aeronautical Engineering': 'Aero',
+        'Artificial Intelligence & Data Science': 'AI&DS',
+        'Cyber Security': 'CSBS',
+        'Computer Science and Engineering': 'CSE',
+        'Electronics & Communication Engineering': 'ECE',
+        'Electrical & Electronics Engineering': 'EEE',
+        'Information Technology': 'IT',
+        'Mechanical Engineering': 'MCT',
+        'Mechanical': 'MECH',
+        'MBA': 'MBA',
+        'Science & Humanities': 'S&H',
+        'Biomedical Engineering': 'BME',
+        'Biotechnology': 'BT',
+        'Civil Engineering': 'CIVIL',
+        'Chemical Engineering': 'CHEM',
+        'Agricultural Engineering': 'AGRI',
+        'Automobile Engineering': 'AUTO',
+        'Food Technology': 'FT',
+        'Pharmacy': 'PHAR',
+        'MCA': 'MCA',
       }
-
-      Promise.all([
-        fetch(`/api/faculty?departmentId=${selectedDept.id}`).then(r => r.json()),
-        fetch(`/api/students?departmentId=${selectedDept.id}`).then(r => r.json()),
-      ]).then(([facultyRes, studentRes]) => {
-        setDeptDetails({
-          faculty: facultyRes.faculty || [],
-          students: studentRes.students || [],
-        })
-      })
-    }, [selectedDept])
-
-    // Show department detail view
-    if (selectedDept) {
-      return (
-        <div className="space-y-6">
-          <Button 
-            variant="outline" 
-            onClick={() => setSelectedDept(null)}
-            className="gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" /> Back to Dashboard
-          </Button>
-
-          {/* Department Header */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 p-6 text-white">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl" />
-            <div className="relative z-10">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="text-3xl font-bold">{selectedDept.name}</h2>
-                  <p className="text-amber-100 mt-1">{selectedDept.code} • Click departments to explore</p>
-                </div>
-                <Building2 className="w-12 h-12 opacity-50" />
-              </div>
-              <div className="flex gap-6 mt-4">
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2">
-                  <p className="text-xl font-bold">{selectedDept._count?.faculty || 0}</p>
-                  <p className="text-xs text-amber-100">Faculty</p>
-                </div>
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2">
-                  <p className="text-xl font-bold">{selectedDept._count?.students || 0}</p>
-                  <p className="text-xs text-amber-100">Students</p>
-                </div>
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2">
-                  <p className="text-xl font-bold">{selectedDept._count?.activities || 0}</p>
-                  <p className="text-xs text-amber-100">Activities</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {deptDetails ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Faculty List */}
-              <Card className="border border-gray-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4 text-white">
-                  <h3 className="font-bold flex items-center gap-2">
-                    <Users className="w-5 h-5" /> Faculty ({deptDetails.faculty.length})
-                  </h3>
-                </div>
-                <div className="p-4 max-h-80 overflow-y-auto space-y-2">
-                  {deptDetails.faculty.length === 0 ? (
-                    <p className="text-gray-500 text-center py-8">No faculty members</p>
-                  ) : (
-                    deptDetails.faculty.map((f: any) => (
-                      <div key={f.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
-                        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-semibold text-sm">
-                          {(f.user?.name || 'U').charAt(0)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm text-gray-900 truncate">{f.user?.name}</p>
-                          <p className="text-xs text-gray-500">{f.designation}</p>
-                        </div>
-                        {f.isHOD && <Badge className="bg-amber-100 text-amber-700 text-xs">HOD</Badge>}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </Card>
-
-              {/* Students List */}
-              <Card className="border border-gray-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-purple-500 to-violet-600 p-4 text-white">
-                  <h3 className="font-bold flex items-center gap-2">
-                    <GraduationCap className="w-5 h-5" /> Students ({deptDetails.students.length})
-                  </h3>
-                </div>
-                <div className="p-4 max-h-80 overflow-y-auto space-y-2">
-                  {deptDetails.students.length === 0 ? (
-                    <p className="text-gray-500 text-center py-8">No students</p>
-                  ) : (
-                    deptDetails.students.slice(0, 20).map((s: any) => (
-                      <div key={s.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
-                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-semibold text-sm">
-                          {(s.user?.name || 'S').charAt(0)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm text-gray-900 truncate">{s.user?.name}</p>
-                          <p className="text-xs text-gray-500">{s.registerNumber}</p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                  {deptDetails.students.length > 20 && (
-                    <p className="text-sm text-gray-500 text-center pt-2">
-                      ...and {deptDetails.students.length - 20} more students
-                    </p>
-                  )}
-                </div>
-              </Card>
-            </div>
-          ) : (
-            <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
-          )}
-        </div>
-      )
+      return codeMap[name] || name.substring(0, 4).toUpperCase()
     }
 
-    // Default Admin Dashboard with Departments Grid
+    // Get department stats from achievements
+    const getDeptAchievementCount = (deptName: string) => {
+      try {
+        const saved = localStorage.getItem('student_achievements')
+        if (saved) {
+          const achievements = JSON.parse(saved)
+          return achievements.filter((a: any) => 
+            a.dept === deptName || a.department === deptName
+          ).length
+        }
+      } catch (e) {}
+      return 0
+    }
+
     return (
-      <div className="w-full space-y-6">
-        {/* Welcome Banner */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0a2a5e] via-blue-700 to-indigo-700 p-8 text-white banner-gradient">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl" />
-          
-          <div className="relative z-10">
-            <h2 className="text-2xl md:text-3xl font-bold mb-2">Welcome back, {user.name}!</h2>
-            <p className="text-blue-100 text-lg mb-6">Here's what's happening across the institution today.</p>
-            <div className="flex flex-wrap gap-4">
-              <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3 border border-white/10">
-                <p className="text-2xl font-bold">{stats.pendingApprovals}</p>
-                <p className="text-sm text-blue-100">Pending Approvals</p>
-              </div>
-              <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3 border border-white/10">
-                <p className="text-2xl font-bold">{stats.totalActivities}</p>
-                <p className="text-sm text-blue-100">Activities This Month</p>
-              </div>
-              <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3 border border-white/10">
-                <p className="text-2xl font-bold">{stats.totalStudents}</p>
-                <p className="text-sm text-blue-100">Total Students</p>
-              </div>
+      <div className="w-full min-h-screen bg-gray-50">
+        {/* Top Stats Bar - Matching IQAC Portal Design */}
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="grid grid-cols-8 gap-4">
+            <div className="text-center">
+              <p className="text-3xl font-bold text-[#0a2a5e]">0</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-blue-500">0</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-purple-500">0</p>
+            </div>
+            <div className="text-center border-l border-gray-200 pl-4">
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Achievements</p>
+              <p className="text-3xl font-bold text-teal-500">0</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-orange-500">0</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-red-500">0</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-green-600">₹0.00L</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-cyan-500">0</p>
             </div>
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          <StatCard title="Departments" value={stats.totalDepartments} icon={Building2} color="blue" />
-          <StatCard title="Faculty" value={stats.totalFaculty} icon={Users} color="green" />
-          <StatCard title="Students" value={stats.totalStudents} icon={GraduationCap} color="purple" />
-          <StatCard title="Activities" value={stats.totalActivities} icon={Activity} color="orange" />
-          <StatCard title="Research" value={stats.totalResearch} icon={Award} color="pink" />
-          <StatCard title="Pending" value={stats.pendingApprovals} icon={Clock} color="red" trend="Needs attention" />
-        </div>
+        {/* Main Content Area */}
+        <div className="px-6 py-6 space-y-6">
+          {/* Two Column Layout - Faculty R&D and Student Achievements */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* Faculty & R&D Modules */}
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <h3 className="text-base font-semibold text-[#0a2a5e] mb-4 flex items-center gap-2">
+                <span className="text-lg">📊</span> Faculty & R&D Modules
+              </h3>
+              <div className="space-y-1">
+                {facultyModules.map((module, idx) => (
+                  <div key={idx} className="flex items-center justify-between py-2 px-3 hover:bg-gray-50 rounded-md transition-colors">
+                    <span className="text-sm text-gray-700">{module.name}</span>
+                    <span className="text-sm font-medium text-gray-900">{module.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-        {/* Departments Grid - Click to View Details */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-blue-500" /> All Departments
-            </h3>
-            <Button variant="outline" size="sm" onClick={() => setActiveTab('departments')}>
-              Manage Departments <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
+            {/* Student Achievement Modules */}
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <h3 className="text-base font-semibold text-[#0a2a5e] mb-4 flex items-center gap-2">
+                <span className="text-lg">🎓</span> Student Achievement Modules
+              </h3>
+              <div className="space-y-1">
+                {studentModules.map((module, idx) => (
+                  <div key={idx} className="flex items-center justify-between py-2 px-3 hover:bg-gray-50 rounded-md transition-colors">
+                    <span className="text-sm text-gray-700">{module.name}</span>
+                    <span className="text-sm font-medium text-gray-900">{module.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-          
-          {loadingDepts ? (
-            <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {departments.map((dept: any) => (
-                <Card 
-                  key={dept.id}
-                  className="border border-gray-200 hover:shadow-lg cursor-pointer transition-all hover:-translate-y-1 overflow-hidden"
-                  onClick={() => setSelectedDept(dept)}
-                >
-                  <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 text-white">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-bold truncate">{dept.name}</h4>
-                      <Building2 className="w-6 h-6 opacity-50" />
-                    </div>
-                    <p className="text-blue-100 text-sm mt-1">{dept.code}</p>
-                  </div>
-                  <div className="p-3">
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      <div>
-                        <p className="text-lg font-bold text-gray-900">{dept._count?.faculty || 0}</p>
-                        <p className="text-[10px] text-gray-500">Faculty</p>
-                      </div>
-                      <div>
-                        <p className="text-lg font-bold text-gray-900">{dept._count?.students || 0}</p>
-                        <p className="text-[10px] text-gray-500">Students</p>
-                      </div>
-                      <div>
-                        <p className="text-lg font-bold text-gray-900">{dept._count?.activities || 0}</p>
-                        <p className="text-[10px] text-gray-500">Activities</p>
-                      </div>
-                    </div>
-                    <p className="text-xs text-blue-600 mt-2 text-center font-medium">
-                      Click to view →
-                    </p>
-                  </div>
-                </Card>
-              ))}
+
+          {/* Department Cards Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 xl:grid-cols-10 gap-4">
+            {departments.map((dept: any) => (
+              <div 
+                key={dept.id}
+                className="bg-white rounded-lg border border-gray-200 p-4 text-center hover:shadow-md hover:border-[#0a2a5e]/30 transition-all cursor-pointer"
+              >
+                <h4 className="font-semibold text-sm text-[#0a2a5e] mb-1">
+                  {getDeptShortCode(dept.name)}
+                </h4>
+                <p className="text-2xl font-bold text-gray-800 mb-1">
+                  {getDeptAchievementCount(dept.name)}
+                </p>
+                <p className="text-xs text-gray-400">No data</p>
+              </div>
+            ))}
+          </div>
+
+          {loadingDepts && (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-[#0a2a5e]" />
             </div>
           )}
-
-          {departments.length === 0 && !loadingDepts && (
-            <div className="text-center py-8 bg-gray-50 rounded-xl">
-              <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-              <p className="text-gray-500">No departments found.</p>
-            </div>
-          )}
-        </div>
-
-        {/* Quick Actions */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <ActionCard 
-              icon={Users} 
-              title="Manage Faculty" 
-              description="Register and manage faculty members"
-              color="bg-gradient-to-br from-blue-500 to-blue-600"
-              onClick={() => setActiveTab('faculty')}
-            />
-            <ActionCard 
-              icon={Calendar} 
-              title="Schedule Activities" 
-              description="Plan institutional activities and events"
-              color="bg-gradient-to-br from-purple-500 to-purple-600"
-              onClick={() => setActiveTab('activities')}
-            />
-            <ActionCard 
-              icon={FileCheck} 
-              title="Review Approvals" 
-              description="Process pending approval requests"
-              color="bg-gradient-to-br from-amber-500 to-orange-500"
-              onClick={() => setActiveTab('approvals')}
-            />
-            <ActionCard 
-              icon={BarChart3} 
-              title="View Analytics" 
-              description="Detailed reports and insights"
-              color="bg-gradient-to-br from-emerald-500 to-teal-600"
-              onClick={() => setActiveTab('analytics')}
-            />
-          </div>
         </div>
       </div>
     )
@@ -16839,20 +16747,9 @@ const ROLE_SIDEBAR_CONFIG = {
     roleLabel: 'Admin Portal',
     roleIcon: Shield,
     menuItems: [
-      { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'System Overview' },
-      { id: 'hierarchy_dept', icon: Layers, label: 'Academic Hierarchy', badge: 'New', description: 'Dept → Year → Class → Student' },
-      { id: 'showcase', icon: Star, label: 'Showcase', badge: 'New', description: 'Institution highlights' },
-      { id: 'departments', icon: Building2, label: 'Departments', description: 'Manage departments & view staff' },
-      { id: 'faculty', icon: Users, label: 'Faculty', description: 'Faculty management by dept' },
-      { id: 'students', icon: GraduationCap, label: 'Students', description: 'Student records' },
-      { id: 'activities', icon: Activity, label: 'Activities', description: 'Events & Programs' },
-      { id: 'research', icon: Award, label: 'Research', description: 'Research papers' },
-      { id: 'achievements', icon: Trophy, label: 'Achievements', badge: 'All', description: 'All achievements' },
-      { id: 'approvals', icon: CheckCircle, label: 'Approvals', badge: '12', description: 'Pending approvals' },
-      { id: 'analytics', icon: BarChart3, label: 'Analytics', description: 'Reports & Insights' },
-      { id: 'report_generator', icon: FileSpreadsheet, label: 'Reports', badge: 'New', description: 'Generate reports' },
-      { id: 'documents', icon: FolderOpen, label: 'Documents', description: 'File management' },
-      { id: 'cms_portal', icon: Settings, label: 'CMS Portal', badge: 'Admin', description: 'System Administration' },
+      { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'IQAC Overview' },
+      { id: 'cms_portal', icon: Settings, label: 'CMS Portal', description: 'System Administration' },
+      { id: 'report_generator', icon: FileSpreadsheet, label: 'Reports', description: 'Generate reports' },
       { id: 'settings', icon: Settings, label: 'Settings', description: 'Preferences' },
     ] as MenuItem[],
   }
