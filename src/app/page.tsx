@@ -3742,84 +3742,40 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
 
         {/* Main Content Area */}
         <div className="px-6 py-6 space-y-6">
-          {/* Cumulative Module Cards - Grid Layout with Running Total */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-[#0a2a5e] flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-blue-500" />
-                Faculty & R&D Modules
-                {selectedDept !== 'ALL' && (
-                  <span className="ml-2 text-sm font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                    {getDeptShortCode(selectedDept)}
-                  </span>
-                )}
-              </h3>
-              <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                Total: {facultyModules.reduce((s, m) => s + m.count, 0)}
-              </span>
-            </div>
+          {/* Two Column Layout - Faculty R&D and Student Achievements (Simple List Format) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            {/* Faculty Module Cards Grid with Cumulative */}
-            {(() => {
-              let cumSum = 0
-              return (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-12 gap-2.5">
-                  {facultyModules.map((module, index) => {
-                    cumSum += module.count
-                    return (
-                      <div key={index} className={`group rounded-lg p-2.5 border transition-all cursor-pointer hover:shadow-md ${module.count > 0 ? 'bg-gradient-to-br from-blue-50 to-white border-blue-200 hover:border-blue-400' : 'bg-gray-50 border-gray-200 hover:border-gray-300'}`}>
-                        <div className="flex flex-col items-center text-center">
-                          <span className="text-lg">{module.icon}</span>
-                          <p className={`text-[10px] font-medium mt-0.5 truncate w-full ${module.count > 0 ? 'text-blue-700' : 'text-gray-500'}`}>{module.name}</p>
-                          <p className={`text-sm font-bold mt-0.5 ${module.count > 0 ? 'text-[#0a2a5e]' : 'text-gray-400'}`}>{cumSum}</p>
-                          <p className="text-[9px] text-green-600">+{module.count}</p>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )
-            })()}
-          </div>
+            {/* Faculty & R&D Modules - Simple List */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+              <h3 className="text-sm font-semibold text-[#0a2a5e] mb-4 flex items-center gap-2 pb-3 border-b border-gray-100">
+                <span className="text-base">📊</span> Faculty & R&D Modules
+              </h3>
+              
+              <div className="space-y-0">
+                {facultyModules.map((module, index) => (
+                  <div key={index} className={`flex items-center justify-between py-2.5 px-3 ${index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white'} hover:bg-blue-50/30 transition-colors`}>
+                    <span className="text-xs font-medium text-gray-600">{module.name}</span>
+                    <span className={`text-sm font-semibold ${module.count > 0 ? 'text-[#0a2a5e]' : 'text-gray-400'}`}>{module.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-          {/* Student Achievement Modules - Grid Layout with Cumulative */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-[#0a2a5e] flex items-center gap-2">
-                <GraduationCap className="w-5 h-5 text-purple-500" />
-                Student Achievement Modules
-                {selectedDept !== 'ALL' && (
-                  <span className="ml-2 text-sm font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                    {getDeptShortCode(selectedDept)}
-                  </span>
-                )}
+            {/* Student Achievement Modules - Simple List */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+              <h3 className="text-sm font-semibold text-[#0a2a5e] mb-4 flex items-center gap-2 pb-3 border-b border-gray-100">
+                <span className="text-base">🎓</span> Student Achievement Modules
               </h3>
-              <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                Total: {studentModules.reduce((s, m) => s + m.count, 0)}
-              </span>
+              
+              <div className="space-y-0">
+                {studentModules.map((module, index) => (
+                  <div key={index} className={`flex items-center justify-between py-2.5 px-3 ${index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white'} hover:bg-purple-50/30 transition-colors`}>
+                    <span className="text-xs font-medium text-gray-600">{module.name}</span>
+                    <span className={`text-sm font-semibold ${module.count > 0 ? 'text-[#0a2a5e]' : 'text-gray-400'}`}>{module.count}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            
-            {/* Student Module Cards Grid with Cumulative */}
-            {(() => {
-              let cumSum = 0
-              return (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-12 gap-2.5">
-                  {studentModules.map((module, index) => {
-                    cumSum += module.count
-                    return (
-                      <div key={index} className={`group rounded-lg p-2.5 border transition-all cursor-pointer hover:shadow-md ${module.count > 0 ? 'bg-gradient-to-br from-purple-50 to-white border-purple-200 hover:border-purple-400' : 'bg-gray-50 border-gray-200 hover:border-gray-300'}`}>
-                        <div className="flex flex-col items-center text-center">
-                          <span className="text-lg">{module.icon}</span>
-                          <p className={`text-[10px] font-medium mt-0.5 truncate w-full ${module.count > 0 ? 'text-purple-700' : 'text-gray-500'}`}>{module.name}</p>
-                          <p className={`text-sm font-bold mt-0.5 ${module.count > 0 ? 'text-[#0a2a5e]' : 'text-gray-400'}`}>{cumSum}</p>
-                          <p className="text-[9px] text-green-600">+{module.count}</p>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )
-            })()}
           </div>
 
           {/* ========== CUMULATIVE DEPARTMENT GRAPH (Above Department Summary) ========== */}
