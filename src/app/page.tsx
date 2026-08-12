@@ -3742,116 +3742,66 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
 
         {/* Main Content Area */}
         <div className="px-6 py-6 space-y-6">
-          {/* Two Column Layout - Faculty R&D and Student Achievements (Simple List Format) */}
+          {/* Two Column Layout - Faculty R&D and Student Achievements with Cumulative Values */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            {/* Faculty & R&D Modules - Simple List */}
+            {/* Faculty & R&D Modules - Cumulative List */}
             <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
               <h3 className="text-sm font-semibold text-[#0a2a5e] mb-4 flex items-center gap-2 pb-3 border-b border-gray-100">
                 <span className="text-base">📊</span> Faculty & R&D Modules
               </h3>
               
-              <div className="space-y-0">
-                {facultyModules.map((module, index) => (
-                  <div key={index} className={`flex items-center justify-between py-2.5 px-3 ${index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white'} hover:bg-blue-50/30 transition-colors`}>
-                    <span className="text-xs font-medium text-gray-600">{module.name}</span>
-                    <span className={`text-sm font-semibold ${module.count > 0 ? 'text-[#0a2a5e]' : 'text-gray-400'}`}>{module.count}</span>
+              {(() => {
+                let cumSum = 0
+                return (
+                  <div className="space-y-0">
+                    {facultyModules.map((module, index) => {
+                      cumSum += module.count
+                      return (
+                        <div key={index} className={`flex items-center justify-between py-2.5 px-3 ${index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white'} hover:bg-blue-50/30 transition-colors`}>
+                          <span className="text-xs font-medium text-gray-600">{module.name}</span>
+                          <span className={`text-sm font-bold ${cumSum > 0 ? 'text-[#0a2a5e]' : 'text-gray-400'}`}>{cumSum}</span>
+                        </div>
+                      )
+                    })}
+                    {/* Total row */}
+                    <div className="flex items-center justify-between py-2.5 px-3 bg-blue-50/60 border-t border-blue-100 mt-1">
+                      <span className="text-xs font-semibold text-blue-700">Total</span>
+                      <span className="text-sm font-bold text-blue-700">{cumSum}</span>
+                    </div>
                   </div>
-                ))}
-              </div>
+                )
+              })()}
             </div>
 
-            {/* Student Achievement Modules - Simple List */}
+            {/* Student Achievement Modules - Cumulative List */}
             <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
               <h3 className="text-sm font-semibold text-[#0a2a5e] mb-4 flex items-center gap-2 pb-3 border-b border-gray-100">
                 <span className="text-base">🎓</span> Student Achievement Modules
               </h3>
               
-              <div className="space-y-0">
-                {studentModules.map((module, index) => (
-                  <div key={index} className={`flex items-center justify-between py-2.5 px-3 ${index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white'} hover:bg-purple-50/30 transition-colors`}>
-                    <span className="text-xs font-medium text-gray-600">{module.name}</span>
-                    <span className={`text-sm font-semibold ${module.count > 0 ? 'text-[#0a2a5e]' : 'text-gray-400'}`}>{module.count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Overall Achievement - Increasing Bar Chart */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-[#0a2a5e] flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-green-500" />
-                Overall Achievement Progress
-              </h3>
-              <div className="flex items-center gap-4 text-xs">
-                <span className="text-blue-600">● Faculty R&D</span>
-                <span className="text-purple-600">● Student</span>
-              </div>
-            </div>
-
-            {(() => {
-              // Combine all modules
-              const allModules = [
-                ...facultyModules.map(m => ({ ...m, category: 'faculty' })),
-                ...studentModules.map(m => ({ ...m, category: 'student' }))
-              ]
-              const maxValue = Math.max(...allModules.map(m => m.count), 1)
-              
-              return (
-                <div className="space-y-1.5">
-                  {allModules.map((module, idx) => {
-                    const percentage = (module.count / maxValue) * 100
-                    const isFaculty = module.category === 'faculty'
-                    
-                    return (
-                      <div key={idx} className="flex items-center gap-3 group">
-                        <span className="w-20 sm:w-24 text-xs font-medium text-gray-600 truncate flex-shrink-0" title={module.name}>
-                          {module.name}
-                        </span>
-                        <div className="flex-1 h-6 bg-gray-100 rounded-md overflow-hidden relative">
-                          <div 
-                            className={`absolute inset-y-0 left-0 rounded-md transition-all duration-500 flex items-center justify-end pr-2 ${
-                              module.count > 0 
-                                ? (isFaculty ? 'bg-gradient-to-r from-blue-500 to-cyan-400' : 'bg-gradient-to-r from-purple-500 to-pink-400')
-                                : 'bg-gray-200'
-                            }`}
-                            style={{ width: `${Math.max(percentage, module.count > 0 ? 8 : 0)}%` }}
-                          >
-                            {percentage > 15 && module.count > 0 && (
-                              <span className="text-[10px] font-bold text-white">{module.count}</span>
-                            )}
-                          </div>
-                          {percentage <= 15 && module.count > 0 && (
-                            <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold ${isFaculty ? 'text-blue-600' : 'text-purple-600'}`}>
-                              {module.count}
-                            </span>
-                          )}
+              {(() => {
+                let cumSum = 0
+                return (
+                  <div className="space-y-0">
+                    {studentModules.map((module, index) => {
+                      cumSum += module.count
+                      return (
+                        <div key={index} className={`flex items-center justify-between py-2.5 px-3 ${index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white'} hover:bg-purple-50/30 transition-colors`}>
+                          <span className="text-xs font-medium text-gray-600">{module.name}</span>
+                          <span className={`text-sm font-bold ${cumSum > 0 ? 'text-[#0a2a5e]' : 'text-gray-400'}`}>{cumSum}</span>
                         </div>
-                      </div>
-                    )
-                  })}
-                  
-                  {/* Total bar */}
-                  <div className="pt-3 mt-2 border-t border-gray-100">
-                    <div className="flex items-center gap-3">
-                      <span className="w-20 sm:w-24 text-xs font-bold text-gray-700 flex-shrink-0">Total</span>
-                      <div className="flex-1 h-7 bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 rounded-md overflow-hidden relative">
-                        <div 
-                          className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 rounded-md flex items-center justify-center"
-                          style={{ width: '100%' }}
-                        >
-                          <span className="text-xs font-bold text-white">
-                            {allModules.reduce((s, m) => s + m.count, 0)} Total Achievements
-                          </span>
-                        </div>
-                      </div>
+                      )
+                    })}
+                    {/* Total row */}
+                    <div className="flex items-center justify-between py-2.5 px-3 bg-purple-50/60 border-t border-purple-100 mt-1">
+                      <span className="text-xs font-semibold text-purple-700">Total</span>
+                      <span className="text-sm font-bold text-purple-700">{cumSum}</span>
                     </div>
                   </div>
-                </div>
-              )
-            })()}
+                )
+              })()}
+            </div>
           </div>
 
           {/* Department Cards Grid - Only 11 Departments */}
