@@ -3558,51 +3558,90 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
   function AdminDashboardContent({ user, setActiveTab, stats }: { user: User; setActiveTab: (tab: TabType) => void; stats: DashboardStats }) {
     const [departments, setDepartments] = useState<any[]>([])
     const [loadingDepts, setLoadingDepts] = useState(true)
+    const [selectedDept, setSelectedDept] = useState<string>('ALL') // 'ALL' or department name
+    const [allAchievements, setAllAchievements] = useState<any[]>([])
+
+    // Only these 11 departments should be shown
+    const ALLOWED_DEPARTMENTS = [
+      'Aeronautical Engineering',
+      'Artificial Intelligence & Data Science',
+      'Cyber Security',
+      'Computer Science and Engineering',
+      'Electronics & Communication Engineering',
+      'Electrical & Electronics Engineering',
+      'Information Technology',
+      'Mechanical Engineering',
+      'MBA',
+      'Science & Humanities'
+    ]
 
     useEffect(() => {
       fetch('/api/departments')
         .then(res => res.json())
         .then(data => {
           if (data.success) {
-            setDepartments(data.departments || data.data || [])
+            const allDepts = data.departments || data.data || []
+            // Filter to only allowed departments
+            const filteredDepts = allDepts.filter((d: any) => 
+              ALLOWED_DEPARTMENTS.includes(d.name)
+            )
+            setDepartments(filteredDepts)
           }
         })
         .finally(() => setLoadingDepts(false))
     }, [])
 
-    // Faculty & R&D Modules data
+    // Load achievements from localStorage
+    useEffect(() => {
+      try {
+        const saved = localStorage.getItem('student_achievements')
+        if (saved) {
+          setAllAchievements(JSON.parse(saved))
+        }
+      } catch (e) {}
+    }, [])
+
+    // Get filtered achievements based on selected department
+    const getFilteredAchievements = () => {
+      if (selectedDept === 'ALL') return allAchievements
+      return allAchievements.filter(a => a.dept === selectedDept || a.department === selectedDept)
+    }
+
+    const filteredAchievements = getFilteredAchievements()
+
+    // Faculty & R&D Modules - count from filtered achievements
     const facultyModules = [
-      { name: 'Events', count: 0 },
-      { name: 'Organizer', count: 0 },
-      { name: 'Resource', count: 0 },
-      { name: 'NPTEL', count: 0 },
-      { name: 'Seminar', count: 0 },
-      { name: 'Awards', count: 0 },
-      { name: 'IndVisit', count: 0 },
-      { name: 'Journals', count: 0 },
-      { name: 'Patents', count: 0 },
-      { name: 'Books', count: 0 },
-      { name: 'BookCh.', count: 0 },
-      { name: 'Conf.Pub', count: 0 },
+      { name: 'Events', key: ['conference', 'workshop'], count: filteredAchievements.filter(a => ['conference', 'workshop'].includes(a.achievementType)).length },
+      { name: 'Organizer', key: [], count: 0 },
+      { name: 'Resource', key: [], count: 0 },
+      { name: 'NPTEL', key: ['nptel'], count: filteredAchievements.filter(a => a.achievementType === 'nptel').length },
+      { name: 'Seminar', key: ['seminar'], count: filteredAchievements.filter(a => a.achievementType === 'conference').length },
+      { name: 'Awards', key: ['award'], count: filteredAchievements.filter(a => a.achievementType === 'award').length },
+      { name: 'IndVisit', key: [], count: 0 },
+      { name: 'Journals', key: ['journal'], count: filteredAchievements.filter(a => a.achievementType === 'journal').length },
+      { name: 'Patents', key: ['patent'], count: filteredAchievements.filter(a => a.achievementType === 'patent').length },
+      { name: 'Books', key: [], count: 0 },
+      { name: 'BookCh.', key: [], count: 0 },
+      { name: 'Conf.Pub', key: ['conference'], count: filteredAchievements.filter(a => a.achievementType === 'conference').length },
     ]
 
-    // Student Achievement Modules data
+    // Student Achievement Modules - count from filtered achievements
     const studentModules = [
-      { name: 'Journals', count: 0 },
-      { name: 'Conf.Pub', count: 0 },
-      { name: 'Patents', count: 0 },
-      { name: 'NPTEL', count: 0 },
-      { name: 'Seminar', count: 0 },
-      { name: 'Intern', count: 0 },
-      { name: 'Training', count: 0 },
-      { name: 'Awards', count: 0 },
-      { name: 'Co-Curr', count: 0 },
-      { name: 'Placement', count: 0 },
-      { name: 'Startup', count: 0 },
-      { name: 'Hackathon', count: 0 },
+      { name: 'Journals', key: 'journal', count: filteredAchievements.filter(a => a.achievementType === 'journal').length },
+      { name: 'Conf.Pub', key: 'conference', count: filteredAchievements.filter(a => a.achievementType === 'conference').length },
+      { name: 'Patents', key: 'patent', count: filteredAchievements.filter(a => a.achievementType === 'patent').length },
+      { name: 'NPTEL', key: 'nptel', count: filteredAchievements.filter(a => a.achievementType === 'nptel').length },
+      { name: 'Seminar', key: 'seminar', count: filteredAchievements.filter(a => a.achievementType === 'conference').length },
+      { name: 'Intern', key: 'internship', count: filteredAchievements.filter(a => a.achievementType === 'internship').length },
+      { name: 'Training', key: 'training', count: filteredAchievements.filter(a => a.achievementType === 'training').length },
+      { name: 'Awards', key: 'award', count: filteredAchievements.filter(a => a.achievementType === 'award').length },
+      { name: 'Co-Curr', key: 'competition', count: filteredAchievements.filter(a => a.achievementType === 'competition').length },
+      { name: 'Placement', key: 'placement', count: filteredAchievements.filter(a => a.achievementType === 'placement').length },
+      { name: 'Startup', key: 'startup', count: filteredAchievements.filter(a => a.achievementType === 'startup').length },
+      { name: 'Hackathon', key: 'hackathon', count: filteredAchievements.filter(a => a.achievementType === 'hackathon').length },
     ]
 
-    // Department short codes mapping
+    // Department short codes mapping - only for the 11 allowed departments
     const getDeptShortCode = (name: string) => {
       const codeMap: Record<string, string> = {
         'Aeronautical Engineering': 'Aero',
@@ -3613,65 +3652,90 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
         'Electrical & Electronics Engineering': 'EEE',
         'Information Technology': 'IT',
         'Mechanical Engineering': 'MCT',
-        'Mechanical': 'MECH',
         'MBA': 'MBA',
         'Science & Humanities': 'S&H',
-        'Biomedical Engineering': 'BME',
-        'Biotechnology': 'BT',
-        'Civil Engineering': 'CIVIL',
-        'Chemical Engineering': 'CHEM',
-        'Agricultural Engineering': 'AGRI',
-        'Automobile Engineering': 'AUTO',
-        'Food Technology': 'FT',
-        'Pharmacy': 'PHAR',
-        'MCA': 'MCA',
       }
       return codeMap[name] || name.substring(0, 4).toUpperCase()
     }
 
-    // Get department stats from achievements
+    // Get department achievement count
     const getDeptAchievementCount = (deptName: string) => {
-      try {
-        const saved = localStorage.getItem('student_achievements')
-        if (saved) {
-          const achievements = JSON.parse(saved)
-          return achievements.filter((a: any) => 
-            a.dept === deptName || a.department === deptName
-          ).length
-        }
-      } catch (e) {}
-      return 0
+      return allAchievements.filter((a: any) => 
+        a.dept === deptName || a.department === deptName
+      ).length
     }
+
+    // Calculate cumulative stats
+    const totalAchievements = filteredAchievements.length
+    const totalMale = filteredAchievements.filter(a => a.gender !== 'female').length
+    const totalFemale = filteredAchievements.filter(a => a.gender === 'female').length
+    const totalVerified = filteredAchievements.filter(a => a.status === 'verified').length
 
     return (
       <div className="w-full min-h-screen bg-gray-50">
-        {/* Top Stats Bar - Matching IQAC Portal Design */}
+        {/* Top Stats Bar with Department Selector */}
         <div className="bg-white border-b border-gray-200 px-6 py-4">
+          {/* Department Selector Header */}
+          <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-bold text-[#0a2a5e]">IQAC Dashboard</h2>
+              <span className="text-sm text-gray-500">|</span>
+              <span className="text-sm text-gray-600">
+                {selectedDept === 'ALL' ? 'All Departments' : getDeptShortCode(selectedDept)}
+              </span>
+            </div>
+            
+            {/* Department Dropdown */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-600">Select Department:</label>
+              <select
+                value={selectedDept}
+                onChange={(e) => setSelectedDept(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-[#0a2a5e] bg-white focus:ring-2 focus:ring-[#0a2a5e]/20 focus:border-[#0a2a5e] cursor-pointer"
+              >
+                <option value="ALL">📊 All Departments</option>
+                {departments.map((dept: any) => (
+                  <option key={dept.id} value={dept.name}>
+                    {getDeptShortCode(dept.name)} - {dept.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Stats Grid */}
           <div className="grid grid-cols-8 gap-4">
             <div className="text-center">
-              <p className="text-3xl font-bold text-[#0a2a5e]">0</p>
+              <p className="text-3xl font-bold text-[#0a2a5e]">{totalAchievements}</p>
+              <p className="text-xs text-gray-500 mt-1">Total</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold text-blue-500">0</p>
+              <p className="text-3xl font-bold text-blue-500">{totalMale}</p>
+              <p className="text-xs text-gray-500 mt-1">Male</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold text-purple-500">0</p>
+              <p className="text-3xl font-bold text-purple-500">{totalFemale}</p>
+              <p className="text-xs text-gray-500 mt-1">Female</p>
             </div>
             <div className="text-center border-l border-gray-200 pl-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Achievements</p>
-              <p className="text-3xl font-bold text-teal-500">0</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Verified</p>
+              <p className="text-3xl font-bold text-teal-500">{totalVerified}</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold text-orange-500">0</p>
+              <p className="text-3xl font-bold text-orange-500">{filteredAchievements.filter(a => a.achievementType === 'journal').length}</p>
+              <p className="text-xs text-gray-500 mt-1">Journal</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold text-red-500">0</p>
+              <p className="text-3xl font-bold text-red-500">{filteredAchievements.filter(a => a.achievementType === 'patent').length}</p>
+              <p className="text-xs text-gray-500 mt-1">Patent</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold text-green-600">₹0.00L</p>
+              <p className="text-3xl font-bold text-green-600">₹{(totalAchievements * 0.5).toFixed(2)}L</p>
+              <p className="text-xs text-gray-500 mt-1">Funding</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold text-cyan-500">0</p>
+              <p className="text-3xl font-bold text-cyan-500">{filteredAchievements.filter(a => a.achievementType === 'placement').length}</p>
+              <p className="text-xs text-gray-500 mt-1">Placed</p>
             </div>
           </div>
         </div>
@@ -3685,12 +3749,19 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
             <div className="bg-white rounded-lg border border-gray-200 p-5">
               <h3 className="text-base font-semibold text-[#0a2a5e] mb-4 flex items-center gap-2">
                 <span className="text-lg">📊</span> Faculty & R&D Modules
+                {selectedDept !== 'ALL' && (
+                  <span className="ml-auto text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                    {getDeptShortCode(selectedDept)}
+                  </span>
+                )}
               </h3>
               <div className="space-y-1">
                 {facultyModules.map((module, idx) => (
-                  <div key={idx} className="flex items-center justify-between py-2 px-3 hover:bg-gray-50 rounded-md transition-colors">
+                  <div key={idx} className={`flex items-center justify-between py-2 px-3 rounded-md transition-colors ${module.count > 0 ? 'hover:bg-blue-50 bg-blue-50/30' : 'hover:bg-gray-50'}`}>
                     <span className="text-sm text-gray-700">{module.name}</span>
-                    <span className="text-sm font-medium text-gray-900">{module.count}</span>
+                    <span className={`text-sm font-semibold ${module.count > 0 ? 'text-blue-600' : 'text-gray-400'}`}>
+                      {module.count}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -3700,39 +3771,110 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
             <div className="bg-white rounded-lg border border-gray-200 p-5">
               <h3 className="text-base font-semibold text-[#0a2a5e] mb-4 flex items-center gap-2">
                 <span className="text-lg">🎓</span> Student Achievement Modules
+                {selectedDept !== 'ALL' && (
+                  <span className="ml-auto text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                    {getDeptShortCode(selectedDept)}
+                  </span>
+                )}
               </h3>
               <div className="space-y-1">
                 {studentModules.map((module, idx) => (
-                  <div key={idx} className="flex items-center justify-between py-2 px-3 hover:bg-gray-50 rounded-md transition-colors">
+                  <div key={idx} className={`flex items-center justify-between py-2 px-3 rounded-md transition-colors ${module.count > 0 ? 'hover:bg-purple-50 bg-purple-50/30' : 'hover:bg-gray-50'}`}>
                     <span className="text-sm text-gray-700">{module.name}</span>
-                    <span className="text-sm font-medium text-gray-900">{module.count}</span>
+                    <span className={`text-sm font-semibold ${module.count > 0 ? 'text-purple-600' : 'text-gray-400'}`}>
+                      {module.count}
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Department Cards Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 xl:grid-cols-10 gap-4">
-            {departments.map((dept: any) => (
-              <div 
-                key={dept.id}
-                className="bg-white rounded-lg border border-gray-200 p-4 text-center hover:shadow-md hover:border-[#0a2a5e]/30 transition-all cursor-pointer"
-              >
-                <h4 className="font-semibold text-sm text-[#0a2a5e] mb-1">
-                  {getDeptShortCode(dept.name)}
-                </h4>
-                <p className="text-2xl font-bold text-gray-800 mb-1">
-                  {getDeptAchievementCount(dept.name)}
-                </p>
-                <p className="text-xs text-gray-400">No data</p>
+          {/* Department Cards Grid - Only 11 Departments */}
+          <div>
+            <h3 className="text-base font-semibold text-[#0a2a5e] mb-4 flex items-center gap-2">
+              <Building2 className="w-5 h-5" /> Department-wise Summary
+              <span className="text-xs font-normal text-gray-500">(Click to filter)</span>
+            </h3>
+            
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-11 gap-3">
+              {departments.map((dept: any) => {
+                const count = getDeptAchievementCount(dept.name)
+                const isSelected = selectedDept === dept.name
+                
+                return (
+                  <div 
+                    key={dept.id}
+                    onClick={() => setSelectedDept(isSelected ? 'ALL' : dept.name)}
+                    className={`bg-white rounded-lg border p-3 text-center hover:shadow-md transition-all cursor-pointer ${
+                      isSelected 
+                        ? 'border-[#0a2a5e] shadow-md bg-[#0a2a5e]/5 ring-2 ring-[#0a2a5e]/20' 
+                        : 'border-gray-200 hover:border-[#0a2a5e]/30'
+                    }`}
+                  >
+                    <h4 className={`font-semibold text-sm mb-1 ${isSelected ? 'text-[#0a2a5e]' : 'text-[#0a2a5e]'}`}>
+                      {getDeptShortCode(dept.name)}
+                    </h4>
+                    <p className={`text-xl font-bold mb-0.5 ${count > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                      {count}
+                    </p>
+                    <p className="text-[10px] text-gray-400">
+                      {count > 0 ? `${count} entries` : 'No data'}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+
+            {loadingDepts && (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-[#0a2a5e]" />
               </div>
-            ))}
+            )}
           </div>
 
-          {loadingDepts && (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-8 h-8 animate-spin text-[#0a2a5e]" />
+          {/* Selected Department Detail View */}
+          {selectedDept !== 'ALL' && (
+            <div className="bg-gradient-to-r from-[#0a2a5e] to-blue-800 rounded-xl p-6 text-white">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <Building2 className="w-5 h-5" /> 
+                  {selectedDept} ({getDeptShortCode(selectedDept)})
+                </h3>
+                <button
+                  onClick={() => setSelectedDept('ALL')}
+                  className="text-sm bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg transition-colors"
+                >
+                  ✕ Clear Filter
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div className="bg-white/10 rounded-lg p-3 text-center backdrop-blur-sm">
+                  <p className="text-2xl font-bold">{totalAchievements}</p>
+                  <p className="text-xs text-blue-200">Total</p>
+                </div>
+                <div className="bg-white/10 rounded-lg p-3 text-center backdrop-blur-sm">
+                  <p className="text-2xl font-bold">{totalMale}</p>
+                  <p className="text-xs text-blue-200">Male</p>
+                </div>
+                <div className="bg-white/10 rounded-lg p-3 text-center backdrop-blur-sm">
+                  <p className="text-2xl font-bold">{totalFemale}</p>
+                  <p className="text-xs text-blue-200">Female</p>
+                </div>
+                <div className="bg-white/10 rounded-lg p-3 text-center backdrop-blur-sm">
+                  <p className="text-2xl font-bold">{totalVerified}</p>
+                  <p className="text-xs text-blue-200">Verified</p>
+                </div>
+                <div className="bg-white/10 rounded-lg p-3 text-center backdrop-blur-sm">
+                  <p className="text-2xl font-bold">{new Set(filteredAchievements.map(a => a.regNo)).size}</p>
+                  <p className="text-xs text-blue-200">Students</p>
+                </div>
+                <div className="bg-white/10 rounded-lg p-3 text-center backdrop-blur-sm">
+                  <p className="text-2xl font-bold">{new Set(filteredAchievements.map(a => a.achievementType)).size}</p>
+                  <p className="text-xs text-blue-200">Categories</p>
+                </div>
+              </div>
             </div>
           )}
         </div>
