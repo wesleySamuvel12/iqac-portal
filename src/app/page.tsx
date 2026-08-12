@@ -3672,30 +3672,10 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
     const [selectedDept, setSelectedDept] = useState<string>('ALL') // 'ALL' or department name
     const [allAchievements, setAllAchievements] = useState<any[]>([])
 
-    // Only these 11+ departments should be shown
-    const ALLOWED_DEPARTMENTS = [
-      'Aeronautical Engineering',
-      'AER',
-      'Artificial Intelligence & Data Science',
-      'AI & DS',
-      'AI&DS',
+    // Departments to exclude (if any)
+    const EXCLUDED_DEPARTMENTS = [
       'Cyber Security',
-      'CSBS',
-      'Computer Science and Engineering',
-      'CSE',
-      'Electronics & Communication Engineering',
-      'ECE',
-      'Electrical & Electronics Engineering',
-      'EEE',
-      'Information Technology',
-      'IT',
-      'Mechanical Engineering',
-      'MECH',
-      'Mechatronics',
-      'MCT',
-      'MBA',
-      'Science & Humanities',
-      'S&H'
+      'CSBS'
     ]
 
     useEffect(() => {
@@ -3704,9 +3684,9 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
         .then(data => {
           if (data.success) {
             const allDepts = data.departments || data.data || []
-            // Filter to only allowed departments
+            // Exclude only specific departments, show all others
             const filteredDepts = allDepts.filter((d: any) => 
-              ALLOWED_DEPARTMENTS.includes(d.name)
+              !EXCLUDED_DEPARTMENTS.includes(d.name)
             )
             setDepartments(filteredDepts)
           }
@@ -3764,35 +3744,52 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
       { name: 'Hackathon', key: 'hackathon', count: filteredAchievements.filter(a => a.achievementType === 'hackathon').length },
     ]
 
-    // Department short codes mapping - only for the 11 allowed departments
+    // Department short codes mapping - for all departments
     const getDeptShortCode = (name: string) => {
       const codeMap: Record<string, string> = {
         // Full names
         'Aeronautical Engineering': 'Aero',
-        'Artificial Intelligence & Data Science': 'AI&DS',
-        'Cyber Security': 'CSBS',
-        'Computer Science and Engineering': 'CSE',
-        'Electronics & Communication Engineering': 'ECE',
-        'Electrical & Electronics Engineering': 'EEE',
-        'Information Technology': 'IT',
-        'Mechanical Engineering': 'MECH',
-        'Mechatronics': 'MCT',
-        'MBA': 'MBA',
-        'Science & Humanities': 'S&H',
-        // Short codes / abbreviations
         'AER': 'Aero',
+        'Artificial Intelligence & Data Science': 'AI&DS',
         'AI & DS': 'AI&DS',
         'AI&DS': 'AI&DS',
-        'CSBS': 'CSBS',
+        'Computer Science and Engineering': 'CSE',
         'CSE': 'CSE',
+        'Electronics & Communication Engineering': 'ECE',
         'ECE': 'ECE',
+        'Electrical & Electronics Engineering': 'EEE',
         'EEE': 'EEE',
+        'Information Technology': 'IT',
         'IT': 'IT',
+        'Mechanical Engineering': 'MECH',
         'MECH': 'MECH',
+        'Mechatronics': 'MCT',
         'MCT': 'MCT',
+        'MBA': 'MBA',
+        'Science & Humanities': 'S&H',
         'S&H': 'S&H',
+        'Civil Engineering': 'CIVIL',
+        'CIVIL': 'CIVIL',
+        'Biomedical Engineering': 'BME',
+        'BME': 'BME',
+        'Chemical Engineering': 'CHEM',
+        'CHEM': 'CHEM',
       }
-      return codeMap[name] || name.substring(0, 4).toUpperCase()
+      
+      // If exact match found, return it
+      if (codeMap[name]) return codeMap[name]
+      
+      // Otherwise, generate short code from name
+      const words = name.split(/\s+/)
+      if (words.length >= 3) {
+        // For "X Y Engineering" -> take first letter of each main word
+        return words.slice(0, -1).map(w => w[0]).join('').toUpperCase()
+      } else if (words.length === 2) {
+        // For two words, take first 2-3 letters of each or first letters
+        return (words[0].substring(0, 3) + words[1][0]).toUpperCase()
+      }
+      
+      return name.substring(0, 4).toUpperCase()
     }
 
     // Get department achievement count
