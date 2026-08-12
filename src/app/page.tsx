@@ -3767,7 +3767,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
                     {/* Summary bar */}
                     <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-cyan-50/50 rounded-lg px-3 py-2 mb-3">
                       <span className="text-xs font-medium text-blue-700">Total Achievements</span>
-                      <span className="text-sm font-bold text-blue-600">Σ {facultyTotal}</span>
+                      <span className="text-sm font-bold text-blue-600">{facultyTotal}</span>
                     </div>
                     
                     {/* Module rows with cumulative */}
@@ -3800,7 +3800,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
                               {module.count}
                             </span>
                             <span className="text-xs font-medium text-green-600 w-10 text-right flex-shrink-0">
-                              Σ{cumSum}
+                              {cumSum}
                             </span>
                           </div>
                         </div>
@@ -3851,7 +3851,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
                         </svg>
                         <div className="flex justify-between px-1 mt-1">
                           <span className="text-[8px] text-gray-400">Start</span>
-                          <span className="text-[8px] font-bold text-green-600">Σ {facultyTotal}</span>
+                          <span className="text-[8px] font-bold text-green-600">{facultyTotal}</span>
                         </div>
                       </div>
                     </div>
@@ -3882,7 +3882,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
                     {/* Summary bar */}
                     <div className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50/50 rounded-lg px-3 py-2 mb-3">
                       <span className="text-xs font-medium text-purple-700">Total Achievements</span>
-                      <span className="text-sm font-bold text-purple-600">Σ {studentTotal}</span>
+                      <span className="text-sm font-bold text-purple-600">{studentTotal}</span>
                     </div>
                     
                     {/* Module rows with cumulative */}
@@ -3915,7 +3915,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
                               {module.count}
                             </span>
                             <span className="text-xs font-medium text-green-600 w-10 text-right flex-shrink-0">
-                              Σ{cumSum}
+                              {cumSum}
                             </span>
                           </div>
                         </div>
@@ -3966,7 +3966,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
                         </svg>
                         <div className="flex justify-between px-1 mt-1">
                           <span className="text-[8px] text-gray-400">Start</span>
-                          <span className="text-[8px] font-bold text-green-600">Σ {studentTotal}</span>
+                          <span className="text-[8px] font-bold text-green-600">{studentTotal}</span>
                         </div>
                       </div>
                     </div>
@@ -3989,7 +3989,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
                 )}
               </h3>
               <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                Σ Total: {departments.reduce((sum, d) => sum + getDeptAchievementCount(d.name), 0)}
+                Total: {departments.reduce((sum, d) => sum + getDeptAchievementCount(d.name), 0)}
               </span>
             </div>
 
@@ -4103,7 +4103,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
                           {/* Cumulative running total */}
                           <div className="w-16 sm:w-20 text-right flex-shrink-0">
                             <span className="text-xs font-medium text-green-600">
-                              Σ {dept.cumTotal}
+                              {dept.cumTotal}
                             </span>
                           </div>
                           
@@ -4129,7 +4129,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
                           <div className="w-4 h-0.5 bg-gradient-to-r from-[#0a2a5e] to-green-500 rounded"></div>
                           <span className="text-[10px] text-gray-500">Running Total</span>
                         </div>
-                        <span className="text-[10px] font-bold text-green-600">Σ {totalCount}</span>
+                        <span className="text-[10px] font-bold text-green-600">{totalCount}</span>
                       </div>
                     </div>
                     
