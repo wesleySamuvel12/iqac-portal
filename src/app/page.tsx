@@ -3742,238 +3742,182 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
 
         {/* Main Content Area */}
         <div className="px-6 py-6 space-y-6">
-          {/* Two Column Layout - Faculty R&D and Student Achievements */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            {/* Faculty & R&D Modules - With Cumulative Graph */}
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <h3 className="text-base font-semibold text-[#0a2a5e] mb-4 flex items-center gap-2">
-                <span className="text-lg">📊</span> Faculty & R&D Modules
+          {/* Combined Cumulative Module Analysis - All Modules in One */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-[#0a2a5e] flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-green-500" />
+                Cumulative Module Analysis
                 {selectedDept !== 'ALL' && (
-                  <span className="ml-auto text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                  <span className="ml-2 text-sm font-normal text-gray-500 bg-[#0a2a5e]/5 px-3 py-1 rounded-full">
                     {getDeptShortCode(selectedDept)}
                   </span>
                 )}
               </h3>
-              
-              {/* Cumulative Module List */}
-              {(() => {
-                const facultyTotal = facultyModules.reduce((s, m) => s + m.count, 0)
-                let cumSum = 0
-                const maxCount = Math.max(...facultyModules.map(m => m.count), 1)
-                
-                return (
-                  <div className="space-y-2">
-                    {/* Summary bar */}
-                    <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-cyan-50/50 rounded-lg px-3 py-2 mb-3">
-                      <span className="text-xs font-medium text-blue-700">Total Achievements</span>
-                      <span className="text-sm font-bold text-blue-600">{facultyTotal}</span>
-                    </div>
-                    
-                    {/* Module rows with cumulative */}
-                    {facultyModules.map((module, idx) => {
-                      cumSum += module.count
-                      const percentage = (module.count / maxCount) * 100
-                      const cumPercentage = (cumSum / Math.max(facultyTotal, 1)) * 100
-                      
-                      return (
-                        <div key={idx} className="group">
-                          <div className={`flex items-center gap-2 py-2 px-3 rounded-md transition-colors ${module.count > 0 ? 'bg-blue-50/40 hover:bg-blue-50' : 'hover:bg-gray-50'}`}>
-                            <span className="text-xs font-medium text-gray-600 w-16 flex-shrink-0 truncate" title={module.name}>
-                              {module.name}
-                            </span>
-                            
-                            {/* Mini progress bar */}
-                            <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden relative min-w-0">
-                              <div 
-                                className="absolute inset-y-0 left-0 bg-gradient-to-r from-green-100 to-emerald-100 rounded-full transition-all duration-500"
-                                style={{ width: `${cumPercentage}%` }}
-                              ></div>
-                              <div 
-                                className={`absolute inset-y-0 left-0 rounded-full transition-all duration-300 ${module.count > 0 ? 'bg-gradient-to-r from-blue-500 to-cyan-400' : 'bg-gray-200'}`}
-                                style={{ width: `${Math.max(percentage, 2)}%` }}
-                              ></div>
-                            </div>
-                            
-                            {/* Values */}
-                            <span className={`text-xs font-bold w-6 text-right flex-shrink-0 ${module.count > 0 ? 'text-blue-600' : 'text-gray-300'}`}>
-                              {module.count}
-                            </span>
-                            <span className="text-xs font-medium text-green-600 w-10 text-right flex-shrink-0">
-                              {cumSum}
-                            </span>
-                          </div>
-                        </div>
-                      )
-                    })}
-                    
-                    {/* Mini cumulative line chart */}
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                      <div className="h-12 relative bg-gradient-to-b from-blue-50/30 to-transparent rounded overflow-hidden">
-                        <svg viewBox="0 0 240 48" className="w-full h-full" preserveAspectRatio="none">
-                          <defs>
-                            <linearGradient id="facultyCumGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.3" />
-                              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.02" />
-                            </linearGradient>
-                          </defs>
-                          
-                          {/* Grid lines */}
-                          {[0, 24, 48].map(y => (
-                            <line key={y} x1="0" y1={y} x2="240" y2={y} stroke="#e5e7eb" strokeWidth="0.5" />
-                          ))}
-                          
-                          {/* Calculate points */}
-                          {(() => {
-                            let runTotal = 0
-                            const points = facultyModules.map((m, i) => {
-                              runTotal += m.count
-                              const x = (i / Math.max(facultyModules.length - 1, 1)) * 230 + 5
-                              const y = 43 - (runTotal / Math.max(facultyTotal, 1)) * 38
-                              return { x, y, val: runTotal }
-                            })
-                            
-                            const pathD = points.map((p, i) => 
-                              `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
-                            ).join(' ')
-                            const areaD = pathD + ` L ${points[points.length - 1]?.x || 5} 45 L 5 45 Z`
-                            
-                            return (
-                              <g>
-                                <path d={areaD} fill="url(#facultyCumGrad)" />
-                                <path d={pathD} fill="none" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                {points.map((p, i) => (
-                                  <circle key={i} cx={p.x} cy={p.y} r="2" fill="white" stroke="#3b82f6" strokeWidth="1" />
-                                ))}
-                              </g>
-                            )
-                          })()}
-                        </svg>
-                        <div className="flex justify-between px-1 mt-1">
-                          <span className="text-[8px] text-gray-400">Start</span>
-                          <span className="text-[8px] font-bold text-green-600">{facultyTotal}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })()}
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                All Modules
+              </span>
             </div>
 
-            {/* Student Achievement Modules - With Cumulative Graph */}
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <h3 className="text-base font-semibold text-[#0a2a5e] mb-4 flex items-center gap-2">
-                <span className="text-lg">🎓</span> Student Achievement Modules
-                {selectedDept !== 'ALL' && (
-                  <span className="ml-auto text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                    {getDeptShortCode(selectedDept)}
-                  </span>
-                )}
-              </h3>
-              
-              {/* Cumulative Module List */}
-              {(() => {
-                const studentTotal = studentModules.reduce((s, m) => s + m.count, 0)
-                let cumSum = 0
-                const maxCount = Math.max(...studentModules.map(m => m.count), 1)
-                
-                return (
-                  <div className="space-y-2">
-                    {/* Summary bar */}
-                    <div className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50/50 rounded-lg px-3 py-2 mb-3">
-                      <span className="text-xs font-medium text-purple-700">Total Achievements</span>
-                      <span className="text-sm font-bold text-purple-600">{studentTotal}</span>
+            {(() => {
+              // Combine all modules into one list
+              const allModules = [
+                ...facultyModules.map(m => ({ ...m, type: 'faculty' })),
+                ...studentModules.map(m => ({ ...m, type: 'student' }))
+              ]
+              const grandTotal = allModules.reduce((s, m) => s + m.count, 0)
+              let runningSum = 0
+              const maxCount = Math.max(...allModules.map(m => m.count), 1)
+
+              // Calculate cumulative data
+              const cumData = allModules.map(m => {
+                runningSum += m.count
+                return { ...m, cumSum: runningSum }
+              })
+
+              return (
+                <div className="space-y-3">
+                  {/* Summary Header */}
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50/60 rounded-lg p-3 text-center">
+                      <p className="text-xs text-blue-600 font-medium">Faculty R&D</p>
+                      <p className="text-xl font-bold text-blue-700">{facultyModules.reduce((s, m) => s + m.count, 0)}</p>
                     </div>
-                    
-                    {/* Module rows with cumulative */}
-                    {studentModules.map((module, idx) => {
-                      cumSum += module.count
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50/60 rounded-lg p-3 text-center">
+                      <p className="text-xs text-purple-600 font-medium">Student Achieve</p>
+                      <p className="text-xl font-bold text-purple-700">{studentModules.reduce((s, m) => s + m.count, 0)}</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50/60 rounded-lg p-3 text-center">
+                      <p className="text-xs text-green-600 font-medium">Grand Total</p>
+                      <p className="text-xl font-bold text-green-700">{grandTotal}</p>
+                    </div>
+                  </div>
+
+                  {/* Combined Module List with Cumulative */}
+                  <div className="space-y-1.5 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+                    {cumData.map((module, idx) => {
                       const percentage = (module.count / maxCount) * 100
-                      const cumPercentage = (cumSum / Math.max(studentTotal, 1)) * 100
+                      const cumPercentage = (module.cumSum / Math.max(grandTotal, 1)) * 100
+                      const isFaculty = module.type === 'faculty'
                       
                       return (
                         <div key={idx} className="group">
-                          <div className={`flex items-center gap-2 py-2 px-3 rounded-md transition-colors ${module.count > 0 ? 'bg-purple-50/40 hover:bg-purple-50' : 'hover:bg-gray-50'}`}>
-                            <span className="text-xs font-medium text-gray-600 w-14 flex-shrink-0 truncate" title={module.name}>
+                          <div className={`flex items-center gap-2 py-2 px-3 rounded-md transition-colors ${module.count > 0 
+                            ? (isFaculty ? 'bg-blue-50/40 hover:bg-blue-50' : 'bg-purple-50/40 hover:bg-purple-50') 
+                            : 'hover:bg-gray-50'}`}>
+                            {/* Type indicator */}
+                            <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isFaculty ? 'bg-blue-400' : 'bg-purple-400'}`}></div>
+                            
+                            <span className="text-xs font-medium text-gray-600 w-16 sm:w-20 flex-shrink-0 truncate" title={module.name}>
                               {module.name}
                             </span>
                             
-                            {/* Mini progress bar */}
+                            {/* Progress bar with cumulative background */}
                             <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden relative min-w-0">
                               <div 
                                 className="absolute inset-y-0 left-0 bg-gradient-to-r from-green-100 to-emerald-100 rounded-full transition-all duration-500"
                                 style={{ width: `${cumPercentage}%` }}
                               ></div>
                               <div 
-                                className={`absolute inset-y-0 left-0 rounded-full transition-all duration-300 ${module.count > 0 ? 'bg-gradient-to-r from-purple-500 to-pink-400' : 'bg-gray-200'}`}
+                                className={`absolute inset-y-0 left-0 rounded-full transition-all duration-300 ${module.count > 0 
+                                  ? (isFaculty ? 'bg-gradient-to-r from-blue-500 to-cyan-400' : 'bg-gradient-to-r from-purple-500 to-pink-400')
+                                  : 'bg-gray-200'}`}
                                 style={{ width: `${Math.max(percentage, 2)}%` }}
                               ></div>
                             </div>
                             
                             {/* Values */}
-                            <span className={`text-xs font-bold w-6 text-right flex-shrink-0 ${module.count > 0 ? 'text-purple-600' : 'text-gray-300'}`}>
+                            <span className={`text-xs font-bold w-6 text-right flex-shrink-0 ${module.count > 0 
+                              ? (isFaculty ? 'text-blue-600' : 'text-purple-600') 
+                              : 'text-gray-300'}`}>
                               {module.count}
                             </span>
-                            <span className="text-xs font-medium text-green-600 w-10 text-right flex-shrink-0">
-                              {cumSum}
+                            <span className="text-xs font-medium text-green-600 w-12 sm:w-14 text-right flex-shrink-0 font-semibold">
+                              {module.cumSum}
                             </span>
                           </div>
                         </div>
                       )
                     })}
-                    
-                    {/* Mini cumulative line chart */}
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                      <div className="h-12 relative bg-gradient-to-b from-purple-50/30 to-transparent rounded overflow-hidden">
-                        <svg viewBox="0 0 240 48" className="w-full h-full" preserveAspectRatio="none">
-                          <defs>
-                            <linearGradient id="studentCumGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                              <stop offset="0%" stopColor="#a855f7" stopOpacity="0.3" />
-                              <stop offset="100%" stopColor="#a855f7" stopOpacity="0.02" />
-                            </linearGradient>
-                          </defs>
-                          
-                          {/* Grid lines */}
-                          {[0, 24, 48].map(y => (
-                            <line key={y} x1="0" y1={y} x2="240" y2={y} stroke="#e5e7eb" strokeWidth="0.5" />
-                          ))}
-                          
-                          {/* Calculate points */}
-                          {(() => {
-                            let runTotal = 0
-                            const points = studentModules.map((m, i) => {
-                              runTotal += m.count
-                              const x = (i / Math.max(studentModules.length - 1, 1)) * 230 + 5
-                              const y = 43 - (runTotal / Math.max(studentTotal, 1)) * 38
-                              return { x, y, val: runTotal }
-                            })
-                            
-                            const pathD = points.map((p, i) => 
-                              `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
-                            ).join(' ')
-                            const areaD = pathD + ` L ${points[points.length - 1]?.x || 5} 45 L 5 45 Z`
-                            
-                            return (
-                              <g>
-                                <path d={areaD} fill="url(#studentCumGrad)" />
-                                <path d={pathD} fill="none" stroke="#a855f7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                {points.map((p, i) => (
-                                  <circle key={i} cx={p.x} cy={p.y} r="2" fill="white" stroke="#a855f7" strokeWidth="1" />
-                                ))}
-                              </g>
-                            )
-                          })()}
-                        </svg>
-                        <div className="flex justify-between px-1 mt-1">
-                          <span className="text-[8px] text-gray-400">Start</span>
-                          <span className="text-[8px] font-bold text-green-600">{studentTotal}</span>
+                  </div>
+
+                  {/* Combined Cumulative Chart */}
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-0.5 bg-blue-500 rounded"></div>
+                          <span className="text-[10px] text-gray-500">Faculty</span>
                         </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-0.5 bg-purple-500 rounded"></div>
+                          <span className="text-[10px] text-gray-500">Student</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-0.5 bg-gradient-to-r from-[#0a2a5e] to-green-500 rounded"></div>
+                          <span className="text-[10px] text-gray-500">Running Total</span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold text-green-600">{grandTotal}</span>
+                    </div>
+                    
+                    <div className="relative h-20 bg-gradient-to-b from-gray-50 to-white rounded-lg p-2 border border-gray-100">
+                      <svg viewBox="0 0 480 64" className="w-full h-full" preserveAspectRatio="none">
+                        <defs>
+                          <linearGradient id="combinedCumGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
+                            <stop offset="100%" stopColor="#10b981" stopOpacity="0.02" />
+                          </linearGradient>
+                        </defs>
+                        
+                        {/* Grid lines */}
+                        {[0, 20, 40, 60].map(y => (
+                          <line key={y} x1="0" y1={y} x2="480" y2={y} stroke="#f3f4f6" strokeWidth="0.5" />
+                        ))}
+                        
+                        {/* Calculate combined points */}
+                        {(() => {
+                          let runTotal = 0
+                          const points = allModules.map((m, i) => {
+                            runTotal += m.count
+                            const x = (i / Math.max(allModules.length - 1, 1)) * 460 + 10
+                            const y = 58 - (runTotal / Math.max(grandTotal, 1)) * 52
+                            return { x, y, val: runTotal, isFaculty: m.type === 'faculty' }
+                          })
+                          
+                          const pathD = points.map((p, i) => 
+                            `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
+                          ).join(' ')
+                          const areaD = pathD + ` L ${points[points.length - 1]?.x || 10} 62 L 10 62 Z`
+                          
+                          return (
+                            <g>
+                              <path d={areaD} fill="url(#combinedCumGrad)" />
+                              <path d={pathD} fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              {points.map((p, i) => (
+                                <circle 
+                                  key={i} 
+                                  cx={p.x} 
+                                  cy={p.y} 
+                                  r="2.5" 
+                                  fill="white" 
+                                  stroke={p.isFaculty ? "#3b82f6" : "#a855f7"} 
+                                  strokeWidth="1.5" 
+                                />
+                              ))}
+                            </g>
+                          )
+                        })()}
+                      </svg>
+                      <div className="flex justify-between px-1 mt-1">
+                        <span className="text-[8px] text-gray-400">Start</span>
+                        <span className="text-[8px] text-gray-400">End</span>
                       </div>
                     </div>
                   </div>
-                )
-              })()}
-            </div>
+                </div>
+              )
+            })()}
           </div>
 
           {/* ========== CUMULATIVE DEPARTMENT GRAPH (Above Department Summary) ========== */}
