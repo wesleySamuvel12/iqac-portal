@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -3549,6 +3549,96 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
     )
   }
 
+  // ============ ANIMATED CUMULATIVE LIST COMPONENT ============
+  function AnimatedCumulativeList({ modules, type }: { modules: any[]; type: 'faculty' | 'student' }) {
+    const [animatedValues, setAnimatedValues] = useState<number[]>([])
+    const [isVisible, setIsVisible] = useState(false)
+    
+    // Calculate cumulative values
+    const cumValues = useMemo(() => {
+      let sum = 0
+      return modules.map(m => {
+        sum += m.count
+        return sum
+      })
+    }, [modules])
+    
+    useEffect(() => {
+      setIsVisible(true)
+      // Start animation after a small delay
+      const timer = setTimeout(() => {
+        let currentStep = 0
+        const totalSteps = 30 // Animation frames
+        const interval = setInterval(() => {
+          currentStep++
+          const progress = currentStep / totalSteps
+          // Easing function for smooth animation
+          const eased = 1 - Math.pow(1 - progress, 3) // easeOutCubic
+          
+          setAnimatedValues(cumValues.map(val => Math.round(val * eased)))
+          
+          if (currentStep >= totalSteps) {
+            clearInterval(interval)
+            setAnimatedValues(cumValues) // Ensure final values are exact
+          }
+        }, 30) // ~1 second total animation
+        
+        return () => clearInterval(interval)
+      }, 100)
+      
+      return () => clearTimeout(timer)
+    }, [cumValues])
+    
+    const isFaculty = type === 'faculty'
+    const totalValue = cumValues.length > 0 ? cumValues[cumValues.length - 1] : 0
+    const animatedTotal = animatedValues.length > 0 ? animatedValues[animatedValues.length - 1] : 0
+    
+    return (
+      <div className="space-y-0">
+        {modules.map((module, index) => {
+          const cumVal = animatedValues[index] ?? 0
+          const targetVal = cumValues[index]
+          return (
+            <div 
+              key={index} 
+              className={`flex items-center justify-between py-2.5 px-3 transition-all duration-300 ${
+                index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white'
+              } ${isFaculty ? 'hover:bg-blue-50/30' : 'hover:bg-purple-50/30'} ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}
+              style={{ transitionDelay: `${index * 50}ms` }}
+            >
+              <span className="text-xs font-medium text-gray-600">{module.name}</span>
+              <span 
+                className={`text-sm font-bold transition-all duration-200 ${
+                  cumVal > 0 && cumVal === targetVal 
+                    ? (isFaculty ? 'text-[#0a2a5e]' : 'text-[#0a2a5e]') 
+                    : (isFaculty ? 'text-blue-500' : 'text-purple-500')
+                } ${isVisible ? 'scale-100' : 'scale-50'}`}
+                style={{ transitionDelay: `${index * 50 + 200}ms` }}
+              >
+                {cumVal}
+              </span>
+            </div>
+          )
+        })}
+        
+        {/* Total row with animation */}
+        <div 
+          className={`flex items-center justify-between py-2.5 px-3 mt-1 border-t transition-all duration-500 ${
+            isFaculty ? 'bg-blue-50/60 border-blue-100' : 'bg-purple-50/60 border-purple-100'
+          } ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+          style={{ transitionDelay: `${modules.length * 50 + 300}ms` }}
+        >
+          <span className={`text-xs font-semibold ${isFaculty ? 'text-blue-700' : 'text-purple-700'}`}>Total</span>
+          <span 
+            className={`text-sm font-bold ${isFaculty ? 'text-blue-700' : 'text-purple-700'} transition-all duration-300`}
+          >
+            {animatedTotal}
+          </span>
+        </div>
+      </div>
+    )
+  }
+
   // Admin Dashboard - With Departments Overview
   if (user.role === 'ADMIN') {
     return <AdminDashboardContent user={user} setActiveTab={setActiveTab} stats={stats} />
@@ -3742,65 +3832,25 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
 
         {/* Main Content Area */}
         <div className="px-6 py-6 space-y-6">
-          {/* Two Column Layout - Faculty R&D and Student Achievements with Cumulative Values */}
+          {/* Two Column Layout - Faculty R&D and Student Achievements with Animated Cumulative Values */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            {/* Faculty & R&D Modules - Cumulative List */}
+            {/* Faculty & R&D Modules - Animated Cumulative List */}
             <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
               <h3 className="text-sm font-semibold text-[#0a2a5e] mb-4 flex items-center gap-2 pb-3 border-b border-gray-100">
                 <span className="text-base">📊</span> Faculty & R&D Modules
               </h3>
               
-              {(() => {
-                let cumSum = 0
-                return (
-                  <div className="space-y-0">
-                    {facultyModules.map((module, index) => {
-                      cumSum += module.count
-                      return (
-                        <div key={index} className={`flex items-center justify-between py-2.5 px-3 ${index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white'} hover:bg-blue-50/30 transition-colors`}>
-                          <span className="text-xs font-medium text-gray-600">{module.name}</span>
-                          <span className={`text-sm font-bold ${cumSum > 0 ? 'text-[#0a2a5e]' : 'text-gray-400'}`}>{cumSum}</span>
-                        </div>
-                      )
-                    })}
-                    {/* Total row */}
-                    <div className="flex items-center justify-between py-2.5 px-3 bg-blue-50/60 border-t border-blue-100 mt-1">
-                      <span className="text-xs font-semibold text-blue-700">Total</span>
-                      <span className="text-sm font-bold text-blue-700">{cumSum}</span>
-                    </div>
-                  </div>
-                )
-              })()}
+              <AnimatedCumulativeList modules={facultyModules} type="faculty" />
             </div>
 
-            {/* Student Achievement Modules - Cumulative List */}
+            {/* Student Achievement Modules - Animated Cumulative List */}
             <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
               <h3 className="text-sm font-semibold text-[#0a2a5e] mb-4 flex items-center gap-2 pb-3 border-b border-gray-100">
                 <span className="text-base">🎓</span> Student Achievement Modules
               </h3>
               
-              {(() => {
-                let cumSum = 0
-                return (
-                  <div className="space-y-0">
-                    {studentModules.map((module, index) => {
-                      cumSum += module.count
-                      return (
-                        <div key={index} className={`flex items-center justify-between py-2.5 px-3 ${index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white'} hover:bg-purple-50/30 transition-colors`}>
-                          <span className="text-xs font-medium text-gray-600">{module.name}</span>
-                          <span className={`text-sm font-bold ${cumSum > 0 ? 'text-[#0a2a5e]' : 'text-gray-400'}`}>{cumSum}</span>
-                        </div>
-                      )
-                    })}
-                    {/* Total row */}
-                    <div className="flex items-center justify-between py-2.5 px-3 bg-purple-50/60 border-t border-purple-100 mt-1">
-                      <span className="text-xs font-semibold text-purple-700">Total</span>
-                      <span className="text-sm font-bold text-purple-700">{cumSum}</span>
-                    </div>
-                  </div>
-                )
-              })()}
+              <AnimatedCumulativeList modules={studentModules} type="student" />
             </div>
           </div>
 
