@@ -13537,7 +13537,7 @@ function ReportGeneratorPage() {
       ])
       const deptJson = await deptRes.json()
       const facultyJson = await facultyRes.json()
-      if (deptJson.success) setDepartments(deptJson.data || [])
+      if (deptJson.success) setDepartments(deptJson.departments || [])
       if (facultyJson.success) {
         setFacultyList(facultyJson.data || [])
         setHodList((facultyJson.data || []).filter((f: any) => f.isHOD))
