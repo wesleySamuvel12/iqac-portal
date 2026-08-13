@@ -13497,6 +13497,32 @@ function ReportGeneratorPage() {
   const [reportData, setReportData] = useState<any>(null)
   const [activeTab, setActiveTab] = useState<'configure' | 'preview' | 'editor'>('configure')
   const [exportFormat, setExportFormat] = useState<'pdf' | 'excel' | 'word' | 'powerpoint' | 'html' | 'csv'>('pdf')
+
+  // Only these 11 departments should be shown in IQAC Dashboard (same as AdminDashboardContent)
+  const ALLOWED_DEPARTMENTS = [
+    'Aeronautical Engineering',
+    'AER',
+    'Artificial Intelligence & Data Science',
+    'AI&DS',
+    'AI & DS',
+    'Cyber Security',
+    'CSBS',
+    'Computer Science and Engineering',
+    'CSE',
+    'Electronics & Communication Engineering',
+    'ECE',
+    'Electrical & Electronics Engineering',
+    'EEE',
+    'Information Technology',
+    'IT',
+    'Mechatronics',
+    'MCT',
+    'Mechanical Engineering',
+    'MECH',
+    'MBA',
+    'Science & Humanities',
+    'S&H'
+  ]
   
   // Filter states
   const [fromMonth, setFromMonth] = useState<number>(new Date().getMonth() + 1)
@@ -13537,7 +13563,14 @@ function ReportGeneratorPage() {
       ])
       const deptJson = await deptRes.json()
       const facultyJson = await facultyRes.json()
-      if (deptJson.success) setDepartments(deptJson.departments || [])
+      if (deptJson.success) {
+        // Filter to ONLY allowed departments (same 11 as dashboard)
+        const allDepts = deptJson.departments || []
+        const filteredDepts = allDepts.filter((d: any) => 
+          ALLOWED_DEPARTMENTS.includes(d.name) || ALLOWED_DEPARTMENTS.includes(d.code)
+        )
+        setDepartments(filteredDepts)
+      }
       if (facultyJson.success) {
         setFacultyList(facultyJson.data || [])
         setHodList((facultyJson.data || []).filter((f: any) => f.isHOD))
@@ -14194,26 +14227,30 @@ function EnterpriseReportPreview({
       <div className="backdrop-blur-xl bg-gradient-to-r from-[#0A2E6D] via-[#1a4a9e] to-[#0A2E6D] rounded-2xl shadow-xl overflow-hidden">
         <div className="p-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            {/* NIET Logo Placeholder */}
+            {/* NIET Logo - Left Side */}
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                <School className="w-10 h-10 text-[#0A2E6D]" />
-              </div>
+              <img 
+                src="/images/niet-logo.png" 
+                alt="NIET Coimbatore" 
+                className="w-20 h-20 object-contain bg-white rounded-lg p-1 shadow-lg"
+              />
               <div className="text-white">
                 <h1 className="text-2xl font-bold tracking-tight">Nehru Institute of Engineering & Technology</h1>
                 <p className="text-white/70 text-sm">NIET | Coimbatore | Autonomous Institution</p>
               </div>
             </div>
             
-            {/* NGI Logo Placeholder */}
+            {/* Nehru Group Logo - Right Side */}
             <div className="flex items-center gap-4">
               <div className="text-right text-white">
                 <p className="text-sm font-medium">Nehru Group of Institutions</p>
-                <p className="text-xs text-white/60">NGI</p>
+                <p className="text-xs text-white/60">Moulding True Citizens</p>
               </div>
-              <div className="w-14 h-14 bg-[#D4AF37] rounded-xl flex items-center justify-center shadow-lg">
-                <Building2 className="w-8 h-8 text-white" />
-              </div>
+              <img 
+                src="/images/nehrugroup-logo.png" 
+                alt="Nehru Group of Institutions" 
+                className="w-20 h-20 object-contain bg-white rounded-lg p-1 shadow-lg"
+              />
             </div>
           </div>
           

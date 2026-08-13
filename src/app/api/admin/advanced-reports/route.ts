@@ -1,6 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
+// Allowed departments for IQAC Dashboard (same 11 as frontend)
+const ALLOWED_DEPARTMENTS = [
+  'Aeronautical Engineering',
+  'AER',
+  'Artificial Intelligence & Data Science',
+  'AI&DS',
+  'AI & DS',
+  'Cyber Security',
+  'CSBS',
+  'Computer Science and Engineering',
+  'CSE',
+  'Electronics & Communication Engineering',
+  'ECE',
+  'Electrical & Electronics Engineering',
+  'EEE',
+  'Information Technology',
+  'IT',
+  'Mechatronics',
+  'MCT',
+  'Mechanical Engineering',
+  'MECH',
+  'MBA',
+  'Science & Humanities',
+  'S&H'
+]
+
 // Advanced Report Generation API for Enterprise IQAC Portal
 export async function POST(request: NextRequest) {
   try {
@@ -38,7 +64,26 @@ export async function POST(request: NextRequest) {
     }
 
     // Build where clauses for filters
-    const deptWhere = departmentId && departmentId !== 'all' ? { id: departmentId } : {}
+    // If specific department selected, use it; otherwise filter to only allowed departments
+    const deptWhere = departmentId && departmentId !== 'all' 
+      ? { id: departmentId } 
+      : { 
+          OR: [
+            { name: { in: ALLOWED_DEPARTMENTS } },
+            { code: { in: ALLOWED_DEPARTMENTS } }
+          ]
+        }
+    
+    // Get allowed department IDs for filtering other data
+    const allowedDeptIds = await db.department.findMany({
+      where: {
+        OR: [
+          { name: { in: ALLOWED_DEPARTMENTS } },
+          { code: { in: ALLOWED_DEPARTMENTS } }
+        ]
+      },
+      select: { id: true }
+    }).then(depts => depts.map(d => d.id))
     
     // Fetch all required data in parallel
     const [
@@ -75,7 +120,7 @@ export async function POST(request: NextRequest) {
       // Students with filters
       db.student.findMany({
         where: {
-          ...(departmentId && departmentId !== 'all' ? { departmentId } : {}),
+          ...(departmentId && departmentId !== 'all' ? { departmentId } : { departmentId: { in: allowedDeptIds } }),
           ...(academicYear ? { academicYear } : {}),
           ...(semester ? { semester: parseInt(semester) } : {}),
           ...(classSection ? { section: classSection } : {}),
@@ -107,7 +152,7 @@ export async function POST(request: NextRequest) {
       // Faculty with filters
       db.faculty.findMany({
         where: {
-          ...(departmentId && departmentId !== 'all' ? { departmentId } : {}),
+          ...(departmentId && departmentId !== 'all' ? { departmentId } : { departmentId: { in: allowedDeptIds } }),
           ...(staffId ? { id: staffId } : {}),
           ...(hodId ? { id: hodId } : {}),
         },
@@ -142,7 +187,7 @@ export async function POST(request: NextRequest) {
         where: {
           createdAt: { gte: startDate, lte: endDate },
           ...(departmentId && departmentId !== 'all' ? 
-            { student: { departmentId } } : {}),
+            { student: { departmentId } } : { student: { departmentId: { in: allowedDeptIds } } }),
           ...(achievementCategory && achievementCategory !== 'all' ? { category: achievementCategory } : {}),
           ...(verificationStatus ? { status: verificationStatus } : {}),
           ...(achievementLevel && achievementLevel !== 'all' ? { level: achievementLevel } : {}),
@@ -162,7 +207,7 @@ export async function POST(request: NextRequest) {
         where: {
           createdAt: { gte: startDate, lte: endDate },
           ...(departmentId && departmentId !== 'all' ? 
-            { faculty: { departmentId } } : {}),
+            { faculty: { departmentId } } : { faculty: { departmentId: { in: allowedDeptIds } } }),
           ...(staffId ? { facultyId: staffId } : {}),
         },
         include: {
@@ -180,7 +225,7 @@ export async function POST(request: NextRequest) {
         where: {
           createdAt: { gte: startDate, lte: endDate },
           ...(departmentId && departmentId !== 'all' ? 
-            { faculty: { departmentId } } : {}),
+            { faculty: { departmentId } } : { faculty: { departmentId: { in: allowedDeptIds } } }),
         },
         include: {
           faculty: {
@@ -196,7 +241,7 @@ export async function POST(request: NextRequest) {
       db.research.findMany({
         where: {
           createdAt: { gte: startDate, lte: endDate },
-          ...(departmentId && departmentId !== 'all' ? { departmentId } : {}),
+          ...(departmentId && departmentId !== 'all' ? { departmentId } : { departmentId: { in: allowedDeptIds } }),
         },
         include: {
           department: { select: { name: true } },
@@ -209,7 +254,7 @@ export async function POST(request: NextRequest) {
         where: {
           createdAt: { gte: startDate, lte: endDate },
           ...(departmentId && departmentId !== 'all' ? 
-            { faculty: { departmentId } } : {}),
+            { faculty: { departmentId } } : { faculty: { departmentId: { in: allowedDeptIds } } }),
         },
         include: {
           faculty: {
@@ -226,7 +271,7 @@ export async function POST(request: NextRequest) {
         where: {
           createdAt: { gte: startDate, lte: endDate },
           ...(departmentId && departmentId !== 'all' ? 
-            { faculty: { departmentId } } : {}),
+            { faculty: { departmentId } } : { faculty: { departmentId: { in: allowedDeptIds } } }),
         },
         include: {
           faculty: {
@@ -242,7 +287,7 @@ export async function POST(request: NextRequest) {
       db.activity.findMany({
         where: {
           createdAt: { gte: startDate, lte: endDate },
-          ...(departmentId && departmentId !== 'all' ? { departmentId } : {}),
+          ...(departmentId && departmentId !== 'all' ? { departmentId } : { departmentId: { in: allowedDeptIds } }),
           ...(eventType && eventType !== 'all' ? { type: eventType } : {}),
         },
         include: {
@@ -258,7 +303,7 @@ export async function POST(request: NextRequest) {
         where: {
           createdAt: { gte: startDate, lte: endDate },
           ...(departmentId && departmentId !== 'all' ? 
-            { student: { departmentId } } : {}),
+            { student: { departmentId } } : { student: { departmentId: { in: allowedDeptIds } } }),
         },
         include: {
           student: {
@@ -275,7 +320,7 @@ export async function POST(request: NextRequest) {
         where: {
           createdAt: { gte: startDate, lte: endDate },
           ...(departmentId && departmentId !== 'all' ? 
-            { student: { departmentId } } : {}),
+            { student: { departmentId } } : { student: { departmentId: { in: allowedDeptIds } } }),
         },
         include: {
           student: {
@@ -292,7 +337,7 @@ export async function POST(request: NextRequest) {
         where: {
           createdAt: { gte: startDate, lte: endDate },
           ...(departmentId && departmentId !== 'all' ? 
-            { student: { departmentId } } : {}),
+            { student: { departmentId } } : { student: { departmentId: { in: allowedDeptIds } } }),
         },
         include: {
           student: {
@@ -308,7 +353,7 @@ export async function POST(request: NextRequest) {
       db.event.findMany({
         where: {
           date: { gte: startDate, lte: endDate },
-          ...(departmentId && departmentId !== 'all' ? { departmentId } : {}),
+          ...(departmentId && departmentId !== 'all' ? { departmentId } : { departmentId: { in: allowedDeptIds } }),
           ...(eventType && eventType !== 'all' ? { type: eventType } : {}),
         },
         include: {
@@ -358,7 +403,7 @@ export async function POST(request: NextRequest) {
       const deptFaculty = allFaculty.filter(f => f.departmentId === dept.id)
       const deptAchievements = studentAchievements.filter(a => a.student?.departmentId === dept.id)
       const deptStaffAwards = staffAwards.filter(a => a.faculty?.departmentId === dept.id)
-      constdeptResearch = researchPapers.filter(r => r.departmentId === dept.id)
+      const deptResearch = researchPapers.filter(r => r.departmentId === dept.id)
       const deptPlacements = placements.filter(p => p.student?.departmentId === dept.id)
       const deptInternships = internships.filter(i => i.student?.departmentId === dept.id)
       
