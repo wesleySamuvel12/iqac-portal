@@ -1,0 +1,802 @@
+     1→ 13500→                      </td>
+     2→ 13501→                      <td className="px-4 py-3 text-center">
+     3→ 13502→                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-slate-800 to-slate-900 text-white">
+     4→ 13503→                          {dept.achievements.totalAchievements}
+     5→ 13504→                        </span>
+     6→ 13505→                      </td>
+     7→ 13506→                    </tr>
+     8→ 13507→                  ))}
+     9→ 13508→                </tbody>
+    10→ 13509→              </table>
+    11→ 13510→            </div>
+    12→ 13511→          </CardContent>
+    13→ 13512→        </Card>
+    14→ 13513→      )}
+    15→ 13514→
+    16→ 13515→      {/* Top Performing Departments */}
+    17→ 13516→      {data?.topDepartments && data.topDepartments.length > 0 && (
+    18→ 13517→        <Card className="p-6 border border-gray-200">
+    19→ 13518→          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+    20→ 13519→            <TrendingUp className="w-5 h-5 text-green-500" /> Top Performing Departments
+    21→ 13520→          </h3>
+    22→ 13521→          <div className="space-y-4">
+    23→ 13522→            {data.topDepartments.map((dept: any, idx: number) => (
+    24→ 13523→              <div key={dept.id} className="flex items-center gap-4">
+    25→ 13524→                <div className={'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ' + 
+    26→ 13525→                  idx === 0 ? 'bg-amber-500 text-white' :
+    27→ 13526→                  idx === 1 ? 'bg-gray-400 text-white' :
+    28→ 13527→                  idx === 2 ? 'bg-amber-700 text-white' :
+    29→ 13528→                  'bg-gray-200 text-gray-600'
+    30→ 13529→                 + ''}>
+    31→ 13530→                  {idx + 1}
+    32→ 13531→                </div>
+    33→ 13532→                <div className="flex-1">
+    34→ 13533→                  <div className="flex justify-between items-center mb-1">
+    35→ 13534→                    <span className="font-medium text-gray-900">{dept.name}</span>
+    36→ 13535→                    <span className="text-sm font-semibold text-gray-700">{dept.achievements.totalAchievements} achievements</span>
+    37→ 13536→                  </div>
+    38→ 13537→                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+    39→ 13538→                    <div
+    40→ 13539→                      className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-500"
+    41→ 13540→                      style={{ width: ((dept.achievements.totalAchievements / (data.topDepartments[0]?.achievements.totalAchievements || 1)) * 100) + '%' }}
+    42→ 13541→                    />
+    43→ 13542→                  </div>
+    44→ 13543→                </div>
+    45→ 13544→              </div>
+    46→ 13545→            ))}
+    47→ 13546→          </div>
+    48→ 13547→        </Card>
+    49→ 13548→      )}
+    50→ 13549→
+    51→ 13550→      {/* Monthly Trend */}
+    52→ 13551→      {data?.monthlyTrend && (
+    53→ 13552→        <Card className="p-6 border border-gray-200">
+    54→ 13553→          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+    55→ 13554→            <Activity className="w-5 h-5 text-blue-500" /> Monthly Achievement Trend
+    56→ 13555→          </h3>
+    57→ 13556→          <div className="flex items-end gap-2 h-48">
+    58→ 13557→            {data.monthlyTrend.map((month: any, idx: number) => {
+    59→ 13558→              const maxValue = Math.max(...data.monthlyTrend.map((m: any) => m.total), 1)
+    60→ 13559→              const height = (month.total / maxValue) * 100
+    61→ 13560→              return (
+    62→ 13561→                <div key={idx} className="flex-1 flex flex-col items-center gap-1">
+    63→ 13562→                  <div className="w-full relative group">
+    64→ 13563→                    <div
+    65→ 13564→                      className="w-full bg-gradient-to-t from-blue-500 to-cyan-400 rounded-t-lg transition-all duration-300 hover:from-blue-600 hover:to-cyan-500"
+    66→ 13565→                      style={{ height: `${Math.max(height, 2)}%`, minHeight: '4px' }}
+    67→ 13566→                    >
+    68→ 13567→                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+    69→ 13568→                        {month.total} total
+    70→ 13569→                      </div>
+    71→ 13570→                    </div>
+    72→ 13571→                  </div>
+    73→ 13572→                  <span className="text-[10px] text-gray-500 text-center leading-tight">{month.month}</span>
+    74→ 13573→                </div>
+    75→ 13574→              )
+    76→ 13575→            })}
+    77→ 13576→          </div>
+    78→ 13577→        </Card>
+    79→ 13578→      )}
+    80→ 13579→    </div>
+    81→ 13580→  )
+    82→ 13581→}
+    83→ 13582→
+    84→ 13583→// ============ ENTERPRISE REPORT GENERATOR PAGE ============
+    85→ 13584→function ReportGeneratorPage() {
+    86→ 13585→  // State for advanced filters
+    87→ 13586→  const [generating, setGenerating] = useState(false)
+    88→ 13587→  const [downloading, setDownloading] = useState(false)
+    89→ 13588→  const [fetchingData, setFetchingData] = useState(false)
+    90→ 13589→  const [reportData, setReportData] = useState<any>(null)
+    91→ 13590→  const [activeTab, setActiveTab] = useState<'configure' | 'preview' | 'editor'>('configure')
+    92→ 13591→  const [exportFormat, setExportFormat] = useState<'pdf' | 'excel' | 'word' | 'powerpoint' | 'html' | 'csv'>('pdf')
+    93→ 13592→
+    94→ 13593→  // Only these 11 departments should be shown in IQAC Dashboard (same as AdminDashboardContent)
+    95→ 13594→  const ALLOWED_DEPARTMENTS = [
+    96→ 13595→    'Aeronautical Engineering',
+    97→ 13596→    'AER',
+    98→ 13597→    'Artificial Intelligence & Data Science',
+    99→ 13598→    'AI&DS',
+   100→ 13599→    'AI & DS',
+   101→ 13600→    'Cyber Security',
+   102→ 13601→    'CSBS',
+   103→ 13602→    'Computer Science and Engineering',
+   104→ 13603→    'CSE',
+   105→ 13604→    'Electronics & Communication Engineering',
+   106→ 13605→    'ECE',
+   107→ 13606→    'Electrical & Electronics Engineering',
+   108→ 13607→    'EEE',
+   109→ 13608→    'Information Technology',
+   110→ 13609→    'IT',
+   111→ 13610→    'Mechatronics',
+   112→ 13611→    'MCT',
+   113→ 13612→    'Mechanical Engineering',
+   114→ 13613→    'MECH',
+   115→ 13614→    'MBA',
+   116→ 13615→    'Science & Humanities',
+   117→ 13616→    'S&H'
+   118→ 13617→  ]
+   119→ 13618→  
+   120→ 13619→  // Filter states
+   121→ 13620→  const [fromMonth, setFromMonth] = useState<number>(new Date().getMonth() + 1)
+   122→ 13621→  const [fromYear, setFromYear] = useState<number>(new Date().getFullYear())
+   123→ 13622→  const [toMonth, setToMonth] = useState<number>(new Date().getMonth() + 1)
+   124→ 13623→  const [toYear, setToYear] = useState<number>(new Date().getFullYear())
+   125→ 13624→  const [departmentId, setDepartmentId] = useState<string>('all')
+   126→ 13625→  const [academicYear, setAcademicYear] = useState<string>('')
+   127→ 13626→  const [semester, setSemester] = useState<string>('all')
+   128→ 13627→  const [classSection, setClassSection] = useState<string>('all')
+   129→ 13628→  const [eventType, setEventType] = useState<string>('all')
+   130→ 13629→  const [achievementCategory, setAchievementCategory] = useState<string>('all')
+   131→ 13630→  const [verificationStatus, setVerificationStatus] = useState<string>('all')
+   132→ 13631→  const [achievementLevel, setAchievementLevel] = useState<string>('all')
+   133→ 13632→  const [gender, setGender] = useState<string>('all')
+   134→ 13633→  
+   135→ 13634→  // Data states
+   136→ 13635→  const [departments, setDepartments] = useState<any[]>([])
+   137→ 13636→  const [facultyList, setFacultyList] = useState<any[]>([])
+   138→ 13637→  const [hodList, setHodList] = useState<any[]>([])
+   139→ 13638→  
+   140→ 13639→  // Editor states
+   141→ 13640→  const [editMode, setEditMode] = useState<boolean>(false)
+   142→ 13641→  const [reportTitle, setReportTitle] = useState<string>('Institutional Performance Report')
+   143→ 13642→  const [reportSubtitle, setReportSubtitle] = useState<string>('NIET IQAC Comprehensive Analysis')
+   144→ 13643→  const [customNotes, setCustomNotes] = useState<string>('')
+   145→ 13644→  const [showBranding, setShowBranding] = useState<boolean>(true)
+   146→ 13645→
+   147→ 13646→  useEffect(() => {
+   148→ 13647→    fetchInitialData()
+   149→ 13648→  }, [])
+   150→ 13649→
+   151→ 13650→  const fetchInitialData = async () => {
+   152→ 13651→    try {
+   153→ 13652→      const [deptRes, facultyRes] = await Promise.all([
+   154→ 13653→        fetch('/api/departments'),
+   155→ 13654→        fetch('/api/faculty')
+   156→ 13655→      ])
+   157→ 13656→      const deptJson = await deptRes.json()
+   158→ 13657→      const facultyJson = await facultyRes.json()
+   159→ 13658→      if (deptJson.success) {
+   160→ 13659→        // Filter to ONLY allowed departments (same 11 as dashboard)
+   161→ 13660→        const allDepts = deptJson.departments || []
+   162→ 13661→        const filteredDepts = allDepts.filter((d: any) => 
+   163→ 13662→          ALLOWED_DEPARTMENTS.includes(d.name) || ALLOWED_DEPARTMENTS.includes(d.code)
+   164→ 13663→        )
+   165→ 13664→        setDepartments(filteredDepts)
+   166→ 13665→      }
+   167→ 13666→      if (facultyJson.success) {
+   168→ 13667→        setFacultyList(facultyJson.data || [])
+   169→ 13668→        setHodList((facultyJson.data || []).filter((f: any) => f.isHOD))
+   170→ 13669→      }
+   171→ 13670→    } catch (error) {
+   172→ 13671→      console.error('Error fetching initial data:', error)
+   173→ 13672→    }
+   174→ 13673→  }
+   175→ 13674→
+   176→ 13675→  const validateDateRange = (): boolean => {
+   177→ 13676→    const fromDate = new Date(fromYear, fromMonth - 1, 1)
+   178→ 13677→    const toDate = new Date(toYear, toMonth - 1, 1)
+   179→ 13678→    return toDate >= fromDate
+   180→ 13679→  }
+   181→ 13680→
+   182→ 13681→  const generateAdvancedReport = async () => {
+   183→ 13682→    if (!validateDateRange()) {
+   184→ 13683→      alert('Invalid date range: "From" date must be before "To" date')
+   185→ 13684→      return
+   186→ 13685→    }
+   187→ 13686→
+   188→ 13687→    try {
+   189→ 13688→      setGenerating(true)
+   190→ 13689→      setFetchingData(true)
+   191→ 13690→      const response = await fetch('/api/admin/advanced-reports', {
+   192→ 13691→        method: 'POST',
+   193→ 13692→        headers: { 'Content-Type': 'application/json' },
+   194→ 13693→        body: JSON.stringify({
+   195→ 13694→          fromMonth,
+   196→ 13695→          fromYear,
+   197→ 13696→          toMonth,
+   198→ 13697→          toYear,
+   199→ 13698→          departmentId,
+   200→ 13699→          academicYear,
+   201→ 13700→          semester,
+   202→ 13701→          classSection,
+   203→ 13702→          eventType,
+   204→ 13703→          achievementCategory,
+   205→ 13704→          verificationStatus,
+   206→ 13705→          achievementLevel,
+   207→ 13706→          gender
+   208→ 13707→        })
+   209→ 13708→      })
+   210→ 13709→      
+   211→ 13710→      const json = await response.json()
+   212→ 13711→      if (json.success) {
+   213→ 13712→        setReportData(json.data)
+   214→ 13713→        setActiveTab('preview')
+   215→ 13714→        // Show data summary
+   216→ 13715→        const execSummary = json.data?.executiveSummary || {}
+   217→ 13716→        alert(`Data fetched successfully from database!\n\n📊 Summary:\n• Total Students: ${execSummary.totalStudents || 0}\n• Total Faculty: ${execSummary.totalFaculty || 0}\n• Departments: ${execSummary.totalDepartments || 0}\n• Achievements: ${execSummary.totalAchievements || 0}\n• Placements: ${execSummary.totalPlacements || 0}\n• Publications: ${execSummary.totalPublications || 0}`)
+   218→ 13717→      } else {
+   219→ 13718→        alert('Failed to generate report: ' + json.error)
+   220→ 13719→      }
+   221→ 13720→    } catch (error) {
+   222→ 13721→      console.error('Error generating report:', error)
+   223→ 13722→      alert('Failed to generate report. Please try again.')
+   224→ 13723→    } finally {
+   225→ 13724→      setGenerating(false)
+   226→ 13725→      setFetchingData(false)
+   227→ 13726→    }
+   228→ 13727→  }
+   229→ 13728→
+   230→ 13729→  const exportReport = async (format: string) => {
+   231→ 13730→    if (!reportData) return
+   232→ 13731→    
+   233→ 13732→    setDownloading(true)
+   234→ 13733→    try {
+   235→ 13734→      if (format === 'pdf') {
+   236→ 13735→        await exportAsPDF()
+   237→ 13736→      } else if (format === 'excel') {
+   238→ 13737→        await exportAsExcel()
+   239→ 13738→      } else if (format === 'csv') {
+   240→ 13739→        await exportAsCSV()
+   241→ 13740→      } else {
+   242→ 13741→        // Generic export
+   243→ 13742→        downloadFile(
+   244→ 13743→          JSON.stringify(reportData, null, 2),
+   245→ 13744→          `niert-report-${new Date().toISOString().split('T')[0]}.json`,
+   246→ 13745→          'application/json'
+   247→ 13746→        )
+   248→ 13747→      }
+   249→ 13748→    } catch (error) {
+   250→ 13749→      console.error('Export error:', error)
+   251→ 13750→      alert('Failed to export report.')
+   252→ 13751→    } finally {
+   253→ 13752→      setDownloading(false)
+   254→ 13753→    }
+   255→ 13754→  }
+   256→ 13755→
+   257→ 13756→  const exportAsPDF = async () => {
+   258→ 13757→    const response = await fetch('/api/generate-pdf', {
+   259→ 13758→      method: 'POST',
+   260→ 13759→      headers: { 'Content-Type': 'application/json' },
+   261→ 13760→      body: JSON.stringify({
+   262→ 13761→        reportData,
+   263→ 13762→        department: departmentId !== 'all' ? departments.find(d => d.id === departmentId)?.name : 'All',
+   264→ 13763→        title: reportTitle,
+   265→ 13764→        subtitle: reportSubtitle,
+   266→ 13765→        showBranding
+   267→ 13766→      })
+   268→ 13767→    })
+   269→ 13768→    
+   270→ 13769→    if (response.ok) {
+   271→ 13770→      const blob = await response.blob()
+   272→ 13771→      downloadFile(blob, `NIERT-IQAC-Report-${new Date().toISOString().split('T')[0]}.pdf`, 'application/pdf')
+   273→ 13772→    }
+   274→ 13773→  }
+   275→ 13774→
+   276→ 13775→  const exportAsExcel = async () => {
+   277→ 13776→    const response = await fetch('/api/generate-excel', {
+   278→ 13777→      method: 'POST',
+   279→ 13778→      headers: { 'Content-Type': 'application/json' },
+   280→ 13779→      body: JSON.stringify({ reportData })
+   281→ 13780→    })
+   282→ 13781→    
+   283→ 13782→    if (response.ok) {
+   284→ 13783→      const blob = await response.blob()
+   285→ 13784→      downloadFile(blob, `NIERT-IQAC-Report-${new Date().toISOString().split('T')[0]}.xlsx`, 
+   286→ 13785→        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+   287→ 13786→    }
+   288→ 13787→  }
+   289→ 13788→
+   290→ 13789→  const exportAsCSV = async () => {
+   291→ 13790→    // Generate CSV from executive summary and department data
+   292→ 13791→    let csvContent = 'data:text/csv;charset=utf-8,'
+   293→ 13792→    csvContent += 'NIET IQAC Report' + String.fromCharCode(10)
+   294→ 13793→    csvContent += 'Generated:,' + new Date().toLocaleString() + String.fromCharCode(10)
+   295→ 13794→    csvContent += 'Period:,' + (reportData?.metadata?.reportPeriod?.fromLabel || '') + ' - ' + (reportData?.metadata?.reportPeriod?.toLabel || '') + '\n\n'
+   296→ 13795→    
+   297→ 13796→    if (reportData?.executiveSummary) {
+   298→ 13797→      csvContent += 'Executive Summary' + String.fromCharCode(10)
+   299→ 13798→      Object.entries(reportData.executiveSummary).forEach(([key, value]) => {
+   300→ 13799→        csvContent += key + ',' + value + String.fromCharCode(10)
+   301→ 13800→      })
+   302→ 13801→      csvContent += String.fromCharCode(10)
+   303→ 13802→    }
+   304→ 13803→    
+   305→ 13804→    if (reportData?.departmentPerformance) {
+   306→ 13805→      csvContent += 'Department Performance' + String.fromCharCode(10)
+   307→ 13806→      csvContent += 'Department,Code,Students,Faculty,Achievements,Publications,Placements,Internships,Performance Score' + String.fromCharCode(10)
+   308→ 13807→      reportData.departmentPerformance.forEach((d: any) => {
+   309→ 13808→        const row = '"' + d.name + '",' + d.code + ',' + d.stats.students + ',' + d.stats.faculty + ',' + d.stats.achievements + ',' + d.stats.publications + ',' + d.stats.placements + ',' + d.stats.internships + ',' + d.performanceScore
+   310→ 13809→        csvContent += row + String.fromCharCode(10)
+   311→ 13810→      })
+   312→ 13811→    }
+   313→ 13812→    
+   314→ 13813→    const encodedUri = encodeURI(csvContent)
+   315→ 13814→    const link = document.createElement('a')
+   316→ 13815→    link.setAttribute('href', encodedUri)
+   317→ 13816→    link.setAttribute('download', 'NIERT-IQAC-Report-' + new Date().toISOString().split('T')[0] + '.csv')
+   318→ 13817→    document.body.appendChild(link)
+   319→ 13818→    link.click()
+   320→ 13819→    document.body.removeChild(link)
+   321→ 13820→  }
+   322→ 13821→
+   323→ 13822→  const downloadFile = (data: Blob | string, filename: string, mimeType: string) => {
+   324→ 13823→    const blob = typeof data === 'string' ? new Blob([data], { type: mimeType }) : data
+   325→ 13824→    const url = URL.createObjectURL(blob)
+   326→ 13825→    const a = document.createElement('a')
+   327→ 13826→    a.href = url
+   328→ 13827→    a.download = filename
+   329→ 13828→    document.body.appendChild(a)
+   330→ 13829→    a.click()
+   331→ 13830→    document.body.removeChild(a)
+   332→ 13831→    URL.revokeObjectURL(url)
+   333→ 13832→  }
+   334→ 13833→
+   335→ 13834→  const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
+   336→ 13835→  const currentYear = new Date().getFullYear()
+   337→ 13836→  const years = Array.from({ length: 10 }, (_, i) => currentYear - i)
+   338→ 13837→
+   339→ 13838→  return (
+   340→ 13839→    <div className="space-y-6 min-h-screen">
+   341→ 13840→      {/* Premium Header */}
+   342→ 13841→      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0A2E6D] via-[#1a4a9e] to-[#D4AF37] p-8 text-white">
+   343→ 13842→        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+   344→ 13843→        <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+   345→ 13844→        
+   346→ 13845→        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+   347→ 13846→          <div>
+   348→ 13847→            <div className="flex items-center gap-3 mb-2">
+   349→ 13848→              <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl">
+   350→ 13849→                <FileSpreadsheet className="w-7 h-7" />
+   351→ 13850→              </div>
+   352→ 13851→              <h1 className="text-3xl font-bold tracking-tight">Enterprise Report Generator</h1>
+   353→ 13852→            </div>
+   354→ 13853→            <p className="text-white/80 max-w-xl">
+   355→ 13854→              Generate professional, analytics-driven reports with institutional branding, AI insights, and multi-format export capabilities.
+   356→ 13855→            </p>
+   357→ 13856→          </div>
+   358→ 13857→          
+   359→ 13858→          <div className="flex gap-2">
+   360→ 13859→            {['configure', 'preview', 'editor'].map(tab => (
+   361→ 13860→              <button
+   362→ 13861→                key={tab}
+   363→ 13862→                onClick={() => setActiveTab(tab as any)}
+   364→ 13863→                className={
+   365→ 13864→                  'px-4 py-2 rounded-lg font-medium transition-all capitalize ' + 
+   366→ 13865→                  (activeTab === tab 
+   367→ 13866→                    ? 'bg-white text-[#0A2E6D] shadow-lg' 
+   368→ 13867→                    : 'bg-white/10 hover:bg-white/20 text-white')
+   369→ 13868→                }
+   370→ 13869→              >
+   371→ 13870→                {tab}
+   372→ 13871→              </button>
+   373→ 13872→            ))}
+   374→ 13873→          </div>
+   375→ 13874→        </div>
+   376→ 13875→      </div>
+   377→ 13876→
+   378→ 13877→      {/* Configure Tab */}
+   379→ 13878→      {activeTab === 'configure' && (
+   380→ 13879→        <div className="space-y-6">
+   381→ 13880→          {/* Date Range Selector - Glassmorphism Card */}
+   382→ 13881→          <div className="backdrop-blur-xl bg-white/80 border border-white/20 rounded-2xl shadow-xl overflow-hidden">
+   383→ 13882→            <div className="bg-gradient-to-r from-[#0A2E6D] to-[#1a4a9e] px-6 py-4">
+   384→ 13883→              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+   385→ 13884→                <CalendarDays className="w-5 h-5" />
+   386→ 13885→                Reporting Period Selection
+   387→ 13886→              </h2>
+   388→ 13887→              <p className="text-sm text-white/70 mt-1">Select custom date range for your report</p>
+   389→ 13888→            </div>
+   390→ 13889→            
+   391→ 13890→            <div className="p-6">
+   392→ 13891→              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+   393→ 13892→                {/* From Month */}
+   394→ 13893→                <div className="space-y-2">
+   395→ 13894→                  <label className="block text-sm font-semibold text-gray-700">From Month</label>
+   396→ 13895→                  <select
+   397→ 13896→                    value={fromMonth}
+   398→ 13897→                    onChange={(e) => setFromMonth(parseInt(e.target.value))}
+   399→ 13898→                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent transition-all"
+   400→ 13899→                  >
+   401→ 13900→                    {months.map((m, i) => (
+   402→ 13901→                      <option key={m} value={i + 1}>{m}</option>
+   403→ 13902→                    ))}
+   404→ 13903→                  </select>
+   405→ 13904→                </div>
+   406→ 13905→                
+   407→ 13906→                {/* From Year */}
+   408→ 13907→                <div className="space-y-2">
+   409→ 13908→                  <label className="block text-sm font-semibold text-gray-700">From Year</label>
+   410→ 13909→                  <select
+   411→ 13910→                    value={fromYear}
+   412→ 13911→                    onChange={(e) => setFromYear(parseInt(e.target.value))}
+   413→ 13912→                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent transition-all"
+   414→ 13913→                  >
+   415→ 13914→                    {years.map(y => (
+   416→ 13915→                      <option key={y} value={y}>{y}</option>
+   417→ 13916→                    ))}
+   418→ 13917→                  </select>
+   419→ 13918→                </div>
+   420→ 13919→                
+   421→ 13920→                {/* To Month */}
+   422→ 13921→                <div className="space-y-2">
+   423→ 13922→                  <label className="block text-sm font-semibold text-gray-700">To Month</label>
+   424→ 13923→                  <select
+   425→ 13924→                    value={toMonth}
+   426→ 13925→                    onChange={(e) => setToMonth(parseInt(e.target.value))}
+   427→ 13926→                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent transition-all"
+   428→ 13927→                  >
+   429→ 13928→                    {months.map((m, i) => (
+   430→ 13929→                      <option key={m} value={i + 1}>{m}</option>
+   431→ 13930→                    ))}
+   432→ 13931→                  </select>
+   433→ 13932→                </div>
+   434→ 13933→                
+   435→ 13934→                {/* To Year */}
+   436→ 13935→                <div className="space-y-2">
+   437→ 13936→                  <label className="block text-sm font-semibold text-gray-700">To Year</label>
+   438→ 13937→                  <select
+   439→ 13938→                    value={toYear}
+   440→ 13939→                    onChange={(e) => setToYear(parseInt(e.target.value))}
+   441→ 13940→                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent transition-all"
+   442→ 13941→                  >
+   443→ 13942→                    {years.map(y => (
+   444→ 13943→                      <option key={y} value={y}>{y}</option>
+   445→ 13944→                    ))}
+   446→ 13945→                  </select>
+   447→ 13946→                </div>
+   448→ 13947→              </div>
+   449→ 13948→              
+   450→ 13949→              {/* Period Validation Status */}
+   451→ 13950→              <div className={
+   452→ 13951→                'mt-4 p-3 rounded-lg flex items-center gap-2 ' + 
+   453→ 13952→                (validateDateRange() ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700')
+   454→ 13953→              }>
+   455→ 13954→                {validateDateRange() ? (
+   456→ 13955→                  <>
+   457→ 13956→                    <CheckCircle className="w-5 h-5" />
+   458→ 13957→                    <span className="text-sm font-medium">Valid Period: {months[fromMonth-1]} {fromYear} - {months[toMonth-1]} {toYear}</span>
+   459→ 13958→                  </>
+   460→ 13959→                ) : (
+   461→ 13960→                  <>
+   462→ 13961→                    <XCircle className="w-5 h-5" />
+   463→ 13962→                    <span className="text-sm font-medium">Invalid date range selection</span>
+   464→ 13963→                  </>
+   465→ 13964→                )}
+   466→ 13965→              </div>
+   467→ 13966→            </div>
+   468→ 13967→          </div>
+   469→ 13968→
+   470→ 13969→          {/* Advanced Filters Grid */}
+   471→ 13970→          <div className="backdrop-blur-xl bg-white/80 border border-white/20 rounded-2xl shadow-xl overflow-hidden">
+   472→ 13971→            <div className="bg-gradient-to-r from-[#D4AF37] to-[#c9a530] px-6 py-4">
+   473→ 13972→              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+   474→ 13973→                <Filter className="w-5 h-5" />
+   475→ 13974→                Advanced Filters
+   476→ 13975→              </h2>
+   477→ 13976→              <p className="text-sm text-white/80 mt-1">Combine multiple filters for targeted reports</p>
+   478→ 13977→            </div>
+   479→ 13978→            
+   480→ 13979→            <div className="p-6">
+   481→ 13980→              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+   482→ 13981→                {/* Department Filter */}
+   483→ 13982→                <div className="space-y-2">
+   484→ 13983→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   485→ 13984→                    <Building2 className="w-4 h-4 text-[#0A2E6D]" /> Department
+   486→ 13985→                  </label>
+   487→ 13986→                  <select
+   488→ 13987→                    value={departmentId}
+   489→ 13988→                    onChange={(e) => setDepartmentId(e.target.value)}
+   490→ 13989→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+   491→ 13990→                  >
+   492→ 13991→                    <option value="all">All Departments</option>
+   493→ 13992→                    {departments.map(dept => (
+   494→ 13993→                      <option key={dept.id} value={dept.id}>{dept.name} ({dept.code})</option>
+   495→ 13994→                    ))}
+   496→ 13995→                  </select>
+   497→ 13996→                </div>
+   498→ 13997→
+   499→ 13998→                {/* Academic Year */}
+   500→ 13999→                <div className="space-y-2">
+   501→ 14000→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   502→ 14001→                    <GraduationCap className="w-4 h-4 text-[#0A2E6D]" /> Academic Year
+   503→ 14002→                  </label>
+   504→ 14003→                  <select
+   505→ 14004→                    value={academicYear}
+   506→ 14005→                    onChange={(e) => setAcademicYear(e.target.value)}
+   507→ 14006→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+   508→ 14007→                  >
+   509→ 14008→                    <option value="">All Years</option>
+   510→ 14009→                    <option value="2024-2025">2024-2025</option>
+   511→ 14010→                    <option value="2023-2024">2023-2024</option>
+   512→ 14011→                    <option value="2022-2023">2022-2023</option>
+   513→ 14012→                  </select>
+   514→ 14013→                </div>
+   515→ 14014→
+   516→ 14015→                {/* Semester */}
+   517→ 14016→                <div className="space-y-2">
+   518→ 14017→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   519→ 14018→                    <BookOpen className="w-4 h-4 text-[#0A2E6D]" /> Semester
+   520→ 14019→                  </label>
+   521→ 14020→                  <select
+   522→ 14021→                    value={semester}
+   523→ 14022→                    onChange={(e) => setSemester(e.target.value)}
+   524→ 14023→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+   525→ 14024→                  >
+   526→ 14025→                    <option value="all">All Semesters</option>
+   527→ 14026→                    <option value="1">Semester 1</option>
+   528→ 14027→                    <option value="2">Semester 2</option>
+   529→ 14028→                    <option value="3">Semester 3</option>
+   530→ 14029→                    <option value="4">Semester 4</option>
+   531→ 14030→                    <option value="5">Semester 5</option>
+   532→ 14031→                    <option value="6">Semester 6</option>
+   533→ 14032→                    <option value="7">Semester 7</option>
+   534→ 14033→                    <option value="8">Semester 8</option>
+   535→ 14034→                  </select>
+   536→ 14035→                </div>
+   537→ 14036→
+   538→ 14037→                {/* Class Section */}
+   539→ 14038→                <div className="space-y-2">
+   540→ 14039→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   541→ 14040→                    <Users className="w-4 h-4 text-[#0A2E6D]" /> Class / Section
+   542→ 14041→                  </label>
+   543→ 14042→                  <select
+   544→ 14043→                    value={classSection}
+   545→ 14044→                    onChange={(e) => setClassSection(e.target.value)}
+   546→ 14045→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+   547→ 14046→                  >
+   548→ 14047→                    <option value="all">All Sections</option>
+   549→ 14048→                    <option value="A">Section A</option>
+   550→ 14049→                    <option value="B">Section B</option>
+   551→ 14050→                    <option value="C">Section C</option>
+   552→ 14051→                    <option value="D">Section D</option>
+   553→ 14052→                  </select>
+   554→ 14053→                </div>
+   555→ 14054→
+   556→ 14055→                {/* Event Type */}
+   557→ 14056→                <div className="space-y-2">
+   558→ 14057→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   559→ 14058→                    <Calendar className="w-4 h-4 text-[#0A2E6D]" /> Event Type
+   560→ 14059→                  </label>
+   561→ 14060→                  <select
+   562→ 14061→                    value={eventType}
+   563→ 14062→                    onChange={(e) => setEventType(e.target.value)}
+   564→ 14063→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+   565→ 14064→                  >
+   566→ 14065→                    <option value="all">All Events</option>
+   567→ 14066→                    <option value="workshop">Workshop</option>
+   568→ 14067→                    <option value="seminar">Seminar</option>
+   569→ 14068→                    <option value="conference">Conference</option>
+   570→ 14069→                    <option value="fdp">FDP</option>
+   571→ 14070→                    <option value="hackathon">Hackathon</option>
+   572→ 14071→                    <option value="symposium">Symposium</option>
+   573→ 14072→                  </select>
+   574→ 14073→                </div>
+   575→ 14074→
+   576→ 14075→                {/* Achievement Category */}
+   577→ 14076→                <div className="space-y-2">
+   578→ 14077→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   579→ 14078→                    <Trophy className="w-4 h-4 text-[#0A2E6D]" /> Achievement Category
+   580→ 14079→                  </label>
+   581→ 14080→                  <select
+   582→ 14081→                    value={achievementCategory}
+   583→ 14082→                    onChange={(e) => setAchievementCategory(e.target.value)}
+   584→ 14083→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+   585→ 14084→                  >
+   586→ 14085→                    <option value="all">All Categories</option>
+   587→ 14086→                    <option value="academic">Academic</option>
+   588→ 14087→                    <option value="sports">Sports</option>
+   589→ 14088→                    <option value="cultural">Cultural</option>
+   590→ 14089→                    <option value="research">Research</option>
+   591→ 14090→                    <option value="innovation">Innovation</option>
+   592→ 14091→                    <option value="hackathon">Hackathon</option>
+   593→ 14092→                    <option value="internship">Internship</option>
+   594→ 14093→                    <option value="placement">Placement</option>
+   595→ 14094→                    <option value="certification">Certification</option>
+   596→ 14095→                  </select>
+   597→ 14096→                </div>
+   598→ 14097→
+   599→ 14098→                {/* Verification Status */}
+   600→ 14099→                <div className="space-y-2">
+   601→ 14100→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   602→ 14101→                    <Shield className="w-4 h-4 text-[#0A2E6D]" /> Verification Status
+   603→ 14102→                  </label>
+   604→ 14103→                  <select
+   605→ 14104→                    value={verificationStatus}
+   606→ 14105→                    onChange={(e) => setVerificationStatus(e.target.value)}
+   607→ 14106→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+   608→ 14107→                  >
+   609→ 14108→                    <option value="all">All Status</option>
+   610→ 14109→                    <option value="pending">Pending</option>
+   611→ 14110→                    <option value="verified">Verified</option>
+   612→ 14111→                    <option value="rejected">Rejected</option>
+   613→ 14112→                  </select>
+   614→ 14113→                </div>
+   615→ 14114→
+   616→ 14115→                {/* Achievement Level */}
+   617→ 14116→                <div className="space-y-2">
+   618→ 14117→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   619→ 14118→                    <Award className="w-4 h-4 text-[#0A2E6D]" /> Achievement Level
+   620→ 14119→                  </label>
+   621→ 14120→                  <select
+   622→ 14121→                    value={achievementLevel}
+   623→ 14122→                    onChange={(e) => setAchievementLevel(e.target.value)}
+   624→ 14123→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+   625→ 14124→                  >
+   626→ 14125→                    <option value="all">All Levels</option>
+   627→ 14126→                    <option value="institution">Institution Level</option>
+   628→ 14127→                    <option value="state">State Level</option>
+   629→ 14128→                    <option value="national">National Level</option>
+   630→ 14129→                    <option value="international">International Level</option>
+   631→ 14130→                  </select>
+   632→ 14131→                </div>
+   633→ 14132→
+   634→ 14133→                {/* Gender */}
+   635→ 14134→                <div className="space-y-2">
+   636→ 14135→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   637→ 14136→                    <UserCheck className="w-4 h-4 text-[#0A2E6D]" /> Gender
+   638→ 14137→                  </label>
+   639→ 14138→                  <select
+   640→ 14139→                    value={gender}
+   641→ 14140→                    onChange={(e) => setGender(e.target.value)}
+   642→ 14141→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+   643→ 14142→                  >
+   644→ 14143→                    <option value="all">All</option>
+   645→ 14144→                    <option value="Male">Male</option>
+   646→ 14145→                    <option value="Female">Female</option>
+   647→ 14146→                    <option value="Other">Other</option>
+   648→ 14147→                  </select>
+   649→ 14148→                </div>
+   650→ 14149→              </div>
+   651→ 14150→            </div>
+   652→ 14151→          </div>
+   653→ 14152→
+   654→ 14153→          {/* Export Format & Generate Button */}
+   655→ 14154→          <div className="backdrop-blur-xl bg-white/80 border border-white/20 rounded-2xl shadow-xl overflow-hidden">
+   656→ 14155→            <div className="p-6">
+   657→ 14156→              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+   658→ 14157→                {/* Export Format Selection */}
+   659→ 14158→                <div className="space-y-3">
+   660→ 14159→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   661→ 14160→                    <Download className="w-4 h-4 text-[#0A2E6D]" /> Export Format
+   662→ 14161→                  </label>
+   663→ 14162→                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+   664→ 14163→                    {[
+   665→ 14164→                      { id: 'pdf', label: 'PDF', icon: FileText, color: 'red' },
+   666→ 14165→                      { id: 'excel', label: 'Excel', icon: FileSpreadsheet, color: 'emerald' },
+   667→ 14166→                      { id: 'word', label: 'Word', icon: FileText, color: 'blue' },
+   668→ 14167→                      { id: 'powerpoint', label: 'PPT', icon: Presentation, color: 'orange' },
+   669→ 14168→                      { id: 'html', label: 'HTML', icon: Code, color: 'purple' },
+   670→ 14169→                      { id: 'csv', label: 'CSV', icon: Database, color: 'cyan' },
+   671→ 14170→                    ].map(fmt => (
+   672→ 14171→                      <button
+   673→ 14172→                        key={fmt.id}
+   674→ 14173→                        onClick={() => setExportFormat(fmt.id as any)}
+   675→ 14174→                        className={"p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 " + (exportFormat === fmt.id ? "border-" + fmt.color + "-500 bg-" + fmt.color + "-50 shadow-md" : 'border-gray-200 hover:border-gray-300 bg-white')}
+   676→ 14175→                      >
+   677→ 14176→                        <fmt.icon className={"w-5 h-5 " + (exportFormat === fmt.id ? "text-" + fmt.color + "-600" : 'text-gray-400')} />
+   678→ 14177→                        <span className={"text-xs font-medium " + (exportFormat === fmt.id ? "text-" + fmt.color + "-900" : 'text-gray-600')}>
+   679→ 14178→                          {fmt.label}
+   680→ 14179→                        </span>
+   681→ 14180→                      </button>
+   682→ 14181→                    ))}
+   683→ 14182→                  </div>
+   684→ 14183→                </div>
+   685→ 14184→
+   686→ 14185→                {/* Generate Button */}
+   687→ 14186→                <div className="flex items-end">
+   688→ 14187→                  <button
+   689→ 14188→                    onClick={generateAdvancedReport}
+   690→ 14189→                    disabled={generating || !validateDateRange()}
+   691→ 14190→                    className="w-full py-4 px-8 bg-gradient-to-r from-[#0A2E6D] via-[#1a4a9e] to-[#D4AF37] hover:from-[#08255a] hover:via-[#164090] hover:to-[#c9a530] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3 text-lg"
+   692→ 14191→                  >
+   693→ 14192→                    {generating ? (
+   694→ 14193→                      <>
+   695→ 14194→                        <Loader2 className="w-6 h-6 animate-spin" />
+   696→ 14195→                        {fetchingData ? 'Fetching Data from Database...' : 'Generating Report...'}
+   697→ 14196→                      </>
+   698→ 14197→                    ) : (
+   699→ 14198→                      <>
+   700→ 14199→                        <Database className="w-6 h-6" />
+   701→ 14200→                        Fetch Data & Generate Report
+   702→ 14201→                      </>
+   703→ 14202→                    )}
+   704→ 14203→                  </button>
+   705→ 14204→                </div>
+   706→ 14205→              </div>
+   707→ 14206→            </div>
+   708→ 14207→          </div>
+   709→ 14208→        </div>
+   710→ 14209→      )}
+   711→ 14210→
+   712→ 14211→      {/* Preview Tab */}
+   713→ 14212→      {activeTab === 'preview' && reportData && (
+   714→ 14213→        <EnterpriseReportPreview 
+   715→ 14214→          reportData={reportData}
+   716→ 14215→          onExport={exportReport}
+   717→ 14216→          onEdit={() => setActiveTab('editor')}
+   718→ 14217→          exporting={downloading}
+   719→ 14218→          format={exportFormat}
+   720→ 14219→        />
+   721→ 14220→      )}
+   722→ 14221→
+   723→ 14222→      {/* Editor Tab */}
+   724→ 14223→      {activeTab === 'editor' && reportData && (
+   725→ 14224→        <ReportEditorTab
+   726→ 14225→          reportData={reportData}
+   727→ 14226→          reportTitle={reportTitle}
+   728→ 14227→          setReportTitle={setReportTitle}
+   729→ 14228→          reportSubtitle={reportSubtitle}
+   730→ 14229→          setReportSubtitle={setReportSubtitle}
+   731→ 14230→          customNotes={customNotes}
+   732→ 14231→          setCustomNotes={setCustomNotes}
+   733→ 14232→          showBranding={showBranding}
+   734→ 14233→          setShowBranding={setShowBranding}
+   735→ 14234→          onBackToPreview={() => setActiveTab('preview')}
+   736→ 14235→          onExport={exportReport}
+   737→ 14236→        />
+   738→ 14237→      )}
+   739→ 14238→    </div>
+   740→ 14239→  )
+   741→ 14240→}
+   742→ 14241→
+   743→ 14242→// ============ ENTERPRISE REPORT PREVIEW COMPONENT ============
+   744→ 14243→function EnterpriseReportPreview({ 
+   745→ 14244→  reportData, 
+   746→ 14245→  onExport, 
+   747→ 14246→  onEdit,
+   748→ 14247→  exporting,
+   749→ 14248→  format 
+   750→ 14249→}: { 
+   751→ 14250→  reportData: any
+   752→ 14251→  onExport: (format: string) => void
+   753→ 14252→  onEdit: () => void
+   754→ 14253→  exporting: boolean
+   755→ 14254→  format: string
+   756→ 14255→}) {
+   757→ 14256→  const [expandedSection, setExpandedSection] = useState<string>('executive')
+   758→ 14257→
+   759→ 14258→  const execSummary = reportData?.executiveSummary || {}
+   760→ 14259→  const aiInsights = reportData?.aiInsights || {}
+   761→ 14260→
+   762→ 14261→  const KPI_Cards = [
+   763→ 14262→    { label: 'Total Students', value: execSummary.totalStudents || 0, icon: GraduationCap, color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-50' },
+   764→ 14263→    { label: 'Total Faculty', value: execSummary.totalFaculty || 0, icon: Users, color: 'from-emerald-500 to-emerald-600', bgColor: 'bg-emerald-50' },
+   765→ 14264→    { label: 'Departments', value: execSummary.totalDepartments || 0, icon: Building2, color: 'from-purple-500 to-purple-600', bgColor: 'bg-purple-50' },
+   766→ 14265→    { label: 'Achievements', value: execSummary.totalAchievements || 0, icon: Trophy, color: 'from-amber-500 to-amber-600', bgColor: 'bg-amber-50' },
+   767→ 14266→    { label: 'Placements', value: execSummary.totalPlacements || 0, icon: Briefcase, color: 'from-rose-500 to-rose-600', bgColor: 'bg-rose-50' },
+   768→ 14267→    { label: 'Publications', value: execSummary.totalPublications || 0, icon: Newspaper, color: 'from-cyan-500 to-cyan-600', bgColor: 'bg-cyan-50' },
+   769→ 14268→    { label: 'Patents', value: execSummary.totalPatents || 0, icon: Award, color: 'from-indigo-500 to-indigo-600', bgColor: 'bg-indigo-50' },
+   770→ 14269→    { label: 'Events', value: execSummary.totalEvents || 0, icon: Calendar, color: 'from-pink-500 to-pink-600', bgColor: 'bg-pink-50' },
+   771→ 14270→    { label: 'Internships', value: execSummary.totalInternships || 0, icon: Wrench, color: 'from-teal-500 to-teal-600', bgColor: 'bg-teal-50' },
+   772→ 14271→    { label: 'Certifications', value: execSummary.totalCertifications || 0, icon: Shield, color: 'from-orange-500 to-orange-600', bgColor: 'bg-orange-50' },
+   773→ 14272→    { label: 'Verified Records', value: execSummary.verifiedRecords || 0, icon: CheckCircle, color: 'from-green-500 to-green-600', bgColor: 'bg-green-50' },
+   774→ 14273→    { label: 'Pending Approvals', value: execSummary.pendingApprovals || 0, icon: Clock, color: 'from-yellow-500 to-yellow-600', bgColor: 'bg-yellow-50' },
+   775→ 14274→  ]
+   776→ 14275→
+   777→ 14276→  const toggleSection = (section: string) => {
+   778→ 14277→    setExpandedSection(expandedSection === section ? '' : section)
+   779→ 14278→  }
+   780→ 14279→
+   781→ 14280→  return (
+   782→ 14281→    <div className="space-y-6">
+   783→ 14282→      {/* Action Bar */}
+   784→ 14283→      <div className="backdrop-blur-xl bg-white/90 border border-white/20 rounded-2xl shadow-lg p-4 sticky top-4 z-40">
+   785→ 14284→        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+   786→ 14285→          <div className="flex items-center gap-3">
+   787→ 14286→            <button
+   788→ 14287→              onClick={() => window.history.back()}
+   789→ 14288→              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+   790→ 14289→            >
+   791→ 14290→              <ArrowLeft className="w-5 h-5" />
+   792→ 14291→            </button>
+   793→ 14292→            <div>
+   794→ 14293→              <h2 className="font-bold text-gray-900">Report Preview</h2>
+   795→ 14294→              <p className="text-xs text-gray-500">
+   796→ 14295→                {reportData?.metadata?.reportPeriod?.fromLabel} - {reportData?.metadata?.reportPeriod?.toLabel}
+   797→ 14296→              </p>
+   798→ 14297→            </div>
+   799→ 14298→          </div>
+   800→ 14299→          
+   801→
+   802→[showing lines 13500-14299 of 24660; use offset=14300 with limit to continue reading]

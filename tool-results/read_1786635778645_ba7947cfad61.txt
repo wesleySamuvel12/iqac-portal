@@ -1,0 +1,802 @@
+ 13500→                      </td>
+ 13501→                      <td className="px-4 py-3 text-center">
+ 13502→                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-slate-800 to-slate-900 text-white">
+ 13503→                          {dept.achievements.totalAchievements}
+ 13504→                        </span>
+ 13505→                      </td>
+ 13506→                    </tr>
+ 13507→                  ))}
+ 13508→                </tbody>
+ 13509→              </table>
+ 13510→            </div>
+ 13511→          </CardContent>
+ 13512→        </Card>
+ 13513→      )}
+ 13514→
+ 13515→      {/* Top Performing Departments */}
+ 13516→      {data?.topDepartments && data.topDepartments.length > 0 && (
+ 13517→        <Card className="p-6 border border-gray-200">
+ 13518→          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+ 13519→            <TrendingUp className="w-5 h-5 text-green-500" /> Top Performing Departments
+ 13520→          </h3>
+ 13521→          <div className="space-y-4">
+ 13522→            {data.topDepartments.map((dept: any, idx: number) => (
+ 13523→              <div key={dept.id} className="flex items-center gap-4">
+ 13524→                <div className={'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ' + 
+ 13525→                  idx === 0 ? 'bg-amber-500 text-white' :
+ 13526→                  idx === 1 ? 'bg-gray-400 text-white' :
+ 13527→                  idx === 2 ? 'bg-amber-700 text-white' :
+ 13528→                  'bg-gray-200 text-gray-600'
+ 13529→                 + ''}>
+ 13530→                  {idx + 1}
+ 13531→                </div>
+ 13532→                <div className="flex-1">
+ 13533→                  <div className="flex justify-between items-center mb-1">
+ 13534→                    <span className="font-medium text-gray-900">{dept.name}</span>
+ 13535→                    <span className="text-sm font-semibold text-gray-700">{dept.achievements.totalAchievements} achievements</span>
+ 13536→                  </div>
+ 13537→                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+ 13538→                    <div
+ 13539→                      className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-500"
+ 13540→                      style={{ width: ((dept.achievements.totalAchievements / (data.topDepartments[0]?.achievements.totalAchievements || 1)) * 100) + '%' }}
+ 13541→                    />
+ 13542→                  </div>
+ 13543→                </div>
+ 13544→              </div>
+ 13545→            ))}
+ 13546→          </div>
+ 13547→        </Card>
+ 13548→      )}
+ 13549→
+ 13550→      {/* Monthly Trend */}
+ 13551→      {data?.monthlyTrend && (
+ 13552→        <Card className="p-6 border border-gray-200">
+ 13553→          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+ 13554→            <Activity className="w-5 h-5 text-blue-500" /> Monthly Achievement Trend
+ 13555→          </h3>
+ 13556→          <div className="flex items-end gap-2 h-48">
+ 13557→            {data.monthlyTrend.map((month: any, idx: number) => {
+ 13558→              const maxValue = Math.max(...data.monthlyTrend.map((m: any) => m.total), 1)
+ 13559→              const height = (month.total / maxValue) * 100
+ 13560→              return (
+ 13561→                <div key={idx} className="flex-1 flex flex-col items-center gap-1">
+ 13562→                  <div className="w-full relative group">
+ 13563→                    <div
+ 13564→                      className="w-full bg-gradient-to-t from-blue-500 to-cyan-400 rounded-t-lg transition-all duration-300 hover:from-blue-600 hover:to-cyan-500"
+ 13565→                      style={{ height: `${Math.max(height, 2)}%`, minHeight: '4px' }}
+ 13566→                    >
+ 13567→                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+ 13568→                        {month.total} total
+ 13569→                      </div>
+ 13570→                    </div>
+ 13571→                  </div>
+ 13572→                  <span className="text-[10px] text-gray-500 text-center leading-tight">{month.month}</span>
+ 13573→                </div>
+ 13574→              )
+ 13575→            })}
+ 13576→          </div>
+ 13577→        </Card>
+ 13578→      )}
+ 13579→    </div>
+ 13580→  )
+ 13581→}
+ 13582→
+ 13583→// ============ ENTERPRISE REPORT GENERATOR PAGE ============
+ 13584→function ReportGeneratorPage() {
+ 13585→  // State for advanced filters
+ 13586→  const [generating, setGenerating] = useState(false)
+ 13587→  const [downloading, setDownloading] = useState(false)
+ 13588→  const [fetchingData, setFetchingData] = useState(false)
+ 13589→  const [reportData, setReportData] = useState<any>(null)
+ 13590→  const [activeTab, setActiveTab] = useState<'configure' | 'preview' | 'editor'>('configure')
+ 13591→  const [exportFormat, setExportFormat] = useState<'pdf' | 'excel' | 'word' | 'powerpoint' | 'html' | 'csv'>('pdf')
+ 13592→
+ 13593→  // Only these 11 departments should be shown in IQAC Dashboard (same as AdminDashboardContent)
+ 13594→  const ALLOWED_DEPARTMENTS = [
+ 13595→    'Aeronautical Engineering',
+ 13596→    'AER',
+ 13597→    'Artificial Intelligence & Data Science',
+ 13598→    'AI&DS',
+ 13599→    'AI & DS',
+ 13600→    'Cyber Security',
+ 13601→    'CSBS',
+ 13602→    'Computer Science and Engineering',
+ 13603→    'CSE',
+ 13604→    'Electronics & Communication Engineering',
+ 13605→    'ECE',
+ 13606→    'Electrical & Electronics Engineering',
+ 13607→    'EEE',
+ 13608→    'Information Technology',
+ 13609→    'IT',
+ 13610→    'Mechatronics',
+ 13611→    'MCT',
+ 13612→    'Mechanical Engineering',
+ 13613→    'MECH',
+ 13614→    'MBA',
+ 13615→    'Science & Humanities',
+ 13616→    'S&H'
+ 13617→  ]
+ 13618→  
+ 13619→  // Filter states
+ 13620→  const [fromMonth, setFromMonth] = useState<number>(new Date().getMonth() + 1)
+ 13621→  const [fromYear, setFromYear] = useState<number>(new Date().getFullYear())
+ 13622→  const [toMonth, setToMonth] = useState<number>(new Date().getMonth() + 1)
+ 13623→  const [toYear, setToYear] = useState<number>(new Date().getFullYear())
+ 13624→  const [departmentId, setDepartmentId] = useState<string>('all')
+ 13625→  const [academicYear, setAcademicYear] = useState<string>('')
+ 13626→  const [semester, setSemester] = useState<string>('all')
+ 13627→  const [classSection, setClassSection] = useState<string>('all')
+ 13628→  const [eventType, setEventType] = useState<string>('all')
+ 13629→  const [achievementCategory, setAchievementCategory] = useState<string>('all')
+ 13630→  const [verificationStatus, setVerificationStatus] = useState<string>('all')
+ 13631→  const [achievementLevel, setAchievementLevel] = useState<string>('all')
+ 13632→  const [gender, setGender] = useState<string>('all')
+ 13633→  
+ 13634→  // Data states
+ 13635→  const [departments, setDepartments] = useState<any[]>([])
+ 13636→  const [facultyList, setFacultyList] = useState<any[]>([])
+ 13637→  const [hodList, setHodList] = useState<any[]>([])
+ 13638→  
+ 13639→  // Editor states
+ 13640→  const [editMode, setEditMode] = useState<boolean>(false)
+ 13641→  const [reportTitle, setReportTitle] = useState<string>('Institutional Performance Report')
+ 13642→  const [reportSubtitle, setReportSubtitle] = useState<string>('NIET IQAC Comprehensive Analysis')
+ 13643→  const [customNotes, setCustomNotes] = useState<string>('')
+ 13644→  const [showBranding, setShowBranding] = useState<boolean>(true)
+ 13645→
+ 13646→  useEffect(() => {
+ 13647→    fetchInitialData()
+ 13648→  }, [])
+ 13649→
+ 13650→  const fetchInitialData = async () => {
+ 13651→    try {
+ 13652→      const [deptRes, facultyRes] = await Promise.all([
+ 13653→        fetch('/api/departments'),
+ 13654→        fetch('/api/faculty')
+ 13655→      ])
+ 13656→      const deptJson = await deptRes.json()
+ 13657→      const facultyJson = await facultyRes.json()
+ 13658→      if (deptJson.success) {
+ 13659→        // Filter to ONLY allowed departments (same 11 as dashboard)
+ 13660→        const allDepts = deptJson.departments || []
+ 13661→        const filteredDepts = allDepts.filter((d: any) => 
+ 13662→          ALLOWED_DEPARTMENTS.includes(d.name) || ALLOWED_DEPARTMENTS.includes(d.code)
+ 13663→        )
+ 13664→        setDepartments(filteredDepts)
+ 13665→      }
+ 13666→      if (facultyJson.success) {
+ 13667→        setFacultyList(facultyJson.data || [])
+ 13668→        setHodList((facultyJson.data || []).filter((f: any) => f.isHOD))
+ 13669→      }
+ 13670→    } catch (error) {
+ 13671→      console.error('Error fetching initial data:', error)
+ 13672→    }
+ 13673→  }
+ 13674→
+ 13675→  const validateDateRange = (): boolean => {
+ 13676→    const fromDate = new Date(fromYear, fromMonth - 1, 1)
+ 13677→    const toDate = new Date(toYear, toMonth - 1, 1)
+ 13678→    return toDate >= fromDate
+ 13679→  }
+ 13680→
+ 13681→  const generateAdvancedReport = async () => {
+ 13682→    if (!validateDateRange()) {
+ 13683→      alert('Invalid date range: "From" date must be before "To" date')
+ 13684→      return
+ 13685→    }
+ 13686→
+ 13687→    try {
+ 13688→      setGenerating(true)
+ 13689→      setFetchingData(true)
+ 13690→      const response = await fetch('/api/admin/advanced-reports', {
+ 13691→        method: 'POST',
+ 13692→        headers: { 'Content-Type': 'application/json' },
+ 13693→        body: JSON.stringify({
+ 13694→          fromMonth,
+ 13695→          fromYear,
+ 13696→          toMonth,
+ 13697→          toYear,
+ 13698→          departmentId,
+ 13699→          academicYear,
+ 13700→          semester,
+ 13701→          classSection,
+ 13702→          eventType,
+ 13703→          achievementCategory,
+ 13704→          verificationStatus,
+ 13705→          achievementLevel,
+ 13706→          gender
+ 13707→        })
+ 13708→      })
+ 13709→      
+ 13710→      const json = await response.json()
+ 13711→      if (json.success) {
+ 13712→        setReportData(json.data)
+ 13713→        setActiveTab('preview')
+ 13714→        // Show data summary
+ 13715→        const execSummary = json.data?.executiveSummary || {}
+ 13716→        alert(`Data fetched successfully from database!\n\n📊 Summary:\n• Total Students: ${execSummary.totalStudents || 0}\n• Total Faculty: ${execSummary.totalFaculty || 0}\n• Departments: ${execSummary.totalDepartments || 0}\n• Achievements: ${execSummary.totalAchievements || 0}\n• Placements: ${execSummary.totalPlacements || 0}\n• Publications: ${execSummary.totalPublications || 0}`)
+ 13717→      } else {
+ 13718→        alert('Failed to generate report: ' + json.error)
+ 13719→      }
+ 13720→    } catch (error) {
+ 13721→      console.error('Error generating report:', error)
+ 13722→      alert('Failed to generate report. Please try again.')
+ 13723→    } finally {
+ 13724→      setGenerating(false)
+ 13725→      setFetchingData(false)
+ 13726→    }
+ 13727→  }
+ 13728→
+ 13729→  const exportReport = async (format: string) => {
+ 13730→    if (!reportData) return
+ 13731→    
+ 13732→    setDownloading(true)
+ 13733→    try {
+ 13734→      if (format === 'pdf') {
+ 13735→        await exportAsPDF()
+ 13736→      } else if (format === 'excel') {
+ 13737→        await exportAsExcel()
+ 13738→      } else if (format === 'csv') {
+ 13739→        await exportAsCSV()
+ 13740→      } else {
+ 13741→        // Generic export
+ 13742→        downloadFile(
+ 13743→          JSON.stringify(reportData, null, 2),
+ 13744→          `niert-report-${new Date().toISOString().split('T')[0]}.json`,
+ 13745→          'application/json'
+ 13746→        )
+ 13747→      }
+ 13748→    } catch (error) {
+ 13749→      console.error('Export error:', error)
+ 13750→      alert('Failed to export report.')
+ 13751→    } finally {
+ 13752→      setDownloading(false)
+ 13753→    }
+ 13754→  }
+ 13755→
+ 13756→  const exportAsPDF = async () => {
+ 13757→    const response = await fetch('/api/generate-pdf', {
+ 13758→      method: 'POST',
+ 13759→      headers: { 'Content-Type': 'application/json' },
+ 13760→      body: JSON.stringify({
+ 13761→        reportData,
+ 13762→        department: departmentId !== 'all' ? departments.find(d => d.id === departmentId)?.name : 'All',
+ 13763→        title: reportTitle,
+ 13764→        subtitle: reportSubtitle,
+ 13765→        showBranding
+ 13766→      })
+ 13767→    })
+ 13768→    
+ 13769→    if (response.ok) {
+ 13770→      const blob = await response.blob()
+ 13771→      downloadFile(blob, `NIERT-IQAC-Report-${new Date().toISOString().split('T')[0]}.pdf`, 'application/pdf')
+ 13772→    }
+ 13773→  }
+ 13774→
+ 13775→  const exportAsExcel = async () => {
+ 13776→    const response = await fetch('/api/generate-excel', {
+ 13777→      method: 'POST',
+ 13778→      headers: { 'Content-Type': 'application/json' },
+ 13779→      body: JSON.stringify({ reportData })
+ 13780→    })
+ 13781→    
+ 13782→    if (response.ok) {
+ 13783→      const blob = await response.blob()
+ 13784→      downloadFile(blob, `NIERT-IQAC-Report-${new Date().toISOString().split('T')[0]}.xlsx`, 
+ 13785→        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+ 13786→    }
+ 13787→  }
+ 13788→
+ 13789→  const exportAsCSV = async () => {
+ 13790→    // Generate CSV from executive summary and department data
+ 13791→    let csvContent = 'data:text/csv;charset=utf-8,'
+ 13792→    csvContent += 'NIET IQAC Report' + String.fromCharCode(10)
+ 13793→    csvContent += 'Generated:,' + new Date().toLocaleString() + String.fromCharCode(10)
+ 13794→    csvContent += 'Period:,' + (reportData?.metadata?.reportPeriod?.fromLabel || '') + ' - ' + (reportData?.metadata?.reportPeriod?.toLabel || '') + '\n\n'
+ 13795→    
+ 13796→    if (reportData?.executiveSummary) {
+ 13797→      csvContent += 'Executive Summary' + String.fromCharCode(10)
+ 13798→      Object.entries(reportData.executiveSummary).forEach(([key, value]) => {
+ 13799→        csvContent += key + ',' + value + String.fromCharCode(10)
+ 13800→      })
+ 13801→      csvContent += String.fromCharCode(10)
+ 13802→    }
+ 13803→    
+ 13804→    if (reportData?.departmentPerformance) {
+ 13805→      csvContent += 'Department Performance' + String.fromCharCode(10)
+ 13806→      csvContent += 'Department,Code,Students,Faculty,Achievements,Publications,Placements,Internships,Performance Score' + String.fromCharCode(10)
+ 13807→      reportData.departmentPerformance.forEach((d: any) => {
+ 13808→        const row = '"' + d.name + '",' + d.code + ',' + d.stats.students + ',' + d.stats.faculty + ',' + d.stats.achievements + ',' + d.stats.publications + ',' + d.stats.placements + ',' + d.stats.internships + ',' + d.performanceScore
+ 13809→        csvContent += row + String.fromCharCode(10)
+ 13810→      })
+ 13811→    }
+ 13812→    
+ 13813→    const encodedUri = encodeURI(csvContent)
+ 13814→    const link = document.createElement('a')
+ 13815→    link.setAttribute('href', encodedUri)
+ 13816→    link.setAttribute('download', 'NIERT-IQAC-Report-' + new Date().toISOString().split('T')[0] + '.csv')
+ 13817→    document.body.appendChild(link)
+ 13818→    link.click()
+ 13819→    document.body.removeChild(link)
+ 13820→  }
+ 13821→
+ 13822→  const downloadFile = (data: Blob | string, filename: string, mimeType: string) => {
+ 13823→    const blob = typeof data === 'string' ? new Blob([data], { type: mimeType }) : data
+ 13824→    const url = URL.createObjectURL(blob)
+ 13825→    const a = document.createElement('a')
+ 13826→    a.href = url
+ 13827→    a.download = filename
+ 13828→    document.body.appendChild(a)
+ 13829→    a.click()
+ 13830→    document.body.removeChild(a)
+ 13831→    URL.revokeObjectURL(url)
+ 13832→  }
+ 13833→
+ 13834→  const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
+ 13835→  const currentYear = new Date().getFullYear()
+ 13836→  const years = Array.from({ length: 10 }, (_, i) => currentYear - i)
+ 13837→
+ 13838→  return (
+ 13839→    <div className="space-y-6 min-h-screen">
+ 13840→      {/* Premium Header */}
+ 13841→      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0A2E6D] via-[#1a4a9e] to-[#D4AF37] p-8 text-white">
+ 13842→        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+ 13843→        <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+ 13844→        
+ 13845→        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+ 13846→          <div>
+ 13847→            <div className="flex items-center gap-3 mb-2">
+ 13848→              <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl">
+ 13849→                <FileSpreadsheet className="w-7 h-7" />
+ 13850→              </div>
+ 13851→              <h1 className="text-3xl font-bold tracking-tight">Enterprise Report Generator</h1>
+ 13852→            </div>
+ 13853→            <p className="text-white/80 max-w-xl">
+ 13854→              Generate professional, analytics-driven reports with institutional branding, AI insights, and multi-format export capabilities.
+ 13855→            </p>
+ 13856→          </div>
+ 13857→          
+ 13858→          <div className="flex gap-2">
+ 13859→            {['configure', 'preview', 'editor'].map(tab => (
+ 13860→              <button
+ 13861→                key={tab}
+ 13862→                onClick={() => setActiveTab(tab as any)}
+ 13863→                className={
+ 13864→                  'px-4 py-2 rounded-lg font-medium transition-all capitalize ' + 
+ 13865→                  (activeTab === tab 
+ 13866→                    ? 'bg-white text-[#0A2E6D] shadow-lg' 
+ 13867→                    : 'bg-white/10 hover:bg-white/20 text-white')
+ 13868→                }
+ 13869→              >
+ 13870→                {tab}
+ 13871→              </button>
+ 13872→            ))}
+ 13873→          </div>
+ 13874→        </div>
+ 13875→      </div>
+ 13876→
+ 13877→      {/* Configure Tab */}
+ 13878→      {activeTab === 'configure' && (
+ 13879→        <div className="space-y-6">
+ 13880→          {/* Date Range Selector - Glassmorphism Card */}
+ 13881→          <div className="backdrop-blur-xl bg-white/80 border border-white/20 rounded-2xl shadow-xl overflow-hidden">
+ 13882→            <div className="bg-gradient-to-r from-[#0A2E6D] to-[#1a4a9e] px-6 py-4">
+ 13883→              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+ 13884→                <CalendarDays className="w-5 h-5" />
+ 13885→                Reporting Period Selection
+ 13886→              </h2>
+ 13887→              <p className="text-sm text-white/70 mt-1">Select custom date range for your report</p>
+ 13888→            </div>
+ 13889→            
+ 13890→            <div className="p-6">
+ 13891→              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+ 13892→                {/* From Month */}
+ 13893→                <div className="space-y-2">
+ 13894→                  <label className="block text-sm font-semibold text-gray-700">From Month</label>
+ 13895→                  <select
+ 13896→                    value={fromMonth}
+ 13897→                    onChange={(e) => setFromMonth(parseInt(e.target.value))}
+ 13898→                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent transition-all"
+ 13899→                  >
+ 13900→                    {months.map((m, i) => (
+ 13901→                      <option key={m} value={i + 1}>{m}</option>
+ 13902→                    ))}
+ 13903→                  </select>
+ 13904→                </div>
+ 13905→                
+ 13906→                {/* From Year */}
+ 13907→                <div className="space-y-2">
+ 13908→                  <label className="block text-sm font-semibold text-gray-700">From Year</label>
+ 13909→                  <select
+ 13910→                    value={fromYear}
+ 13911→                    onChange={(e) => setFromYear(parseInt(e.target.value))}
+ 13912→                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent transition-all"
+ 13913→                  >
+ 13914→                    {years.map(y => (
+ 13915→                      <option key={y} value={y}>{y}</option>
+ 13916→                    ))}
+ 13917→                  </select>
+ 13918→                </div>
+ 13919→                
+ 13920→                {/* To Month */}
+ 13921→                <div className="space-y-2">
+ 13922→                  <label className="block text-sm font-semibold text-gray-700">To Month</label>
+ 13923→                  <select
+ 13924→                    value={toMonth}
+ 13925→                    onChange={(e) => setToMonth(parseInt(e.target.value))}
+ 13926→                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent transition-all"
+ 13927→                  >
+ 13928→                    {months.map((m, i) => (
+ 13929→                      <option key={m} value={i + 1}>{m}</option>
+ 13930→                    ))}
+ 13931→                  </select>
+ 13932→                </div>
+ 13933→                
+ 13934→                {/* To Year */}
+ 13935→                <div className="space-y-2">
+ 13936→                  <label className="block text-sm font-semibold text-gray-700">To Year</label>
+ 13937→                  <select
+ 13938→                    value={toYear}
+ 13939→                    onChange={(e) => setToYear(parseInt(e.target.value))}
+ 13940→                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent transition-all"
+ 13941→                  >
+ 13942→                    {years.map(y => (
+ 13943→                      <option key={y} value={y}>{y}</option>
+ 13944→                    ))}
+ 13945→                  </select>
+ 13946→                </div>
+ 13947→              </div>
+ 13948→              
+ 13949→              {/* Period Validation Status */}
+ 13950→              <div className={
+ 13951→                'mt-4 p-3 rounded-lg flex items-center gap-2 ' + 
+ 13952→                (validateDateRange() ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700')
+ 13953→              }>
+ 13954→                {validateDateRange() ? (
+ 13955→                  <>
+ 13956→                    <CheckCircle className="w-5 h-5" />
+ 13957→                    <span className="text-sm font-medium">Valid Period: {months[fromMonth-1]} {fromYear} - {months[toMonth-1]} {toYear}</span>
+ 13958→                  </>
+ 13959→                ) : (
+ 13960→                  <>
+ 13961→                    <XCircle className="w-5 h-5" />
+ 13962→                    <span className="text-sm font-medium">Invalid date range selection</span>
+ 13963→                  </>
+ 13964→                )}
+ 13965→              </div>
+ 13966→            </div>
+ 13967→          </div>
+ 13968→
+ 13969→          {/* Advanced Filters Grid */}
+ 13970→          <div className="backdrop-blur-xl bg-white/80 border border-white/20 rounded-2xl shadow-xl overflow-hidden">
+ 13971→            <div className="bg-gradient-to-r from-[#D4AF37] to-[#c9a530] px-6 py-4">
+ 13972→              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+ 13973→                <Filter className="w-5 h-5" />
+ 13974→                Advanced Filters
+ 13975→              </h2>
+ 13976→              <p className="text-sm text-white/80 mt-1">Combine multiple filters for targeted reports</p>
+ 13977→            </div>
+ 13978→            
+ 13979→            <div className="p-6">
+ 13980→              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+ 13981→                {/* Department Filter */}
+ 13982→                <div className="space-y-2">
+ 13983→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+ 13984→                    <Building2 className="w-4 h-4 text-[#0A2E6D]" /> Department
+ 13985→                  </label>
+ 13986→                  <select
+ 13987→                    value={departmentId}
+ 13988→                    onChange={(e) => setDepartmentId(e.target.value)}
+ 13989→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+ 13990→                  >
+ 13991→                    <option value="all">All Departments</option>
+ 13992→                    {departments.map(dept => (
+ 13993→                      <option key={dept.id} value={dept.id}>{dept.name} ({dept.code})</option>
+ 13994→                    ))}
+ 13995→                  </select>
+ 13996→                </div>
+ 13997→
+ 13998→                {/* Academic Year */}
+ 13999→                <div className="space-y-2">
+ 14000→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+ 14001→                    <GraduationCap className="w-4 h-4 text-[#0A2E6D]" /> Academic Year
+ 14002→                  </label>
+ 14003→                  <select
+ 14004→                    value={academicYear}
+ 14005→                    onChange={(e) => setAcademicYear(e.target.value)}
+ 14006→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+ 14007→                  >
+ 14008→                    <option value="">All Years</option>
+ 14009→                    <option value="2024-2025">2024-2025</option>
+ 14010→                    <option value="2023-2024">2023-2024</option>
+ 14011→                    <option value="2022-2023">2022-2023</option>
+ 14012→                  </select>
+ 14013→                </div>
+ 14014→
+ 14015→                {/* Semester */}
+ 14016→                <div className="space-y-2">
+ 14017→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+ 14018→                    <BookOpen className="w-4 h-4 text-[#0A2E6D]" /> Semester
+ 14019→                  </label>
+ 14020→                  <select
+ 14021→                    value={semester}
+ 14022→                    onChange={(e) => setSemester(e.target.value)}
+ 14023→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+ 14024→                  >
+ 14025→                    <option value="all">All Semesters</option>
+ 14026→                    <option value="1">Semester 1</option>
+ 14027→                    <option value="2">Semester 2</option>
+ 14028→                    <option value="3">Semester 3</option>
+ 14029→                    <option value="4">Semester 4</option>
+ 14030→                    <option value="5">Semester 5</option>
+ 14031→                    <option value="6">Semester 6</option>
+ 14032→                    <option value="7">Semester 7</option>
+ 14033→                    <option value="8">Semester 8</option>
+ 14034→                  </select>
+ 14035→                </div>
+ 14036→
+ 14037→                {/* Class Section */}
+ 14038→                <div className="space-y-2">
+ 14039→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+ 14040→                    <Users className="w-4 h-4 text-[#0A2E6D]" /> Class / Section
+ 14041→                  </label>
+ 14042→                  <select
+ 14043→                    value={classSection}
+ 14044→                    onChange={(e) => setClassSection(e.target.value)}
+ 14045→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+ 14046→                  >
+ 14047→                    <option value="all">All Sections</option>
+ 14048→                    <option value="A">Section A</option>
+ 14049→                    <option value="B">Section B</option>
+ 14050→                    <option value="C">Section C</option>
+ 14051→                    <option value="D">Section D</option>
+ 14052→                  </select>
+ 14053→                </div>
+ 14054→
+ 14055→                {/* Event Type */}
+ 14056→                <div className="space-y-2">
+ 14057→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+ 14058→                    <Calendar className="w-4 h-4 text-[#0A2E6D]" /> Event Type
+ 14059→                  </label>
+ 14060→                  <select
+ 14061→                    value={eventType}
+ 14062→                    onChange={(e) => setEventType(e.target.value)}
+ 14063→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+ 14064→                  >
+ 14065→                    <option value="all">All Events</option>
+ 14066→                    <option value="workshop">Workshop</option>
+ 14067→                    <option value="seminar">Seminar</option>
+ 14068→                    <option value="conference">Conference</option>
+ 14069→                    <option value="fdp">FDP</option>
+ 14070→                    <option value="hackathon">Hackathon</option>
+ 14071→                    <option value="symposium">Symposium</option>
+ 14072→                  </select>
+ 14073→                </div>
+ 14074→
+ 14075→                {/* Achievement Category */}
+ 14076→                <div className="space-y-2">
+ 14077→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+ 14078→                    <Trophy className="w-4 h-4 text-[#0A2E6D]" /> Achievement Category
+ 14079→                  </label>
+ 14080→                  <select
+ 14081→                    value={achievementCategory}
+ 14082→                    onChange={(e) => setAchievementCategory(e.target.value)}
+ 14083→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+ 14084→                  >
+ 14085→                    <option value="all">All Categories</option>
+ 14086→                    <option value="academic">Academic</option>
+ 14087→                    <option value="sports">Sports</option>
+ 14088→                    <option value="cultural">Cultural</option>
+ 14089→                    <option value="research">Research</option>
+ 14090→                    <option value="innovation">Innovation</option>
+ 14091→                    <option value="hackathon">Hackathon</option>
+ 14092→                    <option value="internship">Internship</option>
+ 14093→                    <option value="placement">Placement</option>
+ 14094→                    <option value="certification">Certification</option>
+ 14095→                  </select>
+ 14096→                </div>
+ 14097→
+ 14098→                {/* Verification Status */}
+ 14099→                <div className="space-y-2">
+ 14100→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+ 14101→                    <Shield className="w-4 h-4 text-[#0A2E6D]" /> Verification Status
+ 14102→                  </label>
+ 14103→                  <select
+ 14104→                    value={verificationStatus}
+ 14105→                    onChange={(e) => setVerificationStatus(e.target.value)}
+ 14106→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+ 14107→                  >
+ 14108→                    <option value="all">All Status</option>
+ 14109→                    <option value="pending">Pending</option>
+ 14110→                    <option value="verified">Verified</option>
+ 14111→                    <option value="rejected">Rejected</option>
+ 14112→                  </select>
+ 14113→                </div>
+ 14114→
+ 14115→                {/* Achievement Level */}
+ 14116→                <div className="space-y-2">
+ 14117→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+ 14118→                    <Award className="w-4 h-4 text-[#0A2E6D]" /> Achievement Level
+ 14119→                  </label>
+ 14120→                  <select
+ 14121→                    value={achievementLevel}
+ 14122→                    onChange={(e) => setAchievementLevel(e.target.value)}
+ 14123→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+ 14124→                  >
+ 14125→                    <option value="all">All Levels</option>
+ 14126→                    <option value="institution">Institution Level</option>
+ 14127→                    <option value="state">State Level</option>
+ 14128→                    <option value="national">National Level</option>
+ 14129→                    <option value="international">International Level</option>
+ 14130→                  </select>
+ 14131→                </div>
+ 14132→
+ 14133→                {/* Gender */}
+ 14134→                <div className="space-y-2">
+ 14135→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+ 14136→                    <UserCheck className="w-4 h-4 text-[#0A2E6D]" /> Gender
+ 14137→                  </label>
+ 14138→                  <select
+ 14139→                    value={gender}
+ 14140→                    onChange={(e) => setGender(e.target.value)}
+ 14141→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+ 14142→                  >
+ 14143→                    <option value="all">All</option>
+ 14144→                    <option value="Male">Male</option>
+ 14145→                    <option value="Female">Female</option>
+ 14146→                    <option value="Other">Other</option>
+ 14147→                  </select>
+ 14148→                </div>
+ 14149→              </div>
+ 14150→            </div>
+ 14151→          </div>
+ 14152→
+ 14153→          {/* Export Format & Generate Button */}
+ 14154→          <div className="backdrop-blur-xl bg-white/80 border border-white/20 rounded-2xl shadow-xl overflow-hidden">
+ 14155→            <div className="p-6">
+ 14156→              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+ 14157→                {/* Export Format Selection */}
+ 14158→                <div className="space-y-3">
+ 14159→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+ 14160→                    <Download className="w-4 h-4 text-[#0A2E6D]" /> Export Format
+ 14161→                  </label>
+ 14162→                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+ 14163→                    {[
+ 14164→                      { id: 'pdf', label: 'PDF', icon: FileText, color: 'red' },
+ 14165→                      { id: 'excel', label: 'Excel', icon: FileSpreadsheet, color: 'emerald' },
+ 14166→                      { id: 'word', label: 'Word', icon: FileText, color: 'blue' },
+ 14167→                      { id: 'powerpoint', label: 'PPT', icon: Presentation, color: 'orange' },
+ 14168→                      { id: 'html', label: 'HTML', icon: Code, color: 'purple' },
+ 14169→                      { id: 'csv', label: 'CSV', icon: Database, color: 'cyan' },
+ 14170→                    ].map(fmt => (
+ 14171→                      <button
+ 14172→                        key={fmt.id}
+ 14173→                        onClick={() => setExportFormat(fmt.id as any)}
+ 14174→                        className={"p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 " + (exportFormat === fmt.id ? "border-" + fmt.color + "-500 bg-" + fmt.color + "-50 shadow-md" : 'border-gray-200 hover:border-gray-300 bg-white')}
+ 14175→                      >
+ 14176→                        <fmt.icon className={"w-5 h-5 " + (exportFormat === fmt.id ? "text-" + fmt.color + "-600" : 'text-gray-400')} />
+ 14177→                        <span className={"text-xs font-medium " + (exportFormat === fmt.id ? "text-" + fmt.color + "-900" : 'text-gray-600')}>
+ 14178→                          {fmt.label}
+ 14179→                        </span>
+ 14180→                      </button>
+ 14181→                    ))}
+ 14182→                  </div>
+ 14183→                </div>
+ 14184→
+ 14185→                {/* Generate Button */}
+ 14186→                <div className="flex items-end">
+ 14187→                  <button
+ 14188→                    onClick={generateAdvancedReport}
+ 14189→                    disabled={generating || !validateDateRange()}
+ 14190→                    className="w-full py-4 px-8 bg-gradient-to-r from-[#0A2E6D] via-[#1a4a9e] to-[#D4AF37] hover:from-[#08255a] hover:via-[#164090] hover:to-[#c9a530] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3 text-lg"
+ 14191→                  >
+ 14192→                    {generating ? (
+ 14193→                      <>
+ 14194→                        <Loader2 className="w-6 h-6 animate-spin" />
+ 14195→                        {fetchingData ? 'Fetching Data from Database...' : 'Generating Report...'}
+ 14196→                      </>
+ 14197→                    ) : (
+ 14198→                      <>
+ 14199→                        <Database className="w-6 h-6" />
+ 14200→                        Fetch Data & Generate Report
+ 14201→                      </>
+ 14202→                    )}
+ 14203→                  </button>
+ 14204→                </div>
+ 14205→              </div>
+ 14206→            </div>
+ 14207→          </div>
+ 14208→        </div>
+ 14209→      )}
+ 14210→
+ 14211→      {/* Preview Tab */}
+ 14212→      {activeTab === 'preview' && reportData && (
+ 14213→        <EnterpriseReportPreview 
+ 14214→          reportData={reportData}
+ 14215→          onExport={exportReport}
+ 14216→          onEdit={() => setActiveTab('editor')}
+ 14217→          exporting={downloading}
+ 14218→          format={exportFormat}
+ 14219→        />
+ 14220→      )}
+ 14221→
+ 14222→      {/* Editor Tab */}
+ 14223→      {activeTab === 'editor' && reportData && (
+ 14224→        <ReportEditorTab
+ 14225→          reportData={reportData}
+ 14226→          reportTitle={reportTitle}
+ 14227→          setReportTitle={setReportTitle}
+ 14228→          reportSubtitle={reportSubtitle}
+ 14229→          setReportSubtitle={setReportSubtitle}
+ 14230→          customNotes={customNotes}
+ 14231→          setCustomNotes={setCustomNotes}
+ 14232→          showBranding={showBranding}
+ 14233→          setShowBranding={setShowBranding}
+ 14234→          onBackToPreview={() => setActiveTab('preview')}
+ 14235→          onExport={exportReport}
+ 14236→        />
+ 14237→      )}
+ 14238→    </div>
+ 14239→  )
+ 14240→}
+ 14241→
+ 14242→// ============ ENTERPRISE REPORT PREVIEW COMPONENT ============
+ 14243→function EnterpriseReportPreview({ 
+ 14244→  reportData, 
+ 14245→  onExport, 
+ 14246→  onEdit,
+ 14247→  exporting,
+ 14248→  format 
+ 14249→}: { 
+ 14250→  reportData: any
+ 14251→  onExport: (format: string) => void
+ 14252→  onEdit: () => void
+ 14253→  exporting: boolean
+ 14254→  format: string
+ 14255→}) {
+ 14256→  const [expandedSection, setExpandedSection] = useState<string>('executive')
+ 14257→
+ 14258→  const execSummary = reportData?.executiveSummary || {}
+ 14259→  const aiInsights = reportData?.aiInsights || {}
+ 14260→
+ 14261→  const KPI_Cards = [
+ 14262→    { label: 'Total Students', value: execSummary.totalStudents || 0, icon: GraduationCap, color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-50' },
+ 14263→    { label: 'Total Faculty', value: execSummary.totalFaculty || 0, icon: Users, color: 'from-emerald-500 to-emerald-600', bgColor: 'bg-emerald-50' },
+ 14264→    { label: 'Departments', value: execSummary.totalDepartments || 0, icon: Building2, color: 'from-purple-500 to-purple-600', bgColor: 'bg-purple-50' },
+ 14265→    { label: 'Achievements', value: execSummary.totalAchievements || 0, icon: Trophy, color: 'from-amber-500 to-amber-600', bgColor: 'bg-amber-50' },
+ 14266→    { label: 'Placements', value: execSummary.totalPlacements || 0, icon: Briefcase, color: 'from-rose-500 to-rose-600', bgColor: 'bg-rose-50' },
+ 14267→    { label: 'Publications', value: execSummary.totalPublications || 0, icon: Newspaper, color: 'from-cyan-500 to-cyan-600', bgColor: 'bg-cyan-50' },
+ 14268→    { label: 'Patents', value: execSummary.totalPatents || 0, icon: Award, color: 'from-indigo-500 to-indigo-600', bgColor: 'bg-indigo-50' },
+ 14269→    { label: 'Events', value: execSummary.totalEvents || 0, icon: Calendar, color: 'from-pink-500 to-pink-600', bgColor: 'bg-pink-50' },
+ 14270→    { label: 'Internships', value: execSummary.totalInternships || 0, icon: Wrench, color: 'from-teal-500 to-teal-600', bgColor: 'bg-teal-50' },
+ 14271→    { label: 'Certifications', value: execSummary.totalCertifications || 0, icon: Shield, color: 'from-orange-500 to-orange-600', bgColor: 'bg-orange-50' },
+ 14272→    { label: 'Verified Records', value: execSummary.verifiedRecords || 0, icon: CheckCircle, color: 'from-green-500 to-green-600', bgColor: 'bg-green-50' },
+ 14273→    { label: 'Pending Approvals', value: execSummary.pendingApprovals || 0, icon: Clock, color: 'from-yellow-500 to-yellow-600', bgColor: 'bg-yellow-50' },
+ 14274→  ]
+ 14275→
+ 14276→  const toggleSection = (section: string) => {
+ 14277→    setExpandedSection(expandedSection === section ? '' : section)
+ 14278→  }
+ 14279→
+ 14280→  return (
+ 14281→    <div className="space-y-6">
+ 14282→      {/* Action Bar */}
+ 14283→      <div className="backdrop-blur-xl bg-white/90 border border-white/20 rounded-2xl shadow-lg p-4 sticky top-4 z-40">
+ 14284→        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+ 14285→          <div className="flex items-center gap-3">
+ 14286→            <button
+ 14287→              onClick={() => window.history.back()}
+ 14288→              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+ 14289→            >
+ 14290→              <ArrowLeft className="w-5 h-5" />
+ 14291→            </button>
+ 14292→            <div>
+ 14293→              <h2 className="font-bold text-gray-900">Report Preview</h2>
+ 14294→              <p className="text-xs text-gray-500">
+ 14295→                {reportData?.metadata?.reportPeriod?.fromLabel} - {reportData?.metadata?.reportPeriod?.toLabel}
+ 14296→              </p>
+ 14297→            </div>
+ 14298→          </div>
+ 14299→          
+
+[showing lines 13500-14299 of 24660; use offset=14300 with limit to continue reading]

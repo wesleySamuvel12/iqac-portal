@@ -1,0 +1,602 @@
+     1→ 13584→function ReportGeneratorPage() {
+     2→ 13585→  // State for advanced filters
+     3→ 13586→  const [generating, setGenerating] = useState(false)
+     4→ 13587→  const [downloading, setDownloading] = useState(false)
+     5→ 13588→  const [fetchingData, setFetchingData] = useState(false)
+     6→ 13589→  const [reportData, setReportData] = useState<any>(null)
+     7→ 13590→  const [activeTab, setActiveTab] = useState<'configure' | 'preview' | 'editor'>('configure')
+     8→ 13591→  const [exportFormat, setExportFormat] = useState<'pdf' | 'excel' | 'word' | 'powerpoint' | 'html' | 'csv'>('pdf')
+     9→ 13592→
+    10→ 13593→  // Only these 11 departments should be shown in IQAC Dashboard (same as AdminDashboardContent)
+    11→ 13594→  const ALLOWED_DEPARTMENTS = [
+    12→ 13595→    'Aeronautical Engineering',
+    13→ 13596→    'AER',
+    14→ 13597→    'Artificial Intelligence & Data Science',
+    15→ 13598→    'AI&DS',
+    16→ 13599→    'AI & DS',
+    17→ 13600→    'Cyber Security',
+    18→ 13601→    'CSBS',
+    19→ 13602→    'Computer Science and Engineering',
+    20→ 13603→    'CSE',
+    21→ 13604→    'Electronics & Communication Engineering',
+    22→ 13605→    'ECE',
+    23→ 13606→    'Electrical & Electronics Engineering',
+    24→ 13607→    'EEE',
+    25→ 13608→    'Information Technology',
+    26→ 13609→    'IT',
+    27→ 13610→    'Mechatronics',
+    28→ 13611→    'MCT',
+    29→ 13612→    'Mechanical Engineering',
+    30→ 13613→    'MECH',
+    31→ 13614→    'MBA',
+    32→ 13615→    'Science & Humanities',
+    33→ 13616→    'S&H'
+    34→ 13617→  ]
+    35→ 13618→  
+    36→ 13619→  // Filter states
+    37→ 13620→  const [fromMonth, setFromMonth] = useState<number>(new Date().getMonth() + 1)
+    38→ 13621→  const [fromYear, setFromYear] = useState<number>(new Date().getFullYear())
+    39→ 13622→  const [toMonth, setToMonth] = useState<number>(new Date().getMonth() + 1)
+    40→ 13623→  const [toYear, setToYear] = useState<number>(new Date().getFullYear())
+    41→ 13624→  const [departmentId, setDepartmentId] = useState<string>('all')
+    42→ 13625→  const [academicYear, setAcademicYear] = useState<string>('')
+    43→ 13626→  const [semester, setSemester] = useState<string>('all')
+    44→ 13627→  const [classSection, setClassSection] = useState<string>('all')
+    45→ 13628→  const [eventType, setEventType] = useState<string>('all')
+    46→ 13629→  const [achievementCategory, setAchievementCategory] = useState<string>('all')
+    47→ 13630→  const [verificationStatus, setVerificationStatus] = useState<string>('all')
+    48→ 13631→  const [achievementLevel, setAchievementLevel] = useState<string>('all')
+    49→ 13632→  const [gender, setGender] = useState<string>('all')
+    50→ 13633→  
+    51→ 13634→  // Data states
+    52→ 13635→  const [departments, setDepartments] = useState<any[]>([])
+    53→ 13636→  const [facultyList, setFacultyList] = useState<any[]>([])
+    54→ 13637→  const [hodList, setHodList] = useState<any[]>([])
+    55→ 13638→  
+    56→ 13639→  // Editor states
+    57→ 13640→  const [editMode, setEditMode] = useState<boolean>(false)
+    58→ 13641→  const [reportTitle, setReportTitle] = useState<string>('Institutional Performance Report')
+    59→ 13642→  const [reportSubtitle, setReportSubtitle] = useState<string>('NIET IQAC Comprehensive Analysis')
+    60→ 13643→  const [customNotes, setCustomNotes] = useState<string>('')
+    61→ 13644→  const [showBranding, setShowBranding] = useState<boolean>(true)
+    62→ 13645→
+    63→ 13646→  useEffect(() => {
+    64→ 13647→    fetchInitialData()
+    65→ 13648→  }, [])
+    66→ 13649→
+    67→ 13650→  const fetchInitialData = async () => {
+    68→ 13651→    try {
+    69→ 13652→      const [deptRes, facultyRes] = await Promise.all([
+    70→ 13653→        fetch('/api/departments'),
+    71→ 13654→        fetch('/api/faculty')
+    72→ 13655→      ])
+    73→ 13656→      const deptJson = await deptRes.json()
+    74→ 13657→      const facultyJson = await facultyRes.json()
+    75→ 13658→      if (deptJson.success) {
+    76→ 13659→        // Filter to ONLY allowed departments (same 11 as dashboard)
+    77→ 13660→        const allDepts = deptJson.departments || []
+    78→ 13661→        const filteredDepts = allDepts.filter((d: any) => 
+    79→ 13662→          ALLOWED_DEPARTMENTS.includes(d.name) || ALLOWED_DEPARTMENTS.includes(d.code)
+    80→ 13663→        )
+    81→ 13664→        setDepartments(filteredDepts)
+    82→ 13665→      }
+    83→ 13666→      if (facultyJson.success) {
+    84→ 13667→        setFacultyList(facultyJson.data || [])
+    85→ 13668→        setHodList((facultyJson.data || []).filter((f: any) => f.isHOD))
+    86→ 13669→      }
+    87→ 13670→    } catch (error) {
+    88→ 13671→      console.error('Error fetching initial data:', error)
+    89→ 13672→    }
+    90→ 13673→  }
+    91→ 13674→
+    92→ 13675→  const validateDateRange = (): boolean => {
+    93→ 13676→    const fromDate = new Date(fromYear, fromMonth - 1, 1)
+    94→ 13677→    const toDate = new Date(toYear, toMonth - 1, 1)
+    95→ 13678→    return toDate >= fromDate
+    96→ 13679→  }
+    97→ 13680→
+    98→ 13681→  const generateAdvancedReport = async () => {
+    99→ 13682→    if (!validateDateRange()) {
+   100→ 13683→      alert('Invalid date range: "From" date must be before "To" date')
+   101→ 13684→      return
+   102→ 13685→    }
+   103→ 13686→
+   104→ 13687→    try {
+   105→ 13688→      setGenerating(true)
+   106→ 13689→      setFetchingData(true)
+   107→ 13690→      const response = await fetch('/api/admin/advanced-reports', {
+   108→ 13691→        method: 'POST',
+   109→ 13692→        headers: { 'Content-Type': 'application/json' },
+   110→ 13693→        body: JSON.stringify({
+   111→ 13694→          fromMonth,
+   112→ 13695→          fromYear,
+   113→ 13696→          toMonth,
+   114→ 13697→          toYear,
+   115→ 13698→          departmentId,
+   116→ 13699→          academicYear,
+   117→ 13700→          semester,
+   118→ 13701→          classSection,
+   119→ 13702→          eventType,
+   120→ 13703→          achievementCategory,
+   121→ 13704→          verificationStatus,
+   122→ 13705→          achievementLevel,
+   123→ 13706→          gender
+   124→ 13707→        })
+   125→ 13708→      })
+   126→ 13709→      
+   127→ 13710→      const json = await response.json()
+   128→ 13711→      if (json.success) {
+   129→ 13712→        setReportData(json.data)
+   130→ 13713→        setActiveTab('preview')
+   131→ 13714→        // Show data summary
+   132→ 13715→        const execSummary = json.data?.executiveSummary || {}
+   133→ 13716→        alert(`Data fetched successfully from database!\n\n📊 Summary:\n• Total Students: ${execSummary.totalStudents || 0}\n• Total Faculty: ${execSummary.totalFaculty || 0}\n• Departments: ${execSummary.totalDepartments || 0}\n• Achievements: ${execSummary.totalAchievements || 0}\n• Placements: ${execSummary.totalPlacements || 0}\n• Publications: ${execSummary.totalPublications || 0}`)
+   134→ 13717→      } else {
+   135→ 13718→        alert('Failed to generate report: ' + json.error)
+   136→ 13719→      }
+   137→ 13720→    } catch (error) {
+   138→ 13721→      console.error('Error generating report:', error)
+   139→ 13722→      alert('Failed to generate report. Please try again.')
+   140→ 13723→    } finally {
+   141→ 13724→      setGenerating(false)
+   142→ 13725→      setFetchingData(false)
+   143→ 13726→    }
+   144→ 13727→  }
+   145→ 13728→
+   146→ 13729→  const exportReport = async (format: string) => {
+   147→ 13730→    if (!reportData) return
+   148→ 13731→    
+   149→ 13732→    setDownloading(true)
+   150→ 13733→    try {
+   151→ 13734→      if (format === 'pdf') {
+   152→ 13735→        await exportAsPDF()
+   153→ 13736→      } else if (format === 'excel') {
+   154→ 13737→        await exportAsExcel()
+   155→ 13738→      } else if (format === 'csv') {
+   156→ 13739→        await exportAsCSV()
+   157→ 13740→      } else {
+   158→ 13741→        // Generic export
+   159→ 13742→        downloadFile(
+   160→ 13743→          JSON.stringify(reportData, null, 2),
+   161→ 13744→          `niert-report-${new Date().toISOString().split('T')[0]}.json`,
+   162→ 13745→          'application/json'
+   163→ 13746→        )
+   164→ 13747→      }
+   165→ 13748→    } catch (error) {
+   166→ 13749→      console.error('Export error:', error)
+   167→ 13750→      alert('Failed to export report.')
+   168→ 13751→    } finally {
+   169→ 13752→      setDownloading(false)
+   170→ 13753→    }
+   171→ 13754→  }
+   172→ 13755→
+   173→ 13756→  const exportAsPDF = async () => {
+   174→ 13757→    const response = await fetch('/api/generate-pdf', {
+   175→ 13758→      method: 'POST',
+   176→ 13759→      headers: { 'Content-Type': 'application/json' },
+   177→ 13760→      body: JSON.stringify({
+   178→ 13761→        reportData,
+   179→ 13762→        department: departmentId !== 'all' ? departments.find(d => d.id === departmentId)?.name : 'All',
+   180→ 13763→        title: reportTitle,
+   181→ 13764→        subtitle: reportSubtitle,
+   182→ 13765→        showBranding
+   183→ 13766→      })
+   184→ 13767→    })
+   185→ 13768→    
+   186→ 13769→    if (response.ok) {
+   187→ 13770→      const blob = await response.blob()
+   188→ 13771→      downloadFile(blob, `NIERT-IQAC-Report-${new Date().toISOString().split('T')[0]}.pdf`, 'application/pdf')
+   189→ 13772→    }
+   190→ 13773→  }
+   191→ 13774→
+   192→ 13775→  const exportAsExcel = async () => {
+   193→ 13776→    const response = await fetch('/api/generate-excel', {
+   194→ 13777→      method: 'POST',
+   195→ 13778→      headers: { 'Content-Type': 'application/json' },
+   196→ 13779→      body: JSON.stringify({ reportData })
+   197→ 13780→    })
+   198→ 13781→    
+   199→ 13782→    if (response.ok) {
+   200→ 13783→      const blob = await response.blob()
+   201→ 13784→      downloadFile(blob, `NIERT-IQAC-Report-${new Date().toISOString().split('T')[0]}.xlsx`, 
+   202→ 13785→        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+   203→ 13786→    }
+   204→ 13787→  }
+   205→ 13788→
+   206→ 13789→  const exportAsCSV = async () => {
+   207→ 13790→    // Generate CSV from executive summary and department data
+   208→ 13791→    let csvContent = 'data:text/csv;charset=utf-8,'
+   209→ 13792→    csvContent += 'NIET IQAC Report' + String.fromCharCode(10)
+   210→ 13793→    csvContent += 'Generated:,' + new Date().toLocaleString() + String.fromCharCode(10)
+   211→ 13794→    csvContent += 'Period:,' + (reportData?.metadata?.reportPeriod?.fromLabel || '') + ' - ' + (reportData?.metadata?.reportPeriod?.toLabel || '') + '\n\n'
+   212→ 13795→    
+   213→ 13796→    if (reportData?.executiveSummary) {
+   214→ 13797→      csvContent += 'Executive Summary' + String.fromCharCode(10)
+   215→ 13798→      Object.entries(reportData.executiveSummary).forEach(([key, value]) => {
+   216→ 13799→        csvContent += key + ',' + value + String.fromCharCode(10)
+   217→ 13800→      })
+   218→ 13801→      csvContent += String.fromCharCode(10)
+   219→ 13802→    }
+   220→ 13803→    
+   221→ 13804→    if (reportData?.departmentPerformance) {
+   222→ 13805→      csvContent += 'Department Performance' + String.fromCharCode(10)
+   223→ 13806→      csvContent += 'Department,Code,Students,Faculty,Achievements,Publications,Placements,Internships,Performance Score' + String.fromCharCode(10)
+   224→ 13807→      reportData.departmentPerformance.forEach((d: any) => {
+   225→ 13808→        const row = '"' + d.name + '",' + d.code + ',' + d.stats.students + ',' + d.stats.faculty + ',' + d.stats.achievements + ',' + d.stats.publications + ',' + d.stats.placements + ',' + d.stats.internships + ',' + d.performanceScore
+   226→ 13809→        csvContent += row + String.fromCharCode(10)
+   227→ 13810→      })
+   228→ 13811→    }
+   229→ 13812→    
+   230→ 13813→    const encodedUri = encodeURI(csvContent)
+   231→ 13814→    const link = document.createElement('a')
+   232→ 13815→    link.setAttribute('href', encodedUri)
+   233→ 13816→    link.setAttribute('download', 'NIERT-IQAC-Report-' + new Date().toISOString().split('T')[0] + '.csv')
+   234→ 13817→    document.body.appendChild(link)
+   235→ 13818→    link.click()
+   236→ 13819→    document.body.removeChild(link)
+   237→ 13820→  }
+   238→ 13821→
+   239→ 13822→  const downloadFile = (data: Blob | string, filename: string, mimeType: string) => {
+   240→ 13823→    const blob = typeof data === 'string' ? new Blob([data], { type: mimeType }) : data
+   241→ 13824→    const url = URL.createObjectURL(blob)
+   242→ 13825→    const a = document.createElement('a')
+   243→ 13826→    a.href = url
+   244→ 13827→    a.download = filename
+   245→ 13828→    document.body.appendChild(a)
+   246→ 13829→    a.click()
+   247→ 13830→    document.body.removeChild(a)
+   248→ 13831→    URL.revokeObjectURL(url)
+   249→ 13832→  }
+   250→ 13833→
+   251→ 13834→  const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
+   252→ 13835→  const currentYear = new Date().getFullYear()
+   253→ 13836→  const years = Array.from({ length: 10 }, (_, i) => currentYear - i)
+   254→ 13837→
+   255→ 13838→  return (
+   256→ 13839→    <div className="space-y-6 min-h-screen">
+   257→ 13840→      {/* Premium Header */}
+   258→ 13841→      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0A2E6D] via-[#1a4a9e] to-[#D4AF37] p-8 text-white">
+   259→ 13842→        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+   260→ 13843→        <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+   261→ 13844→        
+   262→ 13845→        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+   263→ 13846→          <div>
+   264→ 13847→            <div className="flex items-center gap-3 mb-2">
+   265→ 13848→              <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl">
+   266→ 13849→                <FileSpreadsheet className="w-7 h-7" />
+   267→ 13850→              </div>
+   268→ 13851→              <h1 className="text-3xl font-bold tracking-tight">Enterprise Report Generator</h1>
+   269→ 13852→            </div>
+   270→ 13853→            <p className="text-white/80 max-w-xl">
+   271→ 13854→              Generate professional, analytics-driven reports with institutional branding, AI insights, and multi-format export capabilities.
+   272→ 13855→            </p>
+   273→ 13856→          </div>
+   274→ 13857→          
+   275→ 13858→          <div className="flex gap-2">
+   276→ 13859→            {['configure', 'preview', 'editor'].map(tab => (
+   277→ 13860→              <button
+   278→ 13861→                key={tab}
+   279→ 13862→                onClick={() => setActiveTab(tab as any)}
+   280→ 13863→                className={
+   281→ 13864→                  'px-4 py-2 rounded-lg font-medium transition-all capitalize ' + 
+   282→ 13865→                  (activeTab === tab 
+   283→ 13866→                    ? 'bg-white text-[#0A2E6D] shadow-lg' 
+   284→ 13867→                    : 'bg-white/10 hover:bg-white/20 text-white')
+   285→ 13868→                }
+   286→ 13869→              >
+   287→ 13870→                {tab}
+   288→ 13871→              </button>
+   289→ 13872→            ))}
+   290→ 13873→          </div>
+   291→ 13874→        </div>
+   292→ 13875→      </div>
+   293→ 13876→
+   294→ 13877→      {/* Configure Tab */}
+   295→ 13878→      {activeTab === 'configure' && (
+   296→ 13879→        <div className="space-y-6">
+   297→ 13880→          {/* Date Range Selector - Glassmorphism Card */}
+   298→ 13881→          <div className="backdrop-blur-xl bg-white/80 border border-white/20 rounded-2xl shadow-xl overflow-hidden">
+   299→ 13882→            <div className="bg-gradient-to-r from-[#0A2E6D] to-[#1a4a9e] px-6 py-4">
+   300→ 13883→              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+   301→ 13884→                <CalendarDays className="w-5 h-5" />
+   302→ 13885→                Reporting Period Selection
+   303→ 13886→              </h2>
+   304→ 13887→              <p className="text-sm text-white/70 mt-1">Select custom date range for your report</p>
+   305→ 13888→            </div>
+   306→ 13889→            
+   307→ 13890→            <div className="p-6">
+   308→ 13891→              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+   309→ 13892→                {/* From Month */}
+   310→ 13893→                <div className="space-y-2">
+   311→ 13894→                  <label className="block text-sm font-semibold text-gray-700">From Month</label>
+   312→ 13895→                  <select
+   313→ 13896→                    value={fromMonth}
+   314→ 13897→                    onChange={(e) => setFromMonth(parseInt(e.target.value))}
+   315→ 13898→                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent transition-all"
+   316→ 13899→                  >
+   317→ 13900→                    {months.map((m, i) => (
+   318→ 13901→                      <option key={m} value={i + 1}>{m}</option>
+   319→ 13902→                    ))}
+   320→ 13903→                  </select>
+   321→ 13904→                </div>
+   322→ 13905→                
+   323→ 13906→                {/* From Year */}
+   324→ 13907→                <div className="space-y-2">
+   325→ 13908→                  <label className="block text-sm font-semibold text-gray-700">From Year</label>
+   326→ 13909→                  <select
+   327→ 13910→                    value={fromYear}
+   328→ 13911→                    onChange={(e) => setFromYear(parseInt(e.target.value))}
+   329→ 13912→                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent transition-all"
+   330→ 13913→                  >
+   331→ 13914→                    {years.map(y => (
+   332→ 13915→                      <option key={y} value={y}>{y}</option>
+   333→ 13916→                    ))}
+   334→ 13917→                  </select>
+   335→ 13918→                </div>
+   336→ 13919→                
+   337→ 13920→                {/* To Month */}
+   338→ 13921→                <div className="space-y-2">
+   339→ 13922→                  <label className="block text-sm font-semibold text-gray-700">To Month</label>
+   340→ 13923→                  <select
+   341→ 13924→                    value={toMonth}
+   342→ 13925→                    onChange={(e) => setToMonth(parseInt(e.target.value))}
+   343→ 13926→                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent transition-all"
+   344→ 13927→                  >
+   345→ 13928→                    {months.map((m, i) => (
+   346→ 13929→                      <option key={m} value={i + 1}>{m}</option>
+   347→ 13930→                    ))}
+   348→ 13931→                  </select>
+   349→ 13932→                </div>
+   350→ 13933→                
+   351→ 13934→                {/* To Year */}
+   352→ 13935→                <div className="space-y-2">
+   353→ 13936→                  <label className="block text-sm font-semibold text-gray-700">To Year</label>
+   354→ 13937→                  <select
+   355→ 13938→                    value={toYear}
+   356→ 13939→                    onChange={(e) => setToYear(parseInt(e.target.value))}
+   357→ 13940→                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent transition-all"
+   358→ 13941→                  >
+   359→ 13942→                    {years.map(y => (
+   360→ 13943→                      <option key={y} value={y}>{y}</option>
+   361→ 13944→                    ))}
+   362→ 13945→                  </select>
+   363→ 13946→                </div>
+   364→ 13947→              </div>
+   365→ 13948→              
+   366→ 13949→              {/* Period Validation Status */}
+   367→ 13950→              <div className={
+   368→ 13951→                'mt-4 p-3 rounded-lg flex items-center gap-2 ' + 
+   369→ 13952→                (validateDateRange() ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700')
+   370→ 13953→              }>
+   371→ 13954→                {validateDateRange() ? (
+   372→ 13955→                  <>
+   373→ 13956→                    <CheckCircle className="w-5 h-5" />
+   374→ 13957→                    <span className="text-sm font-medium">Valid Period: {months[fromMonth-1]} {fromYear} - {months[toMonth-1]} {toYear}</span>
+   375→ 13958→                  </>
+   376→ 13959→                ) : (
+   377→ 13960→                  <>
+   378→ 13961→                    <XCircle className="w-5 h-5" />
+   379→ 13962→                    <span className="text-sm font-medium">Invalid date range selection</span>
+   380→ 13963→                  </>
+   381→ 13964→                )}
+   382→ 13965→              </div>
+   383→ 13966→            </div>
+   384→ 13967→          </div>
+   385→ 13968→
+   386→ 13969→          {/* Advanced Filters Grid */}
+   387→ 13970→          <div className="backdrop-blur-xl bg-white/80 border border-white/20 rounded-2xl shadow-xl overflow-hidden">
+   388→ 13971→            <div className="bg-gradient-to-r from-[#D4AF37] to-[#c9a530] px-6 py-4">
+   389→ 13972→              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+   390→ 13973→                <Filter className="w-5 h-5" />
+   391→ 13974→                Advanced Filters
+   392→ 13975→              </h2>
+   393→ 13976→              <p className="text-sm text-white/80 mt-1">Combine multiple filters for targeted reports</p>
+   394→ 13977→            </div>
+   395→ 13978→            
+   396→ 13979→            <div className="p-6">
+   397→ 13980→              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+   398→ 13981→                {/* Department Filter */}
+   399→ 13982→                <div className="space-y-2">
+   400→ 13983→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   401→ 13984→                    <Building2 className="w-4 h-4 text-[#0A2E6D]" /> Department
+   402→ 13985→                  </label>
+   403→ 13986→                  <select
+   404→ 13987→                    value={departmentId}
+   405→ 13988→                    onChange={(e) => setDepartmentId(e.target.value)}
+   406→ 13989→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+   407→ 13990→                  >
+   408→ 13991→                    <option value="all">All Departments</option>
+   409→ 13992→                    {departments.map(dept => (
+   410→ 13993→                      <option key={dept.id} value={dept.id}>{dept.name} ({dept.code})</option>
+   411→ 13994→                    ))}
+   412→ 13995→                  </select>
+   413→ 13996→                </div>
+   414→ 13997→
+   415→ 13998→                {/* Academic Year */}
+   416→ 13999→                <div className="space-y-2">
+   417→ 14000→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   418→ 14001→                    <GraduationCap className="w-4 h-4 text-[#0A2E6D]" /> Academic Year
+   419→ 14002→                  </label>
+   420→ 14003→                  <select
+   421→ 14004→                    value={academicYear}
+   422→ 14005→                    onChange={(e) => setAcademicYear(e.target.value)}
+   423→ 14006→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+   424→ 14007→                  >
+   425→ 14008→                    <option value="">All Years</option>
+   426→ 14009→                    <option value="2024-2025">2024-2025</option>
+   427→ 14010→                    <option value="2023-2024">2023-2024</option>
+   428→ 14011→                    <option value="2022-2023">2022-2023</option>
+   429→ 14012→                  </select>
+   430→ 14013→                </div>
+   431→ 14014→
+   432→ 14015→                {/* Semester */}
+   433→ 14016→                <div className="space-y-2">
+   434→ 14017→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   435→ 14018→                    <BookOpen className="w-4 h-4 text-[#0A2E6D]" /> Semester
+   436→ 14019→                  </label>
+   437→ 14020→                  <select
+   438→ 14021→                    value={semester}
+   439→ 14022→                    onChange={(e) => setSemester(e.target.value)}
+   440→ 14023→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+   441→ 14024→                  >
+   442→ 14025→                    <option value="all">All Semesters</option>
+   443→ 14026→                    <option value="1">Semester 1</option>
+   444→ 14027→                    <option value="2">Semester 2</option>
+   445→ 14028→                    <option value="3">Semester 3</option>
+   446→ 14029→                    <option value="4">Semester 4</option>
+   447→ 14030→                    <option value="5">Semester 5</option>
+   448→ 14031→                    <option value="6">Semester 6</option>
+   449→ 14032→                    <option value="7">Semester 7</option>
+   450→ 14033→                    <option value="8">Semester 8</option>
+   451→ 14034→                  </select>
+   452→ 14035→                </div>
+   453→ 14036→
+   454→ 14037→                {/* Class Section */}
+   455→ 14038→                <div className="space-y-2">
+   456→ 14039→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   457→ 14040→                    <Users className="w-4 h-4 text-[#0A2E6D]" /> Class / Section
+   458→ 14041→                  </label>
+   459→ 14042→                  <select
+   460→ 14043→                    value={classSection}
+   461→ 14044→                    onChange={(e) => setClassSection(e.target.value)}
+   462→ 14045→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+   463→ 14046→                  >
+   464→ 14047→                    <option value="all">All Sections</option>
+   465→ 14048→                    <option value="A">Section A</option>
+   466→ 14049→                    <option value="B">Section B</option>
+   467→ 14050→                    <option value="C">Section C</option>
+   468→ 14051→                    <option value="D">Section D</option>
+   469→ 14052→                  </select>
+   470→ 14053→                </div>
+   471→ 14054→
+   472→ 14055→                {/* Event Type */}
+   473→ 14056→                <div className="space-y-2">
+   474→ 14057→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   475→ 14058→                    <Calendar className="w-4 h-4 text-[#0A2E6D]" /> Event Type
+   476→ 14059→                  </label>
+   477→ 14060→                  <select
+   478→ 14061→                    value={eventType}
+   479→ 14062→                    onChange={(e) => setEventType(e.target.value)}
+   480→ 14063→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+   481→ 14064→                  >
+   482→ 14065→                    <option value="all">All Events</option>
+   483→ 14066→                    <option value="workshop">Workshop</option>
+   484→ 14067→                    <option value="seminar">Seminar</option>
+   485→ 14068→                    <option value="conference">Conference</option>
+   486→ 14069→                    <option value="fdp">FDP</option>
+   487→ 14070→                    <option value="hackathon">Hackathon</option>
+   488→ 14071→                    <option value="symposium">Symposium</option>
+   489→ 14072→                  </select>
+   490→ 14073→                </div>
+   491→ 14074→
+   492→ 14075→                {/* Achievement Category */}
+   493→ 14076→                <div className="space-y-2">
+   494→ 14077→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   495→ 14078→                    <Trophy className="w-4 h-4 text-[#0A2E6D]" /> Achievement Category
+   496→ 14079→                  </label>
+   497→ 14080→                  <select
+   498→ 14081→                    value={achievementCategory}
+   499→ 14082→                    onChange={(e) => setAchievementCategory(e.target.value)}
+   500→ 14083→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+   501→ 14084→                  >
+   502→ 14085→                    <option value="all">All Categories</option>
+   503→ 14086→                    <option value="academic">Academic</option>
+   504→ 14087→                    <option value="sports">Sports</option>
+   505→ 14088→                    <option value="cultural">Cultural</option>
+   506→ 14089→                    <option value="research">Research</option>
+   507→ 14090→                    <option value="innovation">Innovation</option>
+   508→ 14091→                    <option value="hackathon">Hackathon</option>
+   509→ 14092→                    <option value="internship">Internship</option>
+   510→ 14093→                    <option value="placement">Placement</option>
+   511→ 14094→                    <option value="certification">Certification</option>
+   512→ 14095→                  </select>
+   513→ 14096→                </div>
+   514→ 14097→
+   515→ 14098→                {/* Verification Status */}
+   516→ 14099→                <div className="space-y-2">
+   517→ 14100→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   518→ 14101→                    <Shield className="w-4 h-4 text-[#0A2E6D]" /> Verification Status
+   519→ 14102→                  </label>
+   520→ 14103→                  <select
+   521→ 14104→                    value={verificationStatus}
+   522→ 14105→                    onChange={(e) => setVerificationStatus(e.target.value)}
+   523→ 14106→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+   524→ 14107→                  >
+   525→ 14108→                    <option value="all">All Status</option>
+   526→ 14109→                    <option value="pending">Pending</option>
+   527→ 14110→                    <option value="verified">Verified</option>
+   528→ 14111→                    <option value="rejected">Rejected</option>
+   529→ 14112→                  </select>
+   530→ 14113→                </div>
+   531→ 14114→
+   532→ 14115→                {/* Achievement Level */}
+   533→ 14116→                <div className="space-y-2">
+   534→ 14117→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   535→ 14118→                    <Award className="w-4 h-4 text-[#0A2E6D]" /> Achievement Level
+   536→ 14119→                  </label>
+   537→ 14120→                  <select
+   538→ 14121→                    value={achievementLevel}
+   539→ 14122→                    onChange={(e) => setAchievementLevel(e.target.value)}
+   540→ 14123→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+   541→ 14124→                  >
+   542→ 14125→                    <option value="all">All Levels</option>
+   543→ 14126→                    <option value="institution">Institution Level</option>
+   544→ 14127→                    <option value="state">State Level</option>
+   545→ 14128→                    <option value="national">National Level</option>
+   546→ 14129→                    <option value="international">International Level</option>
+   547→ 14130→                  </select>
+   548→ 14131→                </div>
+   549→ 14132→
+   550→ 14133→                {/* Gender */}
+   551→ 14134→                <div className="space-y-2">
+   552→ 14135→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   553→ 14136→                    <UserCheck className="w-4 h-4 text-[#0A2E6D]" /> Gender
+   554→ 14137→                  </label>
+   555→ 14138→                  <select
+   556→ 14139→                    value={gender}
+   557→ 14140→                    onChange={(e) => setGender(e.target.value)}
+   558→ 14141→                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A2E6D] focus:border-transparent text-sm"
+   559→ 14142→                  >
+   560→ 14143→                    <option value="all">All</option>
+   561→ 14144→                    <option value="Male">Male</option>
+   562→ 14145→                    <option value="Female">Female</option>
+   563→ 14146→                    <option value="Other">Other</option>
+   564→ 14147→                  </select>
+   565→ 14148→                </div>
+   566→ 14149→              </div>
+   567→ 14150→            </div>
+   568→ 14151→          </div>
+   569→ 14152→
+   570→ 14153→          {/* Export Format & Generate Button */}
+   571→ 14154→          <div className="backdrop-blur-xl bg-white/80 border border-white/20 rounded-2xl shadow-xl overflow-hidden">
+   572→ 14155→            <div className="p-6">
+   573→ 14156→              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+   574→ 14157→                {/* Export Format Selection */}
+   575→ 14158→                <div className="space-y-3">
+   576→ 14159→                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+   577→ 14160→                    <Download className="w-4 h-4 text-[#0A2E6D]" /> Export Format
+   578→ 14161→                  </label>
+   579→ 14162→                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+   580→ 14163→                    {[
+   581→ 14164→                      { id: 'pdf', label: 'PDF', icon: FileText, color: 'red' },
+   582→ 14165→                      { id: 'excel', label: 'Excel', icon: FileSpreadsheet, color: 'emerald' },
+   583→ 14166→                      { id: 'word', label: 'Word', icon: FileText, color: 'blue' },
+   584→ 14167→                      { id: 'powerpoint', label: 'PPT', icon: Presentation, color: 'orange' },
+   585→ 14168→                      { id: 'html', label: 'HTML', icon: Code, color: 'purple' },
+   586→ 14169→                      { id: 'csv', label: 'CSV', icon: Database, color: 'cyan' },
+   587→ 14170→                    ].map(fmt => (
+   588→ 14171→                      <button
+   589→ 14172→                        key={fmt.id}
+   590→ 14173→                        onClick={() => setExportFormat(fmt.id as any)}
+   591→ 14174→                        className={"p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 " + (exportFormat === fmt.id ? "border-" + fmt.color + "-500 bg-" + fmt.color + "-50 shadow-md" : 'border-gray-200 hover:border-gray-300 bg-white')}
+   592→ 14175→                      >
+   593→ 14176→                        <fmt.icon className={"w-5 h-5 " + (exportFormat === fmt.id ? "text-" + fmt.color + "-600" : 'text-gray-400')} />
+   594→ 14177→                        <span className={"text-xs font-medium " + (exportFormat === fmt.id ? "text-" + fmt.color + "-900" : 'text-gray-600')}>
+   595→ 14178→                          {fmt.label}
+   596→ 14179→                        </span>
+   597→ 14180→                      </button>
+   598→ 14181→                    ))}
+   599→ 14182→                  </div>
+   600→ 14183→                </div>
+   601→
+   602→[showing lines 13584-14183 of 24660; use offset=14184 with limit to continue reading]
