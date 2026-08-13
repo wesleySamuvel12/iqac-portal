@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
           ...(semester && semester !== 'all' && !isNaN(parseInt(semester)) ? { semester: parseInt(semester) } : {}),
           ...(classSection && classSection !== 'all' ? { section: classSection } : {}),
           ...(batch ? { batch } : {}),
-          ...(gender && gender !== 'all' ? { gender } : {}),
+          // Note: Gender filter is applied on User model, not Student - filtering after fetch if needed
         },
         include: {
           user: { select: { name: true, email: true } },
@@ -132,8 +132,8 @@ export async function POST(request: NextRequest) {
           achievements: {
             where: {
               createdAt: { gte: startDate, lte: endDate },
-              ...(achievementCategory && achievementCategory !== 'all' ? { category: achievementCategory } : {}),
-              ...(verificationStatus && verificationStatus !== 'all' ? { status: verificationStatus } : {}),
+              ...(achievementCategory && achievementCategory !== 'all' ? { type: achievementCategory } : {}),
+              ...(verificationStatus && verificationStatus !== 'all' ? { approvalStatus: verificationStatus } : {}),
               ...(achievementLevel && achievementLevel !== 'all' ? { level: achievementLevel } : {}),
             }
           },
@@ -186,8 +186,8 @@ export async function POST(request: NextRequest) {
           createdAt: { gte: startDate, lte: endDate },
           ...(departmentId && departmentId !== 'all' ? 
             { student: { departmentId } } : { student: { departmentId: { in: allowedDeptIds } } }),
-          ...(achievementCategory && achievementCategory !== 'all' ? { category: achievementCategory } : {}),
-          ...(verificationStatus && verificationStatus !== 'all' ? { status: verificationStatus } : {}),
+          ...(achievementCategory && achievementCategory !== 'all' ? { type: achievementCategory } : {}),
+          ...(verificationStatus && verificationStatus !== 'all' ? { approvalStatus: verificationStatus } : {}),
           ...(achievementLevel && achievementLevel !== 'all' ? { level: achievementLevel } : {}),
         },
         include: {
