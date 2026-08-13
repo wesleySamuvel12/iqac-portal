@@ -11863,6 +11863,74 @@ function HODReportGeneratorPage({ user }: { user: User }) {
     }
   }
 
+  // Fetch Data from Database - Auto-fill form fields with real data
+  const [fetchingData, setFetchingData] = useState(false)
+  
+  const fetchDataFromDatabase = async () => {
+    setFetchingData(true)
+    try {
+      // Fetch department data
+      const response = await fetch(`/api/departments?name=${encodeURIComponent(user.departmentName)}`)
+      const result = await response.json()
+      
+      if (result.success && result.departments && result.departments.length > 0) {
+        const dept = result.departments[0]
+        
+        // Fetch faculty count for this department
+        const facultyRes = await fetch(`/api/faculty?departmentId=${dept.id}`)
+        const facultyResult = await facultyRes.json()
+        const facultyList = facultyResult.data || []
+        
+        // Fetch student count for this department
+        const studentRes = await fetch(`/api/students?departmentId=${dept.id}`)
+        const studentResult = await studentRes.json()
+        const studentsList = studentResult.data || []
+        
+        // Update report data with fetched values
+        updateField('schoolName', dept.school || 'Engineering')
+        updateField('department', user.departmentName || dept.name || '')
+        updateField('facultyCount', facultyList.length.toString())
+        updateField('totalStudents', studentsList.length.toString())
+        
+        // Count professors, Asst Prof, Assoc Prof
+        const profCount = facultyList.filter((f: any) => f.designation?.toLowerCase().includes('professor') && !f.designation?.toLowerCase().includes('associate')).length
+        const aspCount = facultyList.filter((f: any) => f.designation?.toLowerCase().includes('assistant')).length
+        const apCount = facultyList.filter((f: any) => f.designation?.toLowerCase().includes('associate')).length
+        
+        updateField('profCount', profCount.toString())
+        updateField('aspCount', aspCount.toString())
+        updateField('apCount', apCount.toString())
+        
+        // Count PhD holders and pursuing
+        const phdHolders = facultyList.filter((f: any) => f.phd === true || f.phdStatus === 'Awarded').length
+        const phdPursuing = facultyList.filter((f: any) => f.phdStatus === 'Pursuing').length
+        updateField('phdHolders', phdHolders.toString())
+        updateField('phdCount', phdHolders.toString())
+        updateField('pursuingPhd', phdPursuing.toString())
+        
+        // Count students by year
+        const year1Students = studentsList.filter((s: any) => s.year === 1 || s.semester === 1 || s.semester === 2).length
+        const year2Students = studentsList.filter((s: any) => s.year === 2 || s.semester === 3 || s.semester === 4).length
+        const year3Students = studentsList.filter((s: any) => s.year === 3 || s.semester === 5 || s.semester === 6).length
+        const year4Students = studentsList.filter((s: any) => s.year === 4 || s.semester === 7 || s.semester === 8).length
+        
+        updateField('year1Students', year1Students.toString())
+        updateField('year2Students', year2Students.toString())
+        updateField('year3Students', year3Students.toString())
+        updateField('year4Students', year4Students.toString())
+        
+        alert(`Data fetched successfully!\n\nFaculty: ${facultyList.length}\nStudents: ${studentsList.length}\nPhD Holders: ${phdHolders}`)
+      } else {
+        alert('Department not found. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error)
+      alert('Error fetching data from database. Please try again.')
+    } finally {
+      setFetchingData(false)
+    }
+  }
+
   return (
     <div className="h-[calc(100vh-110px)] flex flex-col gap-1.5 p-2.5 overflow-hidden bg-gray-50">
       {/* Header - Ultra Compact with Export Buttons */}
@@ -11874,6 +11942,18 @@ function HODReportGeneratorPage({ user }: { user: User }) {
           <p className="text-gray-500 text-[10px]">NIET Monthly Department Report</p>
         </div>
         <div className="flex gap-1 flex-shrink-0">
+          <Button 
+            onClick={fetchDataFromDatabase} 
+            disabled={fetchingData}
+            variant="outline"
+            className="bg-blue-50 hover:bg-blue-100 border-blue-300 text-blue-700 px-2.5 h-7 text-[10px] font-medium"
+          >
+            {fetchingData ? (
+              <><Loader2 className="w-3 h-3 mr-1 animate-spin" />Fetch...</>
+            ) : (
+              <><Database className="w-3 h-3 mr-1" />Fetch Data</>
+            )}
+          </Button>
           <Button 
             onClick={generateExcel} 
             disabled={generating}
@@ -13505,6 +13585,7 @@ function ReportGeneratorPage() {
   // State for advanced filters
   const [generating, setGenerating] = useState(false)
   const [downloading, setDownloading] = useState(false)
+  const [fetchingData, setFetchingData] = useState(false)
   const [reportData, setReportData] = useState<any>(null)
   const [activeTab, setActiveTab] = useState<'configure' | 'preview' | 'editor'>('configure')
   const [exportFormat, setExportFormat] = useState<'pdf' | 'excel' | 'word' | 'powerpoint' | 'html' | 'csv'>('pdf')
@@ -13605,6 +13686,7 @@ function ReportGeneratorPage() {
 
     try {
       setGenerating(true)
+      setFetchingData(true)
       const response = await fetch('/api/admin/advanced-reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -13629,6 +13711,9 @@ function ReportGeneratorPage() {
       if (json.success) {
         setReportData(json.data)
         setActiveTab('preview')
+        // Show data summary
+        const execSummary = json.data?.executiveSummary || {}
+        alert(`Data fetched successfully from database!\n\n📊 Summary:\n• Total Students: ${execSummary.totalStudents || 0}\n• Total Faculty: ${execSummary.totalFaculty || 0}\n• Departments: ${execSummary.totalDepartments || 0}\n• Achievements: ${execSummary.totalAchievements || 0}\n• Placements: ${execSummary.totalPlacements || 0}\n• Publications: ${execSummary.totalPublications || 0}`)
       } else {
         alert('Failed to generate report: ' + json.error)
       }
@@ -13637,6 +13722,7 @@ function ReportGeneratorPage() {
       alert('Failed to generate report. Please try again.')
     } finally {
       setGenerating(false)
+      setFetchingData(false)
     }
   }
 
@@ -14106,12 +14192,12 @@ function ReportGeneratorPage() {
                     {generating ? (
                       <>
                         <Loader2 className="w-6 h-6 animate-spin" />
-                        Generating Report...
+                        {fetchingData ? 'Fetching Data from Database...' : 'Generating Report...'}
                       </>
                     ) : (
                       <>
-                        <Sparkles className="w-6 h-6" />
-                        Generate Advanced Report
+                        <Database className="w-6 h-6" />
+                        Fetch Data & Generate Report
                       </>
                     )}
                   </button>

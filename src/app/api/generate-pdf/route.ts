@@ -3,6 +3,24 @@ import { execSync } from 'child_process'
 import { writeFileSync, unlinkSync, readFileSync, mkdirSync, existsSync } from 'fs'
 import { join } from 'path'
 
+// Helper function to convert image file to base64 data URL
+function imageToBase64DataUrl(filename: string): string {
+  const imagePath = join(process.cwd(), 'public/images', filename)
+  try {
+    if (existsSync(imagePath)) {
+      const imageBuffer = readFileSync(imagePath)
+      const base64 = imageBuffer.toString('base64')
+      // Determine MIME type from extension
+      const ext = filename.split('.').pop()?.toLowerCase()
+      const mimeType = ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png'
+      return `data:${mimeType};base64,${base64}`
+    }
+  } catch (error) {
+    console.error(`Error loading logo ${filename}:`, error)
+  }
+  return ''
+}
+
 export async function POST(request: NextRequest) {
   let tempHtmlPath = ''
   let tempPdfPath = ''
@@ -12,8 +30,12 @@ export async function POST(request: NextRequest) {
     const reportData = body.reportData || {}
     const department = body.department || ''
 
-    // Generate HTML content for the PDF
-    const htmlContent = generateReportHTML(reportData, department)
+    // Convert logo images to base64 data URLs for embedding in PDF
+    const nietLogoDataUrl = imageToBase64DataUrl('niet-logo.png')
+    const nehrugroupLogoDataUrl = imageToBase64DataUrl('nehrugroup-logo.png')
+
+    // Generate HTML content for the PDF with embedded logos
+    const htmlContent = generateReportHTML(reportData, department, nietLogoDataUrl, nehrugroupLogoDataUrl)
 
     // Create temp directory if not exists
     const tempDir = join(process.cwd(), 'temp')
@@ -105,7 +127,7 @@ async function generateWithPlaywright(htmlContent: string, outputPath: string): 
   }
 }
 
-function generateReportHTML(data: any, dept: string): string {
+function generateReportHTML(data: any, dept: string, nietLogoDataUrl: string = '', nehrugroupLogoDataUrl: string = ''): string {
   // Safely access all nested properties with fallbacks
   const safeData = data || {}
   const studentDev = safeData.studentDev || {}
@@ -247,6 +269,19 @@ function generateReportHTML(data: any, dept: string): string {
       width: 60px;
       height: 60px;
       object-fit: contain;
+    }
+    
+    .logo-placeholder {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 12px;
     }
     
     .header-center {
@@ -443,12 +478,12 @@ function generateReportHTML(data: any, dept: string): string {
 <body>
   <div class="report-header">
     <div class="header-with-logos">
-      <img src="${process.cwd()}/public/images/niet-logo.png" alt="NIET Coimbatore" class="logo-img" onerror="this.style.display='none'" />
+      ${nietLogoDataUrl ? `<img src="${nietLogoDataUrl}" alt="NIET Coimbatore" class="logo-img" />` : '<div class="logo-placeholder">NIET</div>'}
       <div class="header-center">
         <div class="institute-name">NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY</div>
         <div class="institute-subtitle">(AUTONOMOUS) | ISO Certified | NAAC "A+" | NBA Accredited</div>
       </div>
-      <img src="${process.cwd()}/public/images/nehrugroup-logo.png" alt="Nehru Group" class="logo-img" onerror="this.style.display='none'" />
+      ${nehrugroupLogoDataUrl ? `<img src="${nehrugroupLogoDataUrl}" alt="Nehru Group" class="logo-img" />` : '<div class="logo-placeholder">NGI</div>'}
     </div>
     <div class="report-title">MONTHLY DEPARTMENT REPORT</div>
     <div class="academic-year">Academic Year: ${safeData.academicYear || 'N/A'}</div>
