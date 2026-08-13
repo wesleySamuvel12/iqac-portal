@@ -1,0 +1,991 @@
+     1→import { NextRequest, NextResponse } from 'next/server'
+     2→import {
+     3→  Document,
+     4→  Packer,
+     5→  Paragraph,
+     6→  TextRun,
+     7→  Table,
+     8→  TableRow,
+     9→  TableCell,
+    10→  WidthType,
+    11→  AlignmentType,
+    12→  BorderStyle,
+    13→  HeadingLevel,
+    14→  ShadingType,
+    15→  PageBreak,
+    16→  Header,
+    17→  Footer,
+    18→  PageNumber,
+    19→  VerticalAlign
+    20→} from 'docx'
+    21→
+    22→// Types for report data
+    23→interface ReportData {
+    24→  schoolName: string
+    25→  department: string
+    26→  reportingMonth: string
+    27→  reportingYear: string
+    28→  academicYear: string
+    29→  facultyCount: string
+    30→  profCount: string
+    31→  aspCount: string
+    32→  apCount: string
+    33→  phdHolders: string
+    34→  phdCount: string
+    35→  pursuingPhd: string
+    36→  notRegistered: string
+    37→  totalStudents: string
+    38→  year1Students: string
+    39→  year2Students: string
+    40→  year3Students: string
+    41→  year4Students: string
+    42→  syllabusCoverageTheory: string
+    43→  syllabusCoverageLab: string
+    44→  lessonPlanTheory: string
+    45→  lessonPlanLab: string
+    46→  ciaConducted: string
+    47→  attendanceReport: string
+    48→  remedialClasses: string
+    49→  mentoringSessions: string
+    50→  studentDev: Record<string, { prev: string; curr: string }>
+    51→  researchFaculty: Array<{
+    52→    name: string
+    53→    journalPub: { prev: string; curr: string }
+    54→    conferencePapers: { prev: string; curr: string }
+    55→    book: { prev: string; curr: string }
+    56→    bookChapters: { prev: string; curr: string }
+    57→    patents: { prev: string; curr: string }
+    58→    fundedProjects: { prev: string; curr: string }
+    59→  }>
+    60→  facultyDev: Array<{
+    61→    name: string
+    62→    fdpsAttended: { prev: string; curr: string }
+    63→    fdpsOrganized: { prev: string; curr: string }
+    64→    nptelCompleted: { prev: string; curr: string }
+    65→    moocsCompleted: { prev: string; curr: string }
+    66→    resourcePerson: { prev: string; curr: string }
+    67→  }>
+    68→  internship: {
+    69→    previous: { paid: string; nonPaid: string; virtual: string; notAvailed: string }
+    70→    current: { paid: string; nonPaid: string; virtual: string; notAvailed: string }
+    71→    total: { paid: string; nonPaid: string; virtual: string; notAvailed: string }
+    72→  }
+    73→  industryInteraction: Array<{
+    74→    name: string
+    75→    mousSigned: { prev: string; curr: string }
+    76→    industryVisits: { prev: string; curr: string }
+    77→    expertsInvited: { prev: string; curr: string }
+    78→    collaborativeActivities: { prev: string; curr: string }
+    79→    consultancyServices: { prev: string; curr: string }
+    80→  }>
+    81→  qaActivities: Array<{ particular: string; status: string; remarks: string }>
+    82→  documents: Record<string, boolean>
+    83→}
+    84→
+    85→// Helper function to create bordered cell
+    86→function createCell(
+    87→  text: string,
+    88→  options: {
+    89→    width?: number
+    90→    bold?: boolean
+    91→    shading?: string
+    92→    alignment?: typeof AlignmentType[keyof typeof AlignmentType]
+    93→    verticalAlign?: typeof VerticalAlign[keyof typeof VerticalAlign]
+    94→    rowSpan?: number
+    95→    colSpan?: number
+    96→    fontSize?: number
+    97→  } = {}
+    98→): TableCell {
+    99→  const {
+   100→    width = 1000,
+   101→    bold = false,
+   102→    shading,
+   103→    alignment = AlignmentType.LEFT,
+   104→    verticalAlign = VerticalAlign.CENTER,
+   105→    rowSpan = 1,
+   106→    colSpan = 1,
+   107→    fontSize = 20
+   108→  } = options
+   109→
+   110→  return new TableCell({
+   111→    width: { size: width, type: WidthType.DXA },
+   112→    rowSpan,
+   113→    columnSpan: colSpan,
+   114→    shading: shading ? { type: ShadingType.SOLID, color: shading, fill: shading } : undefined,
+   115→    verticalAlign,
+   116→    borders: {
+   117→      top: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+   118→      bottom: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+   119→      left: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+   120→      right: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+   121→    },
+   122→    children: [
+   123→      new Paragraph({
+   124→        alignment,
+   125→        children: [
+   126→          new TextRun({
+   127→            text: text || '',
+   128→            bold,
+   129→            size: fontSize,
+   130→            font: 'Times New Roman',
+   131→          }),
+   132→        ],
+   133→      }),
+   134→    ],
+   135→  })
+   136→}
+   137→
+   138→// Helper function to create header cell with background color
+   139→function createHeaderCell(
+   140→  text: string,
+   141→  options: {
+   142→    width?: number
+   143→    colSpan?: number
+   144→    rowSpan?: number
+   145→    color?: string
+   146→    fontSize?: number
+   147→  } = {}
+   148→): TableCell {
+   149→  return createCell(text, {
+   150→    ...options,
+   151→    bold: true,
+   152→    shading: options.color || 'D4EDDA',
+   153→    alignment: AlignmentType.CENTER,
+   154→    fontSize: options.fontSize || 18,
+   155→  })
+   156→}
+   157→
+   158→export async function POST(request: NextRequest) {
+   159→  try {
+   160→    const body = await request.json()
+   161→    const data: ReportData = body.reportData
+   162→    
+   163→    // Create the document
+   164→    const doc = new Document({
+   165→      styles: {
+   166→        default: {
+   167→          document: {
+   168→            run: { font: 'Times New Roman', size: 20 },
+   169→          },
+   170→        },
+   171→      },
+   172→      sections: [
+   173→        // Section 1: Cover/Header Page
+   174→        {
+   175→          properties: {
+   176→            page: {
+   177→              margin: { top: 720, bottom: 720, left: 1080, right: 1080 },
+   178→            },
+   179→          },
+   180→          children: [
+   181→            // NIET Header Table
+   182→            new Table({
+   183→              width: { size: 100, type: WidthType.PERCENTAGE },
+   184→              borders: {
+   185→                top: { style: BorderStyle.SINGLE, size: 2, color: '1E3A5F' },
+   186→                bottom: { style: BorderStyle.SINGLE, size: 2, color: '1E3A5F' },
+   187→                left: { style: BorderStyle.SINGLE, size: 2, color: '1E3A5F' },
+   188→                right: { style: BorderStyle.SINGLE, size: 2, color: '1E3A5F' },
+   189→              },
+   190→              rows: [
+   191→                new TableRow({
+   192→                  children: [
+   193→                    new TableCell({
+   194→                      width: { size: 75, type: WidthType.PERCENTAGE },
+   195→                      borders: {
+   196→                        top: { style: BorderStyle.NIL },
+   197→                        bottom: { style: BorderStyle.NIL },
+   198→                        left: { style: BorderStyle.NIL },
+   199→                        right: { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' },
+   200→                      },
+   201→                      children: [
+   202→                        new Paragraph({
+   203→                          alignment: AlignmentType.CENTER,
+   204→                          spacing: { after: 80 },
+   205→                          children: [
+   206→                            new TextRun({ text: 'NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY', bold: true, size: 28, font: 'Times New Roman', color: '1E3A5F' }),
+   207→                          ],
+   208→                        }),
+   209→                        new Paragraph({
+   210→                          alignment: AlignmentType.CENTER,
+   211→                          spacing: { after: 60 },
+   212→                          children: [
+   213→                            new TextRun({ text: '(AUTONOMOUS) – An ISO 9001:2015 & ISO 14001:2015 Certified Institution', size: 18, font: 'Times New Roman', color: '333333' }),
+   214→                          ],
+   215→                        }),
+   216→                        new Paragraph({
+   217→                          alignment: AlignmentType.CENTER,
+   218→                          spacing: { after: 40 },
+   219→                          children: [
+   220→                            new TextRun({ text: 'Affiliated to Anna University, Chennai | Approved by AICTE, New Delhi | Recognised by UGC with 2(f) & 12(B)', size: 16, font: 'Times New Roman', color: '555555' }),
+   221→                          ],
+   222→                        }),
+   223→                        new Paragraph({
+   224→                          alignment: AlignmentType.CENTER,
+   225→                          spacing: { after: 40 },
+   226→                          children: [
+   227→                            new TextRun({ text: 'Re-accredited by NAAC with "A+" | NBA Accredited: UG | ECE | EEE | MECH | MCT', size: 16, font: 'Times New Roman', color: '555555' }),
+   228→                          ],
+   229→                        }),
+   230→                        new Paragraph({
+   231→                          alignment: AlignmentType.CENTER,
+   232→                          children: [
+   233→                            new TextRun({ text: 'Thirumalayampalayam, Coimbatore-641105, Tamil Nadu', size: 16, font: 'Times New Roman', italics: true, color: '666666' }),
+   234→                          ],
+   235→                        }),
+   236→                      ],
+   237→                    }),
+   238→                    new TableCell({
+   239→                      width: { size: 25, type: WidthType.PERCENTAGE },
+   240→                      borders: {
+   241→                        top: { style: BorderStyle.NIL },
+   242→                        bottom: { style: BorderStyle.NIL },
+   243→                        left: { style: BorderStyle.NIL },
+   244→                        right: { style: BorderStyle.NIL },
+   245→                      },
+   246→                      verticalAlign: VerticalAlign.CENTER,
+   247→                      children: [
+   248→                        new Paragraph({
+   249→                          alignment: AlignmentType.CENTER,
+   250→                          children: [
+   251→                            new TextRun({ text: '[LOGO]', size: 20, color: '999999' }),
+   252→                          ],
+   253→                        }),
+   254→                      ],
+   255→                    }),
+   256→                  ],
+   257→                }),
+   258→              ],
+   259→            }),
+   260→
+   261→            // Spacing
+   262→            new Paragraph({ spacing: { after: 200 }, children: [] }),
+   263→
+   264→            // Title Section - Monthly Department Report
+   265→            new Table({
+   266→              width: { size: 100, type: WidthType.PERCENTAGE },
+   267→              borders: {
+   268→                top: { style: BorderStyle.SINGLE, size: 1, color: '1E3A5F' },
+   269→                bottom: { style: BorderStyle.SINGLE, size: 1, color: '1E3A5F' },
+   270→                left: { style: BorderStyle.SINGLE, size: 1, color: '1E3A5F' },
+   271→                right: { style: BorderStyle.SINGLE, size: 1, color: '1E3A5F' },
+   272→              },
+   273→              rows: [
+   274→                new TableRow({
+   275→                  children: [
+   276→                    new TableCell({
+   277→                      width: { size: 50, type: WidthType.PERCENTAGE },
+   278→                      shading: { type: ShadingType.SOLID, color: '1E3A5F', fill: '1E3A5F' },
+   279→                      borders: {
+   280→                        top: { style: BorderStyle.NIL },
+   281→                        bottom: { style: BorderStyle.NIL },
+   282→                        left: { style: BorderStyle.NIL },
+   283→                        right: { style: BorderStyle.SINGLE, size: 1, color: 'FFFFFF' },
+   284→                      },
+   285→                      verticalAlign: VerticalAlign.CENTER,
+   286→                      children: [
+   287→                        new Paragraph({
+   288→                          alignment: AlignmentType.CENTER,
+   289→                          children: [
+   290→                            new TextRun({ text: 'MONTHLY DEPARTMENT REPORT', bold: true, size: 24, font: 'Times New Roman', color: 'FFFFFF' }),
+   291→                          ],
+   292→                        }),
+   293→                        new Paragraph({
+   294→                          alignment: AlignmentType.CENTER,
+   295→                          children: [
+   296→                            new TextRun({ text: `Academic Year: ${data.academicYear}`, size: 20, font: 'Times New Roman', color: 'FFFFFF' }),
+   297→                          ],
+   298→                        }),
+   299→                      ],
+   300→                    }),
+   301→                    new TableCell({
+   302→                      width: { size: 50, type: WidthType.PERCENTAGE },
+   303→                      shading: { type: ShadingType.SOLID, color: 'E8F4FC', fill: 'E8F4FC' },
+   304→                      borders: {
+   305→                        top: { style: BorderStyle.NIL },
+   306→                        bottom: { style: BorderStyle.NIL },
+   307→                        left: { style: BorderStyle.NIL },
+   308→                        right: { style: BorderStyle.NIL },
+   309→                      },
+   310→                      children: [
+   311→                        new Paragraph({ spacing: { after: 80 }, children: [new TextRun({ text: '', size: 16 })] }),
+   312→                        new Paragraph({ children: [new TextRun({ text: `Name of the School         : ${data.schoolName || '_'}`, size: 18 })] }),
+   313→                        new Paragraph({ spacing: { after: 80 }, children: [new TextRun({ text: '', size: 16 })] }),
+   314→                        new Paragraph({ children: [new TextRun({ text: `Name of the Department   : ${data.department || '_'}`, size: 18 })] }),
+   315→                        new Paragraph({ spacing: { after: 80 }, children: [new TextRun({ text: '', size: 16 })] }),
+   316→                        new Paragraph({ children: [new TextRun({ text: `Reporting Month & Year       : ${data.reportingMonth} ${data.reportingYear}`, size: 18 })] }),
+   317→                        new Paragraph({ spacing: { before: 80 }, children: [new TextRun({ text: '', size: 16 })] }),
+   318→                      ],
+   319→                    }),
+   320→                  ],
+   321→                }),
+   322→              ],
+   323→            }),
+   324→
+   325→            // Preamble
+   326→            new Paragraph({ spacing: { before: 200, after: 100 }, children: [] }),
+   327→            new Paragraph({
+   328→              spacing: { after: 200 },
+   329→              children: [
+   330→                new TextRun({
+   331→                  text: 'Preamble: This Monthly Department Report is submitted by the respective department to Principal-NIET, providing details of academic, research, student development, and other institutional activities carried out during the reporting period. All activities are reported cumulatively from 1st July of the academic year.',
+   332→                  size: 18,
+   333→                  italics: true,
+   334→                  font: 'Times New Roman',
+   335→                }),
+   336→              ],
+   337→            }),
+   338→
+   339→            // DEPT. BASIC INFORMATION Section
+   340→            new Paragraph({ spacing: { before: 200 }, children: [] }),
+   341→            new Table({
+   342→              width: { size: 100, type: WidthType.PERCENTAGE },
+   343→              borders: {
+   344→                top: { style: BorderStyle.SINGLE, size: 2, color: '00897B' },
+   345→                bottom: { style: BorderStyle.SINGLE, size: 1, color: '00897B' },
+   346→                left: { style: BorderStyle.SINGLE, size: 1, color: '00897B' },
+   347→                right: { style: BorderStyle.SINGLE, size: 1, color: '00897B' },
+   348→              },
+   349→              rows: [
+   350→                new TableRow({
+   351→                  children: [
+   352→                    new TableCell({
+   353→                      columnSpan: 10,
+   354→                      shading: { type: ShadingType.SOLID, color: 'E0F2F1', fill: 'E0F2F1' },
+   355→                      children: [new Paragraph({ children: [new TextRun({ text: 'DEPT. BASIC INFORMATION', bold: true, size: 22, color: '00695C' })] })],
+   356→                    }),
+   357→                  ],
+   358→                }),
+   359→                // Row 1: Faculty counts
+   360→                new TableRow({
+   361→                  children: [
+   362→                    createHeaderCell('Number of Faculty', { width: 1800, color: 'E0F2F1', color: 'FFF3E0' }),
+   363→                    createCell(`: ${data.facultyCount || '_'}`, { width: 1200, alignment: AlignmentType.CENTER }),
+   364→                    createHeaderCell('No. of Prof:', { width: 1200, color: 'FFF3E0' }),
+   365→                    createCell(data.profCount || '_', { width: 900, alignment: AlignmentType.CENTER }),
+   366→                    createHeaderCell('No. of AsP:', { width: 1100, color: 'FFF3E0' }),
+   367→                    createCell(data.aspCount || '_', { width: 900, alignment: AlignmentType.CENTER }),
+   368→                    createHeaderCell('No. of AP:', { width: 1100, color: 'FFF3E0' }),
+   369→                    createCell(data.apCount || '_', { width: 900, alignment: AlignmentType.CENTER }),
+   370→                  ],
+   371→                }),
+   372→                // Row 2: PhD info
+   373→                new TableRow({
+   374→                  children: [
+   375→                    createHeaderCell('Ph. D Holders', { width: 1800, color: 'FFF3E0' }),
+   376→                    createCell(`: ${data.phdHolders || '_'}`, { width: 2100, colSpan: 2, alignment: AlignmentType.CENTER }),
+   377→                    createHeaderCell('No. of PhD:', { width: 1200, color: 'FFF3E0' }),
+   378→                    createCell(data.phdCount || '_', { width: 900, alignment: AlignmentType.CENTER }),
+   379→                    createHeaderCell('Pursuing PhD:', { width: 1300, color: 'FFF3E0' }),
+   380→                    createCell(data.pursuingPhd || '_', { width: 900, alignment: AlignmentType.CENTER }),
+   381→                    createHeaderCell('Not Yet Registered:', { width: 1600, color: 'FFF3E0' }),
+   382→                    createCell(data.notRegistered || '_', { width: 900, alignment: AlignmentType.CENTER }),
+   383→                  ],
+   384→                }),
+   385→                // Row 3: Students
+   386→                new TableRow({
+   387→                  children: [
+   388→                    createHeaderCell('Number of Students', { width: 1800, color: 'FFF3E0' }),
+   389→                    createCell(`: ${data.totalStudents || '(Total)'}`, { width: 1200, alignment: AlignmentType.CENTER }),
+   390→                    createHeaderCell('I Year:', { width: 900, color: 'FFF3E0' }),
+   391→                    createCell(data.year1Students || '_', { width: 800, alignment: AlignmentType.CENTER }),
+   392→                    createHeaderCell('II Year:', { width: 900, color: 'FFF3E0' }),
+   393→                    createCell(data.year2Students || '_', { width: 800, alignment: AlignmentType.CENTER }),
+   394→                    createHeaderCell('III Year:', { width: 1000, color: 'FFF3E0' }),
+   395→                    createCell(data.year3Students || '_', { width: 800, alignment: AlignmentType.CENTER }),
+   396→                    createHeaderCell('IV Year:', { width: 900, color: 'FFF3E0' }),
+   397→                    createCell(data.year4Students || '_', { width: 800, alignment: AlignmentType.CENTER }),
+   398→                  ],
+   399→                }),
+   400→              ],
+   401→            }),
+   402→
+   403→            // A. ACADEMIC ACTIVITIES Section
+   404→            new Paragraph({ spacing: { before: 300 }, children: [] }),
+   405→            new Table({
+   406→              width: { size: 100, type: WidthType.PERCENTAGE },
+   407→              borders: {
+   408→                top: { style: BorderStyle.SINGLE, size: 2, color: '388E3C' },
+   409→                bottom: { style: BorderStyle.SINGLE, size: 1, color: '388E3C' },
+   410→                left: { style: BorderStyle.SINGLE, size: 1, color: '388E3C' },
+   411→                right: { style: BorderStyle.SINGLE, size: 1, color: '388E3C' },
+   412→              },
+   413→              rows: [
+   414→                new TableRow({
+   415→                  children: [
+   416→                    new TableCell({
+   417→                      columnSpan: 4,
+   418→                      shading: { type: ShadingType.SOLID, color: 'C8E6C9', fill: 'C8E6C9' },
+   419→                      children: [new Paragraph({ children: [new TextRun({ text: 'A. ACADEMIC ACTIVITIES', bold: true, size: 22, color: '2E7D32' })] })],
+   420→                    }),
+   421→                  ],
+   422→                }),
+   423→                // Header row
+   424→                new TableRow({
+   425→                  children: [
+   426→                    createHeaderCell('Sl.', { width: 600, color: 'E8F5E9' }),
+   427→                    createHeaderCell('Particulars', { width: 4500, color: 'E8F5E9' }),
+   428→                    createHeaderCell('Theory', { width: 2500, color: 'E8F5E9' }),
+   429→                    createHeaderCell('Lab / Practical', { width: 2500, color: 'E8F5E9' }),
+   430→                  ],
+   431→                }),
+   432→                // Data rows
+   433→                ...[
+   434→                  ['1', 'Syllabus Coverage', data.syllabusCoverageTheory, data.syllabusCoverageLab],
+   435→                  ['2', 'Lesson Plan Update', data.lessonPlanTheory, data.lessonPlanLab],
+   436→                  ['3', 'CIA – I / II / III Conducted & Report Submitted', data.ciaConducted, 'NA'],
+   437→                  ['4', 'Student Attendance Report Prepared & Submitted', data.attendanceReport, ''],
+   438→                  ['5', 'Remedial Classes Conducted (Enclose Report)', data.remedialClasses, 'NA'],
+   439→                  ['6', 'Mentoring Sessions Conducted', data.mentoringSessions, 'NA'],
+   440→                ].map((row) =>
+   441→                  new TableRow({
+   442→                    children: [
+   443→                      createCell(row[0], { width: 600, alignment: AlignmentType.CENTER }),
+   444→                      createCell(row[1], { width: 4500, bold: row[0] !== '4' }),
+   445→                      createCell(row[2] || '_',{ width: 2500, alignment: AlignmentType.CENTER }),
+   446→                      createCell(row[3] || (row[0] === '4' ? '' : '_'), { width: 2500, alignment: AlignmentType.CENTER }),
+   447→                    ],
+   448→                  })
+   449→                ),
+   450→              ],
+   451→            }),
+   452→
+   453→            // B. STUDENT DEVELOPMENT ACTIVITIES Section
+   454→            new Paragraph({ spacing: { before: 300 }, children: [] }),
+   455→            new Table({
+   456→              width: { size: 100, type: WidthType.PERCENTAGE },
+   457→              borders: {
+   458→                top: { style: BorderStyle.SINGLE, size: 2, color: '7B1FA2' },
+   459→                bottom: { style: BorderStyle.SINGLE, size: 1, color: '7B1FA2' },
+   460→                left: { style: BorderStyle.SINGLE, size: 1, color: '7B1FA2' },
+   461→                right: { style: BorderStyle.SINGLE, size: 1, color: '7B1FA2' },
+   462→              },
+   463→              rows: [
+   464→                new TableRow({
+   465→                  children: [
+   466→                    new TableCell({
+   467→                      columnSpan: 17,
+   468→                      shading: { type: ShadingType.SOLID, color: 'E1BEE7', fill: 'E1BEE7' },
+   469→                      children: [
+   470→                        new Paragraph({ children: [new TextRun({ text: 'B. STUDENT DEVELOPMENT ACTIVITIES ', bold: true, size: 20, color: '6A1B9A' })] }),
+   471→                        new Paragraph({ children: [new TextRun({ text: '(*Prev Months: Cumulative counting starts from 1st July)', size: 16, italics: true, color: '6A1B9A' })] }),
+   472→                      ],
+   473→                    }),
+   474→                  ],
+   475→                }),
+   476→                // Header rows
+   477→                new TableRow({
+   478→                  children: [
+   479→                    createHeaderCell('Particulars', { width: 1400, rowSpan: 2, color: 'F3E5F5' }),
+   480→                    createHeaderCell('Guest Lectures /\nSeminar/Webinar', { width: 1500, colSpan: 2, color: 'F3E5F5', fontSize: 16 }),
+   481→                    createHeaderCell('Workshops\nOrganized', { width: 1300, colSpan: 2, color: 'F3E5F5', fontSize: 16 }),
+   482→                    createHeaderCell('Industrial\nVisits', { width: 1200, colSpan: 2, color: 'F3E5F5', fontSize: 16 }),
+   483→                    createHeaderCell('Value Added\nCourses', { width: 1300, colSpan: 2, color: 'F3E5F5', fontSize: 16 }),
+   484→                    createHeaderCell('Skill\nEnhancement', { width: 1200, colSpan: 2, color: 'F3E5F5', fontSize: 16 }),
+   485→                    createHeaderCell('Hands-on\nTraining', { width: 1200, colSpan: 2, color: 'F3E5F5', fontSize: 16 }),
+   486→                    createHeaderCell('Hackathon', { width: 1000, colSpan: 2, color: 'F3E5F5', fontSize: 16 }),
+   487→                    createHeaderCell('Prof. Society\nActivities', { width: 1000, rowSpan: 2, color: 'F3E5F5', fontSize: 16 }),
+   488→                  ],
+   489→                }),
+   490→                new TableRow({
+   491→                  children: [
+   492→                    ...Array(8).fill(null).flatMap(() => [
+   493→                      createHeaderCell('Prev\nMonths', { width: 650, color: 'F3E5F5', fontSize: 14 }),
+   494→                      createHeaderCell('Curr\nMonth', { width: 650, color: 'F3E5F5', fontSize: 14 }),
+   495→                    ]),
+   496→                  ],
+   497→                }),
+   498→                // Data rows
+   499→                new TableRow({
+   500→                  children: [
+   501→                    createCell('Prev Months*', { width: 1400, bold: true, shading: 'F5F5F5' }),
+   502→                    createCell(data.studentDev.guestLectures?.prev || '', { width: 650, alignment: AlignmentType.CENTER }),
+   503→                    createCell('', { width: 650, alignment: AlignmentType.CENTER }),
+   504→                    createCell(data.studentDev.workshops?.prev || '', { width: 650, alignment: AlignmentType.CENTER }),
+   505→                    createCell('', { width: 650, alignment: AlignmentType.CENTER }),
+   506→                    createCell(data.studentDev.industrialVisits?.prev || '', { width: 650, alignment: AlignmentType.CENTER }),
+   507→                    createCell('', { width: 650, alignment: AlignmentType.CENTER }),
+   508→                    createCell(data.studentDev.valueAddedCourses?.prev || '', { width: 650, alignment: AlignmentType.CENTER }),
+   509→                    createCell('', { width: 650, alignment: AlignmentType.CENTER }),
+   510→                    createCell(data.studentDev.skillEnhancement?.prev || '', { width: 650, alignment: AlignmentType.CENTER }),
+   511→                    createCell('', { width: 650, alignment: AlignmentType.CENTER }),
+   512→                    createCell(data.studentDev.handsOnTraining?.prev || '', { width: 650, alignment: AlignmentType.CENTER }),
+   513→                    createCell('', { width: 650, alignment: AlignmentType.CENTER }),
+   514→                    createCell(data.studentDev.hackathon?.prev || '', { width: 650, alignment: AlignmentType.CENTER }),
+   515→                    createCell('', { width: 650, alignment: AlignmentType.CENTER }),
+   516→                    createCell('', { width: 1000, alignment: AlignmentType.CENTER }),
+   517→                  ],
+   518→                }),
+   519→                new TableRow({
+   520→                  children: [
+   521→                    createCell('Curr Month', { width: 1400, bold: true, shading: 'E3F2FD' }),
+   522→                    createCell('', { width: 650, alignment: AlignmentType.CENTER }),
+   523→                    createCell(data.studentDev.guestLectures?.curr || '', { width: 650, alignment: AlignmentType.CENTER }),
+   524→                    createCell('', { width: 650, alignment: AlignmentType.CENTER }),
+   525→                    createCell(data.studentDev.workshops?.curr || '', { width: 650, alignment: AlignmentType.CENTER }),
+   526→                    createCell('', { width: 650, alignment: AlignmentType.CENTER }),
+   527→                    createCell(data.studentDev.industrialVisits?.curr || '', { width: 650, alignment: AlignmentType.CENTER }),
+   528→                    createCell('', { width: 650, alignment: AlignmentType.CENTER }),
+   529→                    createCell(data.studentDev.valueAddedCourses?.curr || '', { width: 650, alignment: AlignmentType.CENTER }),
+   530→                    createCell('', { width: 650, alignment: AlignmentType.CENTER }),
+   531→                    createCell(data.studentDev.skillEnhancement?.curr || '', { width: 650, alignment: AlignmentType.CENTER }),
+   532→                    createCell('', { width: 650, alignment: AlignmentType.CENTER }),
+   533→                    createCell(data.studentDev.handsOnTraining?.curr || '', { width: 650, alignment: AlignmentType.CENTER }),
+   534→                    createCell('', { width: 650, alignment: AlignmentType.CENTER }),
+   535→                    createCell(data.studentDev.hackathon?.curr || '', { width: 650, alignment: AlignmentType.CENTER }),
+   536→                    createCell('', { width: 650, alignment: AlignmentType.CENTER }),
+   537→                    createCell('', { width: 1000, alignment: AlignmentType.CENTER }),
+   538→                  ],
+   539→                }),
+   540→                new TableRow({
+   541→                  children: [
+   542→                    createCell('Total (Cumulative)', { width: 1400, bold: true, shading: 'C8E6C9' }),
+   543→                    ...Array(8).fill(null).map(() => [
+   544→                      createCell('', { width: 1300, colSpan: 2, shading: 'C8E6C9', alignment: AlignmentType.CENTER }),
+   545→                    ]).flat(),
+   546→                    createCell('', { width: 1000, shading: 'C8E6C9', alignment: AlignmentType.CENTER }),
+   547→                  ],
+   548→                }),
+   549→              ],
+   550→            }),
+   551→
+   552→            // C. RESEARCH & INNOVATION Section
+   553→            new Paragraph({ spacing: { before: 300 }, children: [] }),
+   554→            new Table({
+   555→              width: { size: 100, type: WidthType.PERCENTAGE },
+   556→              borders: {
+   557→                top: { style: BorderStyle.SINGLE, size: 2, color: '00695C' },
+   558→                bottom: { style: BorderStyle.SINGLE, size: 1, color: '00695C' },
+   559→                left: { style: BorderStyle.SINGLE, size: 1, color: '00695C' },
+   560→                right: { style: BorderStyle.SINGLE, size: 1, color: '00695C' },
+   561→              },
+   562→              rows: [
+   563→                new TableRow({
+   564→                  children: [
+   565→                    new TableCell({
+   566→                      columnSpan: 13,
+   567→                      shading: { type: ShadingType.SOLID, color: 'B2DFDB', fill: 'B2DFDB' },
+   568→                      children: [
+   569→                        new Paragraph({ children: [new TextRun({ text: 'C. RESEARCH & INNOVATION ', bold: true, size: 20, color: '004D40' })] }),
+   570→                        new Paragraph({ children: [new TextRun({ text: '(*Prev Months: Cumulative counting starts from 1st July)', size: 16, italics: true, color: '004D40' })] }),
+   571→                      ],
+   572→                    }),
+   573→                  ],
+   574→                }),
+   575→                // Headers
+   576→                new TableRow({
+   577→                  children: [
+   578→                    createHeaderCell('Particulars', { width: 1100, rowSpan: 2, color: 'E0F2F1' }),
+   579→                    createHeaderCell('Journal Publication\n(SCI/Scopus/WoS)', { width: 1400, colSpan: 2, color: 'E0F2F1', fontSize: 15 }),
+   580→                    createHeaderCell('Conference Papers\n(Scopus Indexed)', { width: 1300, colSpan: 2, color: 'E0F2F1', fontSize: 15 }),
+   581→                    createHeaderCell('Book', { width: 1000, colSpan: 2, color: 'E0F2F1', fontSize: 15 }),
+   582→                    createHeaderCell('Book Chapters\n(Scopus Indexed)', { width: 1200, colSpan: 2, color: 'E0F2F1', fontSize: 15 }),
+   583→                    createHeaderCell('Patents Published\n/ Grand', { width: 1100, colSpan: 2, color: 'E0F2F1', fontSize: 15 }),
+   584→                    createHeaderCell('Funded Projects\nProposal submission', { width: 1200, colSpan: 2, color: 'E0F2F1', fontSize: 15 }),
+   585→                    createHeaderCell('Faculty\nSign', { width: 700, rowSpan: 2, color: 'E0F2F1', fontSize: 15 }),
+   586→                  ],
+   587→                }),
+   588→                new TableRow({
+   589→                  children: [
+   590→                    ...Array(6).fill(null).flatMap(() => [
+   591→                      createHeaderCell('Prev', { width: 600, color: 'E0F2F1', fontSize: 14 }),
+   592→                      createHeaderCell('Curr', { width: 600, color: 'E0F2F1', fontSize: 14 }),
+   593→                    ]),
+   594→                  ],
+   595→                }),
+   596→                // Faculty Name header
+   597→                new TableRow({
+   598→                  children: [
+   599→                    createCell('Faculty Name', { width: 1100, bold: true, shading: 'EEEEEE' }),
+   600→                    ...Array(12).fill(null).map(() => createCell('', { width: 600, shading: 'EEEEEE' })),
+   601→                    createCell('', { width: 700, shading: 'EEEEEE' }),
+   602→                  ],
+   603→                }),
+   604→                // Faculty data rows
+   605→                ...(data.researchFaculty || []).slice(0, 9).map((faculty, idx) =>
+   606→                  new TableRow({
+   607→                    children: [
+   608→                      createCell(faculty.name || `Faculty ${idx + 1}`, { width: 1100 }),
+   609→                      ...['journalPub', 'conferencePapers', 'book', 'bookChapters', 'patents', 'fundedProjects'].flatMap((key) => [
+   610→                        createCell(faculty[key]?.prev || '', { width: 600, alignment: AlignmentType.CENTER }),
+   611→                        createCell(faculty[key]?.curr || '', { width: 600, alignment: AlignmentType.CENTER }),
+   612→                      ]),
+   613→                      createCell('', { width: 700, alignment: AlignmentType.CENTER }),
+   614→                    ],
+   615→                  })
+   616→                ),
+   617→              ],
+   618→            }),
+   619→
+   620→            // D. FACULTY DEVELOPMENT Section
+   621→            new Paragraph({ spacing: { before: 300 }, children: [] }),
+   622→            new Table({
+   623→              width: { size: 100, type: WidthType.PERCENTAGE },
+   624→              borders: {
+   625→                top: { style: BorderStyle.SINGLE, size: 2, color: 'E65100' },
+   626→                bottom: { style: BorderStyle.SINGLE, size: 1, color: 'E65100' },
+   627→                left: { style: BorderStyle.SINGLE, size: 1, color: 'E65100' },
+   628→                right: { style: BorderStyle.SINGLE, size: 1, color: 'E65100' },
+   629→              },
+   630→              rows: [
+   631→                new TableRow({
+   632→                  children: [
+   633→                    new TableCell({
+   634→                      columnSpan: 11,
+   635→                      shading: { type: ShadingType.SOLID, color: 'FFE0B2', fill: 'FFE0B2' },
+   636→                      children: [
+   637→                        new Paragraph({ children: [new TextRun({ text: 'D. FACULTY DEVELOPMENT ', bold: true, size: 20, color: 'BF360C' })] }),
+   638→                        new Paragraph({ children: [new TextRun({ text: '(*Prev Months: Cumulative counting starts from 1st July)', size: 16, italics: true, color: 'BF360C' })] }),
+   639→                      ],
+   640→                    }),
+   641→                  ],
+   642→                }),
+   643→                new TableRow({
+   644→                  children: [
+   645→                    createHeaderCell('Particulars', { width: 1400, rowSpan: 2, color: 'FFF3E0' }),
+   646→                    createHeaderCell('FDPs/Workshops/\nConf/Seminars\nAttended', { width: 1500, colSpan: 2, color: 'FFF3E0', fontSize: 14 }),
+   647→                    createHeaderCell('FDPs/Workshops/\nConf/Seminars\nOrganized', { width: 1500, colSpan: 2, color: 'FFF3E0', fontSize: 14 }),
+   648→                    createHeaderCell('NPTEL\nCompleted', { width: 1200, colSpan: 2, color: 'FFF3E0', fontSize: 14 }),
+   649→                    createHeaderCell('MOOCs\nCompleted', { width: 1200, colSpan: 2, color: 'FFF3E0', fontSize: 14 }),
+   650→                    createHeaderCell('Resource Person\nEngagements', { width: 1300, colSpan: 2, color: 'FFF3E0', fontSize: 14 }),
+   651→                    createHeaderCell('Faculty\nSign', { width: 700, rowSpan: 2, color: 'FFF3E0', fontSize: 14 }),
+   652→                  ],
+   653→                }),
+   654→                new TableRow({
+   655→                  children: [
+   656→                    ...Array(5).fill(null).flatMap(() => [
+   657→                      createHeaderCell('Prev Month', { width: 700, color: 'FFF3E0', fontSize: 13 }),
+   658→                      createHeaderCell('Curr Month', { width: 700, color: 'FFF3E0', fontSize: 13 }),
+   659→                    ]),
+   660→                  ],
+   661→                }),
+   662→                new TableRow({
+   663→                  children: [
+   664→                    createCell('Faculty Name / Designation', { width: 1400, bold: true, shading: 'EEEEEE' }),
+   665→                    ...Array(10).fill(null).map(() => createCell('', { width: 700, shading: 'EEEEEE' })),
+   666→                    createCell('', { width: 700, shading: 'EEEEEE' }),
+   667→                  ],
+   668→                }),
+   669→                ...(data.facultyDev || []).slice(0, 9).map((faculty, idx) =>
+   670→                  new TableRow({
+   671→                    children: [
+   672→                      createCell(faculty.name || `Faculty ${idx + 1}`, { width: 1400 }),
+   673→                      ...['fdpsAttended', 'fdpsOrganized', 'nptelCompleted', 'moocsCompleted', 'resourcePerson'].flatMap((key) => [
+   674→                        createCell(faculty[key]?.prev || '', { width: 700, alignment: AlignmentType.CENTER }),
+   675→                        createCell(faculty[key]?.curr || '', { width: 700, alignment: AlignmentType.CENTER }),
+   676→                      ]),
+   677→                      createCell('', { width: 700, alignment: AlignmentType.CENTER }),
+   678→                    ],
+   679→                  })
+   680→                ),
+   681→              ],
+   682→            }),
+   683→
+   684→            // E. STUDENTS INTERNSHIP Section
+   685→            new Paragraph({ spacing: { before: 300 }, children: [] }),
+   686→            new Table({
+   687→              width: { size: 100, type: WidthType.PERCENTAGE },
+   688→              borders: {
+   689→                top: { style: BorderStyle.SINGLE, size: 2, color: 'C62828' },
+   690→                bottom: { style: BorderStyle.SINGLE, size: 1, color: 'C62828' },
+   691→                left: { style: BorderStyle.SINGLE, size: 1, color: 'C62828' },
+   692→                right: { style: BorderStyle.SINGLE, size: 1, color: 'C62828' },
+   693→              },
+   694→              rows: [
+   695→                new TableRow({
+   696→                  children: [
+   697→                    new TableCell({
+   698→                      columnSpan: 6,
+   699→                      shading: { type: ShadingType.SOLID, color: 'FFCDD2', fill: 'FFCDD2' },
+   700→                      children: [
+   701→                        new Paragraph({ children: [new TextRun({ text: 'E. STUDENTS INTERNSHIP ', bold: true, size: 20, color: 'B71C1C' })] }),
+   702→                        new Paragraph({ children: [new TextRun({ text: '(*Prev Months: Cumulative counting starts from 1st July)', size: 16, italics: true, color: 'B71C1C' })] }),
+   703→                      ],
+   704→                    }),
+   705→                  ],
+   706→                }),
+   707→                new TableRow({
+   708→                  children: [
+   709→                    createHeaderCell('Internship Details', { width: 2200, colSpan: 2, color: 'FFEBEE' }),
+   710→                    createHeaderCell('Industry Internships\n(Paid)', { width: 1700, color: 'FFEBEE' }),
+   711→                    createHeaderCell('Industry Internships\n(Non-Paid)', { width: 1900, color: 'FFEBEE' }),
+   712→                    createHeaderCell('Virtual\nInternships', { width: 1600, color: 'FFEBEE' }),
+   713→                    createHeaderCell('No. of Students Not\nAvailed Internship', { width: 2300, color: 'FFEBEE' }),
+   714→                  ],
+   715→                }),
+   716→                new TableRow({
+   717→                  children: [
+   718→                    createCell('Previous Months', { width: 2200, colSpan: 2, bold: true, shading: 'FFEBEE' }),
+   719→                    createCell(data.internship?.previous?.paid || '', { width: 1700, alignment: AlignmentType.CENTER }),
+   720→                    createCell(data.internship?.previous?.nonPaid || '', { width: 1900, alignment: AlignmentType.CENTER }),
+   721→                    createCell(data.internship?.previous?.virtual || '', { width: 1600, alignment: AlignmentType.CENTER }),
+   722→                    createCell(data.internship?.previous?.notAvailed || '', { width: 2300, alignment: AlignmentType.CENTER }),
+   723→                  ],
+   724→                }),
+   725→                new TableRow({
+   726→                  children: [
+   727→                    createCell('Current Month', { width: 2200, colSpan: 2, bold: true, shading: 'E3F2FD' }),
+   728→                    createCell(data.internship?.current?.paid || '', { width: 1700, alignment: AlignmentType.CENTER }),
+   729→                    createCell(data.internship?.current?.nonPaid || '', { width: 1900, alignment: AlignmentType.CENTER }),
+   730→                    createCell(data.internship?.current?.virtual || '', { width: 1600, alignment: AlignmentType.CENTER }),
+   731→                    createCell(data.internship?.current?.notAvailed || '', { width: 2300, alignment: AlignmentType.CENTER }),
+   732→                  ],
+   733→                }),
+   734→                new TableRow({
+   735→                  children: [
+   736→                    createCell('Total (Cumulative)', { width: 2200, colSpan: 2, bold: true, shading: 'C8E6C9' }),
+   737→                    createCell(data.internship?.total?.paid || '', { width: 1700, alignment: AlignmentType.CENTER, shading: 'C8E6C9' }),
+   738→                    createCell(data.internship?.total?.nonPaid || '', { width: 1900, alignment: AlignmentType.CENTER, shading: 'C8E6C9' }),
+   739→                    createCell(data.internship?.total?.virtual || '', { width: 1600, alignment: AlignmentType.CENTER, shading: 'C8E6C9' }),
+   740→                    createCell(data.internship?.total?.notAvailed || '', { width: 2300, alignment: AlignmentType.CENTER, shading: 'C8E6C9' }),
+   741→                  ],
+   742→                }),
+   743→              ],
+   744→            }),
+   745→
+   746→            // F. FACULTY-INDUSTRY INTERACTION Section
+   747→            new Paragraph({ spacing: { before: 300 }, children: [] }),
+   748→            new Table({
+   749→              width: { size: 100, type: WidthType.PERCENTAGE },
+   750→              borders: {
+   751→                top: { style: BorderStyle.SINGLE, size: 2, color: '00838F' },
+   752→                bottom: { style: BorderStyle.SINGLE, size: 1, color: '00838F' },
+   753→                left: { style: BorderStyle.SINGLE, size: 1, color: '00838F' },
+   754→                right: { style: BorderStyle.SINGLE, size: 1, color: '00838F' },
+   755→              },
+   756→              rows: [
+   757→                new TableRow({
+   758→                  children: [
+   759→                    new TableCell({
+   760→                      columnSpan: 11,
+   761→                      shading: { type: ShadingType.SOLID, color: 'B2EBF2', fill: 'B2EBF2' },
+   762→                      children: [
+   763→                        new Paragraph({ children: [new TextRun({ text: 'F. FACULTY - INDUSTRY INTERACTION ', bold: true, size: 20, color: '006064' })] }),
+   764→                        new Paragraph({ children: [new TextRun({ text: '(*Prev months: Cumulative counting starts from 1st July)', size: 16, italics: true, color: '006064' })] }),
+   765→                      ],
+   766→                    }),
+   767→                  ],
+   768→                }),
+   769→                new TableRow({
+   770→                  children: [
+   771→                    createHeaderCell('Faculty Name /\nDesignation', { width: 1400, rowSpan: 2, color: 'E0F7FA' }),
+   772→                    createHeaderCell('MoUs Signed', { width: 1400, colSpan: 2, color: 'E0F7FA', fontSize: 15 }),
+   773→                    createHeaderCell('Industry Visits', { width: 1300, colSpan: 2, color: 'E0F7FA', fontSize: 15 }),
+   774→                    createHeaderCell('Experts Invited', { width: 1300, colSpan: 2, color: 'E0F7FA', fontSize: 15 }),
+   775→                    createHeaderCell('Collaborative\nActivities', { width: 1400, colSpan: 2, color: 'E0F7FA', fontSize: 15 }),
+   776→                    createHeaderCell('Consultancy\nServices', { width: 1400, colSpan: 2, color: 'E0F7FA', fontSize: 15 }),
+   777→                  ],
+   778→                }),
+   779→                new TableRow({
+   780→                  children: [
+   781→                    ...Array(5).fill(null).flatMap(() => [
+   782→                      createHeaderCell('Prev Months', { width: 700, color: 'E0F7FA', fontSize: 13 }),
+   783→                      createHeaderCell('Curr Month', { width: 700, color: 'E0F7FA', fontSize: 13 }),
+   784→                    ]),
+   785→                  ],
+   786→                }),
+   787→                ...(data.industryInteraction || []).slice(0, 8).map((faculty, idx) =>
+   788→                  new TableRow({
+   789→                    children: [
+   790→                      createCell(faculty.name || `Faculty ${idx + 1}`, { width: 1400 }),
+   791→                      ...['mousSigned', 'industryVisits', 'expertsInvited', 'collaborativeActivities', 'consultancyServices'].flatMap((key) => [
+   792→                        createCell(faculty[key]?.prev || '', { width: 700, alignment: AlignmentType.CENTER }),
+   793→                        createCell(faculty[key]?.curr || '', { width: 700, alignment: AlignmentType.CENTER }),
+   794→                      ]),
+   795→                    ],
+   796→                  })
+   797→                ),
+   798→                new TableRow({
+   799→                  children: [
+   800→                    createCell('As on _____, 20... (Cumulative)', { width: 1400, bold: true, shading: 'C8E6C9' }),
+   801→                    ...Array(10).fill(null).map(() => createCell('', { width: 700, shading: 'C8E6C9', alignment: AlignmentType.CENTER })),
+   802→                  ],
+   803→                }),
+   804→              ],
+   805→            }),
+   806→
+   807→            // G. QUALITY ASSURANCE ACTIVITIES Section
+   808→            new Paragraph({ spacing: { before: 300 }, children: [] }),
+   809→            new Table({
+   810→              width: { size: 100, type: WidthType.PERCENTAGE },
+   811→              borders: {
+   812→                top: { style: BorderStyle.SINGLE, size: 2, color: '558B2F' },
+   813→                bottom: { style: BorderStyle.SINGLE, size: 1, color: '558B2F' },
+   814→                left: { style: BorderStyle.SINGLE, size: 1, color: '558B2F' },
+   815→                right: { style: BorderStyle.SINGLE, size: 1, color: '558B2F' },
+   816→              },
+   817→              rows: [
+   818→                new TableRow({
+   819→                  children: [
+   820→                    new TableCell({
+   821→                      columnSpan: 3,
+   822→                      shading: { type: ShadingType.SOLID, color: 'DCEDC8', fill: 'DCEDC8' },
+   823→                      children: [
+   824→                        new Paragraph({ children: [new TextRun({ text: 'G. QUALITY ASSURANCE ACTIVITIES ', bold: true, size: 20, color: '33691E' })] }),
+   825→                        new Paragraph({ children: [new TextRun({ text: '(Documents and supporting evidence shall be maintained and kept ready for Academic Audit)', size: 15, italics: true, color: '33691E' })] }),
+   826→                      ],
+   827→                    }),
+   828→                  ],
+   829→                }),
+   830→                new TableRow({
+   831→                  children: [
+   832→                    createHeaderCell('Particulars', { width: 4500, color: 'F1F8E9' }),
+   833→                    createHeaderCell('Status', { width: 2500, color: 'F1F8E9' }),
+   834→                    createHeaderCell('Remarks', { width: 3500, color: 'F1F8E9' }),
+   835→                  ],
+   836→                }),
+   837→                ...(data.qaActivities || []).map((item) =>
+   838→                  new TableRow({
+   839→                    children: [
+   840→                      createCell(item.particular, { width: 4500 }),
+   841→                      createCell(item.status || '', { width: 2500, alignment: AlignmentType.CENTER }),
+   842→                      createCell(item.remarks || '', { width: 3500 }),
+   843→                    ],
+   844→                  })
+   845→                ),
+   846→              ],
+   847→            }),
+   848→
+   849→            // H. DOCUMENTS TO BE ATTACHED Section
+   850→            new Paragraph({ spacing: { before: 300 }, children: [] }),
+   851→            new Table({
+   852→              width: { size: 100, type: WidthType.PERCENTAGE },
+   853→              borders: {
+   854→                top: { style: BorderStyle.SINGLE, size: 2, color: '303F9F' },
+   855→                bottom: { style: BorderStyle.SINGLE, size: 1, color: '303F9F' },
+   856→                left: { style: BorderStyle.SINGLE, size: 1, color: '303F9F' },
+   857→                right: { style: BorderStyle.SINGLE, size: 1, color: '303F9F' },
+   858→              },
+   859→              rows: [
+   860→                new TableRow({
+   861→                  children: [
+   862→                    new TableCell({
+   863→                      columnSpan: 2,
+   864→                      shading: { type: ShadingType.SOLID, color: 'C5CAE9', fill: 'C5CAE9' },
+   865→                      children: [new Paragraph({ children: [new TextRun({ text: 'H. DOCUMENTS TO BE ATTACHED', bold: true, size: 22, color: '1A237E' })] })],
+   866→                    }),
+   867→                  ],
+   868→                }),
+   869→                ...([
+   870→                  ['eventReports', 'Event Reports', 'internshipDetails', 'Internship Details'],
+   871→                  ['workshopCertificates', 'Workshop / FDP / Conference etc. participation Certificates', 'studentAchievementProofs', 'Student Achievement Proofs'],
+   872→                  ['publicationProofs', 'Publication Proofs', 'sdgExtensionReports', 'SDG / Extension Activity Reports'],
+   873→                  ['placementDetails', 'Placement Details', 'mouIndustryDocuments', 'MoU / Industry Interaction Documents'],
+   874→                ] as [string, string, string, string][]).map(([key1, label1, key2, label2]) =>
+   875→                  new TableRow({
+   876→                    children: [
+   877→                      new TableCell({
+   878→                        width: { size: 50, type: WidthType.PERCENTAGE },
+   879→                        borders: {
+   880→                          top: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+   881→                          bottom: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+   882→                          left: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+   883→                          right: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+   884→                        },
+   885→                        children: [
+   886→                          new Paragraph({
+   887→                            children: [
+   888→                              new TextRun({ text: data.documents?.[key1] ? '\u2611' : '\u2610', size: 24 }),
+   889→                              new TextRun({ text: `  ${label1}`, size: 18 }),
+   890→                            ],
+   891→                          }),
+   892→                        ],
+   893→                      }),
+   894→                      new TableCell({
+   895→                        width: { size: 50, type: WidthType.PERCENTAGE },
+   896→                        borders: {
+   897→                          top: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+   898→                          bottom: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+   899→                          left: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+   900→                          right: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+   901→                        },
+   902→                        children: [
+   903→                          new Paragraph({
+   904→                            children: [
+   905→                              new TextRun({ text: data.documents?.[key2] ? '\u2611' : '\u2610', size: 24 }),
+   906→                              new TextRun({ text: `  ${label2}`, size: 18 }),
+   907→                            ],
+   908→                          }),
+   909→                        ],
+   910→                      }),
+   911→                    ],
+   912→                  })
+   913→                ),
+   914→              ],
+   915→            }),
+   916→
+   917→            // Signature Section
+   918→            new Paragraph({ spacing: { before: 400 }, children: [] }),
+   919→            new Table({
+   920→              width: { size: 100, type: WidthType.PERCENTAGE },
+   921→              borders: {
+   922→                top: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+   923→                bottom: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+   924→                left: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+   925→                right: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+   926→              },
+   927→              rows: [
+   928→                new TableRow({
+   929→                  children: ['HoD', 'School Dean / Director', 'Head-IQAC', 'Vice-Principal', 'Principal'].map((role) =>
+   930→                    new TableCell({
+   931→                      width: { size: 20, type: WidthType.PERCENTAGE },
+   932→                      verticalAlign: VerticalAlign.BOTTOM,
+   933→                      children: [
+   934→                        new Paragraph({ spacing: { after: 400 }, children: [] }),
+   935→                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: role, bold: true, size: 20 })] }),
+   936→                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Date:', size: 16 })] }),
+   937→                      ],
+   938→                    })
+   939→                  ),
+   940→                }),
+   941→              ],
+   942→            }),
+   943→
+   944→            // Copy submitted to section
+   945→            new Paragraph({ spacing: { before: 300 }, children: [] }),
+   946→            new Paragraph({ children: [new TextRun({ text: 'Copy submitted to', size: 20, italics: true })] }),
+   947→            new Paragraph({ spacing: { before: 100 }, children: [] }),
+   948→            new Table({
+   949→              width: { size: 70, type: WidthType.PERCENTAGE },
+   950→              borders: { top: { style: BorderStyle.NIL }, bottom: { style: BorderStyle.NIL }, left: { style: BorderStyle.NIL }, right: { style: BorderStyle.NIL } },
+   951→              rows: [
+   952→                new TableRow({
+   953→                  children: [
+   954→                    new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: '1.', size: 18 })] })] }),
+   955→                    new TableCell({ width: { size: 35, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: 'AO / HR / Principal office', size: 18 })] })] }),
+   956→                    new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: 'Submitted on: ___________', size: 16 })] })] }),
+   957→                  ],
+   958→                }),
+   959→                new TableRow({
+   960→                  children: [
+   961→                    new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: '2.', size: 18 })] })] }),
+   962→                    new TableCell({ width: { size: 35, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: 'IQAC', size: 18 })] })] }),
+   963→                    new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: 'Submitted on: ___________', size: 16 })] })] }),
+   964→                  ],
+   965→                }),
+   966→              ],
+   967→            }),
+   968→          ],
+   969→        },
+   970→      ],
+   971→    })
+   972→
+   973→    // Generate the document buffer
+   974→    const buffer = await Packer.toBuffer(doc)
+   975→
+   976→    // Return the document as a downloadable file
+   977→    return new NextResponse(buffer as any, {
+   978→      headers: {
+   979→        'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+   980→        'Content-Disposition': `attachment; filename="Monthly_Department_Report_${data.department}_${data.reportingMonth}_${data.reportingYear}.docx"`,
+   981→      },
+   982→    })
+   983→  } catch (error) {
+   984→    console.error('Error generating report:', error)
+   985→    return NextResponse.json(
+   986→      { error: 'Failed to generate report' },
+   987→      { status: 500 }
+   988→    )
+   989→  }
+   990→}
+   991→

@@ -120,11 +120,10 @@ export async function POST(request: NextRequest) {
       db.student.findMany({
         where: {
           ...(departmentId && departmentId !== 'all' ? { departmentId } : { departmentId: { in: allowedDeptIds } }),
-          ...(academicYear && academicYear !== 'all' ? { academicYear } : {}),
+          ...(academicYear && academicYear !== 'all' ? { batch: academicYear } : {}),
           ...(semester && semester !== 'all' && !isNaN(parseInt(semester)) ? { semester: parseInt(semester) } : {}),
           ...(classSection && classSection !== 'all' ? { section: classSection } : {}),
           ...(batch ? { batch } : {}),
-          ...(programme ? { programme } : {}),
           ...(gender && gender !== 'all' ? { gender } : {}),
         },
         include: {
@@ -134,7 +133,7 @@ export async function POST(request: NextRequest) {
             where: {
               createdAt: { gte: startDate, lte: endDate },
               ...(achievementCategory && achievementCategory !== 'all' ? { category: achievementCategory } : {}),
-              ...(verificationStatus ? { status: verificationStatus } : {}),
+              ...(verificationStatus && verificationStatus !== 'all' ? { status: verificationStatus } : {}),
               ...(achievementLevel && achievementLevel !== 'all' ? { level: achievementLevel } : {}),
             }
           },
@@ -188,7 +187,7 @@ export async function POST(request: NextRequest) {
           ...(departmentId && departmentId !== 'all' ? 
             { student: { departmentId } } : { student: { departmentId: { in: allowedDeptIds } } }),
           ...(achievementCategory && achievementCategory !== 'all' ? { category: achievementCategory } : {}),
-          ...(verificationStatus ? { status: verificationStatus } : {}),
+          ...(verificationStatus && verificationStatus !== 'all' ? { status: verificationStatus } : {}),
           ...(achievementLevel && achievementLevel !== 'all' ? { level: achievementLevel } : {}),
         },
         include: {

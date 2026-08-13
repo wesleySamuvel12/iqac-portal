@@ -16,8 +16,11 @@ import {
   Header,
   Footer,
   PageNumber,
-  VerticalAlign
+  VerticalAlign,
+  ImageRun
 } from 'docx'
+import { readFileSync, existsSync } from 'fs'
+import { join } from 'path'
 
 // Types for report data
 interface ReportData {
@@ -155,10 +158,27 @@ function createHeaderCell(
   })
 }
 
+// Helper to load logo image as buffer
+function loadLogoImage(filename: string): Buffer | null {
+  const imagePath = join(process.cwd(), 'public/images', filename)
+  try {
+    if (existsSync(imagePath)) {
+      return readFileSync(imagePath)
+    }
+  } catch (error) {
+    console.error(`Error loading logo ${filename}:`, error)
+  }
+  return null
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const data: ReportData = body.reportData
+    
+    // Load logo images
+    const nietLogoBuffer = loadLogoImage('niet-logo.png')
+    const nehrugroupLogoBuffer = loadLogoImage('nehrugroup-logo.png')
     
     // Create the document
     const doc = new Document({
@@ -178,7 +198,7 @@ export async function POST(request: NextRequest) {
             },
           },
           children: [
-            // NIET Header Table
+            // NIET Header Table with Logos on Both Sides
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
               borders: {
@@ -190,53 +210,9 @@ export async function POST(request: NextRequest) {
               rows: [
                 new TableRow({
                   children: [
+                    // Left Logo Cell - NIET Logo
                     new TableCell({
-                      width: { size: 75, type: WidthType.PERCENTAGE },
-                      borders: {
-                        top: { style: BorderStyle.NIL },
-                        bottom: { style: BorderStyle.NIL },
-                        left: { style: BorderStyle.NIL },
-                        right: { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' },
-                      },
-                      children: [
-                        new Paragraph({
-                          alignment: AlignmentType.CENTER,
-                          spacing: { after: 80 },
-                          children: [
-                            new TextRun({ text: 'NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY', bold: true, size: 28, font: 'Times New Roman', color: '1E3A5F' }),
-                          ],
-                        }),
-                        new Paragraph({
-                          alignment: AlignmentType.CENTER,
-                          spacing: { after: 60 },
-                          children: [
-                            new TextRun({ text: '(AUTONOMOUS) – An ISO 9001:2015 & ISO 14001:2015 Certified Institution', size: 18, font: 'Times New Roman', color: '333333' }),
-                          ],
-                        }),
-                        new Paragraph({
-                          alignment: AlignmentType.CENTER,
-                          spacing: { after: 40 },
-                          children: [
-                            new TextRun({ text: 'Affiliated to Anna University, Chennai | Approved by AICTE, New Delhi | Recognised by UGC with 2(f) & 12(B)', size: 16, font: 'Times New Roman', color: '555555' }),
-                          ],
-                        }),
-                        new Paragraph({
-                          alignment: AlignmentType.CENTER,
-                          spacing: { after: 40 },
-                          children: [
-                            new TextRun({ text: 'Re-accredited by NAAC with "A+" | NBA Accredited: UG | ECE | EEE | MECH | MCT', size: 16, font: 'Times New Roman', color: '555555' }),
-                          ],
-                        }),
-                        new Paragraph({
-                          alignment: AlignmentType.CENTER,
-                          children: [
-                            new TextRun({ text: 'Thirumalayampalayam, Coimbatore-641105, Tamil Nadu', size: 16, font: 'Times New Roman', italics: true, color: '666666' }),
-                          ],
-                        }),
-                      ],
-                    }),
-                    new TableCell({
-                      width: { size: 25, type: WidthType.PERCENTAGE },
+                      width: { size: 15, type: WidthType.PERCENTAGE },
                       borders: {
                         top: { style: BorderStyle.NIL },
                         bottom: { style: BorderStyle.NIL },
@@ -247,9 +223,82 @@ export async function POST(request: NextRequest) {
                       children: [
                         new Paragraph({
                           alignment: AlignmentType.CENTER,
+                          children: nietLogoBuffer ? [
+                            new ImageRun({
+                              data: nietLogoBuffer,
+                              transformation: { width: 60, height: 60 },
+                              type: 'png',
+                            })
+                          ] : [new TextRun({ text: 'NIET', size: 16, bold: true, color: '1E3A5F' })],
+                        }),
+                      ],
+                    }),
+                    // Center Cell - Institution Name
+                    new TableCell({
+                      width: { size: 70, type: WidthType.PERCENTAGE },
+                      borders: {
+                        top: { style: BorderStyle.NIL },
+                        bottom: { style: BorderStyle.NIL },
+                        left: { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' },
+                        right: { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' },
+                      },
+                      children: [
+                        new Paragraph({
+                          alignment: AlignmentType.CENTER,
+                          spacing: { after: 80 },
                           children: [
-                            new TextRun({ text: '[LOGO]', size: 20, color: '999999' }),
+                            new TextRun({ text: 'NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY', bold: true, size: 26, font: 'Times New Roman', color: '1E3A5F' }),
                           ],
+                        }),
+                        new Paragraph({
+                          alignment: AlignmentType.CENTER,
+                          spacing: { after: 60 },
+                          children: [
+                            new TextRun({ text: '(AUTONOMOUS) – An ISO 9001:2015 & ISO 14001:2015 Certified Institution', size: 17, font: 'Times New Roman', color: '333333' }),
+                          ],
+                        }),
+                        new Paragraph({
+                          alignment: AlignmentType.CENTER,
+                          spacing: { after: 40 },
+                          children: [
+                            new TextRun({ text: 'Affiliated to Anna University, Chennai | Approved by AICTE, New Delhi', size: 15, font: 'Times New Roman', color: '555555' }),
+                          ],
+                        }),
+                        new Paragraph({
+                          alignment: AlignmentType.CENTER,
+                          spacing: { after: 40 },
+                          children: [
+                            new TextRun({ text: 'Re-accredited by NAAC with "A+" | NBA Accredited', size: 15, font: 'Times New Roman', color: '555555' }),
+                          ],
+                        }),
+                        new Paragraph({
+                          alignment: AlignmentType.CENTER,
+                          children: [
+                            new TextRun({ text: 'Thirumalayampalayam, Coimbatore-641105, Tamil Nadu', size: 15, font: 'Times New Roman', italics: true, color: '666666' }),
+                          ],
+                        }),
+                      ],
+                    }),
+                    // Right Logo Cell - Nehru Group Logo
+                    new TableCell({
+                      width: { size: 15, type: WidthType.PERCENTAGE },
+                      borders: {
+                        top: { style: BorderStyle.NIL },
+                        bottom: { style: BorderStyle.NIL },
+                        left: { style: BorderStyle.NIL },
+                        right: { style: BorderStyle.NIL },
+                      },
+                      verticalAlign: VerticalAlign.CENTER,
+                      children: [
+                        new Paragraph({
+                          alignment: AlignmentType.CENTER,
+                          children: nehrugroupLogoBuffer ? [
+                            new ImageRun({
+                              data: nehrugroupLogoBuffer,
+                              transformation: { width: 60, height: 60 },
+                              type: 'png',
+                            })
+                          ] : [new TextRun({ text: 'NGI', size: 16, bold: true, color: '1E3A5F' })],
                         }),
                       ],
                     }),
