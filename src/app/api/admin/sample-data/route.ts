@@ -235,8 +235,8 @@ function generateSampleAchievements(students: any[]) {
         title: ach.title,
         type: ach.type,
         description: `Outstanding performance in ${ach.title.toLowerCase()} representing NIET at ${ach.level.toLowerCase()}`,
-        // Use dates between January 2025 and July 2026 for current reporting period
-        achievedDate: new Date(2025 + Math.floor((achievementIndex / allAchievements.length) * 1), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
+        // Use dates between August 2025 and August 2026 for current reporting period
+        achievedDate: new Date(2025, Math.floor((achievementIndex % 13) + 0), Math.floor(Math.random() * 28) + 1),
         level: ach.level,
         position: ach.position,
         organizedBy: ach.organizedBy,
@@ -269,7 +269,8 @@ function generateSamplePlacements(students: any[]) {
     location: ['Chennai', 'Bangalore', 'Hyderabad', 'Coimbatore', 'Pune'][idx % 5],
     designation: companies[idx % companies.length].designation,
     packageLPA: companies[idx % companies.length].packageLPA,
-    offerDate: new Date(2025 + Math.floor(idx / 10), (idx % 12) + 1, 15),
+    // Dates between Aug 2025 and Aug 2026
+    offerDate: new Date(2025, (idx % 12) + 1, 15),
     studentId: student.id,
     accepted: true,
     joined: idx < 10,
@@ -293,8 +294,9 @@ function generateSampleInternships(students: any[]) {
     company: internships[idx % internships.length].company,
     domain: internships[idx % internships.length].domain,
     stipend: internships[idx % internships.length].stipend,
-    startDate: new Date(2025 + Math.floor(idx / 8), (idx % 6) + 1, 1),
-    endDate: new Date(2025 + Math.floor(idx / 8), ((idx % 6) + 3) % 12 + 1, 28),
+    // Dates between Aug 2025 and Aug 2026
+    startDate: new Date(2025, (idx % 10) + 1, 1),
+    endDate: new Date(2025, ((idx % 10) + 3) % 12 + 1, 28),
     offerLetter: true,
     completionCert: idx < 8,
     description: `Internship project in ${internships[idx % internships.length].domain}`,
@@ -320,7 +322,8 @@ function generateSampleCertifications(students: any[]) {
   return students.slice(0, 20).map((student, idx) => ({
     title: certs[idx % certs.length].title,
     issuer: certs[idx % certs.length].issuer,
-    issuedDate: new Date(2025 + Math.floor(idx / 15), (idx % 12) + 1, 15),
+    // Dates between Aug 2025 and Aug 2026
+    issuedDate: new Date(2025, (idx % 12) + 1, 15),
     studentId: student.id,
     approvalStatus: 'APPROVED'
   }))
@@ -344,8 +347,9 @@ function generateSampleActivities(departments: any[]) {
     title: event.title,
     type: event.type,
     description: `A ${event.type.toLowerCase()} conducted by the department with industry experts`,
-    startDate: new Date(2025 + Math.floor(idx / 8), (idx % 9) + 1, 10 + (idx % 15)),
-    endDate: new Date(2025 + Math.floor(idx / 8), (idx % 9) + 1, 12 + (idx % 15)),
+    // Dates between Aug 2025 and Aug 2026
+    startDate: new Date(2025, (idx % 10) + 1, 10 + (idx % 15)),
+    endDate: new Date(2025, (idx % 10) + 1, 12 + (idx % 15)),
     venue: 'NIET Main Auditorium',
     organizer: departments[idx % departments.length]?.name || 'NIET',
     participants: event.participants,
@@ -375,7 +379,8 @@ function generateSampleResearch(departments: any[]) {
     authors: 'Dr. A, Dr. B, Student C',
     publication: paper.publication,
     publisher: paper.publication.includes('IEEE') ? 'IEEE' : 'Elsevier',
-    publishDate: new Date(2025 + Math.floor(idx / 6), (idx % 10) + 1, 20),
+    // Dates between Aug 2025 and Aug 2026
+    publishDate: new Date(2025, (idx % 10) + 1, 20),
     indexedIn: 'Scopus',
     impactFactor: paper.impactFactor,
     citations: Math.floor(Math.random() * 20),
