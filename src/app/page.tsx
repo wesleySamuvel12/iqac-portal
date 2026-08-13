@@ -11946,14 +11946,25 @@ function HODReportGeneratorPage({ user }: { user: User }) {
               </h3>
             </div>
             
-            {/* NIET Header - Ultra Compact */}
+            {/* NIET Header with Logos - Ultra Compact */}
             <div className="bg-gradient-to-r from-slate-800 to-blue-900 rounded-md p-2 text-white">
               <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-[11px] font-bold leading-tight">NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY</h1>
-                  <p className="text-blue-200 text-[9px]">(AUTONOMOUS) – ISO Certified | NAAC "A+" | NBA</p>
+                <div className="flex items-center gap-2">
+                  <img 
+                    src="/images/niet-logo.png" 
+                    alt="NIET Coimbatore" 
+                    className="w-10 h-10 object-contain bg-white rounded p-0.5"
+                  />
+                  <div>
+                    <h1 className="text-[11px] font-bold leading-tight">NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY</h1>
+                    <p className="text-blue-200 text-[9px]">(AUTONOMOUS) – ISO Certified | NAAC "A+" | NBA</p>
+                  </div>
                 </div>
-                <GraduationCap className="w-6 h-6 text-white/50 hidden sm:block" />
+                <img 
+                  src="/images/nehrugroup-logo.png" 
+                  alt="Nehru Group" 
+                  className="w-10 h-10 object-contain bg-white rounded p-0.5"
+                />
               </div>
             </div>
 

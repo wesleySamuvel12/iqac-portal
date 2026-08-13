@@ -231,10 +231,28 @@ function generateReportHTML(data: any, dept: string): string {
     }
     
     .report-header {
-      text-align: center;
       margin-bottom: 15px;
       padding-bottom: 10px;
       border-bottom: 3px double #1e40af;
+    }
+    
+    .header-with-logos {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .logo-img {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+    }
+    
+    .header-center {
+      text-align: center;
+      flex: 1;
+      padding: 0 20px;
     }
     
     .institute-name {
@@ -424,8 +442,14 @@ function generateReportHTML(data: any, dept: string): string {
 </head>
 <body>
   <div class="report-header">
-    <div class="institute-name">NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY</div>
-    <div class="institute-subtitle">(AUTONOMOUS) | ISO Certified | NAAC "A+" | NBA Accredited</div>
+    <div class="header-with-logos">
+      <img src="${process.cwd()}/public/images/niet-logo.png" alt="NIET Coimbatore" class="logo-img" onerror="this.style.display='none'" />
+      <div class="header-center">
+        <div class="institute-name">NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY</div>
+        <div class="institute-subtitle">(AUTONOMOUS) | ISO Certified | NAAC "A+" | NBA Accredited</div>
+      </div>
+      <img src="${process.cwd()}/public/images/nehrugroup-logo.png" alt="Nehru Group" class="logo-img" onerror="this.style.display='none'" />
+    </div>
     <div class="report-title">MONTHLY DEPARTMENT REPORT</div>
     <div class="academic-year">Academic Year: ${safeData.academicYear || 'N/A'}</div>
   </div>

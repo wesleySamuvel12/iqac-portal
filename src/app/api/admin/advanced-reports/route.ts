@@ -99,8 +99,7 @@ export async function POST(request: NextRequest) {
       activities,
       placements,
       internships,
-      npCourses,
-      events
+      npCourses
     ] = await Promise.all([
       // Departments
       db.department.findMany({
@@ -121,9 +120,9 @@ export async function POST(request: NextRequest) {
       db.student.findMany({
         where: {
           ...(departmentId && departmentId !== 'all' ? { departmentId } : { departmentId: { in: allowedDeptIds } }),
-          ...(academicYear ? { academicYear } : {}),
-          ...(semester ? { semester: parseInt(semester) } : {}),
-          ...(classSection ? { section: classSection } : {}),
+          ...(academicYear && academicYear !== 'all' ? { academicYear } : {}),
+          ...(semester && semester !== 'all' && !isNaN(parseInt(semester)) ? { semester: parseInt(semester) } : {}),
+          ...(classSection && classSection !== 'all' ? { section: classSection } : {}),
           ...(batch ? { batch } : {}),
           ...(programme ? { programme } : {}),
           ...(gender && gender !== 'all' ? { gender } : {}),
@@ -245,7 +244,6 @@ export async function POST(request: NextRequest) {
         },
         include: {
           department: { select: { name: true } },
-          authors: true
         }
       }),
 
@@ -292,9 +290,6 @@ export async function POST(request: NextRequest) {
         },
         include: {
           department: { select: { name: true } },
-          _count: {
-            select: { participants: true }
-          }
         }
       }),
 
@@ -349,21 +344,8 @@ export async function POST(request: NextRequest) {
         }
       }),
 
-      // Events (separate from activities for broader scope)
-      db.event.findMany({
-        where: {
-          date: { gte: startDate, lte: endDate },
-          ...(departmentId && departmentId !== 'all' ? { departmentId } : { departmentId: { in: allowedDeptIds } }),
-          ...(eventType && eventType !== 'all' ? { type: eventType } : {}),
-        },
-        include: {
-          department: { select: { name: true } },
-          _count: {
-            select: { attendees: true }
-          }
-        }
-      })
-    ])
+      // Note: Events are included in Activities above (using Activity model)
+    ] as any)
 
     // Get HODs
     const hods = allFaculty.filter(f => f.isHOD)
@@ -386,7 +368,7 @@ export async function POST(request: NextRequest) {
       totalFDPs: activities.filter(a => a.type?.toLowerCase().includes('fdp')).length,
       totalConferences: activities.filter(a => a.type?.toLowerCase().includes('conference')).length,
       totalResearchGrants: projects.filter(p => p.funded).length,
-      totalEvents: activities.length + (events?.length || 0),
+      totalEvents: activities.length,
       totalSportsAchievements: studentAchievements.filter(a => a.category === 'sports').length,
       totalCulturalAchievements: studentAchievements.filter(a => a.category === 'cultural').length,
       totalNSSNCC: studentAchievements.filter(a => ['nss', 'ncc'].includes(a.category)).length,
@@ -446,7 +428,7 @@ export async function POST(request: NextRequest) {
     const researchStats = generateResearchStats(researchPapers, patents, projects)
 
     // Event Statistics
-    const eventStats = generateEventStats(activities, events)
+    const eventStats = generateEventStats(activities, [])
 
     // NAAC Criteria Data
     const naacCriteria = generateNAACCriteriaData(
@@ -525,8 +507,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Advanced Report Generation Error:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack')
     return NextResponse.json(
-      { success: false, error: 'Failed to generate advanced report: ' + (error as Error).message },
+      { success: false, error: 'Failed to generate advanced report: ' + errorMessage },
       { status: 500 }
     )
   }
