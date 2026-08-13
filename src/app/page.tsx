@@ -3672,10 +3672,30 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
     const [selectedDept, setSelectedDept] = useState<string>('ALL') // 'ALL' or department name
     const [allAchievements, setAllAchievements] = useState<any[]>([])
 
-    // Departments to exclude (if any)
-    const EXCLUDED_DEPARTMENTS = [
+    // Only these 11 departments should be shown in IQAC Dashboard
+    const ALLOWED_DEPARTMENTS = [
+      'Aeronautical Engineering',
+      'AER',
+      'Artificial Intelligence & Data Science',
+      'AI&DS',
+      'AI & DS',
       'Cyber Security',
-      'CSBS'
+      'CSBS',
+      'Computer Science and Engineering',
+      'CSE',
+      'Electronics & Communication Engineering',
+      'ECE',
+      'Electrical & Electronics Engineering',
+      'EEE',
+      'Information Technology',
+      'IT',
+      'Mechatronics',
+      'MCT',
+      'Mechanical Engineering',
+      'MECH',
+      'MBA',
+      'Science & Humanities',
+      'S&H'
     ]
 
     useEffect(() => {
@@ -3684,9 +3704,9 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
         .then(data => {
           if (data.success) {
             const allDepts = data.departments || data.data || []
-            // Exclude only specific departments, show all others
+            // Filter to ONLY allowed departments
             const filteredDepts = allDepts.filter((d: any) => 
-              !EXCLUDED_DEPARTMENTS.includes(d.name)
+              ALLOWED_DEPARTMENTS.includes(d.name)
             )
             setDepartments(filteredDepts)
           }
@@ -3744,7 +3764,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
       { name: 'Hackathon', key: 'hackathon', count: filteredAchievements.filter(a => a.achievementType === 'hackathon').length },
     ]
 
-    // Department short codes mapping - for all departments
+    // Department short codes mapping - for IQAC Dashboard departments
     const getDeptShortCode = (name: string) => {
       const codeMap: Record<string, string> = {
         // Full names
@@ -3753,6 +3773,8 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
         'Artificial Intelligence & Data Science': 'AI&DS',
         'AI & DS': 'AI&DS',
         'AI&DS': 'AI&DS',
+        'Cyber Security': 'CSBS',
+        'CSBS': 'CSBS',
         'Computer Science and Engineering': 'CSE',
         'CSE': 'CSE',
         'Electronics & Communication Engineering': 'ECE',
@@ -3761,19 +3783,13 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
         'EEE': 'EEE',
         'Information Technology': 'IT',
         'IT': 'IT',
-        'Mechanical Engineering': 'MECH',
-        'MECH': 'MECH',
         'Mechatronics': 'MCT',
         'MCT': 'MCT',
+        'Mechanical Engineering': 'MECH',
+        'MECH': 'MECH',
         'MBA': 'MBA',
         'Science & Humanities': 'S&H',
         'S&H': 'S&H',
-        'Civil Engineering': 'CIVIL',
-        'CIVIL': 'CIVIL',
-        'Biomedical Engineering': 'BME',
-        'BME': 'BME',
-        'Chemical Engineering': 'CHEM',
-        'CHEM': 'CHEM',
       }
       
       // If exact match found, return it
@@ -3782,10 +3798,8 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
       // Otherwise, generate short code from name
       const words = name.split(/\s+/)
       if (words.length >= 3) {
-        // For "X Y Engineering" -> take first letter of each main word
         return words.slice(0, -1).map(w => w[0]).join('').toUpperCase()
       } else if (words.length === 2) {
-        // For two words, take first 2-3 letters of each or first letters
         return (words[0].substring(0, 3) + words[1][0]).toUpperCase()
       }
       
