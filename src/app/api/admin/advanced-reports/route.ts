@@ -625,7 +625,7 @@ function generateFacultyAnalysis(faculty: any[], awards: any[], certs: any[], pa
     certifications: certs.filter(c => c.facultyId === f.id).length,
     patents: patents.filter(p => p.facultyId === f.id).length,
     projects: projects.filter(p => p.facultyId === f.id).length,
-    researchPublications: research.filter(r => r.authors?.some((a: any) => a.facultyId === f.id)).length,
+    researchPublications: research.filter(r => r.facultyId === f.id).length,
     totalContributions: 0,
     performanceIndex: 0
   })).map(f => {
