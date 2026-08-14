@@ -3705,6 +3705,9 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
     const [loadingDepts, setLoadingDepts] = useState(true)
     const [selectedDept, setSelectedDept] = useState<string>('ALL') // 'ALL' or department name
     const [allAchievements, setAllAchievements] = useState<any[]>([])
+    
+    // Real database stats
+    const [dbStats, setDbStats] = useState<any>({ totalStudents: 0, totalFaculty: 0, totalActivities: 0, totalResearch: 0 })
 
     // Only these 11 departments should be shown in IQAC Dashboard
     const ALLOWED_DEPARTMENTS = [
@@ -3731,6 +3734,23 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
       'Science & Humanities',
       'S&H'
     ]
+
+    // Fetch real database stats
+    useEffect(() => {
+      fetch('/api/dashboard')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.data) {
+            setDbStats({
+              totalStudents: data.data.stats?.totalStudents || 0,
+              totalFaculty: data.data.stats?.totalFaculty || 0,
+              totalActivities: data.data.stats?.totalActivities || 0,
+              totalResearch: data.data.stats?.totalResearch || 0,
+            })
+          }
+        })
+        .catch(e => console.error('Failed to fetch dashboard stats:', e))
+    }, [])
 
     useEffect(() => {
       fetch('/api/departments')
@@ -3885,39 +3905,39 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
             </div>
           </div>
 
-          {/* Stats Grid */}
+          {/* Stats Grid - Real Database Stats */}
           <div className="grid grid-cols-8 gap-4">
             <div className="text-center">
-              <p className="text-3xl font-bold text-[#0a2a5e]">{totalAchievements}</p>
-              <p className="text-xs text-gray-500 mt-1">Total</p>
+              <p className="text-3xl font-bold text-[#0a2a5e]">{dbStats.totalStudents}</p>
+              <p className="text-xs text-gray-500 mt-1">Students</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold text-blue-500">{totalMale}</p>
-              <p className="text-xs text-gray-500 mt-1">Male</p>
+              <p className="text-3xl font-bold text-blue-500">{dbStats.totalFaculty}</p>
+              <p className="text-xs text-gray-500 mt-1">Faculty</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold text-purple-500">{totalFemale}</p>
-              <p className="text-xs text-gray-500 mt-1">Female</p>
+              <p className="text-3xl font-bold text-purple-500">{departments.length}</p>
+              <p className="text-xs text-gray-500 mt-1">Depts</p>
             </div>
             <div className="text-center border-l border-gray-200 pl-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Verified</p>
-              <p className="text-3xl font-bold text-teal-500">{totalVerified}</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Activities</p>
+              <p className="text-3xl font-bold text-teal-500">{dbStats.totalActivities}</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold text-orange-500">{filteredAchievements.filter(a => a.achievementType === 'journal').length}</p>
-              <p className="text-xs text-gray-500 mt-1">Journal</p>
+              <p className="text-3xl font-bold text-orange-500">{dbStats.totalResearch}</p>
+              <p className="text-xs text-gray-500 mt-1">Research</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold text-red-500">{filteredAchievements.filter(a => a.achievementType === 'patent').length}</p>
-              <p className="text-xs text-gray-500 mt-1">Patent</p>
+              <p className="text-3xl font-bold text-red-500">{totalAchievements || 0}</p>
+              <p className="text-xs text-gray-500 mt-1">Records</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold text-green-600">₹{(totalAchievements * 0.5).toFixed(2)}L</p>
-              <p className="text-xs text-gray-500 mt-1">Funding</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl font-bold text-cyan-500">{filteredAchievements.filter(a => a.achievementType === 'placement').length}</p>
+              <p className="text-3xl font-bold text-green-600">{filteredAchievements.filter(a => a.achievementType === 'placement').length || '—'}</p>
               <p className="text-xs text-gray-500 mt-1">Placed</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-cyan-500">{filteredAchievements.filter(a => a.achievementType === 'patent').length || '—'}</p>
+              <p className="text-xs text-gray-500 mt-1">Patents</p>
             </div>
           </div>
         </div>

@@ -1,0 +1,1082 @@
+     1→// IQAC Enterprise ERP Management System - Complete Database Schema
+     2→// Nehru Institute of Engineering and Technology (Autonomous)
+     3→
+     4→generator client {
+     5→  provider = "prisma-client-js"
+     6→}
+     7→
+     8→datasource db {
+     9→  provider = "sqlite"
+    10→  url      = env("DATABASE_URL")
+    11→}
+    12→
+    13→// ==================== USER & AUTHENTICATION ====================
+    14→
+    15→model User {
+    16→  id            String    @id @default(cuid())
+    17→  email         String    @unique
+    18→  password      String
+    19→  name          String
+    20→  role          UserRole  @default(STAFF)
+    21→  phone         String?
+    22→  avatar        String?
+    23→  isActive      Boolean   @default(true)
+    24→  departmentId  String?
+    25→  lastLogin     DateTime?
+    26→  createdAt     DateTime  @default(now())
+    27→  updatedAt     DateTime  @updatedAt
+    28→  
+    29→  department    Department? @relation(fields: [departmentId], references: [id])
+    30→  faculty       Faculty?
+    31→  student       Student[]
+    32→  notifications Notification[]
+    33→  auditLogs     AuditLog[]
+    34→  feedbacks     Feedback[]
+    35→  
+    36→  @@index([departmentId])
+    37→  @@index([role])
+    38→  @@index([email])
+    39→}
+    40→
+    41→enum UserRole {
+    42→  SUPER_ADMIN
+    43→  ADMIN
+    44→  HOD
+    45→  STAFF
+    46→  STUDENT
+    47→}
+    48→
+    49→// ==================== DEPARTMENT ====================
+    50→
+    51→model Department {
+    52→  id              String   @id @default(cuid())
+    53→  name            String   @unique
+    54→  code            String   @unique
+    55→  description     String?
+    56→  vision          String?
+    57→  mission         String?
+    58→  peo             String?
+    59→  po              String?
+    60→  pso             String?
+    61→  logo            String?
+    62→  hodId           String?
+    63→  establishedYear Int?
+    64→  isActive        Boolean  @default(true)
+    65→  createdAt       DateTime @default(now())
+    66→  updatedAt       DateTime @updatedAt
+    67→  
+    68→  users           User[]
+    69→  faculty         Faculty[]
+    70→  students        Student[]
+    71→  batches         Batch[]
+    72→  activities      Activity[]
+    73→  research        Research[]
+    74→  
+    75→  @@index([code])
+    76→}
+    77→
+    78→// ==================== FACULTY ====================
+    79→
+    80→model Faculty {
+    81→  id                String    @id @default(cuid())
+    82→  employeeId        String    @unique
+    83→  userId            String    @unique
+    84→  departmentId      String
+    85→  designation       String?
+    86→  qualification     String?
+    87→  specialization    String?
+    88→  experience        Float?
+    89→  dateOfJoining     DateTime?
+    90→  researchArea      String?
+    91→  photo             String?
+    92→  isHOD             Boolean   @default(false)
+    93→  approvalStatus    ApprovalStatus @default(APPROVED)
+    94→  createdAt         DateTime  @default(now())
+    95→  updatedAt         DateTime  @updatedAt
+    96→  
+    97→  user              User      @relation(fields: [userId], references: [id])
+    98→  department        Department @relation(fields: [departmentId], references: [id])
+    99→  activities        FacultyActivity[]
+   100→  researchPublications ResearchPublication[]
+   101→  certifications    Certification[]
+   102→  awards             Award[]
+   103→  consultations      Consultancy[]
+   104→  patents            Patent[]
+   105→  books              Book[]
+   106→  projects           Project[]
+   107→  fdpPrograms        FDPProgram[]
+   108→  advisedBatches     Batch[]
+   109→  
+   110→  @@index([departmentId])
+   111→  @@index([employeeId])
+   112→  @@index([userId])
+   113→}
+   114→
+   115→// ==================== STUDENT ====================
+   116→
+   117→model Student {
+   118→  id                String    @id @default(cuid())
+   119→  registerNumber    String    @unique
+   120→  rollNumber        String?
+   121→  userId            String    @unique
+   122→  departmentId      String
+   123→  batchId           String?
+   124→  semester          Int?
+   125→  section           String?
+   126→  batch             String?
+   127→  cgpa              Float?
+   128→  admissionYear     Int?
+   129→  graduationYear    Int?
+   130→  photo             String?
+   131→  approvalStatus    ApprovalStatus @default(APPROVED)
+   132→  createdAt         DateTime  @default(now())
+   133→  updatedAt         DateTime  @updatedAt
+   134→  
+   135→  user              User      @relation(fields: [userId], references: [id])
+   136→  department        Department @relation(fields: [departmentId], references: [id])
+   137→  batchInfo         Batch?    @relation(fields: [batchId], references: [id])
+   138→  activities        StudentActivity[]
+   139→  achievements      StudentAchievement[]
+   140→  internships       Internship[]
+   141→  placements        Placement[]
+   142→  certifications    StudentCertification[]
+   143→  npCourses         NPCourse[]
+   144→  hackathons        HackathonParticipation[]
+   145→  startups          Startup[]
+   146→  
+   147→  @@index([departmentId])
+   148→  @@index([registerNumber])
+   149→  @@index([userId])
+   150→}
+   151→
+   152→// ==================== ACTIVITY MODULES ====================
+   153→
+   154→model Activity {
+   155→  id               String        @id @default(cuid())
+   156→  title            String
+   157→  type             ActivityType
+   158→  description      String?
+   159→  startDate        DateTime?
+   160→  endDate          DateTime?
+   161→  venue            String?
+   162→  organizer        String?
+   163→  participants     Int?
+   164→  outcome          String?
+   165→  status           ActivityStatus @default(PLANNED)
+   166→  departmentId     String
+   167→  conductedBy      String?
+   168→  attachments      String?
+   169→  reportUrl        String?
+   170→  approvalStatus   ApprovalStatus @default(PENDING)
+   171→  approvedBy       String?
+   172→  approvedAt       DateTime?
+   173→  createdAt        DateTime      @default(now())
+   174→  updatedAt        DateTime      @updatedAt
+   175→  
+   176→  department       Department     @relation(fields: [departmentId], references: [id])
+   177→  facultyActivities FacultyActivity[]
+   178→  studentActivities StudentActivity[]
+   179→  
+   180→  @@index([departmentId])
+   181→  @@index([type])
+   182→  @@index([status])
+   183→  @@index([approvalStatus])
+   184→}
+   185→
+   186→enum ActivityType {
+   187→  EVENT
+   188→  WORKSHOP
+   189→  SEMINAR
+   190→  CONFERENCE
+   191→  GUEST_LECTURE
+   192→  FDP
+   193→  INDUSTRIAL_VISIT
+   194→  RESOURCE_PERSON
+   195→  EXTENSION_ACTIVITY
+   196→  INDUSTRY_COLLABORATION
+   197→  MOU_SIGNED
+   198→  OTHER
+   199→}
+   200→
+   201→enum ActivityStatus {
+   202→  PLANNED
+   203→  ONGOING
+   204→  COMPLETED
+   205→  CANCELLED
+   206→  POSTPONED
+   207→}
+   208→
+   209→model FacultyActivity {
+   210→  id          String   @id @default(cuid())
+   211→  facultyId   String
+   212→  activityId  String
+   213→  role        String?
+   214→  hoursSpent  Float?
+   215→  remarks     String?
+   216→  createdAt   DateTime @default(now())
+   217→  
+   218→  faculty     Faculty  @relation(fields: [facultyId], references: [id])
+   219→  activity    Activity @relation(fields: [activityId], references: [id])
+   220→  
+   221→  @@unique([facultyId, activityId])
+   222→}
+   223→
+   224→model StudentActivity {
+   225→  id          String   @id @default(cuid())
+   226→  studentId   String
+   227→  activityId  String
+   228→  role        String?
+   229→  remarks     String?
+   230→  createdAt   DateTime @default(now())
+   231→  
+   232→  student     Student  @relation(fields: [studentId], references: [id])
+   233→  activity    Activity @relation(fields: [activityId], references: [id])
+   234→  
+   235→  @@unique([studentId, activityId])
+   236→}
+   237→
+   238→// ==================== RESEARCH MODULES ====================
+   239→
+   240→model Research {
+   241→  id               String         @id @default(cuid())
+   242→  title            String
+   243→  type             ResearchType
+   244→  description      String?
+   245→  authors          String?
+   246→  publication      String?
+   247→  publisher        String?
+   248→  doi              String?
+   249→  isbn             String?
+   250→  issn             String?
+   251→  volume           String?
+   252→  issue            String?
+   253→  pages            String?
+   254→  publishDate      DateTime?
+   255→  indexedIn        String?
+   256→  impactFactor     Float?
+   257→  citations        Int            @default(0)
+   258→  url              String?
+   259→  departmentId     String
+   260→  facultyId        String?
+   261→  status           ResearchStatus @default(PUBLISHED)
+   262→  approvalStatus   ApprovalStatus @default(PENDING)
+   263→  approvedBy       String?
+   264→  approvedAt       DateTime?
+   265→  attachments      String?
+   266→  createdAt        DateTime       @default(now())
+   267→  updatedAt        DateTime       @updatedAt
+   268→  
+   269→  department       Department            @relation(fields: [departmentId], references: [id])
+   270→  publications     ResearchPublication[]
+   271→  
+   272→  @@index([departmentId])
+   273→  @@index([type])
+   274→  @@index([status])
+   275→}
+   276→
+   277→enum ResearchType {
+   278→  JOURNAL
+   279→  CONFERENCE
+   280→  PATENT
+   281→  BOOK
+   282→  BOOK_CHAPTER
+   283→  PROJECT
+   284→  CONSULTANCY
+   285→  RESEARCH_GRANT
+   286→}
+   287→
+   288→enum ResearchStatus {
+   289→  DRAFT
+   290→  SUBMITTED
+   291→  UNDER_REVIEW
+   292→  ACCEPTED
+   293→  PUBLISHED
+   294→  REJECTED
+   295→  WITHDRAWN
+   296→}
+   297→
+   298→model ResearchPublication {
+   299→  id          String   @id @default(cuid())
+   300→  researchId  String
+   301→  facultyId   String
+   302→  authorOrder Int?
+   303→  createdAt   DateTime @default(now())
+   304→  
+   305→  research    Research @relation(fields: [researchId], references: [id])
+   306→  faculty     Faculty  @relation(fields: [facultyId], references: [id])
+   307→  
+   308→  @@unique([researchId, facultyId])
+   309→}
+   310→
+   311→// ==================== CERTIFICATION & AWARDS ====================
+   312→
+   313→model Certification {
+   314→  id                String   @id @default(cuid())
+   315→  title             String
+   316→  issuer            String?
+   317→  certificateNumber String?
+   318→  issuedDate        DateTime?
+   319→  validUntil        DateTime?
+   320→  credentialUrl     String?
+   321→  facultyId         String
+   322→  attachments       String?
+   323→  approvalStatus    ApprovalStatus @default(PENDING)
+   324→  createdAt         DateTime @default(now())
+   325→  updatedAt         DateTime @updatedAt
+   326→  
+   327→  faculty           Faculty  @relation(fields: [facultyId], references: [id])
+   328→  
+   329→  @@index([facultyId])
+   330→}
+   331→
+   332→model StudentCertification {
+   333→  id                String   @id @default(cuid())
+   334→  title             String
+   335→  issuer            String?
+   336→  certificateNumber String?
+   337→  issuedDate        DateTime?
+   338→  validUntil        DateTime?
+   339→  credentialUrl     String?
+   340→  studentId         String
+   341→  attachments       String?
+   342→  approvalStatus    ApprovalStatus @default(PENDING)
+   343→  createdAt         DateTime @default(now())
+   344→  updatedAt         DateTime @updatedAt
+   345→  
+   346→  student           Student  @relation(fields: [studentId], references: [id])
+   347→  
+   348→  @@index([studentId])
+   349→}
+   350→
+   351→model Award {
+   352→  id           String   @id @default(cuid())
+   353→  title        String
+   354→  awardedBy    String?
+   355→  awardDate    DateTime?
+   356→  category     String?
+   357→  level        String?
+   358→  description  String?
+   359→  facultyId    String
+   360→  attachments  String?
+   361→  createdAt    DateTime @default(now())
+   362→  
+   363→  faculty      Faculty  @relation(fields: [facultyId], references: [id])
+   364→  
+   365→  @@index([facultyId])
+   366→}
+   367→
+   368→model StudentAchievement {
+   369→  id            String          @id @default(cuid())
+   370→  title         String
+   371→  type          AchievementType
+   372→  description   String?
+   373→  achievedDate  DateTime?
+   374→  level         String?
+   375→  position      String?
+   376→  organizedBy   String?
+   377→  studentId     String
+   378→  attachments   String?
+   379→  approvalStatus ApprovalStatus @default(PENDING)
+   380→  createdAt     DateTime        @default(now())
+   381→  updatedAt     DateTime        @updatedAt
+   382→  
+   383→  student       Student          @relation(fields: [studentId], references: [id])
+   384→  
+   385→  @@index([studentId])
+   386→  @@index([type])
+   387→}
+   388→
+   389→enum AchievementType {
+   390→  SPORTS
+   391→  CULTURAL
+   392→  TECHNICAL
+   393→  ACADEMIC
+   394→  EXTRA_CURRICULAR
+   395→  CO_CURRICULAR
+   396→  COMMUNITY_SERVICE
+   397→  PROJECT
+   398→  COMPETITION
+   399→  OTHER
+   400→}
+   401→
+   402→// ==================== INTERNSHIP & PLACEMENT ====================
+   403→
+   404→model Internship {
+   405→  id               String   @id @default(cuid())
+   406→  company          String
+   407→  location         String?
+   408→  domain           String?
+   409→  startDate        DateTime?
+   410→  endDate          DateTime?
+   411→  stipend          Float?
+   412→  offerLetter      Boolean  @default(false)
+   413→  completionCert   Boolean  @default(false)
+   414→  description      String?
+   415→  studentId        String
+   416→  supervisor       String?
+   417→  supervisorEmail  String?
+   418→  attachments      String?
+   419→  approvalStatus   ApprovalStatus @default(PENDING)
+   420→  createdAt        DateTime @default(now())
+   421→  updatedAt        DateTime @updatedAt
+   422→  
+   423→  student          Student  @relation(fields: [studentId], references: [id])
+   424→  
+   425→  @@index([studentId])
+   426→}
+   427→
+   428→model Placement {
+   429→  id               String   @id @default(cuid())
+   430→  company          String
+   431→  location         String?
+   432→  designation      String?
+   433→  packageLPA       Float?
+   434→  offerDate        DateTime?
+   435→  joiningDate      DateTime?
+   436→  accepted         Boolean  @default(false)
+   437→  joined           Boolean  @default(false)
+   438→  description      String?
+   439→  studentId        String
+   440→  attachments      String?
+   441→  approvalStatus   ApprovalStatus @default(PENDING)
+   442→  createdAt        DateTime @default(now())
+   443→  updatedAt        DateTime @updatedAt
+   444→  
+   445→  student          Student  @relation(fields: [studentId], references: [id])
+   446→  
+   447→  @@index([studentId])
+   448→}
+   449→
+   450→// ==================== NPTEL & ONLINE COURSES ====================
+   451→
+   452→model NPCourse {
+   453→  id             String   @id @default(cuid())
+   454→  courseName     String
+   455→  courseId       String?
+   456→  platform       String?
+   457→  instructor     String?
+   458→  startDate      DateTime?
+   459→  endDate        DateTime?
+   460→  score          Float?
+   461→  grade          String?
+   462→  certificateUrl String?
+   463→  studentId      String
+   464→  attachments    String?
+   465→  approvalStatus ApprovalStatus @default(PENDING)
+   466→  createdAt      DateTime @default(now())
+   467→  updatedAt      DateTime @updatedAt
+   468→  
+   469→  student        Student  @relation(fields: [studentId], references: [id])
+   470→  
+   471→  @@index([studentId])
+   472→}
+   473→
+   474→// ==================== HACKATHON & STARTUP ====================
+   475→
+   476→model HackathonParticipation {
+   477→  id           String   @id @default(cuid())
+   478→  name         String
+   479→  organizer    String?
+   480→  level        String?
+   481→  startDate    DateTime?
+   482→  endDate      DateTime?
+   483→  position     String?
+   484→  projectTitle String?
+   485→  teamSize     Int?
+   486→  description  String?
+   487→  studentId    String
+   488→  attachments  String?
+   489→  approvalStatus ApprovalStatus @default(PENDING)
+   490→  createdAt    DateTime @default(now())
+   491→  updatedAt    DateTime @updatedAt
+   492→    
+   493→  student      Student  @relation(fields: [studentId], references: [id])
+   494→  
+   495→  @@index([studentId])
+   496→}
+   497→
+   498→model Startup {
+   499→  id           String   @id @default(cuid())
+   500→  name         String
+   501→  domain       String?
+   502→  founderRole  String?
+   503→  foundedDate  DateTime?
+   504→  funding      Float?
+   505→  stage        String?
+   506→  description  String?
+   507→  website      String?
+   508→  studentId    String
+   509→  incubator    String?
+   510→  attachments  String?
+   511→  approvalStatus ApprovalStatus @default(PENDING)
+   512→  createdAt    DateTime @default(now())
+   513→  updatedAt    DateTime @updatedAt
+   514→  
+   515→  student      Student  @relation(fields: [studentId], references: [id])
+   516→  
+   517→  @@index([studentId])
+   518→}
+   519→
+   520→// ==================== PATENTS & BOOKS ====================
+   521→
+   522→model Patent {
+   523→  id           String        @id @default(cuid())
+   524→  title        String
+   525→  patentNumber String?
+   526→  inventors    String?
+   527→  filingDate   DateTime?
+   528→  publishDate  DateTime?
+   529→  grantDate    DateTime?
+   530→  status       PatentStatus @default(FILED)
+   531→  country      String?
+   532→  category     String?
+   533→  facultyId    String
+   534→  attachments  String?
+   535→  createdAt    DateTime        @default(now())
+   536→  updatedAt    DateTime        @updatedAt
+   537→  
+   538→  faculty      Faculty  @relation(fields: [facultyId], references: [id])
+   539→  
+   540→  @@index([facultyId])
+   541→}
+   542→
+   543→enum PatentStatus {
+   544→  FILED
+   545→  PUBLISHED
+   546→  GRANTED
+   547→  ABANDONED
+   548→  REJECTED
+   549→}
+   550→
+   551→model Book {
+   552→  id           String   @id @default(cuid())
+   553→  title        String
+   554→  authors      String?
+   555→  publisher    String?
+   556→  isbn         String?
+   557→  edition      String?
+   558→  publishDate  DateTime?
+   559→  bookType     BookType @default(TEXTBOOK)
+   560→  category     String?
+   561→  facultyId    String
+   562→  attachments  String?
+   563→  createdAt    DateTime @default(now())
+   564→  updatedAt    DateTime @updatedAt
+   565→  
+   566→  faculty      Faculty  @relation(fields: [facultyId], references: [id])
+   567→  
+   568→  @@index([facultyId])
+   569→}
+   570→
+   571→enum BookType {
+   572→  TEXTBOOK
+   573→  REFERENCE_BOOK
+   574→  EDITED_BOOK
+   575→  BOOK_CHAPTER
+   576→  MANUAL
+   577→}
+   578→
+   579→// ==================== PROJECTS & CONSULTANCY ====================
+   580→
+   581→model Project {
+   582→  id                   String        @id @default(cuid())
+   583→  title                String
+   584→  type                 ProjectType   @default(RESEARCH)
+   585→  description          String?
+   586→  principalInvestigator String?
+   587→  coInvestigators      String?
+   588→  fundingAgency        String?
+   589→  amount               Float?
+   590→  startDate            DateTime?
+   591→  endDate              DateTime?
+   592→  status               ProjectStatus @default(ONGOING)
+   593→  outcomes             String?
+   594→  facultyId            String
+   595→  attachments          String?
+   596→  createdAt            DateTime        @default(now())
+   597→  updatedAt            DateTime        @updatedAt
+   598→  
+   599→  faculty              Faculty  @relation(fields: [facultyId], references: [id])
+   600→  
+   601→  @@index([facultyId])
+   602→  @@index([type])
+   603→  @@index([status])
+   604→}
+   605→
+   606→enum ProjectType {
+   607→  RESEARCH
+   608→  CONSULTANCY
+   609→  SPONSORED
+   610→  INTERNALLY_FUNDED
+   611→  STUDENT_PROJECT
+   612→}
+   613→
+   614→enum ProjectStatus {
+   615→  PROPOSED
+   616→  APPROVED
+   617→  ONGOING
+   618→  COMPLETED
+   619→  ON_HOLD
+   620→  TERMINATED
+   621→}
+   622→
+   623→model Consultancy {
+   624→  id           String             @id @default(cuid())
+   625→  title        String
+   626→  client       String?
+   627→  amount       Float?
+   628→  startDate    DateTime?
+   629→  endDate      DateTime?
+   630→  status       ConsultancyStatus @default(ONGOING)
+   631→  description  String?
+   632→  facultyId    String
+   633→  attachments  String?
+   634→  createdAt    DateTime             @default(now())
+   635→  updatedAt    DateTime             @updatedAt
+   636→  
+   637→  faculty      Faculty  @relation(fields: [facultyId], references: [id])
+   638→  
+   639→  @@index([facultyId])
+   640→}
+   641→
+   642→enum ConsultancyStatus {
+   643→  ONGOING
+   644→  COMPLETED
+   645→  CANCELLED
+   646→}
+   647→
+   648→// ==================== FDP & TRAINING ====================
+   649→
+   650→model FDPProgram {
+   651→  id             String   @id @default(cuid())
+   652→  title          String
+   653→  organizer      String?
+   654→  type           String?
+   655→  startDate      DateTime?
+   656→  endDate        DateTime?
+   657→  durationDays   Int?
+   658→  venue          String?
+   659→  level          String?
+   660→  topics         String?
+   661→  facultyId      String
+   662→  attachments    String?
+   663→  certificateUrl String?
+   664→  createdAt      DateTime @default(now())
+   665→  updatedAt      DateTime @updatedAt
+   666→  
+   667→  faculty        Faculty  @relation(fields: [facultyId], references: [id])
+   668→  
+   669→  @@index([facultyId])
+   670→}
+   671→
+   672→// ==================== APPROVAL WORKFLOW ====================
+   673→
+   674→model Approval {
+   675→  id           String         @id @default(cuid())
+   676→  entityType   EntityType
+   677→  entityId     String
+   678→  requestedBy  String
+   679→  currentStage ApprovalStage @default(STAFF_REVIEW)
+   680→  status       ApprovalStatus @default(PENDING)
+   681→  reviewedBy   String?
+   682→  reviewedAt   DateTime?
+   683→  comments     String?
+   684→  activityId   String?
+   685→  createdAt    DateTime      @default(now())
+   686→  updatedAt    DateTime      @updatedAt
+   687→  
+   688→  @@index([entityType, entityId])
+   689→  @@index([requestedBy])
+   690→  @@index([status])
+   691→  @@index([currentStage])
+   692→}
+   693→
+   694→enum EntityType {
+   695→  ACTIVITY
+   696→  RESEARCH
+   697→  ACHIEVEMENT
+   698→  INTERNSHIP
+   699→  PLACEMENT
+   700→  CERTIFICATION
+   701→  NPTEL_COURSE
+   702→  HACKATHON
+   703→  STARTUP
+   704→  PATENT
+   705→  BOOK
+   706→  PROJECT
+   707→  CONSULTANCY
+   708→  FDP
+   709→  FACULTY_PROFILE
+   710→  STUDENT_PROFILE
+   711→}
+   712→
+   713→enum ApprovalStage {
+   714→  STAFF_REVIEW
+   715→  HOD_REVIEW
+   716→  ADMIN_REVIEW
+   717→  APPROVED
+   718→  REJECTED
+   719→  NEEDS_REVISION
+   720→}
+   721→
+   722→enum ApprovalStatus {
+   723→  PENDING
+   724→  APPROVED
+   725→  REJECTED
+   726→  NEEDS_REVISION
+   727→  WITHDRAWN
+   728→}
+   729→
+   730→// ==================== NOTIFICATIONS ====================
+   731→
+   732→model Notification {
+   733→  id          String           @id @default(cuid())
+   734→  title       String
+   735→  message     String
+   736→  type        NotificationType @default(INFO)
+   737→  userId      String
+   738→  isRead      Boolean          @default(false)
+   739→  actionUrl   String?
+   740→  relatedId   String?
+   741→  entityType  EntityType?
+   742→  createdAt   DateTime         @default(now())
+   743→  
+   744→  user        User             @relation(fields: [userId], references: [id])
+   745→  
+   746→  @@index([userId])
+   747→  @@index([isRead])
+   748→  @@index([createdAt])
+   749→}
+   750→
+   751→enum NotificationType {
+   752→  INFO
+   753→  SUCCESS
+   754→  WARNING
+   755→  ERROR
+   756→  APPROVAL_REQUIRED
+   757→  APPROVED
+   758→  REJECTED
+   759→  REMINDER
+   760→  DEADLINE
+   761→  SYSTEM
+   762→}
+   763→
+   764→// ==================== FEEDBACK ====================
+   765→
+   766→model Feedback {
+   767→  id          String   @id @default(cuid())
+   768→  category    String
+   769→  rating      Int
+   770→  comments    String?
+   771→  anonymous   Boolean  @default(false)
+   772→  userId      String
+   773→  response    String?
+   774→  respondedAt DateTime?
+   775→  respondedBy String?
+   776→  isActive    Boolean  @default(true)
+   777→  createdAt   DateTime @default(now())
+   778→  updatedAt   DateTime @updatedAt
+   779→  
+   780→  user        User     @relation(fields: [userId], references: [id])
+   781→  
+   782→  @@index([userId])
+   783→  @@index([category])
+   784→  @@index([rating])
+   785→}
+   786→
+   787→// ==================== DOCUMENT MANAGEMENT ====================
+   788→
+   789→model Document {
+   790→  id            String           @id @default(cuid())
+   791→  name          String
+   792→  originalName  String
+   793→  mimeType      String
+   794→  size          Int
+   795→  url           String
+   796→  uploadedBy    String
+   797→  category      DocumentCategory @default(OTHER)
+   798→  entityType    EntityType?
+   799→  entityId      String?
+   800→  version       Int             @default(1)
+   801→  isLatest      Boolean          @default(true)
+   802→  createdAt     DateTime         @default(now())
+   803→  updatedAt     DateTime         @updatedAt
+   804→  
+   805→  @@index([entityType, entityId])
+   806→  @@index([uploadedBy])
+   807→  @@index([category])
+   808→}
+   809→
+   810→enum DocumentCategory {
+   811→  REPORT
+   812→  CERTIFICATE
+   813→  PUBLICATION
+   814→  PRESENTATION
+   815→  SPREADSHEET
+   816→  IMAGE
+   817→  VIDEO
+   818→  ARCHIVE
+   819→  TEMPLATE
+   820→  OTHER
+   821→}
+   822→
+   823→// ==================== AUDIT LOGS ====================
+   824→
+   825→model AuditLog {
+   826→  id         String   @id @default(cuid())
+   827→  userId     String
+   828→  action     String
+   829→  entityType String?
+   830→  entityId   String?
+   831→  oldValue   String?
+   832→  newValue   String?
+   833→  ipAddress  String?
+   834→  userAgent  String?
+   835→  createdAt DateTime @default(now())
+   836→  
+   837→  user       User     @relation(fields: [userId], references: [id])
+   838→  
+   839→  @@index([userId])
+   840→  @@index([action])
+   841→  @@index([createdAt])
+   842→}
+   843→
+   844→// ==================== SETTINGS & CONFIGURATION ====================
+   845→
+   846→model Setting {
+   847→  id          String   @id @default(cuid())
+   848→  key         String   @unique
+   849→  value       String
+   850→  category    String   @default("GENERAL")
+   851→  description String?
+   852→  updatedAt   DateTime @updatedAt
+   853→  
+   854→  @@index([key])
+   855→  @@index([category])
+   856→}
+   857→
+   858→// ==================== BATCH MANAGEMENT ====================
+   859→
+   860→model Batch {
+   861→  id              String     @id @default(cuid())
+   862→  name            String                    // e.g., "2024 Batch", "2025 Batch"
+   863→  year            Int                       // Admission year
+   864→  departmentId    String
+   865→  section         String?                   // e.g., "A", "B", "C"
+   866→  strength        Int?                       // Total students
+   867→  advisorId       String?                   // Faculty advisor/mentor
+   868→  description     String?
+   869→  isActive        Boolean    @default(true)
+   870→  createdAt       DateTime   @default(now())
+   871→  updatedAt       DateTime   @updatedAt
+   872→  
+   873→  department      Department @relation(fields: [departmentId], references: [id])
+   874→  advisor         Faculty?   @relation(fields: [advisorId], references: [id])
+   875→  students        Student[]
+   876→  
+   877→  @@index([departmentId])
+   878→  @@index([year])
+   879→  @@unique([name, departmentId])
+   880→}
+   881→
+   882→// ==================== INSTITUTION INFO ====================
+   883→
+   884→model Institution {
+   885→  id                  String   @id @default(cuid())
+   886→  name                String
+   887→  shortName           String?
+   888→  address             String?
+   889→  city                String?
+   890→  state               String?
+   891→  pincode             String?
+   892→  country             String   @default("India")
+   893→  phone               String?
+   894→  email               String?
+   895→  website             String?
+   896→  logo                String?
+   897→  establishedYear     Int?
+   898→  accreditation       String?
+   899→  accreditationGrade  String?
+   900→  affiliation         String?
+   901→  type                String?
+   902→  currentAcademicYear String?
+   903→  currentSemester     String?
+   904→  updatedAt           DateTime @updatedAt
+   905→}
+   906→
+   907→// ==================== CMS / SUPER ADMIN CONFIGURATION ====================
+   908→
+   909→model CmsConfig {
+   910→  id          String   @id @default(cuid())
+   911→  key         String   @unique
+   912→  value       String
+   913→  category    String   @default("GENERAL")
+   914→  description String?
+   915→  updatedAt   DateTime @updatedAt
+   916→  
+   917→  @@index([key])
+   918→  @@index([category])
+   919→}
+   920→
+   921→model CmsPage {
+   922→  id          String       @id @default(cuid())
+   923→  title       String
+   924→  slug        String       @unique
+   925→  content     String?      // JSON or HTML content
+   926→  status      PageStatus   @default(DRAFT)
+   927→  template    String?      // Template name
+   928→  metaTitle   String?
+   929→  metaDescription String?
+   930→  createdBy   String
+   931→  updatedBy   String?
+   932→  publishedAt DateTime?
+   933→  createdAt   DateTime     @default(now())
+   934→  updatedAt   DateTime     @updatedAt
+   935→  
+   936→  @@index([slug])
+   937→  @@index([status])
+   938→}
+   939→
+   940→enum PageStatus {
+   941→  DRAFT
+   942→  PUBLISHED
+   943→  ARCHIVED
+   944→}
+   945→
+   946→model CmsMenu {
+   947→  id        String     @id @default(cuid())
+   948→  title     String
+   949→  url       String?
+   950→  parentId  String?
+   951→  order     Int        @default(0)
+   952→  icon      String?
+   953→  isVisible Boolean    @default(true)
+   954→  openInNewTab Boolean  @default(false)
+   955→  createdAt DateTime   @default(now())
+   956→  updatedAt DateTime   @updatedAt
+   957→  
+   958→  parent    CmsMenu?   @relation("MenuHierarchy", fields: [parentId], references: [id])
+   959→  children  CmsMenu[]  @relation("MenuHierarchy")
+   960→  
+   961→  @@index([parentId])
+   962→  @@index([order])
+   963→}
+   964→
+   965→model CmsBanner {
+   966→  id          String       @id @default(cuid())
+   967→  title       String
+   968→  subtitle    String?
+   969→  imageUrl    String
+   970→  linkUrl     String?
+   971→  position    BannerPosition @default(HOME_TOP)
+   972→  status      BannerStatus  @default(ACTIVE)
+   973→  startDate   DateTime?
+   974→  endDate     DateTime?
+   975→  order       Int          @default(0)
+   976→  createdAt   DateTime      @default(now())
+   977→  updatedAt   DateTime      @updatedAt
+   978→  
+   979→  @@index([position])
+   980→  @@index([status])
+   981→}
+   982→
+   983→enum BannerPosition {
+   984→  HOME_TOP
+   985→  HOME_MIDDLE
+   986→  HOME_BOTTOM
+   987→  LOGIN_PAGE
+   988→  DASHBOARD_TOP
+   989→}
+   990→
+   991→enum BannerStatus {
+   992→  ACTIVE
+   993→  INACTIVE
+   994→  SCHEDULED
+   995→}
+   996→
+   997→model CmsAnnouncement {
+   998→  id          String            @id @default(cuid())
+   999→  title       String
+  1000→  content     String?
+  1001→  type        AnnouncementType  @default(INFO)
+  1002→  targetRoles String?           // JSON array of roles
+  1003→  targetDepts String?           // JSON array of department IDs
+  1004→  isPinned    Boolean           @default(false)
+  1005→  status      AnnouncementStatus @default(ACTIVE)
+  1006→  startDate   DateTime?
+  1007→  endDate     DateTime?
+  1008→  createdBy   String
+  1009→  createdAt   DateTime         @default(now())
+  1010→  updatedAt   DateTime         @updatedAt
+  1011→  
+  1012→  @@index([status])
+  1013→  @@index([isPinned])
+  1014→  @@index([startDate])
+  1015→}
+  1016→
+  1017→enum AnnouncementType {
+  1018→  INFO
+  1019→  WARNING
+  1020→  SUCCESS
+  1021→  URGENT
+  1022→  EVENT
+  1023→  HOLIDAY
+  1024→  MAINTENANCE
+  1025→}
+  1026→
+  1027→enum AnnouncementStatus {
+  1028→  ACTIVE
+  1029→  EXPIRED
+  1030→  SCHEDULED
+  1031→  DRAFT
+  1032→}
+  1033→
+  1034→model AuditLogEntry {
+  1035→  id         String   @id @default(cuid())
+  1036→  userId     String?
+  1037→  userName   String?
+  1038→  action     String
+  1039→  module     String
+  1040→  details    String?  // JSON string with additional data
+  1041→  ipAddress  String?
+  1042→  userAgent  String?
+  1043→  createdAt DateTime @default(now())
+  1044→  
+  1045→  @@index([userId])
+  1046→  @@index([module])
+  1047→  @@index([action])
+  1048→  @@index([createdAt])
+  1049→}
+  1050→
+  1051→model SystemBackup {
+  1052→  id          String   @id @default(cuid())
+  1053→  fileName    String
+  1054→  filePath    String
+  1055→  size        Int      // in bytes
+  1056→  type        BackupType @default(FULL)
+  1057→  status      BackupStatus @default(COMPLETED)
+  1058→  createdBy   String?
+  1059→  notes       String?
+  1060→  createdAt   DateTime @default(now())
+  1061→  
+  1062→  @@index([status])
+  1063→  @@index([type])
+  1064→  @@index([createdAt])
+  1065→}
+  1066→
+  1067→enum BackupType {
+  1068→  FULL
+  1069→  USERS
+  1070→  DATA
+  1071→  SETTINGS
+  1072→  MEDIA
+  1073→}
+  1074→
+  1075→enum BackupStatus {
+  1076→  PENDING
+  1077→  IN_PROGRESS
+  1078→  COMPLETED
+  1079→  FAILED
+  1080→  RESTORED
+  1081→}
+  1082→
