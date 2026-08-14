@@ -15313,6 +15313,8 @@ function ReportEditorTab({
   onBackToPreview: () => void
   onExport: (format: string) => void
 }) {
+  const [showPDFPreview, setShowPDFPreview] = useState<boolean>(true)
+  
   return (
     <div className="space-y-6">
       {/* Editor Header */}
@@ -15326,27 +15328,152 @@ function ReportEditorTab({
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h2 className="font-bold text-gray-900">Report Editor</h2>
-              <p className="text-xs text-gray-500">Customize your report before export</p>
+              <h2 className="font-bold text-gray-900">PDF Editor</h2>
+              <p className="text-xs text-gray-500">Edit your report and see live PDF preview</p>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setShowPDFPreview(!showPDFPreview)}
+              className={'px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ' + (showPDFPreview ? 'bg-[#0A2E6D] text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700')}
+            >
+              <FileText className="w-4 h-4" /> {showPDFPreview ? 'Hide Preview' : 'Show Preview'}
+            </button>
+            <button
               onClick={onBackToPreview}
               className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium flex items-center gap-2"
             >
-              <Eye className="w-4 h-4" /> Preview
+              <Eye className="w-4 h-4" /> Data View
             </button>
             <button
               onClick={() => onExport('pdf')}
-              className="px-4 py-2 bg-gradient-to-r from-[#0A2E6D] to-[#1a4a9e] text-white rounded-lg font-medium flex items-center gap-2"
+              className="px-4 py-2 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white rounded-lg font-medium flex items-center gap-2 shadow-md"
             >
-              <Download className="w-4 h-4" /> Export PDF
+              <Download className="w-4 h-4" /> Download PDF
             </button>
           </div>
         </div>
       </div>
+
+      {/* Visual PDF Preview Panel - Shows when showPDFPreview is true */}
+      {showPDFPreview && (
+        <div className="backdrop-blur-xl bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl shadow-xl overflow-hidden border border-gray-300">
+          <div className="bg-gray-800 px-4 py-2 flex items-center gap-2">
+            <div className="flex gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-red-500"></div>
+              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+            </div>
+            <span className="text-gray-300 text-sm ml-2 font-medium">PDF Preview - {reportTitle}</span>
+            <span className="text-gray-500 text-xs ml-auto">Live Preview</span>
+          </div>
+          
+          {/* PDF Content Preview */}
+          <div className="bg-white m-4 rounded shadow-2xl min-h-[600px] p-8" style={{ aspectRatio: '8.5/11' }}>
+            {/* PDF Header */}
+            <div className="border-b-2 border-[#0A2E6D] pb-4 mb-6">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-3">
+                  {showBranding && (
+                    <div className="w-12 h-12 bg-gradient-to-br from-[#0A2E6D] to-[#1a4a9e] rounded-lg flex items-center justify-center shadow-md">
+                      <School className="w-7 h-7 text-white" />
+                    </div>
+                  )}
+                  <div>
+                    <h1 className="text-lg font-bold text-[#0A2E6D] leading-tight">{reportTitle}</h1>
+                    <p className="text-sm text-gray-600 mt-0.5">{reportSubtitle}</p>
+                  </div>
+                </div>
+                {showBranding && (
+                  <div className="w-10 h-10 bg-gradient-to-br from-[#D4AF37] to-[#b8941f] rounded-lg flex items-center justify-center shadow-md">
+                    <Building2 className="w-5 h-5 text-white" />
+                  </div>
+                )}
+              </div>
+              
+              {/* Report Meta */}
+              <div className="mt-3 pt-3 border-t border-gray-200 flex flex-wrap gap-4 text-xs text-gray-500">
+                <span>📅 Period: {reportData?.metadata?.reportPeriod?.fromLabel || 'N/A'} — {reportData?.metadata?.reportPeriod?.toLabel || 'N/A'}</span>
+                <span>📄 Generated: {new Date().toLocaleDateString()}</span>
+                <span>🏫 NIET Coimbatore</span>
+              </div>
+            </div>
+
+            {/* Executive Summary Section */}
+            <div className="mb-6">
+              <h2 className="text-base font-bold text-[#0A2E6D] mb-3 pb-1 border-b border-gray-200 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" /> Executive Summary
+              </h2>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: 'Students', value: reportData?.executiveSummary?.totalStudents || 0, icon: GraduationCap, color: 'text-blue-600 bg-blue-50' },
+                  { label: 'Faculty', value: reportData?.executiveSummary?.totalFaculty || 0, icon: Users, color: 'text-emerald-600 bg-emerald-50' },
+                  { label: 'Departments', value: reportData?.executiveSummary?.totalDepartments || 0, icon: Building2, color: 'text-purple-600 bg-purple-50' },
+                  { label: 'Achievements', value: reportData?.executiveSummary?.totalAchievements || 0, icon: Trophy, color: 'text-amber-600 bg-amber-50' },
+                  { label: 'Placements', value: reportData?.executiveSummary?.totalPlacements || 0, icon: Briefcase, color: 'text-rose-600 bg-rose-50' },
+                  { label: 'Publications', value: reportData?.executiveSummary?.totalPublications || 0, icon: Newspaper, color: 'text-cyan-600 bg-cyan-50' },
+                ].map((stat, idx) => (
+                  <div key={idx} className={'flex items-center gap-2 p-2 rounded-lg border border-gray-100 ' + stat.color}>
+                    <stat.icon className="w-4 h-4" />
+                    <div>
+                      <p className="text-lg font-bold leading-none">{stat.value}</p>
+                      <p className="text-[10px] opacity-70">{stat.label}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Notes Section (if any) */}
+            {customNotes && (
+              <div className="mb-6">
+                <h2 className="text-base font-bold text-[#0A2E6D] mb-3 pb-1 border-b border-gray-200 flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4" /> Notes & Observations
+                </h2>
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-r-lg">
+                  <p className="text-sm text-gray-700 italic whitespace-pre-wrap">{customNotes}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Data Tables Preview */}
+            <div className="mb-6">
+              <h2 className="text-base font-bold text-[#0A2E6D] mb-3 pb-1 border-b border-gray-200 flex items-center gap-2">
+                <Database className="w-4 h-4" /> Department Performance
+              </h2>
+              <div className="overflow-hidden rounded-lg border border-gray-200">
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Department</th>
+                      <th className="px-3 py-2 text-right font-semibold text-gray-700">Students</th>
+                      <th className="px-3 py-2 text-right font-semibold text-gray-700">Faculty</th>
+                      <th className="px-3 py-2 text-right font-semibold text-gray-700">Events</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {(reportData?.departmentPerformance || []).slice(0, 5).map((dept: any, idx: number) => (
+                      <tr key={idx} className="hover:bg-gray-50">
+                        <td className="px-3 py-2 font-medium text-gray-900">{dept.department || dept.name || '-'}</td>
+                        <td className="px-3 py-2 text-right text-gray-600">{dept.students || dept.studentCount || 0}</td>
+                        <td className="px-3 py-2 text-right text-gray-600">{dept.faculty || dept.facultyCount || 0}</td>
+                        <td className="px-3 py-2 text-right text-gray-600">{dept.activities || dept.eventCount || 0}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="absolute bottom-4 left-8 right-8 pt-4 border-t border-gray-200 flex justify-between items-center text-xs text-gray-400">
+              <span>NIET IQAC Portal | Confidential</span>
+              <span>Page 1 of 1</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Editor Panel */}
