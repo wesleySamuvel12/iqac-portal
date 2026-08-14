@@ -17227,7 +17227,6 @@ const ROLE_SIDEBAR_CONFIG = {
     roleIcon: UserCheck,
     menuItems: [
       { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'Department Overview' },
-      { id: 'hierarchy_dept', icon: Layers, label: 'Academic Hierarchy', badge: 'New', description: 'Year → Class → Student Flow' },
       { id: 'hod_student_approval', icon: GraduationCap, label: 'Student Approvals', badge: 'Pending', description: 'Review student submissions' },
       { id: 'hod_staff_approval', icon: BookOpen, label: 'Staff Approvals', badge: 'Pending', description: 'Review staff submissions' },
       { id: 'my_achievement', icon: Trophy, label: 'My Achievements', description: 'Personal achievements' },
