@@ -1,0 +1,754 @@
+     1→import { NextRequest, NextResponse } from 'next/server'
+     2→import { execSync } from 'child_process'
+     3→import { writeFileSync, unlinkSync, readFileSync, mkdirSync, existsSync } from 'fs'
+     4→import { join } from 'path'
+     5→
+     6→// Helper function to convert image file to base64 data URL
+     7→function imageToBase64DataUrl(filename: string): string {
+     8→  const imagePath = join(process.cwd(), 'public/images', filename)
+     9→  try {
+    10→    if (existsSync(imagePath)) {
+    11→      const imageBuffer = readFileSync(imagePath)
+    12→      const base64 = imageBuffer.toString('base64')
+    13→      // Determine MIME type from extension
+    14→      const ext = filename.split('.').pop()?.toLowerCase()
+    15→      const mimeType = ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png'
+    16→      return `data:${mimeType};base64,${base64}`
+    17→    }
+    18→  } catch (error) {
+    19→    console.error(`Error loading logo ${filename}:`, error)
+    20→  }
+    21→  return ''
+    22→}
+    23→
+    24→export async function POST(request: NextRequest) {
+    25→  let tempHtmlPath = ''
+    26→  let tempPdfPath = ''
+    27→  
+    28→  try {
+    29→    const body = await request.json()
+    30→    const reportData = body.reportData || {}
+    31→    const department = body.department || ''
+    32→
+    33→    // Convert logo images to base64 data URLs for embedding in PDF
+    34→    const nietLogoDataUrl = imageToBase64DataUrl('niet-logo.png')
+    35→    const nehrugroupLogoDataUrl = imageToBase64DataUrl('nehrugroup-logo.png')
+    36→
+    37→    // Generate HTML content for the PDF with embedded logos
+    38→    const htmlContent = generateReportHTML(reportData, department, nietLogoDataUrl, nehrugroupLogoDataUrl)
+    39→
+    40→    // Create temp directory if not exists
+    41→    const tempDir = join(process.cwd(), 'temp')
+    42→    if (!existsSync(tempDir)) {
+    43→      mkdirSync(tempDir, { recursive: true })
+    44→    }
+    45→
+    46→    // Write HTML to temp file
+    47→    const timestamp = Date.now()
+    48→    tempHtmlPath = join(tempDir, `report_${timestamp}.html`)
+    49→    tempPdfPath = join(tempDir, `report_${timestamp}.pdf`)
+    50→    
+    51→    writeFileSync(tempHtmlPath, htmlContent)
+    52→
+    53→    // Try to generate PDF using Playwright (most reliable method)
+    54→    try {
+    55→      await generateWithPlaywright(htmlContent, tempPdfPath)
+    56→    } catch (playwrightError) {
+    57→      console.error('Playwright failed:', playwrightError)
+    58→      throw new Error('PDF generation failed: ' + (playwrightError as Error).message)
+    59→    }
+    60→
+    61→    // Check if PDF was created
+    62→    if (!existsSync(tempPdfPath)) {
+    63→      throw new Error('PDF file was not generated')
+    64→    }
+    65→
+    66→    // Read the generated PDF
+    67→    const pdfBuffer = readFileSync(tempPdfPath)
+    68→
+    69→    // Clean up temp files
+    70→    try {
+    71→      if (existsSync(tempHtmlPath)) unlinkSync(tempHtmlPath)
+    72→      if (existsSync(tempPdfPath)) unlinkSync(tempPdfPath)
+    73→    } catch (e) {
+    74→      console.error('Cleanup error:', e)
+    75→    }
+    76→
+    77→    // Return PDF as downloadable file
+    78→    return new NextResponse(pdfBuffer, {
+    79→      headers: {
+    80→        'Content-Type': 'application/pdf',
+    81→        'Content-Disposition': `attachment; filename="Monthly_Department_Report_${department || 'NIET'}_${reportData?.reportingMonth || 'Report'}_${reportData?.reportingYear || new Date().getFullYear()}.pdf"`,
+    82→        'Content-Length': pdfBuffer.length.toString(),
+    83→      },
+    84→    })
+    85→  } catch (error) {
+    86→    console.error('PDF generation error:', error)
+    87→    
+    88→    // Cleanup on error
+    89→    try {
+    90→      if (tempHtmlPath && existsSync(tempHtmlPath)) unlinkSync(tempHtmlPath)
+    91→      if (tempPdfPath && existsSync(tempPdfPath)) unlinkSync(tempPdfPath)
+    92→    } catch (e) {}
+    93→    
+    94→    return NextResponse.json({ error: 'Failed to generate PDF: ' + (error as Error).message }, { status: 500 })
+    95→  }
+    96→}
+    97→
+    98→async function generateWithPlaywright(htmlContent: string, outputPath: string): Promise<void> {
+    99→  // Dynamic import for playwright
+   100→  const { chromium } = await import('playwright')
+   101→  
+   102→  const browser = await chromium.launch({
+   103→    headless: true,
+   104→    args: ['--no-sandbox', '--disable-setuid-sandbox']
+   105→  })
+   106→  
+   107→  try {
+   108→    const page = await browser.newPage()
+   109→    await page.setContent(htmlContent, { waitUntil: 'networkidle' })
+   110→    
+   111→    await page.pdf({
+   112→      path: outputPath,
+   113→      format: 'A4',
+   114→      printBackground: true,
+   115→      margin: {
+   116→        top: '12mm',
+   117→        bottom: '12mm',
+   118→        left: '12mm',
+   119→        right: '12mm'
+   120→      },
+   121→      displayHeaderFooter: true,
+   122→      headerTemplate: '<div></div>',
+   123→      footerTemplate: '<div style="font-size: 8px; text-align: center; width: 100%; color: #9ca3af;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>'
+   124→    })
+   125→  } finally {
+   126→    await browser.close()
+   127→  }
+   128→}
+   129→
+   130→function generateReportHTML(data: any, dept: string, nietLogoDataUrl: string = '', nehrugroupLogoDataUrl: string = ''): string {
+   131→  // Safely access all nested properties with fallbacks
+   132→  const safeData = data || {}
+   133→  const studentDev = safeData.studentDev || {}
+   134→  const internship = safeData.internship || {}
+   135→  const documents = safeData.documents || {}
+   136→  const qaActivities = safeData.qaActivities || []
+   137→  const researchFaculty = safeData.researchFaculty || []
+   138→  const facultyDev = safeData.facultyDev || []
+   139→  
+   140→  const currentDate = new Date().toLocaleDateString('en-IN', {
+   141→    day: '2-digit',
+   142→    month: 'long',
+   143→    year: 'numeric'
+   144→  })
+   145→
+   146→  // Helper to build research faculty rows
+   147→  const researchRows = researchFaculty.map((f: any, i: number) => {
+   148→    if (!f) return ''
+   149→    const journalPub = f.journalPub || {}
+   150→    const conferencePapers = f.conferencePapers || {}
+   151→    const book = f.book || {}
+   152→    const bookChapters = f.bookChapters || {}
+   153→    const patents = f.patents || {}
+   154→    const fundedProjects = f.fundedProjects || {}
+   155→    
+   156→    return `
+   157→        <tr>
+   158→          <td class="text-left row-label">${f.name || `Faculty ${i + 1}`}</td>
+   159→          <td>${journalPub.prev || ''}</td><td>${journalPub.curr || ''}</td>
+   160→          <td>${conferencePapers.prev || ''}</td><td>${conferencePapers.curr || ''}</td>
+   161→          <td>${book.prev || ''}</td><td>${book.curr || ''}</td>
+   162→          <td>${bookChapters.prev || ''}</td><td>${bookChapters.curr || ''}</td>
+   163→          <td>${patents.prev || ''}</td><td>${patents.curr || ''}</td>
+   164→          <td>${fundedProjects.prev || ''}</td><td>${fundedProjects.curr || ''}</td>
+   165→        </tr>`
+   166→  }).join('') || '<tr><td colspan="13" style="text-align:center;color:#999;">No faculty data entered</td></tr>'
+   167→
+   168→  // Helper to build faculty dev rows
+   169→  const facultyDevRows = facultyDev.map((f: any, i: number) => {
+   170→    if (!f) return ''
+   171→    const fdpsAttended = f.fdpsAttended || {}
+   172→    const fdpsOrganized = f.fdpsOrganized || {}
+   173→    const nptelCompleted = f.nptelCompleted || {}
+   174→    const moocsCompleted = f.moocsCompleted || {}
+   175→    const resourcePerson = f.resourcePerson || {}
+   176→    
+   177→    return `
+   178→        <tr>
+   179→          <td class="text-left row-label">${f.name || `Faculty ${i + 1}`}</td>
+   180→          <td>${fdpsAttended.prev || ''}</td><td>${fdpsAttended.curr || ''}</td>
+   181→          <td>${fdpsOrganized.prev || ''}</td><td>${fdpsOrganized.curr || ''}</td>
+   182→          <td>${nptelCompleted.prev || ''}</td><td>${nptelCompleted.curr || ''}</td>
+   183→          <td>${moocsCompleted.prev || ''}</td><td>${moocsCompleted.curr || ''}</td>
+   184→          <td>${resourcePerson.prev || ''}</td><td>${resourcePerson.curr || ''}</td>
+   185→        </tr>`
+   186→  }).join('') || '<tr><td colspan="11" style="text-align:center;color:#999;">No faculty data entered</td></tr>'
+   187→
+   188→  // Helper for QA activities rows
+   189→  const qaRows = qaActivities.map((item: any) => {
+   190→    if (!item) return ''
+   191→    return `
+   192→        <tr>
+   193→          <td class="text-left row-label">${item.particular || ''}</td>
+   194→          <td>${item.status || '-'}</td>
+   195→          <td class="text-left">${item.remarks || '-'}</td>
+   196→        </tr>`
+   197→  }).join('') || '<tr><td colspan="3" style="text-align:center;color:#999;">No QA data entered</td></tr>'
+   198→
+   199→  // Helper for documents checklist
+   200→  const docItems = [
+   201→    { key: 'eventReports', label: 'Event Reports' },
+   202→    { key: 'workshopCertificates', label: 'Workshop/FDP Certificates' },
+   203→    { key: 'publicationProofs', label: 'Publication Proofs' },
+   204→    { key: 'placementDetails', label: 'Placement Details' },
+   205→    { key: 'internshipDetails', label: 'Internship Details' },
+   206→    { key: 'studentAchievementProofs', label: 'Student Achievement Proofs' },
+   207→    { key: 'sdgExtensionReports', label: 'SDG Extension Reports' },
+   208→    { key: 'mouIndustryDocuments', label: 'MoU/Industry Documents' }
+   209→  ].map(doc => `
+   210→        <div class="checklist-item">
+   211→          <span class="checkbox">${documents[doc.key] ? '&#10003;' : ''}</span>
+   212→          <span>${doc.label}</span>
+   213→        </div>`).join('')
+   214→
+   215→  // Safely get student dev properties
+   216→  const guestLectures = studentDev.guestLectures || {}
+   217→  const workshops = studentDev.workshops || {}
+   218→  const industrialVisits = studentDev.industrialVisits || {}
+   219→  const valueAddedCourses = studentDev.valueAddedCourses || {}
+   220→  const skillEnhancement = studentDev.skillEnhancement || {}
+   221→  const handsOnTraining = studentDev.handsOnTraining || {}
+   222→  const hackathon = studentDev.hackathon || {}
+   223→
+   224→  // Safely get internship properties
+   225→  const prevIntern = internship.previous || {}
+   226→  const currIntern = internship.current || {}
+   227→  const totalIntern = internship.total || {}
+   228→
+   229→  return `<!DOCTYPE html>
+   230→<html lang="en">
+   231→<head>
+   232→  <meta charset="UTF-8">
+   233→  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   234→  <title>Monthly Department Report - ${dept}</title>
+   235→  <style>
+   236→    @page {
+   237→      size: A4;
+   238→      margin: 12mm;
+   239→    }
+   240→    
+   241→    * {
+   242→      margin: 0;
+   243→      padding: 0;
+   244→      box-sizing: border-box;
+   245→    }
+   246→    
+   247→    body {
+   248→      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+   249→      font-size: 10pt;
+   250→      line-height: 1.3;
+   251→      color: #1a1a1a;
+   252→      background: #fff;
+   253→    }
+   254→    
+   255→    .report-header {
+   256→      margin-bottom: 15px;
+   257→      padding-bottom: 10px;
+   258→      border-bottom: 3px double #1e40af;
+   259→    }
+   260→    
+   261→    .header-with-logos {
+   262→      display: flex;
+   263→      justify-content: space-between;
+   264→      align-items: center;
+   265→      margin-bottom: 8px;
+   266→    }
+   267→    
+   268→    .logo-img {
+   269→      width: 60px;
+   270→      height: 60px;
+   271→      object-fit: contain;
+   272→    }
+   273→    
+   274→    .logo-placeholder {
+   275→      width: 60px;
+   276→      height: 60px;
+   277→      background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+   278→      border-radius: 8px;
+   279→      display: flex;
+   280→      align-items: center;
+   281→      justify-content: center;
+   282→      color: white;
+   283→      font-weight: bold;
+   284→      font-size: 12px;
+   285→    }
+   286→    
+   287→    .header-center {
+   288→      text-align: center;
+   289→      flex: 1;
+   290→      padding: 0 20px;
+   291→    }
+   292→    
+   293→    .institute-name {
+   294→      font-size: 14pt;
+   295→      font-weight: bold;
+   296→      color: #1e40af;
+   297→      letter-spacing: 0.5px;
+   298→    }
+   299→    
+   300→    .institute-subtitle {
+   301→      font-size: 9pt;
+   302→      color: #4b5563;
+   303→      margin-top: 2px;
+   304→    }
+   305→    
+   306→    .report-title {
+   307→      font-size: 12pt;
+   308→      font-weight: bold;
+   309→      color: #fff;
+   310→      background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+   311→      padding: 8px 15px;
+   312→      margin: 10px 0;
+   313→      border-radius: 4px;
+   314→    }
+   315→    
+   316→    .academic-year {
+   317→      font-size: 9pt;
+   318→      color: #6b7280;
+   319→      margin-top: 5px;
+   320→    }
+   321→    
+   322→    .info-table {
+   323→      width: 100%;
+   324→      border-collapse: collapse;
+   325→      margin-bottom: 15px;
+   326→      background: #f8fafc;
+   327→    }
+   328→    
+   329→    .info-table td {
+   330→      padding: 5px 8px;
+   331→      border: 1px solid #e2e8f0;
+   332→      font-size: 9pt;
+   333→    }
+   334→    
+   335→    .info-table td.label {
+   336→      font-weight: 600;
+   337→      background: #e0e7ff;
+   338→      color: #3730a3;
+   339→      width: 30%;
+   340→    }
+   341→    
+   342→    .section {
+   343→      margin-bottom: 18px;
+   344→      page-break-inside: avoid;
+   345→    }
+   346→    
+   347→    .section-header {
+   348→      font-size: 11pt;
+   349→      font-weight: bold;
+   350→      color: #fff;
+   351→      padding: 6px 10px;
+   352→      margin-bottom: 8px;
+   353→      border-radius: 4px 4px 0 0;
+   354→    }
+   355→    
+   356→    .section-header.green { background: linear-gradient(135deg, #059669 0%, #10b981 100%); }
+   357→    .section-header.purple { background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%); }
+   358→    .section-header.orange { background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%); }
+   359→    .section-header.blue { background: linear-gradient(135deg, #0369a1 0%, #0ea5e9 100%); }
+   360→    .section-header.teal { background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%); }
+   361→    .section-header.lime { background: linear-gradient(135deg, #65a30d 0%, #84cc16 100%); }
+   362→    .section-header.indigo { background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%); }
+   363→    
+   364→    .data-table {
+   365→      width: 100%;
+   366→      border-collapse: collapse;
+   367→      font-size: 8.5pt;
+   368→      border: 1px solid #cbd5e1;
+   369→    }
+   370→    
+   371→    .data-table th {
+   372→      background: #f1f5f9;
+   373→      font-weight: 600;
+   374→      padding: 5px 6px;
+   375→      border: 1px solid #cbd5e1;
+   376→      text-align: center;
+   377→      font-size: 8pt;
+   378→    }
+   379→    
+   380→    .data-table td {
+   381→      padding: 4px 6px;
+   382→      border: 1px solid #cbd5e1;
+   383→      text-align: center;
+   384→    }
+   385→    
+   386→    .data-table td.text-left {
+   387→      text-align: left;
+   388→    }
+   389→    
+   390→    .data-table tr:nth-child(even) {
+   391→      background: #f8fafc;
+   392→    }
+   393→    
+   394→    .data-table .row-label {
+   395→      background: #fef3c7;
+   396→      font-weight: 500;
+   397→      text-align: left;
+   398→    }
+   399→    
+   400→    .checklist {
+   401→      display: grid;
+   402→      grid-template-columns: repeat(2, 1fr);
+   403→      gap: 5px;
+   404→      font-size: 9pt;
+   405→    }
+   406→    
+   407→    .checklist-item {
+   408→      display: flex;
+   409→      align-items: center;
+   410→      gap: 6px;
+   411→      padding: 4px 8px;
+   412→      background: #f8fafc;
+   413→      border-radius: 3px;
+   414→    }
+   415→    
+   416→    .checkbox {
+   417→      width: 14px;
+   418→      height: 14px;
+   419→      border: 1.5px solid #6366f1;
+   420→      border-radius: 2px;
+   421→      display: inline-flex;
+   422→      align-items: center;
+   423→      justify-content: center;
+   424→      font-size: 9pt;
+   425→      color: #22c55e;
+   426→      font-weight: bold;
+   427→    }
+   428→    
+   429→    .signature-section {
+   430→      margin-top: 20px;
+   431→      padding-top: 15px;
+   432→      border-top: 2px solid #e5e7eb;
+   433→    }
+   434→    
+   435→    .signature-row {
+   436→      display: flex;
+   437→      justify-content: space-around;
+   438→      margin-top: 20px;
+   439→    }
+   440→    
+   441→    .signature-box {
+   442→      text-align: center;
+   443→      width: 120px;
+   444→    }
+   445→    
+   446→    .signature-line {
+   447→      border-bottom: 1.5px dashed #9ca3af;
+   448→      height: 30px;
+   449→      margin-bottom: 5px;
+   450→    }
+   451→    
+   452→    .signature-label {
+   453→      font-size: 8pt;
+   454→      font-weight: 600;
+   455→      color: #374151;
+   456→    }
+   457→    
+   458→    .signature-date {
+   459→      font-size: 7.5pt;
+   460→      color: #6b7280;
+   461→    }
+   462→    
+   463→    .footer {
+   464→      margin-top: 25px;
+   465→      padding-top: 10px;
+   466→      border-top: 1px solid #e5e7eb;
+   467→      font-size: 7.5pt;
+   468→      color: #9ca3af;
+   469→      text-align: center;
+   470→    }
+   471→    
+   472→    @media print {
+   473→      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+   474→      .section { page-break-inside: avoid; }
+   475→    }
+   476→  </style>
+   477→</head>
+   478→<body>
+   479→  <div class="report-header">
+   480→    <div class="header-with-logos">
+   481→      ${nietLogoDataUrl ? `<img src="${nietLogoDataUrl}" alt="NIET Coimbatore" class="logo-img" />` : '<div class="logo-placeholder">NIET</div>'}
+   482→      <div class="header-center">
+   483→        <div class="institute-name">NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY</div>
+   484→        <div class="institute-subtitle">(AUTONOMOUS) | ISO Certified | NAAC "A+" | NBA Accredited</div>
+   485→      </div>
+   486→      ${nehrugroupLogoDataUrl ? `<img src="${nehrugroupLogoDataUrl}" alt="Nehru Group" class="logo-img" />` : '<div class="logo-placeholder">NGI</div>'}
+   487→    </div>
+   488→    <div class="report-title">MONTHLY DEPARTMENT REPORT</div>
+   489→    <div class="academic-year">Academic Year: ${safeData.academicYear || 'N/A'}</div>
+   490→  </div>
+   491→
+   492→  <table class="info-table">
+   493→    <tr><td class="label">School</td><td>${safeData.schoolName || '-'}</td><td class="label">Department</td><td>${safeData.department || dept || '-'}</td></tr>
+   494→    <tr><td class="label">Reporting Month/Year</td><td>${safeData.reportingMonth || '-'} / ${safeData.reportingYear || '-'}</td><td class="label">Date of Report</td><td>${currentDate}</td></tr>
+   495→  </table>
+   496→
+   497→  <div class="section">
+   498→    <div class="section-header teal">DEPARTMENT BASIC INFORMATION</div>
+   499→    <table class="data-table">
+   500→      <thead>
+   501→        <tr>
+   502→          <th rowspan="2">Faculty Details</th>
+   503→          <th>Total Faculty</th>
+   504→          <th>Professors</th>
+   505→          <th>Asst. Prof</th>
+   506→          <th>Assoc. Prof</th>
+   507→        </tr>
+   508→        <tr>
+   509→          <td>${safeData.facultyCount || '-'}</td>
+   510→          <td>${safeData.profCount || '-'}</td>
+   511→          <td>${safeData.aspCount || '-'}</td>
+   512→          <td>${safeData.apCount || '-'}</td>
+   513→        </tr>
+   514→      </thead>
+   515→      <tbody>
+   516→        <tr>
+   517→          <td class="row-label">PhD Holders</td>
+   518→          <td colspan="2">${safeData.phdHolders || '-'}</td>
+   519→          <td class="row-label">PhD Pursuing</td>
+   520→          <td>${safeData.pursuingPhd || '-'}</td>
+   521→        </tr>
+   522→        <tr>
+   523→          <td class="row-label">Total Students</td>
+   524→          <td>${safeData.totalStudents || '-'}</td>
+   525→          <td class="row-label">I Year</td>
+   526→          <td>${safeData.year1Students || '-'}</td>
+   527→          <td class="row-label">II Year</td>
+   528→        </tr>
+   529→        <tr>
+   530→          <td></td>
+   531→          <td></td>
+   532→          <td>${safeData.year2Students || '-'}</td>
+   533→          <td class="row-label">III Year</td>
+   534→          <td>${safeData.year3Students || '-'}</td>
+   535→        </tr>
+   536→        <tr>
+   537→          <td></td>
+   538→          <td></td>
+   539→          <td></td>
+   540→          <td class="row-label">IV Year</td>
+   541→          <td>${safeData.year4Students || '-'}</td>
+   542→        </tr>
+   543→      </tbody>
+   544→    </table>
+   545→  </div>
+   546→
+   547→  <div class="section">
+   548→    <div class="section-header green">A. ACADEMIC ACTIVITIES</div>
+   549→    <table class="data-table">
+   550→      <thead>
+   551→        <tr><th>Particulars</th><th>Theory</th><th>Lab</th></tr>
+   552→      </thead>
+   553→      <tbody>
+   554→        <tr><td class="row-label">Syllabus Coverage</td><td>${safeData.syllabusCoverageTheory || '-'}</td><td>${safeData.syllabusCoverageLab || '-'}</td></tr>
+   555→        <tr><td class="row-label">Lesson Plan Update</td><td>${safeData.lessonPlanTheory || '-'}</td><td>${safeData.lessonPlanLab || '-'}</td></tr>
+   556→        <tr><td class="row-label">CIA Conducted & Submitted</td><td>${safeData.ciaConducted || '-'}</td><td>NA</td></tr>
+   557→        <tr><td class="row-label">Attendance Report Prepared</td><td colspan="2">${safeData.attendanceReport || '-'}</td></tr>
+   558→        <tr><td class="row-label">Remedial Classes Conducted</td><td>${safeData.remedialClasses || '-'}</td><td>NA</td></tr>
+   559→        <tr><td class="row-label">Mentoring Sessions Conducted</td><td>${safeData.mentoringSessions || '-'}</td><td>NA</td></tr>
+   560→      </tbody>
+   561→    </table>
+   562→  </div>
+   563→
+   564→  <div class="section">
+   565→    <div class="section-header purple">B. STUDENT DEVELOPMENT ACTIVITIES</div>
+   566→    <p style="font-size: 7.5pt; color: #6b7280; margin-bottom: 5px;">(*Prev Months: Cumulative counting starts from 1st July)</p>
+   567→    <table class="data-table">
+   568→      <thead>
+   569→        <tr>
+   570→          <th rowspan="2" style="width: 80px;">Particulars</th>
+   571→          <th colspan="2">Guest Lectures</th>
+   572→          <th colspan="2">Workshops</th>
+   573→          <th colspan="2">Ind. Visits</th>
+   574→          <th colspan="2">Value Added</th>
+   575→          <th colspan="2">Skill Enh.</th>
+   576→          <th colspan="2">Hands-on</th>
+   577→          <th colspan="2">Hackathon</th>
+   578→          <th rowspan="2">Prof. Society</th>
+   579→        </tr>
+   580→        <tr>
+   581→          <th>P</th><th>C</th>
+   582→          <th>P</th><th>C</th>
+   583→          <th>P</th><th>C</th>
+   584→          <th>P</th><th>C</th>
+   585→          <th>P</th><th>C</th>
+   586→          <th>P</th><th>C</th>
+   587→          <th>P</th><th>C</th>
+   588→        </tr>
+   589→      </thead>
+   590→      <tbody>
+   591→        <tr>
+   592→          <td class="row-label">Prev Months*</td>
+   593→          <td>${guestLectures.prev || ''}</td>
+   594→          <td>${guestLectures.curr || ''}</td>
+   595→          <td>${workshops.prev || ''}</td>
+   596→          <td>${workshops.curr || ''}</td>
+   597→          <td>${industrialVisits.prev || ''}</td>
+   598→          <td>${industrialVisits.curr || ''}</td>
+   599→          <td>${valueAddedCourses.prev || ''}</td>
+   600→          <td>${valueAddedCourses.curr || ''}</td>
+   601→          <td>${skillEnhancement.prev || ''}</td>
+   602→          <td>${skillEnhancement.curr || ''}</td>
+   603→          <td>${handsOnTraining.prev || ''}</td>
+   604→          <td>${handsOnTraining.curr || ''}</td>
+   605→          <td>${hackathon.prev || ''}</td>
+   606→          <td>${hackathon.curr || ''}</td>
+   607→          <td>${studentDev.profSocietyActivities?.prev || ''}</td>
+   608→        </tr>
+   609→        <tr>
+   610→          <td class="row-label">Current Month</td>
+   611→          <td>-</td>
+   612→          <td>${guestLectures.curr || ''}</td>
+   613→          <td>-</td>
+   614→          <td>${workshops.curr || ''}</td>
+   615→          <td>-</td>
+   616→          <td>${industrialVisits.curr || ''}</td>
+   617→          <td>-</td>
+   618→          <td>${valueAddedCourses.curr || ''}</td>
+   619→          <td>-</td>
+   620→          <td>${skillEnhancement.curr || ''}</td>
+   621→          <td>-</td>
+   622→          <td>${handsOnTraining.curr || ''}</td>
+   623→          <td>-</td>
+   624→          <td>${hackathon.curr || ''}</td>
+   625→          <td>${studentDev.profSocietyActivities?.curr || ''}</td>
+   626→        </tr>
+   627→      </tbody>
+   628→    </table>
+   629→  </div>
+   630→
+   631→  <div class="section">
+   632→    <div class="section-header orange">C. RESEARCH & INNOVATION (FACULTY WISE)</div>
+   633→    <table class="data-table">
+   634→      <thead>
+   635→        <tr>
+   636→          <th rowspan="2">Faculty Name</th>
+   637→          <th colspan="2">Journal Pub.</th>
+   638→          <th colspan="2">Conf. Papers</th>
+   639→          <th colspan="2">Books</th>
+   640→          <th colspan="2">Book Ch.</th>
+   641→          <th colspan="2">Patents</th>
+   642→          <th colspan="2">Funded Proj.</th>
+   643→        </tr>
+   644→        <tr>
+   645→          <th>P</th><th>C</th>
+   646→          <th>P</th><th>C</th>
+   647→          <th>P</th><th>C</th>
+   648→          <th>P</th><th>C</th>
+   649→          <th>P</th><th>C</th>
+   650→          <th>P</th><th>C</th>
+   651→        </tr>
+   652→      </thead>
+   653→      <tbody>
+   654→        ${researchRows}
+   655→      </tbody>
+   656→    </table>
+   657→  </div>
+   658→
+   659→  <div class="section">
+   660→    <div class="section-header blue">D. FACULTY DEVELOPMENT PROGRAMS</div>
+   661→    <table class="data-table">
+   662→      <thead>
+   663→        <tr>
+   664→          <th rowspan="2">Faculty Name</th>
+   665→          <th colspan="2">FDPs Attended</th>
+   666→          <th colspan="2">FDPs Organized</th>
+   667→          <th colspan="2">NPTEL Completed</th>
+   668→          <th colspan="2">MOOCs Completed</th>
+   669→          <th colspan="2">Resource Person</th>
+   670→        </tr>
+   671→        <tr>
+   672→          <th>P</th><th>C</th>
+   673→          <th>P</th><th>C</th>
+   674→          <th>P</th><th>C</th>
+   675→          <th>P</th><th>C</th>
+   676→          <th>P</th><th>C</th>
+   677→        </tr>
+   678→      </thead>
+   679→      <tbody>
+   680→        ${facultyDevRows}
+   681→      </tbody>
+   682→    </table>
+   683→  </div>
+   684→
+   685→  <div class="section">
+   686→    <div class="section-header teal">E. STUDENTS INTERNSHIP DETAILS</div>
+   687→    <table class="data-table">
+   688→      <thead>
+   689→        <tr><th>Period</th><th>Paid</th><th>Non-Paid</th><th>Virtual</th><th>Not Availed</th></tr>
+   690→      </thead>
+   691→      <tbody>
+   692→        <tr><td class="row-label">Previous Months</td><td>${prevIntern.paid || ''}</td><td>${prevIntern.nonPaid || ''}</td><td>${prevIntern.virtual || ''}</td><td>${prevIntern.notAvailed || ''}</td></tr>
+   693→        <tr><td class="row-label">Current Month</td><td>${currIntern.paid || ''}</td><td>${currIntern.nonPaid || ''}</td><td>${currIntern.virtual || ''}</td><td>${currIntern.notAvailed || ''}</td></tr>
+   694→        <tr><td class="row-label" style="background: #dbeafe;">Total (Cumulative)</td><td style="background: #dbeafe;">${totalIntern.paid || ''}</td><td style="background: #dbeafe;">${totalIntern.nonPaid || ''}</td><td style="background: #dbeafe;">${totalIntern.virtual || ''}</td><td style="background: #dbeafe;">${totalIntern.notAvailed || ''}</td></tr>
+   695→      </tbody>
+   696→    </table>
+   697→  </div>
+   698→
+   699→  <div class="section">
+   700→    <div class="section-header lime">G. QUALITY ASSURANCE ACTIVITIES</div>
+   701→    <table class="data-table">
+   702→      <thead>
+   703→        <tr><th style="width: 35%;">Particulars</th><th style="width: 25%;">Status</th><th>Remarks</th></tr>
+   704→      </thead>
+   705→      <tbody>
+   706→        ${qaRows}
+   707→      </tbody>
+   708→    </table>
+   709→  </div>
+   710→
+   711→  <div class="section">
+   712→    <div class="section-header indigo">H. DOCUMENTS TO BE ATTACHED</div>
+   713→    <div class="checklist">
+   714→      ${docItems}
+   715→    </div>
+   716→  </div>
+   717→
+   718→  <div class="signature-section">
+   719→    <div class="signature-row">
+   720→      <div class="signature-box">
+   721→        <div class="signature-line"></div>
+   722→        <div class="signature-label">HoD</div>
+   723→        <div class="signature-date">Date: _______</div>
+   724→      </div>
+   725→      <div class="signature-box">
+   726→        <div class="signature-line"></div>
+   727→        <div class="signature-label">School Dean</div>
+   728→        <div class="signature-date">Date: _______</div>
+   729→      </div>
+   730→      <div class="signature-box">
+   731→        <div class="signature-line"></div>
+   732→        <div class="signature-label">Head-IQAC</div>
+   733→        <div class="signature-date">Date: _______</div>
+   734→      </div>
+   735→      <div class="signature-box">
+   736→        <div class="signature-line"></div>
+   737→        <div class="signature-label">Vice Principal</div>
+   738→        <div class="signature-date">Date: _______</div>
+   739→      </div>
+   740→      <div class="signature-box">
+   741→        <div class="signature-line"></div>
+   742→        <div class="signature-label">Principal</div>
+   743→        <div class="signature-date">Date: _______</div>
+   744→      </div>
+   745→    </div>
+   746→  </div>
+   747→
+   748→  <div class="footer">
+   749→    <p>This is a computer-generated report from NIET IQAC ERP System | Generated on ${currentDate}</p>
+   750→  </div>
+   751→</body>
+   752→</html>`
+   753→}
+   754→
