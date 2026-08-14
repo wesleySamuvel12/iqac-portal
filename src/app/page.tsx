@@ -85,7 +85,6 @@ type TabType = 'dashboard' | 'departments' | 'faculty' | 'students' | 'activitie
   | 'report_generator' | 'hod_management' | 'showcase' | 'database'
   | 'staff_management'
   | 'hierarchy_dept' | 'hierarchy_year' | 'hierarchy_section' | 'hierarchy_students' | 'student_profile'
-  | 'cms_portal'
 
 // ============ HIERARCHY NAVIGATION TYPES ============
 type HierarchyLevel = 'department' | 'year' | 'section' | 'achievements' | 'students' | 'profile'
@@ -441,17 +440,11 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [selectedRole, setSelectedRole] = useState<'STUDENT' | 'STAFF' | 'HOD' | 'ADMIN'>('STUDENT')
   const [selectedDept, setSelectedDept] = useState('CSE')
   const [showDeptDropdown, setShowDeptDropdown] = useState(false)
   const [isFocused, setIsFocused] = useState<string | null>(null)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
-  // CMS Portal specific states
-  const [cmsEmail, setCmsEmail] = useState('')
-  const [cmsPassword, setCmsPassword] = useState('')
-  const [showCmsPassword, setShowCmsPassword] = useState(false)
   const login = useAuthStore((state) => state.login)
-  const cmsLogin = useAuthStore((state) => state.cmsLogin)
 
   // Track mouse position for spotlight effect
   useEffect(() => {
@@ -471,23 +464,6 @@ function LoginPage() {
       const result = await login(email, password)
       if (!result.success) {
         setError(result.error || 'Invalid email or password')
-      }
-    } catch (err) {
-      setError('Network error. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // CMS Portal Login Handler
-  const handleCmsLogin = async () => {
-    setError('')
-    setIsLoading(true)
-    
-    try {
-      const result = await cmsLogin(cmsEmail, cmsPassword)
-      if (!result.success) {
-        setError(result.error || 'CMS Login failed')
       }
     } catch (err) {
       setError('Network error. Please try again.')
@@ -533,24 +509,6 @@ function LoginPage() {
   }
 
   const currentDept = DEPARTMENTS_LIST.find(d => d.code === selectedDept)
-
-  // Premium Role Configuration
-  const roleTabs = [
-    { id: 'STUDENT' as const, label: 'Student', icon: GraduationCap, color: 'emerald', gradient: 'from-emerald-400 via-teal-500 to-cyan-500', glowColor: 'rgba(16, 185, 129, 0.4)', bgColor: 'bg-emerald-50', textColor: 'text-emerald-700', borderColor: 'border-emerald-300', shadowColor: 'shadow-emerald-200' },
-    { id: 'STAFF' as const, label: 'Staff / Faculty', icon: BookOpen, color: 'blue', gradient: 'from-blue-400 via-indigo-500 to-violet-500', glowColor: 'rgba(59, 130, 246, 0.4)', bgColor: 'bg-blue-50', textColor: 'text-blue-700', borderColor: 'border-blue-300', shadowColor: 'shadow-blue-200' },
-    { id: 'HOD' as const, label: 'HOD', icon: UserCheck, color: 'purple', gradient: 'from-purple-400 via-fuchsia-500 to-pink-500', glowColor: 'rgba(168, 85, 247, 0.4)', bgColor: 'bg-purple-50', textColor: 'text-purple-700', borderColor: 'border-purple-300', shadowColor: 'shadow-purple-200' },
-    { id: 'ADMIN' as const, label: 'IQAC Admin', icon: Shield, color: 'amber', gradient: 'from-amber-400 via-orange-500 to-red-500', glowColor: 'rgba(245, 158, 11, 0.4)', bgColor: 'bg-amber-50', textColor: 'text-amber-700', borderColor: 'border-amber-300', shadowColor: 'shadow-amber-200' },
-  ]
-
-  const getPlaceholderForRole = () => {
-    switch(selectedRole) {
-      case 'STUDENT': return 'student_cse1@niet.ac.in'
-      case 'STAFF': return 'staff_cse1@niet.ac.in'
-      case 'HOD': return 'hod_cse@niet.ac.in'
-      case 'ADMIN': return 'admin@niet.ac.in'
-      default: return 'Enter your email'
-    }
-  }
 
   // Generate particles for ambient effect
   // Use deterministic values for particles to avoid hydration mismatch
@@ -736,62 +694,6 @@ function LoginPage() {
             {/* Main Card Content */}
             <div className="premium-card-content">
               
-              {/* ====== ROLE TABS SECTION ====== */}
-              <div className="role-section">
-                <div className="role-label">
-                  <div className="role-label-icon">
-                    <UserCheck className="w-3.5 h-3.5" />
-                  </div>
-                  Select Your Role
-                  <div className="role-label-line" />
-                </div>
-                
-                <div className="role-tabs-grid">
-                  {roleTabs.map((tab, index) => {
-                    const Icon = tab.icon
-                    const isActive = selectedRole === tab.id
-                    return (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => setSelectedRole(tab.id)}
-                        className={'role-tab-button ' + (isActive ? 'role-tab-active-' + tab.color : '')}
-                        style={{ animationDelay: (index * 0.05) + "s" }}
-                      >
-                        {/* Active State Glow */}
-                        {isActive && (
-                          <>
-                            <div className="active-glow" style={{ background: tab.glowColor }} />
-                            <div className="active-border-gradient" style={{ background: "linear-gradient(135deg, " + tab.glowColor + ", transparent)" }}></div>
-                          </>
-                        )}
-                        
-                        {/* Icon Container */}
-                        <div className={"role-icon-wrap " + (isActive ? "role-icon-active" : "")}>
-                          {isActive ? (
-                            <div className="icon-gradient-bg" style={{ background: "linear-gradient(135deg, " + tab.gradient + ")" }}>
-                              <Icon className="role-icon-active-svg" />
-                            </div>
-                          ) : (
-                            <Icon className="role-icon-inactive" />
-                          )}
-                        </div>
-                        
-                        {/* Label */}
-                        <span className={"role-label-text " + (isActive ? "role-label-active-" + tab.color : "")}>
-                          {tab.label.split(' ')[0]}
-                        </span>
-                        
-                        {/* Bottom Indicator */}
-                        {isActive && (
-                          <div className="active-indicator-bar" style={{ background: "linear-gradient(90deg, " + tab.glowColor + ", transparent)" }}></div>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-
               {/* Error Message with Slide Animation */}
               {error && (
                 <div className="error-container-premium">
@@ -827,7 +729,7 @@ function LoginPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       onFocus={() => setIsFocused('email')}
                       onBlur={() => setIsFocused(null)}
-                      placeholder={getPlaceholderForRole()}
+                      placeholder="admin@niet.ac.in"
                       className="premium-input-field"
                       required
                     />
@@ -915,231 +817,84 @@ function LoginPage() {
               <div className="quick-access-section">
                 
                 {/* Admin Quick Access */}
-                {selectedRole !== 'ADMIN' && (
-                  <button
-                    onClick={() => quickLogin('admin@niet.ac.in', 'admin123')}
-                    className="admin-quick-btn"
-                  >
-                    <div className="admin-btn-left">
-                      <div className="admin-btn-icon-wrap">
-                        <Shield className="admin-btn-icon" />
-                      </div>
-                      <div className="admin-btn-text">
-                        <span className="admin-btn-title">System Administrator</span>
-                        <span className="admin-btn-desc">Full access to all modules</span>
-                      </div>
+                <button
+                  onClick={() => quickLogin('admin@niet.ac.in', 'admin123')}
+                  className="admin-quick-btn"
+                >
+                  <div className="admin-btn-left">
+                    <div className="admin-btn-icon-wrap">
+                      <Shield className="admin-btn-icon" />
                     </div>
-                    <ChevronRight className="admin-btn-arrow" />
-                    <div className="admin-btn-glow" />
-                  </button>
-                )}
+                    <div className="admin-btn-text">
+                      <span className="admin-btn-title">System Administrator</span>
+                      <span className="admin-btn-desc">Full access to all modules</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="admin-btn-arrow" />
+                  <div className="admin-btn-glow" />
+                </button>
 
                 {/* Department Selector */}
-                {selectedRole !== 'ADMIN' && (
-                  <div className="dept-selector-section">
-                    <label className="dept-label">
-                      <Building2 className="w-3 h-3 mr-1.5" />
-                      Select Department
-                    </label>
-                    <div className="dept-dropdown-container">
-                      <button
-                        type="button"
-                        onClick={() => setShowDeptDropdown(!showDeptDropdown)}
-                        className="dept-dropdown-trigger"
-                      >
-                        <div className="dept-selected">
-                          <div className="dept-icon-box">
-                            <Building2 className="w-4 h-4 text-indigo-500" />
-                          </div>
-                          <span>{currentDept?.code} - {currentDept?.name}</span>
+                <div className="dept-selector-section">
+                  <label className="dept-label">
+                    <Building2 className="w-3 h-3 mr-1.5" />
+                    Select Department
+                  </label>
+                  <div className="dept-dropdown-container">
+                    <button
+                      type="button"
+                      onClick={() => setShowDeptDropdown(!showDeptDropdown)}
+                      className="dept-dropdown-trigger"
+                    >
+                      <div className="dept-selected">
+                        <div className="dept-icon-box">
+                          <Building2 className="w-4 h-4 text-indigo-500" />
                         </div>
-                        <ChevronDown className={'dept-chevron ' + (showDeptDropdown ? 'chevron-open' : '')} />
-                      </button>
-                      
-                      {showDeptDropdown && (
-                        <div className="dept-dropdown-menu">
-                          {DEPARTMENTS_LIST.map((dept) => (
-                            <button
-                              key={dept.code}
-                              type="button"
-                              onClick={() => {
-                                setSelectedDept(dept.code)
-                                setShowDeptDropdown(false)
-                              }}
-                              className={'dept-option ' + (selectedDept === dept.code ? 'dept-option-active' : '')}>
-                              <div className={'dept-option-dot dot-' + (dept.color || 'gray')}></div>
-                              <span className="dept-option-code">{dept.code}</span>
-                              <span className="dept-option-name">{dept.name}</span>
-                              {selectedDept === dept.code && <CheckCircle className="dept-option-check"></CheckCircle>}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                        <span>{currentDept?.code} - {currentDept?.name}</span>
+                      </div>
+                      <ChevronDown className={'dept-chevron ' + (showDeptDropdown ? 'chevron-open' : '')} />
+                    </button>
+                    
+                    {showDeptDropdown && (
+                      <div className="dept-dropdown-menu">
+                        {DEPARTMENTS_LIST.map((dept) => (
+                          <button
+                            key={dept.code}
+                            type="button"
+                            onClick={() => {
+                              setSelectedDept(dept.code)
+                              setShowDeptDropdown(false)
+                            }}
+                            className={'dept-option ' + (selectedDept === dept.code ? 'dept-option-active' : '')}>
+                            <div className={'dept-option-dot dot-' + (dept.color || 'gray')}></div>
+                            <span className="dept-option-code">{dept.code}</span>
+                            <span className="dept-option-name">{dept.name}</span>
+                            {selectedDept === dept.code && <CheckCircle className="dept-option-check"></CheckCircle>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-
-                {/* Role Quick Login Grid */}
-                {selectedRole !== 'ADMIN' && (
-                  <div className="quick-role-grid">
-                    {[
-                      { id: 'STUDENT', icon: GraduationCap, label: 'Student', color: 'emerald' },
-                      { id: 'STAFF', icon: BookOpen, label: 'Staff', color: 'blue' },
-                      { id: 'HOD', icon: UserCheck, label: 'HOD', color: 'purple' },
-                    ].map((role) => {
-                      const Icon = role.icon
-                      const isActive = selectedRole === role.id
-                      return (
-                        <button
-                          key={role.id}
-                          onClick={() => quickLogin(getDeptEmail(selectedDept, role.id), getPassword(role.id))}
-                          className={"quick-role-btn " + (isActive ? "quick-role-active-" + role.color : "")}
-                        >
-                          <Icon className={"quick-role-icon " + (isActive ? "quick-role-icon-active-" + role.color : "")} />
-                          <span className={"quick-role-label " + (isActive ? "quick-role-label-active-" + role.color : "")}>
-                            {role.label}
-                          </span>
-                          <div className={"quick-role-indicator indicator-" + role.color} />
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
+                </div>
 
                 {/* Department Pills - Official NIET Departments Only */}
-                {selectedRole !== 'ADMIN' && (
-                  <div className="dept-pills-container">
-                    {['AERO', 'AI&DS', 'CSBS', 'CSE', 'ECE', 'EEE', 'IT', 'MCT', 'MECH', 'MBA', 'S&H'].map((code) => (
-                      <button
-                        key={code}
-                        type="button"
-                        onClick={() => setSelectedDept(code)}
-                        className={"dept-pill " + (selectedDept === code ? "dept-pill-active" : "")}>
-                        {selectedDept === code && <span className="pill-glow" />}
-                        <span className="pill-text">{code}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <div className="dept-pills-container">
+                  {['AERO', 'AI&DS', 'CSBS', 'CSE', 'ECE', 'EEE', 'IT', 'MCT', 'MECH', 'MBA', 'S&H'].map((code) => (
+                    <button
+                      key={code}
+                      type="button"
+                      onClick={() => setSelectedDept(code)}
+                      className={"dept-pill " + (selectedDept === code ? "dept-pill-active" : "")}>
+                      {selectedDept === code && <span className="pill-glow" />}
+                      <span className="pill-text">{code}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
             
             {/* Card Bottom Accent Line */}
             <div className="card-bottom-accent" />
-          </div>
-
-          {/* ====== CMS PORTAL ENTRANCE (Separate Login with Gmail/Password) ====== */}
-          <div className="mt-6 cms-portal-entrance">
-            <div className="cms-divider">
-              <div className="cms-divider-line" />
-              <span className="cms-divider-text">
-                <Wrench className="w-3.5 h-3.5 mr-1" />
-                System Administration
-              </span>
-              <div className="cms-divider-line" />
-            </div>
-            
-            {/* CMS Portal Card with Email/Password Fields */}
-            <div className="cms-login-card">
-              <div className="cms-card-header">
-                <div className="cms-card-icon-wrap">
-                  <Wrench className="cms-card-icon" />
-                </div>
-                <div className="cms-card-title-section">
-                  <h3 className="cms-card-title">CMS Portal</h3>
-                  <p className="cms-card-subtitle">Manager Access • System Configuration</p>
-                </div>
-                <div className="cms-card-badge">
-                  <Shield className="w-3 h-3" />
-                  SECURE
-                </div>
-              </div>
-              
-              <div className="cms-form-fields">
-                {/* Manager Email/Gmail Field */}
-                <div className={`cms-field-group ${isFocused === 'cms-email' ? 'cms-field-focused' : ''}`}>
-                  <label className="cms-field-label">
-                    <Mail className="w-3.5 h-3.5" />
-                    Email / Gmail
-                  </label>
-                  <div className="cms-input-wrapper">
-                    <Input
-                      type="email"
-                      placeholder="manager@niet.ac.in"
-                      value={cmsEmail}
-                      onChange={(e) => setCmsEmail(e.target.value)}
-                      onFocus={() => setIsFocused('cms-email')}
-                      onBlur={() => setIsFocused(null)}
-                      className="cms-input-field"
-                    />
-                  </div>
-                </div>
-                
-                {/* Manager Password Field */}
-                <div className={`cms-field-group ${isFocused === 'cms-password' ? 'cms-field-focused' : ''}`}>
-                  <label className="cms-field-label">
-                    <Lock className="w-3.5 h-3.5" />
-                    Password
-                  </label>
-                  <div className="cms-input-wrapper">
-                    <Input
-                      type={showCmsPassword ? 'text' : 'password'}
-                      placeholder="Enter password"
-                      value={cmsPassword}
-                      onChange={(e) => setCmsPassword(e.target.value)}
-                      onFocus={() => setIsFocused('cms-password')}
-                      onBlur={() => setIsFocused(null)}
-                      className="cms-input-field pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowCmsPassword(!showCmsPassword)}
-                      className="cms-password-toggle"
-                    >
-                      {showCmsPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-                
-                {/* CMS Login Button */}
-                <button
-                  onClick={handleCmsLogin}
-                  disabled={isLoading || !cmsEmail || !cmsPassword}
-                  className="cms-login-button"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Authenticating...
-                    </>
-                  ) : (
-                    <>
-                      <LogIn className="w-4 h-4" />
-                      Login to CMS Portal
-                    </>
-                  )}
-                  <div className="cms-btn-glow" />
-                </button>
-              </div>
-              
-              {/* Quick Fill Option */}
-              <div className="cms-quick-fill">
-                <span className="cms-quick-label">Quick Fill:</span>
-                <button 
-                  onClick={() => {
-                    setCmsEmail('manager@niet.ac.in')
-                    setCmsPassword('Manager@1234')
-                  }}
-                  className="cms-quick-btn"
-                >
-                  Use Default Credentials
-                </button>
-              </div>
-              
-              <p className="cms-credentials-hint">
-                Default: <code>manager@niet.ac.in</code> / <code>Manager@1234</code>
-              </p>
-            </div>
           </div>
 
           {/* ====== FOOTER ====== */}
@@ -17491,7 +17246,6 @@ const ROLE_SIDEBAR_CONFIG = {
     roleIcon: Shield,
     menuItems: [
       { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'IQAC Overview' },
-      { id: 'cms_portal', icon: Settings, label: 'CMS Portal', description: 'System Administration' },
       { id: 'report_generator', icon: FileSpreadsheet, label: 'Reports', description: 'Generate reports' },
       { id: 'settings', icon: Settings, label: 'Settings', description: 'Preferences' },
     ] as MenuItem[],
@@ -21308,7 +21062,7 @@ function HODStaffApprovalPage({ user }: { user: User }) {
 
 // ============ MAIN APP COMPONENT ============
 export default function IQACPortal() {
-  const { isAuthenticated, user, logout, isCmsMode } = useAuthStore()
+  const { isAuthenticated, user, logout } = useAuthStore()
   const [activeTab, setActiveTab] = useState<TabType>('dashboard')
   const [mounted, setMounted] = useState(false)
   const [feedbackEnabled, setFeedbackEnabled] = useState(true)
@@ -21331,12 +21085,7 @@ export default function IQACPortal() {
     if (savedTheme === 'dark') {
       setDarkMode(true)
     }
-    
-    // If CMS mode, set active tab to cms_portal
-    if (isCmsMode) {
-      setActiveTab('cms_portal')
-    }
-  }, [isCmsMode])
+  }, [])
 
   // Apply dark mode class to body
   useEffect(() => {
@@ -21407,7 +21156,6 @@ export default function IQACPortal() {
       case 'showcase': return <AdminShowcasePage />
       case 'hierarchy_dept': return <AcademicHierarchyPage user={user} hierarchyState={hierarchyState} setHierarchyState={setHierarchyState} setActiveTab={setActiveTab} />
       case 'student_profile': return <StudentProfilePage user={user} studentId={hierarchyState.studentId || ''} hierarchyState={hierarchyState} setHierarchyState={setHierarchyState} setActiveTab={setActiveTab} />
-      case 'cms_portal': return <CMSPortalPage user={user} />
       default: return <DashboardContent user={user} setActiveTab={setActiveTab} />
     }
   }
@@ -24100,890 +23848,6 @@ function StudentProfilePage({
             </div>
           )}
         </div>
-      </div>
-    </div>
-  )
-}
-
-// ============ CMS PORTAL PAGE (System Administration) ============
-function CMSPortalPage({ user }: { user: User }) {
-  const [activeSection, setActiveSection] = useState<string>('overview')
-  const [systemStats, setSystemStats] = useState<any>(null)
-  const [users, setUsers] = useState<any[]>([])
-  const [departments, setDepartments] = useState<any[]>([])
-  const [configs, setConfigs] = useState<any[]>([])
-  const [auditLogs, setAuditLogs] = useState<any[]>([])
-  const [announcements, setAnnouncements] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
-  const [modalType, setModalType] = useState('')
-  const [editingItem, setEditingItem] = useState<any>(null)
-  
-  // Form states
-  const [formData, setFormData] = useState<any>({})
-  
-  // Load data on mount
-  useEffect(() => {
-    loadSystemStats()
-    loadUsers()
-    loadDepartments()
-    loadConfigs()
-    loadAuditLogs()
-    loadAnnouncements()
-  }, [activeSection])
-
-  const loadSystemStats = async () => {
-    try {
-      const res = await fetch('/api/admin/database')
-      if (res.ok) {
-        const data = await res.json()
-        setSystemStats(data)
-      }
-    } catch (e) { console.error(e) }
-  }
-
-  const loadUsers = async () => {
-    try {
-      const res = await fetch('/api/dashboard?statsOnly=true')
-      if (res.ok) {
-        // Load users separately
-        const usersRes = await fetch('/api/students?limit=50')
-        if (usersRes.ok) {
-          const data = await usersRes.json()
-          setUsers(data.students || [])
-        }
-      }
-    } catch (e) { console.error(e) }
-    finally { setLoading(false) }
-  }
-
-  const loadDepartments = async () => {
-    try {
-      const res = await fetch('/api/departments')
-      if (res.ok) {
-        const data = await res.json()
-        setDepartments(data.departments || data || [])
-      }
-    } catch (e) { console.error(e) }
-  }
-
-  const loadConfigs = async () => {
-    try {
-      const res = fetch('/api/settings') // Would need to create this
-      // For now use mock data
-      setConfigs([
-        { key: 'site_name', value: 'NIET IQAC Portal', category: 'GENERAL' },
-        { key: 'institution_name', value: 'Nehru Institute of Engineering and Technology', category: 'INSTITUTION' },
-        { key: 'academic_year', value: '2024-2025', category: 'ACADEMIC' },
-        { key: 'maintenance_mode', value: 'false', category: 'SYSTEM' },
-        { key: 'session_timeout', value: '30', category: 'SECURITY' },
-      ])
-    } catch (e) { console.error(e) }
-  }
-
-  const loadAuditLogs = async () => {
-    // Mock audit logs for now
-    setAuditLogs([
-      { id: '1', userName: 'admin@niet.ac.in', action: 'LOGIN', module: 'AUTH', createdAt: new Date().toISOString() },
-      { id: '2', userName: 'hod_cse@niet.ac.in', action: 'UPDATE', module: 'STUDENTS', details: 'Updated student profile', createdAt: new Date(Date.now() - 3600000).toISOString() },
-      { id: '3', userName: 'staff_cse1@niet.ac.in', action: 'CREATE', module: 'ACHIEVEMENTS', details: 'Added new achievement', createdAt: new Date(Date.now() - 7200000).toISOString() },
-      { id: '4', userName: 'Manager', action: 'CMS_LOGIN', module: 'CMS', details: 'CMS Portal accessed', createdAt: new Date(Date.now() - 86400000).toISOString() },
-    ])
-  }
-
-  const loadAnnouncements = async () => {
-    setAnnouncements([
-      { id: '1', title: 'System Maintenance Scheduled', content: 'Server maintenance on Sunday 2AM-4AM', type: 'WARNING', status: 'ACTIVE', createdAt: new Date().toISOString() },
-      { id: '2', title: 'New Feature Release', content: 'Analytics dashboard v2.0 is now live!', type: 'INFO', status: 'ACTIVE', createdAt: new Date().toISOString() },
-      { id: '3', title: 'Happy Holidays', content: 'College closed for Diwali celebration', type: 'EVENT', status: 'ACTIVE', createdAt: new Date().toISOString() },
-    ])
-  }
-
-  const cmsSections = [
-    { id: 'overview', label: 'Dashboard Overview', icon: LayoutDashboard, description: 'System status and quick stats' },
-    { id: 'users', label: 'User Management', icon: Users, description: 'Manage all portal users' },
-    { id: 'departments', label: 'Departments', icon: Building2, description: 'Configure departments' },
-    { id: 'settings', label: 'System Settings', icon: Settings, description: 'Global configuration' },
-    { id: 'announcements', label: 'Announcements', icon: Megaphone, description: 'Manage announcements' },
-    { id: 'security', label: 'Security', icon: Shield, description: 'Access control & auth' },
-    { id: 'backup', label: 'Backup & Restore', icon: Database, description: 'Data backup management' },
-    { id: 'audit', label: 'Audit Logs', icon: FileText, description: 'Activity tracking' },
-    { id: 'appearance', label: 'Appearance', icon: PaletteIcon, description: 'Themes & branding' },
-    { id: 'integrations', label: 'Integrations', icon: Wifi, description: 'API & external services' },
-  ]
-
-  const renderContent = () => {
-    switch (activeSection) {
-      case 'overview':
-        return <CmsOverviewSection stats={systemStats} />
-      case 'users':
-        return <CmsUsersSection users={users} onAdd={() => { setModalType('addUser'); setShowModal(true); }} onEdit={(u) => { setEditingItem(u); setModalType('editUser'); setShowModal(true); }} />
-      case 'departments':
-        return <CmsDepartmentsSection departments={departments} />
-      case 'settings':
-        return <CmsSettingsSection configs={configs} />
-      case 'announcements':
-        return <CmsAnnouncementsSection announcements={announcements} onAdd={() => { setModalType('addAnnouncement'); setShowModal(true); }} />
-      case 'security':
-        return <CmsSecuritySection />
-      case 'backup':
-        return <CmsBackupSection />
-      case 'audit':
-        return <CmsAuditSection logs={auditLogs} />
-      case 'appearance':
-        return <CmsAppearanceSection />
-      case 'integrations':
-        return <CmsIntegrationsSection />
-      default:
-        return <CmsOverviewSection stats={systemStats} />
-    }
-  }
-
-  return (
-    <div className="space-y-6 p-4 lg:p-6 animate-fadeIn">
-      {/* CMS Header */}
-      <div className="bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 rounded-2xl p-6 text-white shadow-2xl overflow-hidden relative">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-10 -right-10 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl" />
-          <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl" />
-        </div>
-        
-        <div className="relative flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
-            <Wrench className="w-8 h-8 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">CMS Portal</h1>
-            <p className="text-gray-300 mt-1 text-sm">System Administration & Configuration Center</p>
-            <div className="flex items-center gap-3 mt-2">
-              <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 text-xs font-medium rounded-full border border-emerald-500/30 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                System Online
-              </span>
-              <span className="text-xs text-gray-400">Welcome, {user.name}</span>
-            </div>
-          </div>
-          <div className="ml-auto flex items-center gap-3">
-            <Badge className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border-amber-500/30 px-3 py-1.5 text-xs font-semibold">
-              <Shield className="w-3 h-3 mr-1" />
-              SUPER ADMIN
-            </Badge>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <CmsStatCard 
-          title="Total Users" 
-          value={systemStats?.totalRecords?.toString() || "1,247"} 
-          icon={Users} 
-          color="blue"
-          trend="+12%"
-        />
-        <CmsStatCard 
-          title="Departments" 
-          value={departments.length.toString() || "11"} 
-          icon={Building2} 
-          color="emerald"
-          trend="Active"
-        />
-        <CmsStatCard 
-          title="Database Size" 
-          value="24.5 MB" 
-          icon={HardDrive} 
-          color="purple"
-          trend="Healthy"
-        />
-        <CmsStatCard 
-          title="Uptime" 
-          value="99.9%" 
-          icon={Activity} 
-          color="green"
-          trend="30 days"
-        />
-      </div>
-
-      {/* Main Content Area - Two Column Layout */}
-      <div className="grid grid-cols-12 gap-6">
-        {/* Sidebar Navigation */}
-        <div className="col-span-12 lg:col-span-3">
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden sticky top-24">
-            <div className="p-4 border-b border-gray-100 bg-gray-50/50">
-              <h3 className="font-semibold text-sm text-gray-700">Management Sections</h3>
-            </div>
-            <nav className="p-2">
-              {cmsSections.map((section) => {
-                const Icon = section.icon
-                const isActive = activeSection === section.id
-                return (
-                  <button
-                    key={section.id}
-                    onClick={() => setActiveSection(section.id)}
-                    className={'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 ' + 
-                      isActive 
-                        ? 'bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 font-medium shadow-sm' 
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                     + ''}
-                  >
-                    <div className={'w-8 h-8 rounded-lg flex items-center justify-center ' + 
-                      isActive ? 'bg-gradient-to-br from-indigo-500 to-purple-500 text-white shadow-md' : 'bg-gray-100 text-gray-500'
-                     + ''}>
-                      <Icon className={'w-4 h-4 ' + isActive ? '' : '' + ''} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm block truncate">{section.label}</span>
-                      <span className="text-xs text-gray-400 truncate block">{section.description}</span>
-                    </div>
-                  </button>
-                )
-              })}
-            </nav>
-          </div>
-        </div>
-
-        {/* Content Panel */}
-        <div className="col-span-12 lg:col-span-9">
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            {/* Content Header */}
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
-              <div>
-                <h2 className="font-semibold text-lg text-gray-900 capitalize">
-                  {cmsSections.find(s => s.id === activeSection)?.label || 'Overview'}
-                </h2>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  {cmsSections.find(s => s.id === activeSection)?.description}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
-                  if (activeSection === 'users') loadUsers()
-                  else if (activeSection === 'departments') loadDepartments()
-                  else if (activeSection === 'audit') loadAuditLogs()
-                }}>
-                  <RefreshCw className="w-3.5 h-3.5" /> Refresh
-                </Button>
-              </div>
-            </div>
-            
-            {/* Dynamic Content */}
-            <div className="p-6">
-              {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-                  <span className="ml-3 text-gray-500">Loading...</span>
-                </div>
-              ) : (
-                renderContent()
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ============ CMS SUB-COMPONENTS ============
-
-function CmsStatCard({ title, value, icon: Icon, color, trend }: any) {
-  const colors: Record<string, string> = {
-    blue: 'from-blue-500 to-blue-600',
-    emerald: 'from-emerald-500 to-emerald-600',
-    purple: 'from-purple-500 to-purple-600',
-    green: 'from-green-500 to-green-600',
-  }
-  const bgColors: Record<string, string> = {
-    blue: 'bg-blue-50',
-    emerald: 'bg-emerald-50',
-    purple: 'bg-purple-50',
-    green: 'bg-green-50',
-  }
-  
-  return (
-    <div className={'' + bgColors[color] + ' rounded-xl p-4 border border-gray-100 hover:shadow-md transition-shadow'}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-        </div>
-        <div className={'w-11 h-11 rounded-xl bg-gradient-to-br ' + colors[color] + ' flex items-center justify-center shadow-lg'}>
-          <Icon className="w-5 h-5 text-white" />
-        </div>
-      </div>
-      <div className="mt-2 flex items-center gap-1">
-        <TrendingUp className="w-3 h-3 text-emerald-500" />
-        <span className="text-xs font-medium text-emerald-600">{trend}</span>
-      </div>
-    </div>
-  )
-}
-
-function CmsOverviewSection({ stats }: any) {
-  return (
-    <div className="space-y-6">
-      {/* System Health */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-5 border border-emerald-100">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900">System Status</h4>
-              <p className="text-xs text-gray-500">All systems operational</p>
-            </div>
-          </div>
-          <div className="space-y-3">
-            {[
-              { name: 'API Server', status: 'Online' },
-              { name: 'Database', status: 'Connected' },
-              { name: 'File Storage', status: 'Normal' },
-              { name: 'Email Service', status: 'Active' },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b border-emerald-100 last:border-0">
-                <span className="text-sm text-gray-700">{item.name}</span>
-                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">{item.status}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center">
-              <BarChart3 className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900">Recent Activity</h4>
-              <p className="text-xs text-gray-500">Last 24 hours</p>
-            </div>
-          </div>
-          <div className="space-y-3">
-            {[
-              { action: 'User logins', count: '156', change: '+23%' },
-              { action: 'Achievements added', count: '42', change: '+18%' },
-              { action: 'Reports generated', count: '28', change: '+5%' },
-              { action: 'Data exports', count: '12', change: '-3%' },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b border-blue-100 last:border-0">
-                <span className="text-sm text-gray-700">{item.action}</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-gray-900">{item.count}</span>
-                  <span className="text-xs text-emerald-600">{item.change}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions Grid */}
-      <div>
-        <h4 className="font-semibold text-gray-900 mb-4">Quick Actions</h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { icon: UserPlus, label: 'Add User', color: 'blue' },
-            { icon: RefreshCw, label: 'Clear Cache', color: 'amber' },
-            { icon: Download, label: 'Export All Data', color: 'emerald' },
-            { icon: Bell, label: 'Send Notification', color: 'purple' },
-          ].map((action, i) => {
-            const Icon = action.icon
-            const colors: Record<string, string> = {
-              blue: 'hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600',
-              amber: 'hover:bg-amber-50 hover:border-amber-200 hover:text-amber-600',
-              emerald: 'hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-600',
-              purple: 'hover:bg-purple-50 hover:border-purple-200 hover:text-purple-600',
-            }
-            return (
-              <button key={i} className={'flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 transition-all ' + colors[action.color] + ''}>
-                <Icon className="w-6 h-6" />
-                <span className="text-xs font-medium">{action.label}</span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function CmsUsersSection({ users, onAdd, onEdit }: any) {
-  const [searchTerm, setSearchTerm] = useState('')
-  const filteredUsers = users.filter((u: any) => 
-    u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search users..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-          />
-        </div>
-        <Button onClick={onAdd} className="gap-2">
-          <UserPlus className="w-4 h-4" /> Add User
-        </Button>
-      </div>
-
-      <div className="border border-gray-200 rounded-xl overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">User</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Role</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Department</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {filteredUsers.length > 0 ? filteredUsers.slice(0, 10).map((user: any, i: number) => (
-              <tr key={i} className="hover:bg-gray-50">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-xs font-medium">
-                      {user.name?.charAt(0) || 'U'}
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm text-gray-900">{user.name || 'User'}</p>
-                      <p className="text-xs text-gray-500">{user.email || 'N/A'}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <Badge variant="secondary" className="text-xs capitalize">{user.role || 'STAFF'}</Badge>
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600">{user.departmentName || '-'}</td>
-                <td className="px-4 py-3">
-                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">Active</span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Button variant="ghost" size="sm" onClick={() => onEdit(user)}>
-                    <Edit3 className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </td>
-              </tr>
-            )) : (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
-                  No users found. Click "Add User" to create one.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-function CmsDepartmentsSection({ departments }: any) {
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {(departments.length > 0 ? departments : DEPARTMENTS_LIST).map((dept: any, i: number) => (
-          <div key={i} className="border border-gray-200 rounded-xl p-4 hover:border-indigo-300 hover:shadow-md transition-all">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
-                  {dept.code?.substring(0, 2) || 'DE'}
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">{dept.name || dept.name}</h4>
-                  <p className="text-xs text-gray-500">{dept.code || dept.code}</p>
-                </div>
-              </div>
-              <Badge variant="outline" className="text-emerald-600 border-emerald-200">Active</Badge>
-            </div>
-            <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between text-sm">
-              <span className="text-gray-500"><Users className="w-4 h-4 inline mr-1" /> -- students</span>
-              <span className="text-gray-500"><BookOpen className="w-4 h-4 inline mr-1" /> -- faculty</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function CmsSettingsSection({ configs }: any) {
-  return (
-    <div className="space-y-4">
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-        <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
-        <div>
-          <h4 className="font-medium text-amber-800">Configuration Settings</h4>
-          <p className="text-sm text-amber-700 mt-1">Modify these settings carefully as they affect the entire system.</p>
-        </div>
-      </div>
-      
-      <div className="space-y-3">
-        {configs.map((config: any, i: number) => (
-          <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-            <div>
-              <p className="font-medium text-gray-900 text-sm">{config.key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
-              <p className="text-xs text-gray-500">{config.category}</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-700 font-mono">{config.value}</span>
-              <Button variant="ghost" size="sm"><Edit3 className="w-4 h-4" /></Button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function CmsAnnouncementsSection({ announcements, onAdd }: any) {
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button onClick={onAdd} className="gap-2">
-          <PlusCircle className="w-4 h-4" /> New Announcement
-        </Button>
-      </div>
-      
-      <div className="space-y-3">
-        {announcements.map((ann: any, i: number) => {
-          const typeColors: Record<string, string> = {
-            INFO: 'bg-blue-100 text-blue-700',
-            WARNING: 'bg-amber-100 text-amber-700',
-            SUCCESS: 'bg-emerald-100 text-emerald-700',
-            URGENT: 'bg-red-100 text-red-700',
-            EVENT: 'bg-purple-100 text-purple-700',
-          }
-          return (
-            <div key={i} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3">
-                  <div className={'px-2 py-1 rounded text-xs font-medium ' + typeColors[ann.type] || 'bg-gray-100 text-gray-700' + ''}>
-                    {ann.type}
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900">{ann.title}</h4>
-                    <p className="text-sm text-gray-600 mt-1">{ann.content}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-emerald-600">{ann.status}</Badge>
-                  <Button variant="ghost" size="sm"><Edit3 className="w-4 h-4" /></Button>
-                  <Button variant="ghost" size="sm" className="text-red-500"><Trash2 className="w-4 h-4" /></Button>
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-function CmsSecuritySection() {
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="border border-gray-200 rounded-xl p-5">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-              <Lock className="w-5 h-5 text-indigo-600" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900">Password Policy</h4>
-              <p className="text-xs text-gray-500">Configure password requirements</p>
-            </div>
-          </div>
-          <div className="space-y-3">
-            {[
-              { label: 'Minimum Length', value: '8 characters' },
-              { label: 'Require Uppercase', value: 'Enabled' },
-              { label: 'Require Numbers', value: 'Enabled' },
-              { label: 'Require Special Chars', value: 'Disabled' },
-              { label: 'Expiry Days', value: '90 days' },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                <span className="text-sm text-gray-600">{item.label}</span>
-                <span className="text-sm font-medium text-gray-900">{item.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="border border-gray-200 rounded-xl p-5">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-emerald-600" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900">Session Management</h4>
-              <p className="text-xs text-gray-500">Control session behavior</p>
-            </div>
-          </div>
-          <div className="space-y-3">
-            {[
-              { label: 'Session Timeout', value: '30 minutes' },
-              { label: 'Max Concurrent Sessions', value: '3' },
-              { label: 'Remember Me Duration', value: '7 days' },
-              { label: 'Lockout Attempts', value: '5 attempts' },
-              { label: 'Lockout Duration', value: '15 minutes' },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                <span className="text-sm text-gray-600">{item.label}</span>
-                <span className="text-sm font-medium text-gray-900">{item.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="w-5 h-5 text-red-600" />
-          <span className="font-medium text-red-800">Danger Zone</span>
-        </div>
-        <p className="text-sm text-red-700 mt-2">These actions are irreversible. Please proceed with caution.</p>
-        <div className="mt-3 flex gap-3">
-          <Button variant="destructive" size="sm" className="gap-1">
-            <LogOut className="w-4 h-4" /> Force Logout All Users
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1 border-red-300 text-red-600 hover:bg-red-50">
-            <RefreshCw className="w-4 h-4" /> Reset All Sessions
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function CmsBackupSection() {
-  const [isBackingUp, setIsBackingUp] = useState(false)
-  
-  const handleBackup = async () => {
-    setIsBackingUp(true)
-    setTimeout(() => setIsBackingUp(false), 3000)
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
-        <div className="flex items-start gap-3">
-          <Info className="w-5 h-5 text-blue-600 mt-0.5" />
-          <div>
-            <h4 className="font-medium text-blue-800">Backup Information</h4>
-            <p className="text-sm text-blue-700 mt-1">
-              Regular backups ensure your data is safe. We recommend daily backups for production systems.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="border border-gray-200 rounded-xl p-5 text-center">
-          <Database className="w-10 h-10 text-purple-500 mx-auto mb-3" />
-          <h4 className="font-semibold text-gray-900">Full Backup</h4>
-          <p className="text-xs text-gray-500 mt-1">Complete database + files</p>
-          <Button className="mt-3 w-full" onClick={handleBackup} disabled={isBackingUp}>
-            {isBackingUp ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Backing up...</> : 'Start Backup'}
-          </Button>
-        </div>
-        
-        <div className="border border-gray-200 rounded-xl p-5 text-center">
-          <Users className="w-10 h-10 text-blue-500 mx-auto mb-3" />
-          <h4 className="font-semibold text-gray-900">Users Only</h4>
-          <p className="text-xs text-gray-500 mt-1">User accounts & roles</p>
-          <Button variant="outline" className="mt-3 w-full">Export Users</Button>
-        </div>
-        
-        <div className="border border-gray-200 rounded-xl p-5 text-center">
-          <FileSpreadsheet className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
-          <h4 className="font-semibold text-gray-900">Data Export</h4>
-          <p className="text-xs text-gray-500 mt-1">Achievements & records</p>
-          <Button variant="outline" className="mt-3 w-full">Export Data</Button>
-        </div>
-      </div>
-
-      <div className="border border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
-          <h4 className="font-semibold text-gray-900">Recent Backups</h4>
-        </div>
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Date</th>
-              <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Type</th>
-              <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Size</th>
-              <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Status</th>
-              <th className="text-right px-4 py-2 text-xs font-medium text-gray-500">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {[
-              { date: new Date().toLocaleDateString(), type: 'Full', size: '24.5 MB', status: 'Completed' },
-              { date: new Date(Date.now() - 86400000).toLocaleDateString(), type: 'Full', size: '24.3 MB', status: 'Completed' },
-              { date: new Date(Date.now() - 172800000).toLocaleDateString(), type: 'Data', size: '18.2 MB', status: 'Completed' },
-            ].map((backup, i) => (
-              <tr key={i}>
-                <td className="px-4 py-3 text-sm text-gray-700">{backup.date}</td>
-                <td className="px-4 py-3 text-sm text-gray-700">{backup.type}</td>
-                <td className="px-4 py-3 text-sm text-gray-700">{backup.size}</td>
-                <td className="px-4 py-3">
-                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">{backup.status}</span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Button variant="ghost" size="sm" className="text-indigo-600">Download</Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-function CmsAuditSection({ logs }: any) {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <select className="px-3 py-2 border border-gray-200 rounded-lg text-sm">
-          <option>All Modules</option>
-          <option>AUTH</option>
-          <option>USERS</option>
-          <option>CMS</option>
-          <option>SETTINGS</option>
-        </select>
-        <select className="px-3 py-2 border border-gray-200 rounded-lg text-sm">
-          <option>All Actions</option>
-          <option>LOGIN</option>
-          <option>CREATE</option>
-          <option>UPDATE</option>
-          <option>DELETE</option>
-        </select>
-      </div>
-
-      <div className="border border-gray-200 rounded-xl overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Timestamp</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">User</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Action</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Module</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Details</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {logs.map((log: any, i: number) => (
-              <tr key={i} className="hover:bg-gray-50">
-                <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
-                  {new Date(log.createdAt).toLocaleString()}
-                </td>
-                <td className="px-4 py-3 text-sm font-medium text-gray-900">{log.userName}</td>
-                <td className="px-4 py-3">
-                  <Badge variant="secondary" className="text-xs">{log.action}</Badge>
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600">{log.module}</td>
-                <td className="px-4 py-3 text-sm text-gray-500">{log.details || '-'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-function CmsAppearanceSection() {
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="border border-gray-200 rounded-xl p-5">
-          <h4 className="font-semibold text-gray-900 mb-4">Brand Settings</h4>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Institution Name</label>
-              <input type="text" defaultValue="NIET IQAC Portal" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Logo URL</label>
-              <input type="text" placeholder="https://..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Primary Color</label>
-              <div className="flex items-center gap-2">
-                <input type="color" defaultValue="#6366f1" className="w-10 h-10 rounded cursor-pointer" />
-                <input type="text" defaultValue="#6366f1" className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="border border-gray-200 rounded-xl p-5">
-          <h4 className="font-semibold text-gray-900 mb-4">Login Page Preview</h4>
-          <div className="bg-gray-100 rounded-lg p-4 aspect-video flex items-center justify-center">
-            <div className="text-center text-gray-400">
-              <Eye className="w-8 h-8 mx-auto mb-2" />
-              <p className="text-sm">Preview will appear here</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-3">
-        <Button variant="outline">Reset to Default</Button>
-        <Button className="gap-2"><Save className="w-4 h-4" /> Save Changes</Button>
-      </div>
-    </div>
-  )
-}
-
-function CmsIntegrationsSection() {
-  return (
-    <div className="space-y-6">
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-        <div className="flex items-start gap-3">
-          <Wifi className="w-5 h-5 text-amber-600 mt-0.5" />
-          <div>
-            <h4 className="font-medium text-amber-800">External Integrations</h4>
-            <p className="text-sm text-amber-700 mt-1">Connect third-party services to extend functionality.</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {[
-          { name: 'Email Service (SMTP)', desc: 'Send notifications via email', connected: true, color: 'emerald' },
-          { name: 'SMS Gateway', desc: 'Send SMS alerts', connected: false, color: 'gray' },
-          { name: 'Cloud Storage', desc: 'File uploads to cloud', connected: true, color: 'emerald' },
-          { name: 'Payment Gateway', desc: 'Process online payments', connected: false, color: 'gray' },
-        ].map((integration, i) => (
-          <div key={i} className="border border-gray-200 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-semibold text-gray-900 text-sm">{integration.name}</h4>
-              <span className={'px-2 py-0.5 text-xs font-medium rounded-full ' + 
-                integration.connected ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
-               + ''}>
-                {integration.connected ? 'Connected' : 'Not Connected'}
-              </span>
-            </div>
-            <p className="text-xs text-gray-500 mb-3">{integration.desc}</p>
-            <Button variant="outline" size="sm" className="w-full">
-              {integration.connected ? 'Configure' : 'Connect'}
-            </Button>
-          </div>
-        ))}
       </div>
     </div>
   )
