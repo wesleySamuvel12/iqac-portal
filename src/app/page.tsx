@@ -834,6 +834,60 @@ function LoginPage() {
                   <div className="admin-btn-glow" />
                 </button>
 
+                {/* HOD Quick Access */}
+                <button
+                  onClick={() => quickLogin(`hod_${selectedDept.toLowerCase()}@niet.ac.in`, 'hod123')}
+                  className="hod-quick-btn"
+                >
+                  <div className="hod-btn-left">
+                    <div className="hod-btn-icon-wrap">
+                      <UserCheck className="hod-btn-icon" />
+                    </div>
+                    <div className="hod-btn-text">
+                      <span className="hod-btn-title">HOD - {selectedDept}</span>
+                      <span className="hod-btn-desc">Department Head Portal</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="hod-btn-arrow" />
+                  <div className="hod-btn-glow" />
+                </button>
+
+                {/* Staff Quick Access */}
+                <button
+                  onClick={() => quickLogin(`staff_${selectedDept.toLowerCase()}1@niet.ac.in`, 'staff123')}
+                  className="staff-quick-btn"
+                >
+                  <div className="staff-btn-left">
+                    <div className="staff-btn-icon-wrap">
+                      <BookOpen className="staff-btn-icon" />
+                    </div>
+                    <div className="staff-btn-text">
+                      <span className="staff-btn-title">Staff - {selectedDept}</span>
+                      <span className="staff-btn-desc">Faculty Member Portal</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="staff-btn-arrow" />
+                  <div className="staff-btn-glow" />
+                </button>
+
+                {/* Student Quick Access */}
+                <button
+                  onClick={() => quickLogin(`student_${selectedDept.toLowerCase()}1@niet.ac.in`, 'student123')}
+                  className="student-quick-btn"
+                >
+                  <div className="student-btn-left">
+                    <div className="student-btn-icon-wrap">
+                      <GraduationCap className="student-btn-icon" />
+                    </div>
+                    <div className="student-btn-text">
+                      <span className="student-btn-title">Student - {selectedDept}</span>
+                      <span className="student-btn-desc">Student Portal</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="student-btn-arrow" />
+                  <div className="student-btn-glow" />
+                </button>
+
                 {/* Department Selector */}
                 <div className="dept-selector-section">
                   <label className="dept-label">
@@ -1999,6 +2053,231 @@ function LoginPage() {
           transition: opacity 0.3s ease;
         }
         .admin-quick-btn:hover .admin-btn-glow {
+          opacity: 1;
+        }
+
+        /* ========== HOD QUICK BUTTON (PURPLE) ========== */
+        .hod-quick-btn {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 14px 16px;
+          border-radius: 14px;
+          border: 1.5px solid #e9d5ff;
+          background: linear-gradient(135deg, #faf5ff, #f3e8ff);
+          cursor: pointer;
+          overflow: hidden;
+          transition: all 0.3s ease;
+        }
+        .hod-quick-btn:hover {
+          border-color: #d8b4fe;
+          box-shadow: 0 8px 20px -8px rgba(147,51,234,0.3);
+          transform: translateY(-1px);
+        }
+        .hod-btn-left {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .hod-btn-icon-wrap {
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          background: linear-gradient(135deg, #a855f7, #9333ea);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 10px -2px rgba(147,51,234,0.4);
+        }
+        .hod-btn-icon {
+          width: 20px;
+          height: 20px;
+          color: white;
+        }
+        .hod-btn-text {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .hod-btn-title {
+          display: block;
+          font-size: 13px;
+          font-weight: 700;
+          color: #6b21a8;
+        }
+        .hod-btn-desc {
+          display: block;
+          font-size: 11px;
+          color: #7c3aed;
+        }
+        .hod-btn-arrow {
+          width: 18px;
+          height: 18px;
+          color: #a855f7;
+          transition: transform 0.3s ease;
+        }
+        .hod-quick-btn:hover .hod-btn-arrow {
+          transform: translateX(4px);
+        }
+        .hod-btn-glow {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, rgba(168,85,247,0.15), transparent);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+        .hod-quick-btn:hover .hod-btn-glow {
+          opacity: 1;
+        }
+
+        /* ========== STAFF QUICK BUTTON (GREEN) ========== */
+        .staff-quick-btn {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 14px 16px;
+          border-radius: 14px;
+          border: 1.5px solid #bbf7d0;
+          background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+          cursor: pointer;
+          overflow: hidden;
+          transition: all 0.3s ease;
+        }
+        .staff-quick-btn:hover {
+          border-color: #86efac;
+          box-shadow: 0 8px 20px -8px rgba(34,197,94,0.3);
+          transform: translateY(-1px);
+        }
+        .staff-btn-left {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .staff-btn-icon-wrap {
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          background: linear-gradient(135deg, #22c55e, #16a34a);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 10px -2px rgba(34,197,94,0.4);
+        }
+        .staff-btn-icon {
+          width: 20px;
+          height: 20px;
+          color: white;
+        }
+        .staff-btn-text {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .staff-btn-title {
+          display: block;
+          font-size: 13px;
+          font-weight: 700;
+          color: #166534;
+        }
+        .staff-btn-desc {
+          display: block;
+          font-size: 11px;
+          color: #15803d;
+        }
+        .staff-btn-arrow {
+          width: 18px;
+          height: 18px;
+          color: #22c55e;
+          transition: transform 0.3s ease;
+        }
+        .staff-quick-btn:hover .staff-btn-arrow {
+          transform: translateX(4px);
+        }
+        .staff-btn-glow {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, rgba(34,197,94,0.15), transparent);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+        .staff-quick-btn:hover .staff-btn-glow {
+          opacity: 1;
+        }
+
+        /* ========== STUDENT QUICK BUTTON (BLUE) ========== */
+        .student-quick-btn {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 14px 16px;
+          border-radius: 14px;
+          border: 1.5px solid #bfdbfe;
+          background: linear-gradient(135deg, #eff6ff, #dbeafe);
+          cursor: pointer;
+          overflow: hidden;
+          transition: all 0.3s ease;
+        }
+        .student-quick-btn:hover {
+          border-color: #93c5fd;
+          box-shadow: 0 8px 20px -8px rgba(59,130,246,0.3);
+          transform: translateY(-1px);
+        }
+        .student-btn-left {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .student-btn-icon-wrap {
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 10px -2px rgba(59,130,246,0.4);
+        }
+        .student-btn-icon {
+          width: 20px;
+          height: 20px;
+          color: white;
+        }
+        .student-btn-text {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .student-btn-title {
+          display: block;
+          font-size: 13px;
+          font-weight: 700;
+          color: #1e40af;
+        }
+        .student-btn-desc {
+          display: block;
+          font-size: 11px;
+          color: #2563eb;
+        }
+        .student-btn-arrow {
+          width: 18px;
+          height: 18px;
+          color: #3b82f6;
+          transition: transform 0.3s ease;
+        }
+        .student-quick-btn:hover .student-btn-arrow {
+          transform: translateX(4px);
+        }
+        .student-btn-glow {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, rgba(59,130,246,0.15), transparent);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+        .student-quick-btn:hover .student-btn-glow {
           opacity: 1;
         }
 
