@@ -14568,6 +14568,23 @@ function ReportGeneratorPage() {
         </div>
       )}
 
+      {/* Preview Tab - Show message if no data */}
+      {activeTab === 'preview' && !reportData && (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+            <FileText className="w-10 h-10 text-amber-600" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">No Report Data</h3>
+          <p className="text-gray-500 mb-6 max-w-md">Please configure your filters and fetch data from the database before previewing the report.</p>
+          <button
+            onClick={() => setActiveTab('configure')}
+            className="px-6 py-3 bg-gradient-to-r from-[#0A2E6D] to-[#1a4a9e] text-white rounded-xl font-medium flex items-center gap-2 hover:shadow-lg transition-all"
+          >
+            <Settings className="w-5 h-5" /> Go to Configure
+          </button>
+        </div>
+      )}
+
       {/* Preview Tab */}
       {activeTab === 'preview' && reportData && (
         <EnterpriseReportPreview 
@@ -14577,6 +14594,23 @@ function ReportGeneratorPage() {
           exporting={downloading}
           format={exportFormat}
         />
+      )}
+
+      {/* Editor Tab - Show message if no data */}
+      {activeTab === 'editor' && !reportData && (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+            <Edit3 className="w-10 h-10 text-purple-600" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">No Report Data to Edit</h3>
+          <p className="text-gray-500 mb-6 max-w-md">Please generate a report first by clicking "Fetch Data from Database" in the Configure tab.</p>
+          <button
+            onClick={() => setActiveTab('configure')}
+            className="px-6 py-3 bg-gradient-to-r from-[#0A2E6D] to-[#1a4a9e] text-white rounded-xl font-medium flex items-center gap-2 hover:shadow-lg transition-all"
+          >
+            <Settings className="w-5 h-5" /> Go to Configure
+          </button>
+        </div>
       )}
 
       {/* Editor Tab */}
