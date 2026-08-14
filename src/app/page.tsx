@@ -3860,11 +3860,30 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
       return name.substring(0, 4).toUpperCase()
     }
 
-    // Get department achievement count
+    // Get department achievement count - uses real database stats + achievements
     const getDeptAchievementCount = (deptName: string) => {
-      return allAchievements.filter((a: any) => 
+      // First try to get from department's _count (real database stats)
+      const dept = departments.find((d: any) => d.name === deptName)
+      const dbCount = dept?._count ? 
+        (dept._count.students || 0) + (dept._count.faculty || 0) + (dept._count.activities || 0) : 0
+      
+      // Add achievements from localStorage
+      const achievementCount = allAchievements.filter((a: any) => 
         a.dept === deptName || a.department === deptName
       ).length
+      
+      // Return total (database stats + achievements)
+      return dbCount + achievementCount
+    }
+
+    // Get department stats breakdown
+    const getDeptStats = (deptName: string) => {
+      const dept = departments.find((d: any) => d.name === deptName)
+      return {
+        students: dept?._count?.students || 0,
+        faculty: dept?._count?.faculty || 0,
+        activities: dept?._count?.activities || 0,
+      }
     }
 
     // Calculate cumulative stats
@@ -3976,6 +3995,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-11 gap-3">
               {departments.map((dept: any) => {
                 const count = getDeptAchievementCount(dept.name)
+                const stats = getDeptStats(dept.name)
                 const isSelected = selectedDept === dept.name
                 
                 return (
@@ -3987,6 +4007,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
                         ? 'border-[#0a2a5e] shadow-md bg-[#0a2a5e]/5 ring-2 ring-[#0a2a5e]/20' 
                         : 'border-gray-200 hover:border-[#0a2a5e]/30'
                     }`}
+                    title={`${dept.name}\nStudents: ${stats.students} | Faculty: ${stats.faculty} | Activities: ${stats.activities}`}
                   >
                     <h4 className={`font-semibold text-sm mb-1 ${isSelected ? 'text-[#0a2a5e]' : 'text-[#0a2a5e]'}`}>
                       {getDeptShortCode(dept.name)}
@@ -3994,12 +4015,13 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
                     <p className={`text-xl font-bold mb-0.5 ${count > 0 ? 'text-green-600' : 'text-gray-400'}`}>
                       {count}
                     </p>
-                    <p className="text-[10px] text-gray-400">
-                      {count > 0 ? `${count} entries` : 'No data'}
-                    </p>
+                    <div className="flex justify-center gap-1 text-[9px] text-gray-500">
+                      <span className="bg-blue-50 px-1 rounded">S:{stats.students}</span>
+                      <span className="bg-purple-50 px-1 rounded">F:{stats.faculty}</span>
+                      <span className="bg-orange-50 px-1 rounded">A:{stats.activities}</span>
+                    </div>
                   </div>
-                )
-              })}
+                )})}
             </div>
 
             {loadingDepts && (
