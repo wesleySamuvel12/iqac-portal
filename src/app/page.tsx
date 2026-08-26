@@ -10594,7 +10594,7 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
                         <div className="max-h-40 overflow-y-auto space-y-1">
                           {importResults.errors.map((err: any, idx: number) => (
                             <div key={idx} className="text-xs bg-red-50 text-red-700 p-2 rounded border border-red-200">
-                              Row {err.row}: {err.error}
+                              Row {err?.row || idx + 1}: {typeof err === 'string' ? err : err?.error || err?.reason || err?.message || 'Row processing warning'}
                             </div>
                           ))}
                         </div>
@@ -10602,8 +10602,18 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
                     )}
                   </div>
 
-                  <div className="flex justify-end gap-3 pt-2">
-                    <Button onClick={closeImportModal} className="bg-blue-600 hover:bg-blue-700">
+                  <div className="flex flex-wrap justify-end gap-3 pt-2">
+                    <Button
+                      onClick={() => {
+                        closeImportModal()
+                        setShowAddModal(true)
+                      }}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 shadow-sm flex items-center gap-2"
+                    >
+                      <Lock className="w-3.5 h-3.5" />
+                      Allocate Login Credentials
+                    </Button>
+                    <Button onClick={closeImportModal} className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2">
                       Done
                     </Button>
                   </div>
@@ -11225,8 +11235,11 @@ CSE2024005,Student 5,student_cse5@niet.ac.in,Student@123,CSE,2024-2028,5,8.90`
                   </div>
                 )}
 
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button onClick={closeImportModal} className="bg-gradient-to-r from-blue-500 to-blue-600">Done</Button>
+                <div className="flex flex-wrap justify-end gap-3 pt-2">
+                  <Button onClick={() => { closeImportModal(); setShowForm(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs gap-2 px-4 py-2 shadow-sm">
+                    <Lock className="w-3.5 h-3.5" /> Allocate Login Credentials
+                  </Button>
+                  <Button onClick={closeImportModal} className="bg-gradient-to-r from-blue-500 to-blue-600 font-bold text-xs px-4 py-2">Done</Button>
                 </div>
               </div>
             )}
@@ -11313,6 +11326,26 @@ CSE2024005,Student 5,student_cse5@niet.ac.in,Student@123,CSE,2024-2028,5,8.90`
           )}
         </CardContent>
       </Card>
+
+      {/* Bottom Login Allocation Action Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 p-5 rounded-2xl text-white flex flex-col sm:flex-row items-center justify-between gap-4 border border-indigo-800/40 shadow-xl">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center border border-cyan-400/30">
+            <Lock className="w-5 h-5 text-cyan-300" />
+          </div>
+          <div>
+            <p className="font-bold text-sm text-white">Student Login Credentials Allocation</p>
+            <p className="text-xs text-blue-200">Create login credentials or allocate accounts for students in {user.departmentName || 'your department'}</p>
+          </div>
+        </div>
+        <Button
+          onClick={() => setShowForm(true)}
+          className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold rounded-xl text-xs px-5 py-2.5 shadow-md flex items-center gap-2"
+        >
+          <UserPlus className="w-4 h-4" />
+          Allocate Login Credentials
+        </Button>
+      </div>
     </div>
   )
 }
@@ -11805,6 +11838,26 @@ EMP1003,Bob Wilson,bob@niet.edu,9876543212,Professor,Ph.D.,Machine Learning,15,D
           )}
         </CardContent>
       </Card>
+
+      {/* Bottom Login Allocation Action Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 p-5 rounded-2xl text-white flex flex-col sm:flex-row items-center justify-between gap-4 border border-blue-800/40 shadow-xl">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center border border-blue-400/30">
+            <Lock className="w-5 h-5 text-blue-300" />
+          </div>
+          <div>
+            <p className="font-bold text-sm text-white">Staff Login Credentials Allocation</p>
+            <p className="text-xs text-blue-200">Create login credentials or allocate accounts for staff members in {user.departmentName || 'your department'}</p>
+          </div>
+        </div>
+        <Button
+          onClick={() => setShowForm(true)}
+          className="bg-blue-500 hover:bg-blue-400 text-slate-950 font-extrabold rounded-xl text-xs px-5 py-2.5 shadow-md flex items-center gap-2"
+        >
+          <UserPlus className="w-4 h-4" />
+          Allocate Login Credentials
+        </Button>
+      </div>
     </div>
   )
 }
