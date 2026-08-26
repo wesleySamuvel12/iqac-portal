@@ -7,6 +7,7 @@ import { DuplicateAchievementModal } from '@/components/achievements/DuplicateAc
 import { isSpecialCategory, getCanonicalCategoryLabel, normalizeTitle } from '@/lib/achievements-service'
 import { UserManagementSection } from '@/components/admin/UserManagementSection'
 import { DepartmentCredentialManager } from '@/components/common/DepartmentCredentialManager'
+import { CSVImportModal } from '@/components/common/CSVImportModal'
 import { FirstLoginModal } from '@/components/auth/FirstLoginModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10462,172 +10463,17 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
       )}
 
       {/* BULK IMPORT MODAL */}
-      {showImportModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 sticky top-0 bg-white z-10 rounded-t-2xl">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                    <Upload className="w-5 h-5 text-emerald-600" />
-                    Bulk Import Students
-                  </h3>
-                  <p className="text-sm text-gray-500 mt-1">{user.departmentName} Department</p>
-                </div>
-                <button onClick={closeImportModal} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                  <XCircle className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* File Upload Area */}
-              {!importResults ? (
-                <>
-                  <div
-                    className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
-                      dragOver ? 'border-emerald-500 bg-emerald-50/70 shadow-sm' : 'border-gray-300 hover:border-emerald-400 bg-gray-50/30'
-                    }`}
-                    onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
-                    onDragLeave={() => setDragOver(false)}
-                    onDrop={handleFileDrop}
-                  >
-                    <Upload className={`w-12 h-12 mx-auto mb-3 transition-colors ${dragOver ? 'text-emerald-600' : 'text-emerald-500'}`} />
-                    <p className="text-lg font-semibold text-gray-800 mb-1">
-                      {dragOver ? 'Drop your CSV file here' : 'Drag & drop your CSV file here'}
-                    </p>
-                    <p className="text-sm text-gray-500 mb-4">or click to browse</p>
-                    <input
-                      type="file"
-                      accept=".csv"
-                      onChange={(e) => e.target.files?.[0] && setImportFile(e.target.files[0])}
-                      className="hidden"
-                      id="import-file-input"
-                    />
-                    <label htmlFor="import-file-input" className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-xl text-sm cursor-pointer hover:bg-blue-700 transition-all shadow-sm">
-                      <FolderOpen className="w-4 h-4" />
-                      Select CSV File
-                    </label>
-                    {importFile && (
-                      <div className="mt-4 p-3 bg-emerald-50/90 border border-emerald-200 rounded-xl flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-5 h-5 text-emerald-600" />
-                          <span className="text-sm font-medium text-emerald-800">{importFile.name}</span>
-                          <span className="text-xs text-emerald-600 font-mono">({(importFile.size / 1024).toFixed(1)} KB)</span>
-                        </div>
-                        <button onClick={() => setImportFile(null)} className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors">
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Sample Template Download */}
-                  <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-4.5">
-                    <div className="flex items-start gap-3">
-                      <Info className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1">
-                        <p className="text-sm font-bold text-blue-900 mb-1">CSV Format Requirements</p>
-                        <p className="text-xs text-blue-700 mb-2">Your CSV should include these columns:</p>
-                        <code className="block text-xs bg-white px-3.5 py-2 rounded-lg border border-blue-200/80 text-blue-800 font-mono">
-                          registerNumber, name, email, phone, semester, section, cgpa
-                        </code>
-                        <button onClick={downloadSampleCSV} className="mt-3 inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-bold hover:underline">
-                          <Download className="w-4 h-4" />
-                          Download Sample CSV
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Import Action Buttons */}
-                  <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 mt-6">
-                    <Button variant="outline" onClick={closeImportModal} disabled={importing} className="px-5 py-2.5 rounded-xl font-semibold text-gray-700 hover:bg-gray-100 transition-colors text-sm">
-                      Cancel
-                    </Button>
-                    <Button 
-                      onClick={handleBulkImport} 
-                      disabled={!importFile || importing}
-                      className="px-5 py-2.5 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white shadow-sm flex items-center justify-center gap-2 min-w-[150px] text-sm transition-all"
-                    >
-                      {importing ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Importing...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="w-4 h-4" />
-                          Import Students
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                /* Results View */
-                <div className="space-y-4">
-                  <div className={`p-4 rounded-xl ${importResults.created > 0 ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 border border-gray-200'}`}>
-                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                      <CheckCircle className={`w-5 h-5 ${importResults.created > 0 ? 'text-emerald-600' : 'text-gray-400'}`} />
-                      Import Complete
-                    </h4>
-                    
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center p-3 bg-white rounded-xl border border-gray-200/80 shadow-xs">
-                        <p className="text-2xl font-bold text-emerald-600">{importResults.created || 0}</p>
-                        <p className="text-xs text-gray-500 font-medium">Created</p>
-                      </div>
-                      <div className="text-center p-3 bg-white rounded-xl border border-gray-200/80 shadow-xs">
-                        <p className="text-2xl font-bold text-amber-500">{importResults.skipped || 0}</p>
-                        <p className="text-xs text-gray-500 font-medium">Skipped</p>
-                      </div>
-                      <div className="text-center p-3 bg-white rounded-xl border border-gray-200/80 shadow-xs">
-                        <p className="text-2xl font-bold text-red-500">{importResults.failed || 0}</p>
-                        <p className="text-xs text-gray-500 font-medium">Failed</p>
-                      </div>
-                    </div>
-
-                    {(importResults.errors && importResults.errors.length > 0) && (
-                      <div className="mt-4">
-                        <p className="text-sm font-medium text-red-700 mb-2">Errors ({importResults.errors.length}):</p>
-                        <div className="max-h-40 overflow-y-auto space-y-1">
-                          {importResults.errors.map((err: any, idx: number) => (
-                            <div key={idx} className="text-xs bg-red-50 text-red-700 p-2 rounded-lg border border-red-200 font-medium">
-                              Row {err?.row || idx + 1}: {typeof err === 'string' ? err : err?.error || err?.reason || err?.message || 'Row processing warning'}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 mt-6">
-                    <Button
-                      onClick={() => {
-                        closeImportModal()
-                        setShowAddModal(true)
-                      }}
-                      className="px-5 py-2.5 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center gap-2 text-sm transition-all"
-                    >
-                      <Lock className="w-4 h-4" />
-                      Allocate Login Credentials
-                    </Button>
-                    <Button 
-                      onClick={closeImportModal} 
-                      className="px-5 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm text-sm transition-all min-w-[90px]"
-                    >
-                      Done
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-      </>
-      )}
+      <CSVImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        title="Bulk Import Students"
+        subtitle={`${user.departmentName || 'Department'} • CSV Import`}
+        departmentId={user.departmentId || ''}
+        departmentName={user.departmentName || 'Department'}
+        importType="STUDENT"
+        sampleCSVColumns="registerNumber, name, email, phone, semester, section, cgpa"
+        onImportSuccess={() => fetchStudents()}
+      />
     </div>
   )
 }
@@ -10806,10 +10652,32 @@ function StudentManagementSection({
   const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 0 })
   const [selectedBatch, setSelectedBatch] = useState<string>('')
   const [showImportModal, setShowImportModal] = useState(false)
-  const [importing, setImporting] = useState(false)
-  const [importResults, setImportResults] = useState<any>(null)
-  const [importFile, setImportFile] = useState<File | null>(null)
-  const [importBatchId, setImportBatchId] = useState<string>('')
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
+  const [enablingLogin, setEnablingLogin] = useState(false)
+
+  const enableLoginForStudents = async (studentIds: string[]) => {
+    if (studentIds.length === 0) return
+    setEnablingLogin(true)
+    try {
+      const res = await fetch('/api/users/enable-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileType: 'STUDENT', ids: studentIds })
+      })
+      const data = await res.json()
+      if (data.success) {
+        alert(`✅ Login access enabled for ${data.count} student(s)!`)
+        setSelectedStudentIds([])
+        fetchStudents()
+      } else {
+        alert(data.error || 'Failed to enable login access')
+      }
+    } catch (err: any) {
+      alert('Error enabling login access: ' + err.message)
+    } finally {
+      setEnablingLogin(false)
+    }
+  }
   const [formData, setFormData] = useState({
     registerNumber: '',
     name: '',
@@ -11250,6 +11118,38 @@ CSE2024005,Student 5,student_cse5@niet.ac.in,Student@123,CSE,2024-2028,5,8.90`
         </Card>
       )}
 
+      {/* Selected Items Batch Login Enable Bar */}
+      {selectedStudentIds.length > 0 && (
+        <div className="bg-indigo-50/90 border border-indigo-200 rounded-xl p-3.5 flex items-center justify-between shadow-xs animate-in fade-in duration-150">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-indigo-600" />
+            <span className="text-xs font-bold text-indigo-950">
+              {selectedStudentIds.length} student(s) selected
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              disabled={enablingLogin}
+              onClick={() => enableLoginForStudents(selectedStudentIds)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs gap-1.5 shadow-sm"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              Enable Login Access for Selected ({selectedStudentIds.length})
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={enablingLogin}
+              onClick={() => enableLoginForStudents(students.map(s => s.id))}
+              className="border-indigo-300 text-indigo-800 hover:bg-indigo-100 text-xs font-bold"
+            >
+              Enable Login Access for All
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Students Table */}
       <Card>
         <CardContent className="p-0">
@@ -11267,45 +11167,90 @@ CSE2024005,Student 5,student_cse5@niet.ac.in,Student@123,CSE,2024-2028,5,8.90`
               <table className="w-full">
                 <thead className="bg-gray-50 border-b">
                   <tr>
+                    <th className="px-3 py-3 w-8 text-center">
+                      <input
+                        type="checkbox"
+                        checked={students.length > 0 && selectedStudentIds.length === students.length}
+                        onChange={(e) => {
+                          if (e.target.checked) setSelectedStudentIds(students.map(s => s.id))
+                          else setSelectedStudentIds([])
+                        }}
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                      />
+                    </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Reg No</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden sm:table-cell">Email</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden md:table-cell">Batch</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden md:table-cell">Sem</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden lg:table-cell">CGPA</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Login Access</th>
                     <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {students.map((student) => (
-                    <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-mono text-sm font-medium text-blue-600">{student.registerNumber}</td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-gray-900">{student.user?.name || '-'}</div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{student.user?.email || '-'}</td>
-                      <td className="px-4 py-3 hidden md:table-cell">
-                        {student.batchInfo && (
-                          <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200">
-                            {student.batchInfo.name}
-                          </Badge>
-                        )}
-                        {!student.batchInfo && <span className="text-gray-400 text-sm">-</span>}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 hidden md:table-cell">{student.semester || '-'}</td>
-                      <td className="px-4 py-3 text-sm font-medium hidden lg:table-cell">{student.cgpa?.toFixed(2) || '-'}</td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex justify-end gap-1">
-                          <button onClick={() => openEditForm(student)} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors" title="Edit">
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => setDeleteConfirm(student)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition-colors" title="Delete">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {students.map((student) => {
+                    const hasLogin = Boolean(student.userId || student.user)
+                    const isSelected = selectedStudentIds.includes(student.id)
+                    return (
+                      <tr key={student.id} className={`hover:bg-gray-50 transition-colors ${isSelected ? 'bg-indigo-50/40' : ''}`}>
+                        <td className="px-3 py-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) setSelectedStudentIds(prev => [...prev, student.id])
+                              else setSelectedStudentIds(prev => prev.filter(id => id !== student.id))
+                            }}
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                          />
+                        </td>
+                        <td className="px-4 py-3 font-mono text-sm font-medium text-blue-600">{student.registerNumber}</td>
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-gray-900">{student.name || student.user?.name || '-'}</div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{student.email || student.user?.email || '-'}</td>
+                        <td className="px-4 py-3 hidden md:table-cell">
+                          {student.batchInfo && (
+                            <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200">
+                              {student.batchInfo.name}
+                            </Badge>
+                          )}
+                          {!student.batchInfo && <span className="text-gray-400 text-sm">-</span>}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 hidden md:table-cell">{student.semester || '-'}</td>
+                        <td className="px-4 py-3 text-center">
+                          {hasLogin ? (
+                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 gap-1 font-bold text-[11px] px-2.5 py-0.5">
+                              <CheckCircle className="w-3 h-3 text-emerald-600" /> Enabled
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-300 gap-1 font-bold text-[11px] px-2.5 py-0.5">
+                              <Circle className="w-3 h-3 text-gray-400" /> Not Enabled
+                            </Badge>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end items-center gap-1.5">
+                            {!hasLogin && (
+                              <button
+                                onClick={() => enableLoginForStudents([student.id])}
+                                className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+                                title="Create Login Access"
+                              >
+                                <UserPlus className="w-3.5 h-3.5" /> Create Login
+                              </button>
+                            )}
+                            <button onClick={() => openEditForm(student)} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors" title="Edit">
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => setDeleteConfirm(student)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition-colors" title="Delete">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -11386,9 +11331,32 @@ function StaffManagementSection({
   const [staff, setStaff] = useState<any[]>([])
   const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 0 })
   const [showImportModal, setShowImportModal] = useState(false)
-  const [importing, setImporting] = useState(false)
-  const [importResults, setImportResults] = useState<any>(null)
-  const [importFile, setImportFile] = useState<File | null>(null)
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([])
+  const [enablingStaffLogin, setEnablingStaffLogin] = useState(false)
+
+  const enableLoginForStaff = async (staffIds: string[]) => {
+    if (staffIds.length === 0) return
+    setEnablingStaffLogin(true)
+    try {
+      const res = await fetch('/api/users/enable-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileType: 'FACULTY', ids: staffIds })
+      })
+      const data = await res.json()
+      if (data.success) {
+        alert(`✅ Login access enabled for ${data.count} staff member(s)!`)
+        setSelectedStaffIds([])
+        fetchStaff()
+      } else {
+        alert(data.error || 'Failed to enable login access')
+      }
+    } catch (err: any) {
+      alert('Error enabling login access: ' + err.message)
+    } finally {
+      setEnablingStaffLogin(false)
+    }
+  }
   const [formData, setFormData] = useState({
     employeeId: '',
     name: '',
@@ -11663,109 +11631,48 @@ EMP1003,Bob Wilson,bob@niet.edu,9876543212,Professor,Ph.D.,Machine Learning,15,D
       )}
 
       {/* Bulk Import Modal */}
-      {showImportModal && (
-        <Card className="border-2 border-purple-200 shadow-lg">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Upload className="w-5 h-5 text-purple-600" />
-                {importResults ? 'Import Results' : 'Bulk Import Staff'}
-              </CardTitle>
-              <Button variant="ghost" size="sm" onClick={closeImportModal}>
-                <XCircle className="w-5 h-5" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {!importResults ? (
-              <div className="space-y-4">
-                {/* File Upload */}
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-purple-400 transition-colors">
-                  <input
-                    type="file"
-                    accept=".csv,.xlsx,.xls"
-                    onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                    className="hidden"
-                    id="staff-import-file"
-                  />
-                  <label htmlFor="staff-import-file" className="cursor-pointer">
-                    <Upload className="w-10 h-10 mx-auto text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
-                    <p className="text-xs text-gray-400 mt-1">CSV files only</p>
-                  </label>
-                  {importFile && (
-                    <p className="text-sm text-green-600 mt-2 font-medium">✓ {importFile.name}</p>
-                  )}
-                </div>
+      <CSVImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        title="Bulk Import Staff"
+        subtitle={`${user.departmentName || 'Department'} • CSV Import`}
+        departmentId={user.departmentId || ''}
+        departmentName={user.departmentName || 'Department'}
+        importType="FACULTY"
+        sampleCSVColumns="employeeId, name, email, phone, designation, qualification, specialization"
+        onImportSuccess={() => fetchStaff()}
+      />
 
-                {/* Sample Download */}
-                <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium text-purple-800">Need a template?</p>
-                    <p className="text-xs text-purple-600">Download sample CSV format</p>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={downloadSampleCSV} className="text-purple-600 border-purple-300 hover:bg-purple-100">
-                    <Download className="w-4 h-4 mr-1" /> Download Template
-                  </Button>
-                </div>
-
-                {/* Import Button */}
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button variant="outline" onClick={closeImportModal}>Cancel</Button>
-                  <Button onClick={handleImport} disabled={!importFile || importing} className="bg-gradient-to-r from-purple-500 to-purple-600">
-                    {importing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                    {importing ? 'Importing...' : 'Import Staff'}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              /* Results View */
-              <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-green-50 rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-green-600">{importResults.created}</p>
-                    <p className="text-xs text-green-700">Created</p>
-                  </div>
-                  <div className="bg-yellow-50 rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-yellow-600">{importResults.skipped}</p>
-                    <p className="text-xs text-yellow-700">Skipped</p>
-                  </div>
-                  <div className="bg-red-50 rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-red-600">{importResults.failed}</p>
-                    <p className="text-xs text-red-700">Failed</p>
-                  </div>
-                </div>
-
-                {importResults.errors.length > 0 && (
-                  <div className="max-h-48 overflow-y-auto border rounded-lg">
-                    <table className="w-full text-sm">
-                      <thead className="bg-red-50 sticky top-0">
-                        <tr>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-red-700">Row</th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-red-700">ID</th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-red-700">Reason</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-red-100">
-                        {importResults.errors.map((err: any, idx: number) => (
-                          <tr key={idx} className="text-red-600">
-                            <td className="px-3 py-1.5">{err.row}</td>
-                            <td className="px-3 py-1.5 font-mono">{err.employeeId || err.registerNumber}</td>
-                            <td className="px-3 py-1.5">{err.reason}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button onClick={closeImportModal} className="bg-gradient-to-r from-purple-500 to-purple-600">Done</Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* Selected Items Batch Login Enable Bar */}
+      {selectedStaffIds.length > 0 && (
+        <div className="bg-purple-50/90 border border-purple-200 rounded-xl p-3.5 flex items-center justify-between shadow-xs animate-in fade-in duration-150">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-purple-600" />
+            <span className="text-xs font-bold text-purple-950">
+              {selectedStaffIds.length} staff member(s) selected
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              disabled={enablingStaffLogin}
+              onClick={() => enableLoginForStaff(selectedStaffIds)}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs gap-1.5 shadow-sm"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              Enable Login Access for Selected ({selectedStaffIds.length})
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={enablingStaffLogin}
+              onClick={() => enableLoginForStaff(staff.map(s => s.id))}
+              className="border-purple-300 text-purple-800 hover:bg-purple-100 text-xs font-bold"
+            >
+              Enable Login Access for All
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* Staff Table */}
@@ -11785,39 +11692,86 @@ EMP1003,Bob Wilson,bob@niet.edu,9876543212,Professor,Ph.D.,Machine Learning,15,D
               <table className="w-full">
                 <thead className="bg-gray-50 border-b">
                   <tr>
+                    <th className="px-3 py-3 w-8 text-center">
+                      <input
+                        type="checkbox"
+                        checked={staff.length > 0 && selectedStaffIds.length === staff.length}
+                        onChange={(e) => {
+                          if (e.target.checked) setSelectedStaffIds(staff.map(s => s.id))
+                          else setSelectedStaffIds([])
+                        }}
+                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                      />
+                    </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Emp ID</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden sm:table-cell">Designation</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden md:table-cell">Email</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden lg:table-cell">Qualification</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Login Access</th>
                     <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {staff.map((member) => (
-                    <tr key={member.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-mono text-sm font-medium text-purple-600">{member.employeeId}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="font-medium text-gray-900">{member.user?.name || '-'}</div>
-                          {member.isHOD && <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] px-1.5">HOD</Badge>}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 hidden sm:table-cell">{member.designation || '-'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500 hidden md:table-cell">{member.user?.email || '-'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600 hidden lg:table-cell">{member.qualification || '-'}</td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex justify-end gap-1">
-                          <button onClick={() => openEditForm(member)} className="p-1.5 rounded-lg hover:bg-purple-50 text-purple-600 transition-colors" title="Edit">
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => setDeleteConfirm(member)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition-colors" title="Delete">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {staff.map((member) => {
+                    const hasLogin = Boolean(member.userId || member.user)
+                    const isSelected = selectedStaffIds.includes(member.id)
+                    return (
+                      <tr key={member.id} className={`hover:bg-gray-50 transition-colors ${isSelected ? 'bg-purple-50/40' : ''}`}>
+                        <td className="px-3 py-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) setSelectedStaffIds(prev => [...prev, member.id])
+                              else setSelectedStaffIds(prev => prev.filter(id => id !== member.id))
+                            }}
+                            className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                          />
+                        </td>
+                        <td className="px-4 py-3 font-mono text-sm font-medium text-purple-600">{member.employeeId}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="font-medium text-gray-900">{member.name || member.user?.name || '-'}</div>
+                            {member.isHOD && <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] px-1.5">HOD</Badge>}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 hidden sm:table-cell">{member.designation || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500 hidden md:table-cell">{member.email || member.user?.email || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600 hidden lg:table-cell">{member.qualification || '-'}</td>
+                        <td className="px-4 py-3 text-center">
+                          {hasLogin ? (
+                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 gap-1 font-bold text-[11px] px-2.5 py-0.5">
+                              <CheckCircle className="w-3 h-3 text-emerald-600" /> Enabled
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-300 gap-1 font-bold text-[11px] px-2.5 py-0.5">
+                              <Circle className="w-3 h-3 text-gray-400" /> Not Enabled
+                            </Badge>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end items-center gap-1.5">
+                            {!hasLogin && (
+                              <button
+                                onClick={() => enableLoginForStaff([member.id])}
+                                className="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+                                title="Create Login Access"
+                              >
+                                <UserPlus className="w-3.5 h-3.5" /> Create Login
+                              </button>
+                            )}
+                            <button onClick={() => openEditForm(member)} className="p-1.5 rounded-lg hover:bg-purple-50 text-purple-600 transition-colors" title="Edit">
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => setDeleteConfirm(member)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition-colors" title="Delete">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -24188,7 +24142,8 @@ function AcademicHierarchyPage({
         s.user?.email === a.studentEmail
       )
       if (!matchingStudent) return isDept // Include if we can't determine
-      return isDept && matchingStudent.semester >= sem && matchingStudent.semester <= sem + 1
+      const studentSem = matchingStudent.semester || 1
+      return isDept && studentSem >= sem && studentSem <= sem + 1
     })
   }
 
@@ -24205,9 +24160,10 @@ function AcademicHierarchyPage({
         s.user?.email === a.studentEmail
       )
       if (!matchingStudent) return isDept
+      const studentSem = matchingStudent.semester || 1
       return isDept && 
-             matchingStudent.semester >= sem && 
-             matchingStudent.semester <= sem + 1 &&
+             studentSem >= sem && 
+             studentSem <= sem + 1 &&
              (matchingStudent.section || 'A') === section
     })
   }

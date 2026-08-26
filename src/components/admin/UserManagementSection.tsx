@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { User } from '@/lib/store/auth-store'
 import { generateTempPassword } from '@/lib/auth-helpers'
+import { CSVImportModal } from '@/components/common/CSVImportModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -957,90 +958,21 @@ export function UserManagementSection({ user }: UserManagementSectionProps) {
       </AnimatePresence>
 
       {/* ====== IMPORT CSV MODAL ====== */}
-      <AnimatePresence>
-        {showImportModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-xl w-full p-6 space-y-5"
-            >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center border border-cyan-100">
-                    <FileSpreadsheet className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-extrabold text-base text-slate-900">Import CSV - {activeRoleTab} Accounts</h3>
-                    <p className="text-xs text-slate-500">Bulk create login credentials</p>
-                  </div>
-                </div>
-                <button onClick={() => setShowImportModal(false)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {importResults ? (
-                <div className="space-y-4">
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-emerald-800 text-sm space-y-1">
-                    <p className="font-bold flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-emerald-600" />
-                      Import Process Completed Successfully
-                    </p>
-                    <p>Accounts Created: <strong>{importResults.importedCount}</strong></p>
-                    <p>Skipped Rows: <strong>{importResults.skippedCount}</strong></p>
-                  </div>
-
-                  {importResults.skippedRows?.length > 0 && (
-                    <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-xl p-3 bg-slate-50 text-xs space-y-1">
-                      <p className="font-bold text-slate-700">Skipped Row Details:</p>
-                      {importResults.skippedRows.map((sr: any, idx: number) => (
-                        <p key={idx} className="text-slate-600">Row {sr.row} ({sr.email}): {sr.reason}</p>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex justify-end pt-2">
-                    <Button onClick={() => setShowImportModal(false)} className="bg-indigo-600 text-white font-bold rounded-xl px-5">
-                      Done
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <form onSubmit={handleCSVImport} className="space-y-4">
-                  <div className="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-2xl p-6 text-center transition-colors">
-                    <Upload className="w-8 h-8 text-indigo-500 mx-auto mb-2" />
-                    <p className="text-sm font-bold text-slate-800">Select CSV file to import</p>
-                    <p className="text-xs text-slate-400 mt-1">Expected columns: name, email, password, staff_id / register_no</p>
-                    <input
-                      type="file"
-                      accept=".csv"
-                      onChange={e => setImportFile(e.target.files?.[0] || null)}
-                      className="mt-4 text-xs font-medium text-slate-600 mx-auto block"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
-                    <Button type="button" variant="outline" onClick={() => setShowImportModal(false)} className="rounded-xl text-sm font-bold">
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={importing || !importFile} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-sm px-6 shadow-md">
-                      {importing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                      Import & Create Accounts
-                    </Button>
-                  </div>
-                </form>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <CSVImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        title={`Bulk Import ${activeRoleTab} Records`}
+        subtitle={`System Central Auth • Role: ${activeRoleTab}`}
+        departmentId={user.departmentId || ''}
+        departmentName={user.departmentName || 'Central Administration'}
+        importType={activeRoleTab === 'STUDENT' ? 'STUDENT' : 'FACULTY'}
+        sampleCSVColumns={
+          activeRoleTab === 'STUDENT'
+            ? 'registerNumber, name, email, phone, semester, section, cgpa'
+            : 'employeeId, name, email, phone, designation, qualification, specialization'
+        }
+        onImportSuccess={() => fetchUsers()}
+      />
     </div>
   )
 }
