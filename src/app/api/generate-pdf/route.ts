@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { execSync } from 'child_process'
 import { writeFileSync, unlinkSync, readFileSync, mkdirSync, existsSync } from 'fs'
 import { join } from 'path'
+import { tmpdir } from 'os'
 
 // Helper function to convert image file to base64 data URL
 function imageToBase64DataUrl(filename: string): string {
@@ -37,10 +38,14 @@ export async function POST(request: NextRequest) {
     // Generate HTML content for the PDF with embedded logos
     const htmlContent = generateReportHTML(reportData, department, nietLogoDataUrl, nehrugroupLogoDataUrl)
 
-    // Create temp directory if not exists
-    const tempDir = join(process.cwd(), 'temp')
+    // Create temp directory using /tmp for Vercel serverless environment compatibility
+    const tempDir = process.env.VERCEL || process.env.NODE_ENV === 'production' ? '/tmp' : tmpdir()
     if (!existsSync(tempDir)) {
-      mkdirSync(tempDir, { recursive: true })
+      try {
+        mkdirSync(tempDir, { recursive: true })
+      } catch (e) {
+        console.warn('Directory creation warning:', e)
+      }
     }
 
     // Write HTML to temp file
@@ -48,19 +53,35 @@ export async function POST(request: NextRequest) {
     tempHtmlPath = join(tempDir, `report_${timestamp}.html`)
     tempPdfPath = join(tempDir, `report_${timestamp}.pdf`)
     
-    writeFileSync(tempHtmlPath, htmlContent)
+    try {
+      writeFileSync(tempHtmlPath, htmlContent)
+    } catch (e) {
+      console.warn('Could not write temp html file:', e)
+    }
 
-    // Try to generate PDF using Playwright (most reliable method)
+    // Try to generate PDF using Playwright
     try {
       await generateWithPlaywright(htmlContent, tempPdfPath)
     } catch (playwrightError) {
-      console.error('Playwright failed:', playwrightError)
-      throw new Error('PDF generation failed: ' + (playwrightError as Error).message)
+      console.warn('Playwright unavailable in serverless environment, serving print-ready HTML view:', playwrightError)
+      // Fallback: return printable HTML report view so user can save as PDF directly
+      const autoPrintHtml = htmlContent.replace('</body>', '<script>window.onload = function() { window.print(); };</script></body>')
+      return new NextResponse(autoPrintHtml, {
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+        },
+      })
     }
 
     // Check if PDF was created
     if (!existsSync(tempPdfPath)) {
-      throw new Error('PDF file was not generated')
+      // Return printable HTML view if PDF file binary was not output
+      const autoPrintHtml = htmlContent.replace('</body>', '<script>window.onload = function() { window.print(); };</script></body>')
+      return new NextResponse(autoPrintHtml, {
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+        },
+      })
     }
 
     // Read the generated PDF
