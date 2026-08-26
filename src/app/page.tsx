@@ -1,7 +1,10 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/lib/store/auth-store'
+import { DuplicateAchievementModal } from '@/components/achievements/DuplicateAchievementModal'
+import { isSpecialCategory, getCanonicalCategoryLabel, normalizeTitle } from '@/lib/achievements-service'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -46,6 +49,21 @@ import {
 import {
   GlassCard,
 } from '@/components/premium'
+import { FeedbackModuleContainer } from '@/components/feedback/FeedbackModuleContainer'
+import { AchievementReportGenerator } from '@/components/reports/AchievementReportGenerator'
+import { 
+  isPeriodClosed, 
+  checkAchievementDateLock, 
+  getMonthlyReportingHistory, 
+  getPreviousServerMonth, 
+  getCurrentServerDate, 
+  reopenReportingPeriod, 
+  closeReportingPeriod, 
+  getAuditLogs,
+  AuditLogEntry,
+  ReportingPeriod
+} from '@/lib/period-lock'
+
 
 // ============ TYPES ============
 interface Department {
@@ -73,7 +91,7 @@ interface User {
   id: string
   email: string
   name: string
-  role: 'ADMIN' | 'HOD' | 'STAFF' | 'STUDENT'
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'HOD' | 'STAFF' | 'STUDENT'
   departmentId?: string
   departmentName?: string
 }
@@ -82,7 +100,7 @@ type TabType = 'dashboard' | 'departments' | 'faculty' | 'students' | 'activitie
   | 'approvals' | 'analytics' | 'documents' | 'settings' | 'achievements' | 'feedback'
   | 'staff_achievement' | 'student_achievement_view'
   | 'hod_student_approval' | 'hod_staff_approval' | 'my_achievement'
-  | 'report_generator' | 'hod_management' | 'showcase' | 'database'
+  | 'report_generator' | 'achievement_report' | 'hod_monthly_report' | 'hod_management' | 'showcase' | 'database'
   | 'staff_management'
   | 'hierarchy_dept' | 'hierarchy_year' | 'hierarchy_section' | 'hierarchy_students' | 'student_profile'
 
@@ -209,7 +227,7 @@ const ACHIEVEMENT_TYPES: Record<string, {
   patent: {
     label: 'Patent',
     icon: Lightbulb,
-    color: 'from-amber-500 to-orange-500',
+    color: 'from-amber-500 to-amber-600',
     fields: [
       { id: 'name', label: 'Student Name', type: 'text', required: true },
       { id: 'dept', label: 'Department', type: 'text', required: true, locked: true },
@@ -422,9 +440,18 @@ const DEPARTMENTS_LIST = [
   { code: 'EEE', name: 'Electrical and Electronics Engineering', color: 'yellow' },
   { code: 'IT', name: 'Information Technology', color: 'cyan' },
   { code: 'MCT', name: 'Mechatronics Engineering', color: 'zinc' },
-  { code: 'MECH', name: 'Mechanical Engineering', color: 'orange' },
+  { code: 'MECH', name: 'Mechanical Engineering', color: 'amber' },
   { code: 'MBA', name: 'Master of Business Administration', color: 'violet' },
   { code: 'S&H', name: 'Science and Humanities', color: 'emerald' },
+]
+
+const SCHOOLS_LIST = [
+  'School of Engineering',
+  'School of Computing',
+  'School of Electrical & Electronics',
+  'School of Mechanical Sciences',
+  'School of Management Studies',
+  'School of Science and Humanities'
 ]
 
 const ROLE_COLORS: Record<string, { bg: string; border: string; text: string; icon: string }> = {
@@ -611,7 +638,7 @@ function LoginPage() {
                   IT Support
                 </a>
                 <div className="version-badge">
-                  v3.0 Enterprise
+                  v3.0
                 </div>
               </div>
             </div>
@@ -637,7 +664,7 @@ function LoginPage() {
               {/* Main Logo Card */}
               <div className="logo-main-card">
                 <div className="logo-inner-gradient">
-                  <Building2 className="logo-icon" />
+                  <img src="/images/niet-logo.png" alt="NIET Logo" className="w-full h-full object-contain" />
                 </div>
                 
                 {/* Glass Reflection */}
@@ -656,8 +683,8 @@ function LoginPage() {
             </div>
             
             {/* Title with Gradient Text */}
-            <h1 className="premium-title">
-              <span className="title-text-gradient">IQAC Portal</span>
+            <h1 className="premium-title flex items-center justify-center gap-2">
+              <span className="title-text-gradient">AI Enabled IQAC Portal</span>
             </h1>
             
             {/* Subtitle with Typing Effect Style */}
@@ -955,7 +982,7 @@ function LoginPage() {
           <footer className="premium-footer">
             <div className="footer-content">
               <Lock className="footer-lock-icon" />
-              <span className="footer-text">Secure Authentication • NIET IQAC Enterprise System</span>
+              <span className="footer-text">Secure Authentication • NIET IQAC System</span>
               <div className="footer-dots">
                 <span className="footer-dot" />
                 <span className="footer-dot footer-dot-delay" />
@@ -1314,10 +1341,10 @@ function LoginPage() {
         }
         .logo-main-card {
           position: relative;
-          width: 96px;
-          height: 96px;
-          border-radius: 18px;
-          background: rgba(255,255,255,0.9);
+          width: 120px;
+          height: 120px;
+          border-radius: 22px;
+          background: #ffffff;
           backdrop-filter: blur(20px);
           border: 1px solid rgba(226,232,240,0.8);
           box-shadow: 
@@ -1327,18 +1354,16 @@ function LoginPage() {
           display: flex;
           align-items: center;
           justify-content: center;
+          padding: 8px;
         }
         .logo-inner-gradient {
-          width: 76px;
-          height: 76px;
-          border-radius: 14px;
-          background: linear-gradient(135deg, #6366f1, #3b82f6, #06b6d4);
+          width: 100%;
+          height: 100%;
+          border-radius: 16px;
+          background: #ffffff;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 
-            0 4px 15px -3px rgba(99,102,241,0.4),
-            inset 0 1px 0 rgba(255,255,255,0.2);
         }
         .logo-icon {
           width: 38px;
@@ -2393,7 +2418,7 @@ function LoginPage() {
         .dot-blue { background: #3b82f6; }
         .dot-green { background: #10b981; }
         .dot-purple { background: #8b5cf6; }
-        .dot-orange { background: #f97316; }
+        .dot-orange { background: #f59e0b; }
         .dot-pink { background: #ec4899; }
         .dot-cyan { background: #06b6d4; }
         .dot-red { background: #ef4444; }
@@ -2911,7 +2936,7 @@ function StatCard({ title, value, icon: Icon, trend, color = "blue", subtitle }:
     blue: "from-blue-500 to-blue-600 shadow-blue-500/25",
     green: "from-emerald-500 to-emerald-600 shadow-emerald-500/25",
     purple: "from-violet-500 to-violet-600 shadow-violet-500/25",
-    orange: "from-orange-500 to-orange-600 shadow-orange-500/25",
+    orange: "from-amber-500 to-amber-600 shadow-amber-500/25",
     red: "from-red-500 to-red-600 shadow-red-500/25",
     pink: "from-pink-500 to-pink-600 shadow-pink-500/25",
     cyan: "from-cyan-500 to-cyan-600 shadow-cyan-500/25",
@@ -3716,7 +3741,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
       'Artificial Intelligence & Data Science',
       'AI&DS',
       'AI & DS',
-      'Cyber Security',
+      'Computer Science and Business Systems',
       'CSBS',
       'Computer Science and Engineering',
       'CSE',
@@ -3847,7 +3872,8 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
         'Artificial Intelligence & Data Science': 'AI&DS',
         'AI & DS': 'AI&DS',
         'AI&DS': 'AI&DS',
-        'Cyber Security': 'CSBS',
+        'Computer Science and Business Systems': 'CSBS',
+        'Computer Science & Business Systems': 'CSBS',
         'CSBS': 'CSBS',
         'Computer Science and Engineering': 'CSE',
         'CSE': 'CSE',
@@ -3913,204 +3939,267 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
     const totalVerified = filteredAchievements.filter(a => a.status === 'verified').length
 
     return (
-      <div className="w-full min-h-screen bg-gray-50">
-        {/* Top Stats Bar with Department Selector */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          {/* Department Selector Header */}
-          <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
-            <div className="flex items-center gap-3">
-              <h2 className="text-lg font-bold text-[#0a2a5e]">IQAC Dashboard</h2>
-              <span className="text-sm text-gray-500">|</span>
-              <span className="text-sm text-gray-600">
-                {selectedDept === 'ALL' ? 'All Departments' : getDeptShortCode(selectedDept)}
+      <div className="w-full min-h-screen bg-[#F4F7FB] p-4 sm:p-8 space-y-8 max-w-7xl mx-auto">
+        {/* Hero Header & Department Selector */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="bg-gradient-to-r from-[#0B1F3A] via-[#0F284B] to-[#155EEF] text-white rounded-2xl p-6 sm:p-8 shadow-md relative overflow-hidden border border-[#1E3A5F] flex flex-col md:flex-row md:items-center justify-between gap-6"
+        >
+          <div className="space-y-2 z-10">
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 bg-[#155EEF]/30 text-[#06B6D4] rounded-full text-xs font-bold uppercase tracking-wider border border-[#06B6D4]/30 flex items-center gap-1.5">
+                <Crown className="w-3.5 h-3.5 text-[#06B6D4]" /> Admin Executive Dashboard
               </span>
             </div>
-            
-            {/* Department Dropdown */}
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-600">Select Department:</label>
+            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white">
+              IQAC Admin Portal
+            </h2>
+            <p className="text-slate-200 text-xs sm:text-sm max-w-xl font-normal">
+              Overview of institutional performance, feedback campaigns, database records, and departmental metrics.
+            </p>
+          </div>
+
+          {/* Department Filter Select */}
+          <div className="z-10 bg-white/10 backdrop-blur-md p-3 rounded-xl border border-white/20 flex items-center gap-3">
+            <Building2 className="w-5 h-5 text-[#06B6D4] shrink-0" />
+            <div>
+              <label className="block text-[10px] font-bold text-slate-200 uppercase tracking-wider">
+                Filter Department
+              </label>
               <select
                 value={selectedDept}
                 onChange={(e) => setSelectedDept(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-[#0a2a5e] bg-white focus:ring-2 focus:ring-[#0a2a5e]/20 focus:border-[#0a2a5e] cursor-pointer"
+                className="bg-transparent font-bold text-xs text-white focus:outline-none cursor-pointer"
               >
-                <option value="ALL">📊 All Departments</option>
+                <option value="ALL" className="text-slate-900">🏢 All Departments ({departments.length})</option>
                 {departments.map((dept: any) => (
-                  <option key={dept.id} value={dept.name}>
+                  <option key={dept.id} value={dept.name} className="text-slate-900">
                     {getDeptShortCode(dept.name)} - {dept.name}
                   </option>
                 ))}
               </select>
             </div>
           </div>
+        </motion.div>
 
-          {/* Stats Grid - Real Database Stats (Department-aware) */}
-          {(() => {
-            const isFiltered = selectedDept !== 'ALL'
-            const currentDept = isFiltered ? departments.find((d: any) => d.name === selectedDept) : null
-            const displayStudents = isFiltered ? (currentDept?._count?.students || 0) : dbStats.totalStudents
-            const displayFaculty = isFiltered ? (currentDept?._count?.faculty || 0) : dbStats.totalFaculty
-            const displayActivities = isFiltered ? (currentDept?._count?.activities || 0) : dbStats.totalActivities
-            const displayResearch = isFiltered ? Math.ceil((currentDept?._count?.activities || 0) / 2) : dbStats.totalResearch
-            const displayPlaced = isFiltered ? Math.ceil((currentDept?._count?.students || 0) * 0.6) : Math.ceil(dbStats.totalStudents * 0.65)
-            
-            return (
-            <div className="grid grid-cols-8 gap-4">
-              <div className="text-center">
-                <p className="text-3xl font-bold text-[#0a2a5e]">{displayStudents}</p>
-                <p className="text-xs text-gray-500 mt-1">Students</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-blue-500">{displayFaculty}</p>
-                <p className="text-xs text-gray-500 mt-1">Faculty</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-purple-500">{isFiltered ? 1 : departments.length}</p>
-                <p className="text-xs text-gray-500 mt-1">Depts</p>
-              </div>
-              <div className="text-center border-l border-gray-200 pl-4">
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Activities</p>
-                <p className="text-3xl font-bold text-teal-500">{displayActivities}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-orange-500">{displayResearch}</p>
-                <p className="text-xs text-gray-500 mt-1">Research</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-red-500">{displayStudents + displayFaculty + displayActivities}</p>
-                <p className="text-xs text-gray-500 mt-1">Records</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-green-600">{displayPlaced}</p>
-                <p className="text-xs text-gray-500 mt-1">Placed</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-cyan-500">{isFiltered ? (Math.random() > 0.5 ? 1 : 0) : 5}</p>
-                <p className="text-xs text-gray-500 mt-1">Patents</p>
-              </div>
-            </div>
-            )
-          })()}
-        </div>
+        {/* Executive Stats Cards Grid */}
+        {(() => {
+          const isFiltered = selectedDept !== 'ALL'
+          const currentDept = isFiltered ? departments.find((d: any) => d.name === selectedDept) : null
+          const displayStudents = isFiltered ? (currentDept?._count?.students || 0) : dbStats.totalStudents
+          const displayFaculty = isFiltered ? (currentDept?._count?.faculty || 0) : dbStats.totalFaculty
+          const displayActivities = isFiltered ? (currentDept?._count?.activities || 0) : dbStats.totalActivities
+          const displayResearch = isFiltered ? Math.ceil((currentDept?._count?.activities || 0) / 2) : dbStats.totalResearch
+          const displayPlaced = isFiltered ? Math.ceil((currentDept?._count?.students || 0) * 0.6) : Math.ceil(dbStats.totalStudents * 0.65)
 
-        {/* Main Content Area */}
-        <div className="px-6 py-6 space-y-6">
-          {/* Two Column Layout - Faculty R&D and Student Achievements with Animated Cumulative Values */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            {/* Faculty & R&D Modules - Animated Cumulative List */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-              <h3 className="text-sm font-semibold text-[#0a2a5e] mb-4 flex items-center gap-2 pb-3 border-b border-gray-100">
-                <span className="text-base">📊</span> Faculty & R&D Modules
-              </h3>
-              
-              <AnimatedCumulativeList modules={facultyModules} type="faculty" />
-            </div>
-
-            {/* Student Achievement Modules - Animated Cumulative List */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-              <h3 className="text-sm font-semibold text-[#0a2a5e] mb-4 flex items-center gap-2 pb-3 border-b border-gray-100">
-                <span className="text-base">🎓</span> Student Achievement Modules
-              </h3>
-              
-              <AnimatedCumulativeList modules={studentModules} type="student" />
-            </div>
-          </div>
-
-          {/* Department Cards Grid - Only 11 Departments */}
-          <div>
-            <h3 className="text-base font-semibold text-[#0a2a5e] mb-4 flex items-center gap-2">
-              <Building2 className="w-5 h-5" /> Department-wise Summary
-              <span className="text-xs font-normal text-gray-500">(Click to filter)</span>
-            </h3>
-            
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-11 gap-3">
-              {departments.map((dept: any) => {
-                const count = getDeptAchievementCount(dept.name)
-                const isSelected = selectedDept === dept.name
-                
-                return (
-                  <div 
-                    key={dept.id}
-                    onClick={() => setSelectedDept(isSelected ? 'ALL' : dept.name)}
-                    className={`bg-white rounded-lg border p-3 text-center hover:shadow-md transition-all cursor-pointer ${
-                      isSelected 
-                        ? 'border-[#0a2a5e] shadow-md bg-[#0a2a5e]/5 ring-2 ring-[#0a2a5e]/20' 
-                        : 'border-gray-200 hover:border-[#0a2a5e]/30'
-                    }`}
-                    title={dept.name}
-                  >
-                    <h4 className={`font-semibold text-sm mb-1 ${isSelected ? 'text-[#0a2a5e]' : 'text-[#0a2a5e]'}`}>
-                      {getDeptShortCode(dept.name)}
-                    </h4>
-                    <p className={`text-xl font-bold ${count > 0 ? 'text-green-600' : 'text-gray-400'}`}>
-                      {count}
+          return (
+            <motion.div
+              initial="hidden"
+              animate="show"
+              variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.08 } } }}
+              className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6"
+            >
+              <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} whileHover={{ y: -3 }}>
+                <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-2xl p-5 space-y-3 h-full flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Students</span>
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#155EEF] flex items-center justify-center font-bold">
+                      <GraduationCap className="w-5 h-5" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-2xl sm:text-3xl font-extrabold text-[#172033]">{displayStudents}</p>
+                    <p className="text-[11px] font-semibold text-[#16A34A] flex items-center gap-1 mt-1">
+                      <span>{displayPlaced} Placed</span>
                     </p>
                   </div>
-                )})}
-            </div>
+                </div>
+              </motion.div>
 
-            {loadingDepts && (
-              <div className="flex justify-center py-8">
-                <Loader2 className="w-8 h-8 animate-spin text-[#0a2a5e]" />
-              </div>
-            )}
+              <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} whileHover={{ y: -3 }}>
+                <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-2xl p-5 space-y-3 h-full flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Faculty</span>
+                    <div className="w-10 h-10 rounded-xl bg-cyan-50 text-[#06B6D4] flex items-center justify-center font-bold">
+                      <Users className="w-5 h-5" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-2xl sm:text-3xl font-extrabold text-[#172033]">{displayFaculty}</p>
+                    <p className="text-[11px] font-semibold text-[#64748B] mt-1">Across {isFiltered ? '1' : departments.length} Depts</p>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} whileHover={{ y: -3 }}>
+                <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-2xl p-5 space-y-3 h-full flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Activities</span>
+                    <div className="w-10 h-10 rounded-xl bg-indigo-50 text-[#2563EB] flex items-center justify-center font-bold">
+                      <Activity className="w-5 h-5" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-2xl sm:text-3xl font-extrabold text-[#172033]">{displayActivities}</p>
+                    <p className="text-[11px] font-semibold text-[#2563EB] mt-1">Events & Workshops</p>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} whileHover={{ y: -3 }}>
+                <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-2xl p-5 space-y-3 h-full flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Research</span>
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 text-[#0B1F3A] flex items-center justify-center font-bold">
+                      <Award className="w-5 h-5" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-2xl sm:text-3xl font-extrabold text-[#172033]">{displayResearch}</p>
+                    <p className="text-[11px] font-semibold text-[#0B1F3A] mt-1">Journals & Patents</p>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )
+        })()}
+
+        {/* Admin Quick Action Cards Grid (UI/UX Pro Max) */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold text-[#172033] flex items-center gap-2">
+              <Zap className="w-5 h-5 text-[#155EEF]" /> Admin Core Modules
+            </h3>
+            <span className="text-xs font-semibold text-[#64748B] uppercase tracking-wider">Direct Access</span>
           </div>
 
-          {/* Selected Department Detail View - Shows Real Database Stats */}
-          {selectedDept !== 'ALL' && (() => {
-            const deptStats = getDeptStats(selectedDept)
-            const dept = departments.find((d: any) => d.name === selectedDept)
-            const achievementCount = allAchievements.filter((a: any) => 
-              a.dept === selectedDept || a.department === selectedDept
-            ).length
-            const totalDeptCount = (deptStats.students || 0) + (deptStats.faculty || 0) + (deptStats.activities || 0) + achievementCount
-            
-            return (
-              <div className="bg-gradient-to-r from-[#0a2a5e] to-blue-800 rounded-xl p-6 text-white">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold flex items-center gap-2">
-                    <Building2 className="w-5 h-5" /> 
-                    {selectedDept} ({getDeptShortCode(selectedDept)})
-                  </h3>
-                  <button
-                    onClick={() => setSelectedDept('ALL')}
-                    className="text-sm bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg transition-colors"
-                  >
-                    ✕ Clear Filter
-                  </button>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {/* Feedback Creator Card */}
+            <motion.div whileHover={{ y: -4 }} className="cursor-pointer" onClick={() => setActiveTab('feedback')}>
+              <div className="bg-white border border-[#E2E8F0] border-l-4 border-l-[#155EEF] p-6 rounded-2xl space-y-4 shadow-xs hover:shadow-md transition-all relative overflow-hidden group">
+                <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#155EEF] flex items-center justify-center transition-transform group-hover:scale-105">
+                  <MessageSquare className="w-5 h-5" />
                 </div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  <div className="bg-white/10 rounded-lg p-3 text-center backdrop-blur-sm">
-                    <p className="text-2xl font-bold">{totalDeptCount}</p>
-                    <p className="text-xs text-blue-200">Total</p>
-                  </div>
-                  <div className="bg-white/10 rounded-lg p-3 text-center backdrop-blur-sm">
-                    <p className="text-2xl font-bold">{deptStats.students}</p>
-                    <p className="text-xs text-blue-200">Students</p>
-                  </div>
-                  <div className="bg-white/10 rounded-lg p-3 text-center backdrop-blur-sm">
-                    <p className="text-2xl font-bold">{deptStats.faculty}</p>
-                    <p className="text-xs text-blue-200">Faculty</p>
-                  </div>
-                  <div className="bg-white/10 rounded-lg p-3 text-center backdrop-blur-sm">
-                    <p className="text-2xl font-bold">{deptStats.activities}</p>
-                    <p className="text-xs text-blue-200">Activities</p>
-                  </div>
-                  <div className="bg-white/10 rounded-lg p-3 text-center backdrop-blur-sm">
-                    <p className="text-2xl font-bold">{achievementCount}</p>
-                    <p className="text-xs text-blue-200">Records</p>
-                  </div>
-                  <div className="bg-white/10 rounded-lg p-3 text-center backdrop-blur-sm">
-                    <p className="text-2xl font-bold">{dept?._count?.research || 0 || '-'}</p>
-                    <p className="text-xs text-blue-200">Research</p>
-                  </div>
+                <div>
+                  <span className="px-2.5 py-0.5 bg-blue-50 text-[#155EEF] rounded-full text-[10px] font-bold uppercase tracking-wider">
+                    Feedback Module
+                  </span>
+                  <h4 className="text-base font-bold text-[#172033] mt-2 group-hover:text-[#155EEF] transition-colors">
+                    Feedback Creator
+                  </h4>
+                  <p className="text-xs text-[#64748B] mt-1 line-clamp-2">
+                    Create, send, and analyze role-targeted feedback forms across all departments.
+                  </p>
+                </div>
+                <div className="pt-2 flex items-center text-xs font-bold text-[#155EEF] group-hover:translate-x-1 transition-transform">
+                  Launch Creator <ChevronRight className="w-4 h-4 ml-1" />
                 </div>
               </div>
-            )
-          })()}
+            </motion.div>
 
+
+
+            {/* Database Management Card */}
+            <motion.div whileHover={{ y: -4 }} className="cursor-pointer" onClick={() => setActiveTab('database')}>
+              <div className="bg-white border border-[#E2E8F0] border-l-4 border-l-[#0B1F3A] p-6 rounded-2xl space-y-4 shadow-xs hover:shadow-md transition-all relative overflow-hidden group">
+                <div className="w-11 h-11 rounded-xl bg-slate-100 text-[#0B1F3A] flex items-center justify-center transition-transform group-hover:scale-105">
+                  <Database className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="px-2.5 py-0.5 bg-slate-100 text-[#0B1F3A] rounded-full text-[10px] font-bold uppercase tracking-wider">
+                    Live Records
+                  </span>
+                  <h4 className="text-base font-bold text-[#172033] mt-2 group-hover:text-[#0B1F3A] transition-colors">
+                    Database Management
+                  </h4>
+                  <p className="text-xs text-[#64748B] mt-1 line-clamp-2">
+                    Manage live database tables, backup routines, audit logs, and user roles.
+                  </p>
+                </div>
+                <div className="pt-2 flex items-center text-xs font-bold text-[#0B1F3A] group-hover:translate-x-1 transition-transform">
+                  Access Database <ChevronRight className="w-4 h-4 ml-1" />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Settings Card */}
+            <motion.div whileHover={{ y: -4 }} className="cursor-pointer" onClick={() => setActiveTab('settings')}>
+              <div className="bg-white border border-[#E2E8F0] border-l-4 border-l-[#64748B] p-6 rounded-2xl space-y-4 shadow-xs hover:shadow-md transition-all relative overflow-hidden group">
+                <div className="w-11 h-11 rounded-xl bg-slate-100 text-[#64748B] flex items-center justify-center transition-transform group-hover:scale-105">
+                  <Settings className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="px-2.5 py-0.5 bg-slate-100 text-[#64748B] rounded-full text-[10px] font-bold uppercase tracking-wider">
+                    Configuration
+                  </span>
+                  <h4 className="text-base font-bold text-[#172033] mt-2 group-hover:text-[#64748B] transition-colors">
+                    System Settings
+                  </h4>
+                  <p className="text-xs text-[#64748B] mt-1 line-clamp-2">
+                    Configure institutional parameters, branding, security policies, and integrations.
+                  </p>
+                </div>
+                <div className="pt-2 flex items-center text-xs font-bold text-[#64748B] group-hover:translate-x-1 transition-transform">
+                  Open Settings <ChevronRight className="w-4 h-4 ml-1" />
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Two Column Layout - Faculty R&D and Student Achievements */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white/90 backdrop-blur-xl rounded-3xl border border-slate-200/80 p-6 shadow-md">
+            <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2 pb-3 border-b border-slate-100">
+              <span className="text-base">📊</span> Faculty & R&D Modules
+            </h3>
+            <AnimatedCumulativeList modules={facultyModules} type="faculty" />
+          </div>
+
+          <div className="bg-white/90 backdrop-blur-xl rounded-3xl border border-slate-200/80 p-6 shadow-md">
+            <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2 pb-3 border-b border-slate-100">
+              <span className="text-base">🎓</span> Student Achievement Modules
+            </h3>
+            <AnimatedCumulativeList modules={studentModules} type="student" />
+          </div>
+        </div>
+
+        {/* Department Cards Summary Grid */}
+        <div className="space-y-4">
+          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-indigo-600" /> Department-wise Summary
+            <span className="text-xs font-normal text-slate-500">(Click to filter)</span>
+          </h3>
+
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-11 gap-3">
+            {departments.map((dept: any) => {
+              const count = getDeptAchievementCount(dept.name)
+              const isSelected = selectedDept === dept.name
+
+              return (
+                <motion.div
+                  key={dept.id}
+                  whileHover={{ y: -3, scale: 1.05 }}
+                  onClick={() => setSelectedDept(isSelected ? 'ALL' : dept.name)}
+                  className={`bg-white rounded-2xl border p-3 text-center transition-all cursor-pointer shadow-sm ${
+                    isSelected
+                      ? 'border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-500/20 font-bold'
+                      : 'border-slate-200 hover:border-indigo-300'
+                  }`}
+                  title={dept.name}
+                >
+                  <h4 className="font-bold text-xs text-slate-800 truncate mb-1">
+                    {getDeptShortCode(dept.name)}
+                  </h4>
+                  <p className={`text-lg font-extrabold ${count > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                    {count}
+                  </p>
+                </motion.div>
+              )
+            })}
+          </div>
         </div>
       </div>
     )
@@ -4209,12 +4298,12 @@ function StudentDashboardContent({ user, setActiveTab }: { user: User; setActive
                 <p className="text-sm text-gray-500 font-medium">PENDING APPROVAL</p>
                 <p className="text-3xl font-bold text-gray-800 mt-1">{pendingCount}</p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center">
-                <Clock className="w-6 h-6 text-orange-600" />
+              <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center">
+                <Clock className="w-6 h-6 text-amber-600" />
               </div>
             </div>
           </CardContent>
-          <div className="h-1 bg-gradient-to-r from-orange-400 to-orange-500" />
+          <div className="h-1 bg-gradient-to-r from-amber-400 to-amber-500" />
         </Card>
 
         {/* Approved */}
@@ -4271,7 +4360,7 @@ function StudentDashboardContent({ user, setActiveTab }: { user: User; setActive
                 const colors = [
                   'from-blue-500 to-blue-400',
                   'from-purple-500 to-purple-400', 
-                  'from-amber-500 to-orange-400',
+                  'from-amber-500 to-amber-600',
                   'from-green-500 to-teal-400',
                   'from-pink-500 to-rose-400',
                   'from-cyan-500 to-cyan-400',
@@ -4455,7 +4544,7 @@ function StudentDashboardContent({ user, setActiveTab }: { user: User; setActive
                           {new Date(achievement.submittedAt || Date.now()).toLocaleDateString()} • 
                           <span className={'inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ml-1 ' + 
                             achievement.status?.includes('approved') ? 'bg-green-100 text-green-700' :
-                            achievement.status?.includes('pending') ? 'bg-orange-100 text-orange-700' :
+                            achievement.status?.includes('pending') ? 'bg-amber-100 text-amber-700' :
                             achievement.status === 'rejected' ? 'bg-red-100 text-red-700' :
                             'bg-gray-100 text-gray-700'
                            + ''}>
@@ -4492,7 +4581,7 @@ function StudentDashboardContent({ user, setActiveTab }: { user: User; setActive
           icon={Trophy} 
           title="My Achievements" 
           description="View and add your achievements"
-          color="bg-gradient-to-br from-amber-500 to-orange-500"
+          color="bg-gradient-to-br from-amber-500 to-amber-600"
           onClick={() => setActiveTab('achievements')}
         />
         <ActionCard 
@@ -4553,7 +4642,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
   const [deleteConfirm, setDeleteConfirm] = useState<{type: 'student' | 'staff', id: number} | null>(null)
 
   // Form States - Updated with Year/Section/Batch hierarchy support
-  const [studentForm, setStudentForm] = useState({ name: '', regNo: '', year: '1st Year', section: 'A', batch: '2024-2028', email: '', status: 'active' })
+  const [studentForm, setStudentForm] = useState({ name: '', regNo: '', year: '1st Year', section: 'A', batch: '2024-2028', email: '', password: '', status: 'active' })
   const [selectedBatch, setSelectedBatch] = useState<string>('all')
   const [staffForm, setStaffForm] = useState({ name: '', designation: '', email: '', status: 'active', phone: '' })
   
@@ -4579,6 +4668,144 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
   const [staffSortField, setStaffSortField] = useState<string>('name')
   const [staffSortOrder, setStaffSortOrder] = useState<'asc' | 'desc'>('asc')
   const [showStaffSortDropdown, setShowStaffSortDropdown] = useState(false)
+
+  // CSV Import States & Handlers
+  const [showCSVImportModal, setShowCSVImportModal] = useState(false)
+  const [csvImportType, setCsvImportType] = useState<'students' | 'staff'>('students')
+  const [csvPreviewData, setCsvPreviewData] = useState<any[]>([])
+  const [csvImporting, setCsvImporting] = useState(false)
+  const [importSuccessMsg, setImportSuccessMsg] = useState('')
+
+  const openCSVImportModal = (type: 'students' | 'staff') => {
+    setCsvImportType(type)
+    setCsvPreviewData([])
+    setImportSuccessMsg('')
+    setShowCSVImportModal(true)
+  }
+
+  const handleCSVFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'students' | 'staff') => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const text = event.target?.result as string
+      if (!text) return
+
+      const lines = text.split(/\r?\n/).filter(line => line.trim())
+      if (lines.length <= 1) {
+        alert('CSV file is empty or missing headers row')
+        return
+      }
+
+      const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''))
+      const parsedRows: any[] = []
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim().replace(/^["']|["']$/g, ''))
+        if (values.length < 2) continue
+        const row: Record<string, string> = {}
+        headers.forEach((h, idx) => {
+          row[h] = values[idx] || ''
+        })
+        parsedRows.push({ id: Date.now() + i, ...row })
+      }
+
+      setCsvPreviewData(parsedRows)
+    }
+    reader.readAsText(file)
+  }
+
+  const downloadSampleCSV = (type: 'students' | 'staff') => {
+    let csvContent = ''
+    let filename = ''
+
+    if (type === 'students') {
+      csvContent = `registerNumber,name,email,phone,semester,section,batch,cgpa
+CSE2025001,Aarav Sharma,aarav@niet.ac.in,+91-9876543210,1,A,2024-2028,8.50
+CSE2025002,Bhavya Patel,bhavya@niet.ac.in,+91-9876543211,1,A,2024-2028,9.10
+CSE2025003,Chirag Reddy,chirag@niet.ac.in,+91-9876543212,3,B,2023-2027,7.80`
+      filename = 'students_sample_import.csv'
+    } else {
+      csvContent = `employeeId,name,email,phone,designation,qualification,experience
+EMP101,Dr. Anish V,anish@niet.ac.in,+91-9876543220,Professor,Ph.D. CSE,12 Years
+EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CSE,5 Years`
+      filename = 'faculty_sample_import.csv'
+    }
+
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const confirmCSVImport = async (type: 'students' | 'staff') => {
+    if (csvPreviewData.length === 0) return
+    setCsvImporting(true)
+
+    try {
+      if (type === 'students') {
+        try {
+          await fetch('/api/students/bulk-import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              students: csvPreviewData,
+              departmentId: user.departmentId
+            })
+          })
+        } catch (e) {
+          console.error(e)
+        }
+
+        const newStudents = csvPreviewData.map((row, index) => {
+          const sem = parseInt(row.semester || '1') || 1
+          const yearNum = Math.ceil(sem / 2)
+          const yearStr = `${yearNum}${yearNum === 1 ? 'st' : yearNum === 2 ? 'nd' : yearNum === 3 ? 'rd' : 'th'} Year`
+          return {
+            id: Date.now() + index,
+            name: row.name || row.studentName || 'Student',
+            regNo: row.registerNumber || row.regNo || `REG${Date.now() + index}`,
+            email: row.email || `${(row.registerNumber || 'student').toLowerCase()}@niet.ac.in`,
+            phone: row.phone || '',
+            semester: sem,
+            section: (row.section || 'A').toUpperCase(),
+            batch: row.batch || '2024-2028',
+            year: yearStr,
+            status: 'active'
+          }
+        })
+
+        setDepartmentStudents(prev => [...newStudents, ...prev])
+      } else {
+        const newStaff = csvPreviewData.map((row, index) => ({
+          id: Date.now() + index,
+          name: row.name || 'Faculty Member',
+          designation: row.designation || 'Assistant Professor',
+          email: row.email || 'faculty@niet.ac.in',
+          phone: row.phone || '',
+          status: 'active'
+        }))
+
+        setDepartmentStaff(prev => [...newStaff, ...prev])
+      }
+
+      setImportSuccessMsg(`Successfully imported ${csvPreviewData.length} ${type} records!`)
+      setTimeout(() => {
+        setShowCSVImportModal(false)
+        setCsvPreviewData([])
+        setImportSuccessMsg('')
+      }, 1500)
+    } catch (err) {
+      console.error('Import error:', err)
+      alert('Import failed. Please verify CSV format and try again.')
+    } finally {
+      setCsvImporting(false)
+    }
+  }
 
   // Load achievements from localStorage on mount
   useEffect(() => {
@@ -4916,164 +5143,217 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
 
   return (
     <div className="w-full space-y-6">
-      {/* Professional Header with Department Info */}
-      <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 rounded-2xl p-8 text-white shadow-xl">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <Building2 className="w-8 h-8 text-white" />
-            </div>
+      {/* Hero Banner - Deep Navy to Royal Blue Enterprise Theme */}
+      <motion.div 
+        initial={{ opacity: 0, y: -15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 text-white p-8 shadow-xl border border-blue-800/40"
+      >
+        <div className="absolute -right-10 -bottom-10 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-1/3 -top-10 w-56 h-56 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center gap-5">
+            <motion.div 
+              whileHover={{ rotate: 5, scale: 1.05 }}
+              className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-inner"
+            >
+              <Building2 className="w-8 h-8 text-cyan-300" />
+            </motion.div>
             <div>
-              <h2 className="text-2xl font-bold mb-1">HOD Dashboard</h2>
-              <p className="text-violet-100 text-lg">{user.departmentName || 'Your Department'}</p>
-              <div className="flex items-center gap-3 mt-2">
-                <Badge className="bg-white/20 text-white border-white/30 px-3 py-1 text-xs">
-                  <Shield className="w-3 h-3 mr-1" />
+              <div className="flex items-center gap-2">
+                <h2 className="text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">HOD Dashboard</h2>
+                <Sparkles className="w-5 h-5 text-cyan-400 animate-pulse" />
+              </div>
+              <p className="text-cyan-100 text-lg font-medium">{user.departmentName || 'Computer Science and Engineering'}</p>
+              <div className="flex items-center gap-3 mt-2.5">
+                <Badge className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border-cyan-400/30 px-3 py-1 text-xs backdrop-blur-md transition-all">
+                  <Shield className="w-3.5 h-3.5 mr-1.5 text-cyan-300" />
                   Head of Department
                 </Badge>
-                <span className="text-violet-200 text-sm">• Welcome, {user.name}</span>
+                <span className="text-blue-200 text-sm font-medium">• Welcome back, {user.name}</span>
               </div>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row items-end md:items-center gap-3">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 min-w-[140px]">
-              <p className="text-violet-200 text-xs uppercase tracking-wide">Department Code</p>
-              <p className="text-2xl font-bold">{user.departmentName?.substring(0, 3).toUpperCase() || 'N/A'}</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 min-w-[140px]">
-              <p className="text-violet-200 text-xs uppercase tracking-wide">Total Strength</p>
-              <p className="text-2xl font-bold">{totalStudents + totalStaff}</p>
-            </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <motion.div 
+              whileHover={{ y: -3 }}
+              className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15 min-w-[140px] text-center"
+            >
+              <p className="text-cyan-200 text-xs font-semibold uppercase tracking-wider">Dept Code</p>
+              <p className="text-2xl font-black mt-0.5 tracking-tight text-white">{user.departmentName?.substring(0, 3).toUpperCase() || 'CSE'}</p>
+            </motion.div>
+            <motion.div 
+              whileHover={{ y: -3 }}
+              className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15 min-w-[140px] text-center"
+            >
+              <p className="text-cyan-200 text-xs font-semibold uppercase tracking-wider">Total Strength</p>
+              <p className="text-2xl font-black mt-0.5 tracking-tight text-white">{totalStudents + totalStaff}</p>
+            </motion.div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Navigation Tabs - Expanded & Better Aligned */}
-      <div className="flex gap-2 bg-gradient-to-r from-slate-100 to-gray-100 p-2 rounded-2xl shadow-sm border border-gray-200/50">
+      {/* Navigation Tabs - Clean Segmented Control */}
+      <div className="relative flex gap-2 bg-slate-200/80 backdrop-blur-md p-1.5 rounded-2xl border border-slate-300/70">
         {[
           { id: 'overview', label: 'Overview', icon: LayoutDashboard, desc: 'Department Stats' },
           { id: 'students', label: 'Students', icon: GraduationCap, count: totalStudents, desc: 'Enrolled Students' },
           { id: 'staff', label: 'Staff', icon: Users, count: totalStaff, desc: 'Faculty Members' },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTabLocal(tab.id as typeof activeTab)}
-            className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all whitespace-nowrap flex-1 justify-center group ${
-              activeTab === tab.id
-                ? 'bg-white text-violet-700 shadow-lg shadow-violet-300/40 scale-[1.02] border border-violet-200'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-white/70 hover:scale-[1.01] border border-transparent'
-            }`}
-          >
-            <div className={`p-2 rounded-lg transition-colors ${
-              activeTab === tab.id ? 'bg-violet-100 text-violet-600' : 'bg-gray-200/70 text-gray-500 group-hover:bg-gray-200'
-            }`}>
-              <tab.icon className="w-6 h-6" />
-            </div>
-            <div className="flex flex-col items-start">
-              <span className="text-base">{tab.label}</span>
-              <span className={`text-xs font-normal ${activeTab === tab.id ? 'text-violet-500' : 'text-gray-400'}`}>
-                {'count' in tab ? `${tab.count} ${tab.desc}` : tab.desc}
-              </span>
-            </div>
-            {'count' in tab && (
-              <span className={`px-3 py-1 rounded-full text-sm font-bold ml-1 ${
-                activeTab === tab.id ? 'bg-violet-600 text-white shadow-md' : 'bg-gray-300 text-gray-600'
+        ].map(tab => {
+          const isActive = activeTab === tab.id
+          return (
+            <motion.button
+              key={tab.id}
+              onClick={() => setActiveTabLocal(tab.id as typeof activeTab)}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              className={`relative z-10 flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all whitespace-nowrap flex-1 justify-center ${
+                isActive ? 'text-blue-950 font-bold' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="hodDashboardActiveTab"
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  className="absolute inset-0 bg-white rounded-xl shadow-md border border-slate-200/90 -z-10"
+                />
+              )}
+              <div className={`p-2 rounded-lg transition-colors ${
+                isActive ? 'bg-blue-50 text-blue-600' : 'bg-slate-300/60 text-slate-500'
               }`}>
-                {tab.count}
-              </span>
-            )}
-          </button>
-        ))}
+                <tab.icon className="w-5 h-5 shrink-0" />
+              </div>
+              <div className="flex flex-col items-start text-left">
+                <span className="text-sm font-bold leading-tight">{tab.label}</span>
+                <span className={`text-[11px] font-normal ${isActive ? 'text-blue-600' : 'text-slate-500'}`}>
+                  {'count' in tab ? `${tab.count} ${tab.desc}` : tab.desc}
+                </span>
+              </div>
+              {'count' in tab && (
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ml-1 transition-colors ${
+                  isActive ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-300 text-slate-700'
+                }`}>
+                  {tab.count}
+                </span>
+              )}
+            </motion.button>
+          )
+        })}
       </div>
 
       {/* OVERVIEW TAB */}
       {activeTab === 'overview' && (
         <>
-          {/* Section Header - Standalone Title Above Cards */}
+          {/* Section Header */}
           <div className="flex items-center gap-3 mb-4">
-            <LayoutDashboard className="w-5 h-5 text-slate-500" />
-            <h3 className="text-lg font-semibold text-slate-700">Overview: Students & Staff</h3>
+            <LayoutDashboard className="w-5 h-5 text-blue-600" />
+            <h3 className="text-lg font-semibold text-slate-800">Overview: Students & Staff</h3>
             <div className="flex-1 h-px bg-gradient-to-r from-slate-200 to-transparent ml-2" />
           </div>
 
-          {/* Stats Cards - 4 Column Responsive Grid - Expanded */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-4">
-            <Card className="border border-gray-200 hover:shadow-lg transition-all overflow-hidden group">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-500 font-semibold uppercase tracking-wide mb-2">Total Students</p>
-                    <p className="text-4xl font-bold text-gray-800 mt-1">{totalStudents}</p>
-                    <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                      {studentsByYear['4th Year'] || 0} Final Year
-                    </p>
+          {/* Stats Cards - Premium Enterprise Statistic Cards */}
+          <motion.div 
+            initial="hidden"
+            animate="show"
+            variants={{
+              hidden: { opacity: 0 },
+              show: {
+                opacity: 1,
+                transition: { staggerChildren: 0.1 }
+              }
+            }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-4"
+          >
+            {/* Card 1: Total Students */}
+            <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} whileHover={{ y: -4 }}>
+              <Card className="border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden rounded-2xl bg-white">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-2">Total Students</p>
+                      <p className="text-4xl font-extrabold text-slate-900 mt-1">{totalStudents}</p>
+                      <p className="text-xs font-semibold text-blue-600 mt-2.5 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                        {studentsByYear['4th Year'] || 0} Final Year
+                      </p>
+                    </div>
+                    <div className="w-13 h-13 p-3 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center shadow-inner">
+                      <GraduationCap className="w-7 h-7 text-blue-600" />
+                    </div>
                   </div>
-                  <div className="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <GraduationCap className="w-7 h-7 text-blue-600" />
-                  </div>
-                </div>
-              </CardContent>
-              <div className="h-1.5 bg-gradient-to-r from-blue-400 to-blue-500" />
-            </Card>
+                </CardContent>
+                <div className="h-1 bg-blue-600" />
+              </Card>
+            </motion.div>
 
-            <Card className="border border-gray-200 hover:shadow-lg transition-all overflow-hidden group">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-500 font-semibold uppercase tracking-wide mb-2">Faculty Members</p>
-                    <p className="text-4xl font-bold text-gray-800 mt-1">{totalStaff}</p>
-                    <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                      {departmentStaff.filter(s => s.status === 'active').length} Active
-                    </p>
+            {/* Card 2: Faculty Members */}
+            <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} whileHover={{ y: -4 }}>
+              <Card className="border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden rounded-2xl bg-white">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-2">Faculty Members</p>
+                      <p className="text-4xl font-extrabold text-slate-900 mt-1">{totalStaff}</p>
+                      <p className="text-xs font-semibold text-teal-600 mt-2.5 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse"></span>
+                        {departmentStaff.filter(s => s.status === 'active').length} Active
+                      </p>
+                    </div>
+                    <div className="w-13 h-13 p-3 rounded-2xl bg-cyan-50 border border-cyan-100 flex items-center justify-center shadow-inner">
+                      <Users className="w-7 h-7 text-cyan-600" />
+                    </div>
                   </div>
-                  <div className="w-14 h-14 rounded-xl bg-emerald-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Users className="w-7 h-7 text-emerald-600" />
-                  </div>
-                </div>
-              </CardContent>
-              <div className="h-1.5 bg-gradient-to-r from-emerald-400 to-emerald-500" />
-            </Card>
+                </CardContent>
+                <div className="h-1 bg-cyan-500" />
+              </Card>
+            </motion.div>
 
-            <Card className="border border-gray-200 hover:shadow-lg transition-all overflow-hidden cursor-pointer group" onClick={() => setActiveTab('analytics')}>
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-500 font-semibold uppercase tracking-wide mb-2">Total Achievements</p>
-                    <p className="text-4xl font-bold text-gray-800 mt-1">{totalStudentAchievements + totalStaffAchievements}</p>
-                    <p className="text-sm text-violet-600 mt-2 flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-violet-500"></span>
-                      {totalStudentAchievements} Students • {totalStaffAchievements} Staff
-                    </p>
+            {/* Card 3: Total Achievements */}
+            <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} whileHover={{ y: -4 }}>
+              <Card className="border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden cursor-pointer rounded-2xl bg-white" onClick={() => setActiveTab('analytics')}>
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-2">Total Achievements</p>
+                      <p className="text-4xl font-extrabold text-slate-900 mt-1">{totalStudentAchievements + totalStaffAchievements}</p>
+                      <p className="text-xs font-semibold text-indigo-600 mt-2.5 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                        {totalStudentAchievements} Students • {totalStaffAchievements} Staff
+                      </p>
+                    </div>
+                    <div className="w-13 h-13 p-3 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-inner">
+                      <Trophy className="w-7 h-7 text-indigo-600" />
+                    </div>
                   </div>
-                  <div className="w-14 h-14 rounded-xl bg-violet-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Trophy className="w-7 h-7 text-violet-600" />
-                  </div>
-                </div>
-              </CardContent>
-              <div className="h-1.5 bg-gradient-to-r from-violet-400 to-violet-500" />
-            </Card>
+                </CardContent>
+                <div className="h-1 bg-indigo-600" />
+              </Card>
+            </motion.div>
 
-            <Card className="border border-gray-200 hover:shadow-lg transition-all overflow-hidden cursor-pointer group" onClick={() => setActiveTab('students')}>
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-500 font-semibold uppercase tracking-wide mb-2">Active Batches</p>
-                    <p className="text-4xl font-bold text-gray-800 mt-1">{activeBatches.length}</p>
-                    <p className="text-sm text-cyan-600 mt-2 flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
-                      {Object.keys(studentsBySection).length} Sections
-                    </p>
+            {/* Card 4: Active Batches */}
+            <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} whileHover={{ y: -4 }}>
+              <Card className="border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden cursor-pointer rounded-2xl bg-white" onClick={() => setActiveTab('students')}>
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-2">Active Batches</p>
+                      <p className="text-4xl font-extrabold text-slate-900 mt-1">{activeBatches.length}</p>
+                      <p className="text-xs font-semibold text-sky-600 mt-2.5 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-sky-500"></span>
+                        {Object.keys(studentsBySection).length} Sections
+                      </p>
+                    </div>
+                    <div className="w-13 h-13 p-3 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center shadow-inner">
+                      <Calendar className="w-7 h-7 text-sky-600" />
+                    </div>
                   </div>
-                  <div className="w-14 h-14 rounded-xl bg-cyan-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Calendar className="w-7 h-7 text-cyan-600" />
-                  </div>
-                </div>
-              </CardContent>
-              <div className="h-1.5 bg-gradient-to-r from-cyan-400 to-cyan-500" />
-            </Card>
-          </div>
+                </CardContent>
+                <div className="h-1 bg-sky-500" />
+              </Card>
+            </motion.div>
+          </motion.div>
 
           {/* Mini Analytics Section - Students by Year & Achievement Breakdown */}
           <div className="mt-8">
@@ -5097,7 +5377,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                   {['4th Year', '3rd Year', '2nd Year', '1st Year'].map((year, idx) => {
                     const count = studentsByYear[year] || 0
                     const percentage = totalStudents > 0 ? (count / totalStudents) * 100 : 0
-                    const colors = ['from-blue-500 to-blue-400', 'from-purple-500 to-purple-400', 'from-emerald-500 to-emerald-400', 'from-orange-500 to-orange-400']
+                    const colors = ['from-blue-500 to-blue-400', 'from-purple-500 to-purple-400', 'from-emerald-500 to-emerald-400', 'from-amber-500 to-amber-400']
                     return (
                       <div key={year} className="flex items-center gap-3">
                         <span className="text-sm text-gray-600 w-16 shrink-0">{year}</span>
@@ -5186,7 +5466,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                   <ChevronRight className="w-4 h-4 text-emerald-400 ml-auto" />
                 </button>
                 <button 
-                  onClick={() => setActiveTab('report_generator')}
+                  onClick={() => setActiveTab('hod_monthly_report')}
                   className="w-full flex items-center gap-3 p-3 rounded-lg bg-amber-50 hover:bg-amber-100 transition-colors text-left"
                 >
                   <FileText className="w-5 h-5 text-amber-600" />
@@ -5359,13 +5639,22 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
               )}
             </div>
             
-            <Button
-              onClick={handleAddStudent}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2"
-            >
-              <PlusCircle className="w-4 h-4" />
-              Add Student
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => openCSVImportModal('students')}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 shadow-sm"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                Import CSV
+              </Button>
+              <Button
+                onClick={handleAddStudent}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2"
+              >
+                <PlusCircle className="w-4 h-4" />
+                Add Student
+              </Button>
+            </div>
           </div>
 
           {/* LEVEL 1: Year Selection (1st, 2nd, 3rd, 4th Year) */}
@@ -5386,7 +5675,7 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
               {['1st Year', '2nd Year', '3rd Year', '4th Year'].map((year, idx) => {
                 const count = departmentStudents.filter(s => s.year === year).length
                 const colors = [
-                  'from-orange-500 to-amber-400',
+                  'from-amber-500 to-amber-600',
                   'from-emerald-500 to-green-400', 
                   'from-blue-500 to-indigo-400',
                   'from-purple-500 to-violet-400'
@@ -5826,10 +6115,10 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                     </div>
                     <div className="w-px h-10 bg-gray-200" />
                     <div className="flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-orange-500" />
+                      <Clock className="w-5 h-5 text-amber-500" />
                       <div>
                         <p className="text-xs text-gray-500">Pending</p>
-                        <p className="text-lg font-bold text-orange-600">{pending}</p>
+                        <p className="text-lg font-bold text-amber-600">{pending}</p>
                       </div>
                     </div>
                   </>
@@ -6083,13 +6372,22 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
               )}
             </div>
             
-            <Button
-              onClick={handleAddStaff}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2"
-            >
-              <PlusCircle className="w-4 h-4" />
-              Add Faculty
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => openCSVImportModal('staff')}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 shadow-sm"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                Import CSV
+              </Button>
+              <Button
+                onClick={handleAddStaff}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2"
+              >
+                <PlusCircle className="w-4 h-4" />
+                Add Faculty
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -6328,10 +6626,10 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                     </div>
                     <div className="w-px h-10 bg-gray-200" />
                     <div className="flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-orange-500" />
+                      <Clock className="w-5 h-5 text-amber-500" />
                       <div>
                         <p className="text-xs text-gray-500">Pending</p>
-                        <p className="text-lg font-bold text-orange-600">{pending}</p>
+                        <p className="text-lg font-bold text-amber-600">{pending}</p>
                       </div>
                     </div>
                   </>
@@ -6578,6 +6876,18 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
                 />
               </div>
+              {!editingStudent && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Initial Password *</label>
+                  <input
+                    type="password"
+                    value={studentForm.password || ''}
+                    onChange={(e) => setStudentForm({...studentForm, password: e.target.value})}
+                    placeholder="Student@123"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select
@@ -6735,6 +7045,162 @@ function HodDashboardContent({ user, setActiveTab }: { user: User; setActiveTab:
           </div>
         </div>
       )}
+      {/* CSV IMPORT MODAL WITH INSTANT PREVIEW TABLE DOWN BELOW */}
+      {showCSVImportModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowCSVImportModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+            
+            {/* Header */}
+            <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 px-6 py-5 flex items-center justify-between text-white shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
+                  <FileSpreadsheet className="w-6 h-6 text-cyan-300" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">
+                    Bulk Import {csvImportType === 'students' ? 'Students' : 'Faculty'} via CSV
+                  </h3>
+                  <p className="text-xs text-cyan-200 mt-0.5">
+                    Upload a CSV file to automatically import records into {user.departmentName}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setShowCSVImportModal(false)} className="p-2 text-white/80 hover:text-white rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-6 overflow-y-auto flex-1">
+              {/* Upload Dropzone & Sample Download */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2 border-2 border-dashed border-blue-200 rounded-2xl p-6 bg-blue-50/50 hover:bg-blue-50 text-center transition-colors">
+                  <FileSpreadsheet className="w-12 h-12 text-blue-500 mx-auto mb-3" />
+                  <p className="font-semibold text-slate-800 text-sm mb-1">Select or drop CSV file</p>
+                  <p className="text-xs text-slate-500 mb-4">Supports .csv files up to 10MB</p>
+                  <input 
+                    type="file" 
+                    accept=".csv" 
+                    onChange={(e) => handleCSVFileChange(e, csvImportType)} 
+                    className="hidden" 
+                    id="csv-file-input" 
+                  />
+                  <label 
+                    htmlFor="csv-file-input" 
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl cursor-pointer shadow-md transition-all"
+                  >
+                    <FolderOpen className="w-4 h-4" />
+                    Browse CSV File
+                  </label>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3 flex flex-col justify-between">
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                      <Info className="w-4 h-4 text-blue-600" />
+                      Required CSV Format
+                    </h4>
+                    <p className="text-xs text-slate-600 leading-relaxed mb-2">
+                      {csvImportType === 'students' 
+                        ? 'Headers: registerNumber, name, email, phone, semester, section, batch, cgpa'
+                        : 'Headers: employeeId, name, email, phone, designation, qualification, experience'}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => downloadSampleCSV(csvImportType)}
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-blue-600 border-blue-200 hover:bg-blue-50 text-xs font-semibold gap-1.5"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download Sample CSV
+                  </Button>
+                </div>
+              </div>
+
+              {/* PARSED DATA DISPLAY DOWN BELOW ("must shown down") */}
+              {csvPreviewData.length > 0 && (
+                <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-emerald-600" />
+                      <span className="font-bold text-emerald-900 text-xs">
+                        Found {csvPreviewData.length} records in CSV! Preview data shown below:
+                      </span>
+                    </div>
+                    <Badge className="bg-emerald-600 text-white text-xs">{csvPreviewData.length} Rows Ready</Badge>
+                  </div>
+
+                  {/* High Contrast Preview Table Shown Down Below */}
+                  <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm max-h-[300px] overflow-y-auto">
+                    <table className="w-full text-xs text-left">
+                      <thead className="bg-slate-100 text-slate-700 font-bold uppercase sticky top-0 border-b border-slate-200">
+                        <tr>
+                          <th className="px-3.5 py-2.5">#</th>
+                          <th className="px-3.5 py-2.5">{csvImportType === 'students' ? 'Reg No' : 'Emp ID'}</th>
+                          <th className="px-3.5 py-2.5">Name</th>
+                          <th className="px-3.5 py-2.5">Email</th>
+                          <th className="px-3.5 py-2.5">{csvImportType === 'students' ? 'Sem / Sec' : 'Designation'}</th>
+                          <th className="px-3.5 py-2.5 text-center">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {csvPreviewData.map((row, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50">
+                            <td className="px-3.5 py-2.5 font-mono text-slate-400">{idx + 1}</td>
+                            <td className="px-3.5 py-2.5 font-mono font-bold text-slate-900">
+                              {row.registerNumber || row.regNo || row.employeeId || row.empId || `ID-${idx+1}`}
+                            </td>
+                            <td className="px-3.5 py-2.5 font-semibold text-slate-800">{row.name || row.studentName}</td>
+                            <td className="px-3.5 py-2.5 text-slate-600">{row.email}</td>
+                            <td className="px-3.5 py-2.5 text-slate-600">
+                              {csvImportType === 'students' 
+                                ? `Sem ${row.semester || 1} • Sec ${row.section || 'A'}`
+                                : (row.designation || 'Assistant Professor')}
+                            </td>
+                            <td className="px-3.5 py-2.5 text-center">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700">
+                                Ready
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {importSuccessMsg && (
+                <div className="p-4 bg-emerald-100 text-emerald-800 rounded-xl font-semibold text-xs flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-emerald-600" />
+                  {importSuccessMsg}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
+              <Button variant="ghost" onClick={() => setShowCSVImportModal(false)} className="text-xs">
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => confirmCSVImport(csvImportType)}
+                disabled={csvPreviewData.length === 0 || csvImporting}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow-md gap-2"
+              >
+                {csvImporting ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Importing Records...</>
+                ) : (
+                  <><CheckCircle className="w-4 h-4" /> Confirm & Add {csvPreviewData.length} Records</>
+                )}
+              </Button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -6817,12 +7283,12 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
                 <p className="text-sm text-gray-500 font-medium">PENDING APPROVAL</p>
                 <p className="text-3xl font-bold text-gray-800 mt-1">{pendingCount}</p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center">
-                <Clock className="w-6 h-6 text-orange-600" />
+              <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center">
+                <Clock className="w-6 h-6 text-amber-600" />
               </div>
             </div>
           </CardContent>
-          <div className="h-1 bg-gradient-to-r from-orange-400 to-orange-500" />
+          <div className="h-1 bg-gradient-to-r from-amber-400 to-amber-500" />
         </Card>
 
         {/* Approved */}
@@ -6883,7 +7349,7 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
                   'from-green-500 to-green-400',
                   'from-blue-500 to-indigo-400',
                   'from-cyan-500 to-blue-400',
-                  'from-amber-500 to-orange-400',
+                  'from-amber-500 to-amber-600',
                   'from-red-500 to-pink-400'
                 ]
                 const colorIndex = Object.keys(STAFF_ACHIEVEMENT_TYPES).indexOf(key) % colors.length
@@ -6900,7 +7366,7 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
                       <div 
                         onClick={() => setSelectedDashboardType(isSelected ? null : key)}
                         className={'w-full max-w-[45px] bg-gradient-to-t ' + colors[colorIndex] + ' rounded-t-md hover:opacity-80 transition-all cursor-pointer relative group' + (isSelected ? ' ring-2 ring-offset-1 ring-emerald-500' : '')}
-                        style={{ width: height + '%' }}
+                        style={{ height: height + '%' }}
                       >
                         <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                           {count} {count === 1 ? 'item' : 'items'}
@@ -7052,7 +7518,7 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
                           {new Date(achievement.submittedAt || Date.now()).toLocaleDateString()} • 
                           <span className={'inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ml-1 ' + 
                             achievement.status?.includes('approved') ? 'bg-green-100 text-green-700' :
-                            achievement.status?.includes('pending') ? 'bg-orange-100 text-orange-700' :
+                            achievement.status?.includes('pending') ? 'bg-amber-100 text-amber-700' :
                             achievement.status === 'rejected' ? 'bg-red-100 text-red-700' :
                             'bg-gray-100 text-gray-700'
                            + ''}>
@@ -7281,9 +7747,9 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
   }
 
   const downloadStudentTemplate = () => {
-    const csv = `registerNumber,name,email,phone,semester,section,cgpa,admissionYear,batch
-2024CS001,John Smith,john@niet.edu,9876543210,1,A,8.5,2024,2024-2028
-2024CS002,Jane Doe,jane@niet.edu,9876543211,1,A,9.0,2024,2024-2028`
+    const csv = `reg_no,name,email,password,department,batch,semester,cgpa
+CSE2024004,Student 4,student_cse4@niet.ac.in,Student@123,CSE,2024-2028,5,8.15
+CSE2024005,Student 5,student_cse5@niet.ac.in,Student@123,CSE,2024-2028,5,8.90`
     downloadCSV(csv, 'students_template.csv')
   }
 
@@ -7521,8 +7987,8 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
                                     { key: 'publications', label: 'Publications', icon: Newspaper, color: 'text-cyan-600 bg-cyan-50' },
                                     { key: 'projects', label: 'Projects', icon: Briefcase, color: 'text-green-600 bg-green-50' },
                                     { key: 'books', label: 'Books', icon: BookOpen, color: 'text-indigo-600 bg-indigo-50' },
-                                    { key: 'fdpPrograms', label: 'FDP', icon: GraduationCap, color: 'text-pink-600 bg-pink-50' },
-                                    { key: 'consultations', label: 'Consultancy', icon: Handshake, color: 'text-orange-600 bg-orange-50' },
+                                    { key: 'fdpPrograms', label: 'FDP', icon: GraduationCap, color: 'text-amber-700 bg-amber-50' },
+                                    { key: 'consultations', label: 'Consultancy', icon: Handshake, color: 'text-amber-800 bg-amber-50' },
                                   ].map(ach => (
                                     <div key={ach.key} className={'' + ach.color + ' p-2 rounded-lg text-center'}>
                                       <ach.icon className="w-4 h-4 mx-auto mb-1" />
@@ -7625,7 +8091,7 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
                                   { key: 'achievements', label: 'Achievements', icon: Star, color: 'text-amber-600 bg-amber-50' },
                                   { key: 'certifications', label: 'Certifications', icon: Award, color: 'text-blue-600 bg-blue-50' },
                                   { key: 'placements', label: 'Placements', icon: Briefcase, color: 'text-green-600 bg-green-50' },
-                                  { key: 'internships', label: 'Internships', icon: Wrench, color: 'text-orange-600 bg-orange-50' },
+                                  { key: 'internships', label: 'Internships', icon: Wrench, color: 'text-amber-600 bg-amber-50' },
                                   { key: 'npCourses', label: 'NP Courses', icon: BookOpen, color: 'text-indigo-600 bg-indigo-50' },
                                 ].map(ach => (
                                   <div key={ach.key} className={'' + ach.color + ' p-2 rounded-lg text-center'}>
@@ -7654,7 +8120,7 @@ EMP002,Jane Doe,jane@niet.edu,pass123,9876543211,Professor,Ph.D.,AI & ML,10,2020
                                 ))}
                                 {Array.isArray(student.internships) && student.internships.slice(0, 2).map((intr: any, i: number) => (
                                   <div key={'si-' + i + ''} className="flex items-center gap-2 text-sm p-2 bg-white rounded">
-                                    <Wrench className="w-4 h-4 text-orange-500" />
+                                    <Wrench className="w-4 h-4 text-amber-500" />
                                     <span className="truncate flex-1">{intr.company || intr.organization} - {intr.domain || intr.role}</span>
                                     <Badge variant="outline" className="text-xs">Internship</Badge>
                                   </div>
@@ -8249,7 +8715,7 @@ function ResearchPage() {
         <StatCard title="Journal Papers" value="45" icon={FileText} color="blue" />
         <StatCard title="Conferences" value="32" icon={Globe} color="green" />
         <StatCard title="Patents" value="8" icon={Award} color="purple" />
-        <StatCard title="Funded Projects" value="12" icon={Trophy} color="orange" />
+        <StatCard title="Funded Projects" value="12" icon={Trophy} color="amber" />
       </div>
       
       <Card className="p-6 border border-gray-200">
@@ -8398,25 +8864,24 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
 
   return (
     <div className="space-y-4 lg:space-y-6 min-w-0">
-      {/* Header with Gradient - Responsive */}
-      <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 rounded-xl lg:rounded-2xl p-4 sm:p-6 lg:p-8 text-white relative overflow-hidden">
-        {/* Decorative elements - hidden on small screens */}
-        <div className="absolute top-0 right-0 w-40 h-40 sm:w-64 sm:h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 hidden sm:block" />
-        <div className="absolute bottom-0 left-0 w-32 h-32 sm:w-48 sm:h-48 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2 hidden sm:block" />
+      {/* Header with Deep Navy to Royal Blue Gradient */}
+      <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 rounded-xl lg:rounded-2xl p-4 sm:p-6 lg:p-8 text-white relative overflow-hidden border border-blue-800/40 shadow-xl">
+        <div className="absolute top-0 right-0 w-40 h-40 sm:w-64 sm:h-64 bg-cyan-500/10 rounded-full -translate-y-1/2 translate-x-1/2 hidden sm:block pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-32 h-32 sm:w-48 sm:h-48 bg-blue-500/10 rounded-full translate-y-1/2 -translate-x-1/2 hidden sm:block pointer-events-none" />
         
         <div className="relative z-10 flex flex-col gap-3 sm:gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2">📊 Department Analytics</h2>
-              <p className="text-violet-100 text-sm sm:text-lg">{user.departmentName} • Achievement Analysis & Reports</p>
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold mb-1 sm:mb-2 text-white">📊 Department Analytics</h2>
+              <p className="text-cyan-100 text-sm sm:text-lg font-medium">{user.departmentName} • Achievement Analysis & Reports</p>
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <Badge className="bg-white/20 text-white border-white/30 px-3 py-1.5 text-xs sm:text-sm">
+              <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-400/30 px-3 py-1.5 text-xs sm:text-sm">
                 <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 <span className="hidden xs:inline">Department-Specific View</span>
                 <span className="xs:hidden">Dept View</span>
               </Badge>
-              <Badge className="bg-emerald-400/20 text-white border-emerald-300/30 px-3 py-1.5 text-xs sm:text-sm">
+              <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30 px-3 py-1.5 text-xs sm:text-sm">
                 {totalAllAchievements} Records
               </Badge>
             </div>
@@ -8465,7 +8930,7 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
         </Card>
 
         <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all group">
-          <div className="h-1 bg-gradient-to-r from-amber-500 to-orange-400" />
+          <div className="h-1 bg-gradient-to-r from-amber-500 to-amber-600" />
           <CardContent className="p-3 sm:p-5">
             <div className="flex items-center justify-between">
               <div className="min-w-0 flex-1">
@@ -8476,7 +8941,7 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
                   <span className="sm:inline">Attention</span>
                 </p>
               </div>
-              <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-amber-500 to-orange-400 flex items-center justify-center shadow-lg shadow-amber-200 group-hover:scale-110 transition-transform flex-shrink-0">
+              <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-200 group-hover:scale-110 transition-transform flex-shrink-0">
                 <Clock className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
               </div>
             </div>
@@ -9366,7 +9831,7 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
           {/* DONUT CHART VIEW */}
           {chartView === 'donut' && (
             <Card className="border-0 shadow-lg">
-              <div className="bg-gradient-to-r from-orange-500 to-amber-600 p-4">
+              <div className="bg-gradient-to-r from-amber-500 to-amber-700 p-4">
                 <h3 className="font-semibold text-white flex items-center gap-2">
                   <PieChartIcon className="w-5 h-5" /> Staff Achievement Distribution (Donut)
                 </h3>
@@ -9716,7 +10181,7 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
               <p className="text-xs text-gray-400 mt-1">students</p>
             </CardContent>
             <div className={'h-1 ' + selectedYear === year ? 'bg-blue-500' : 
-              year === '1st Year' ? 'bg-orange-400' :
+              year === '1st Year' ? 'bg-amber-400' :
               year === '2nd Year' ? 'bg-emerald-400' :
               year === '3rd Year' ? 'bg-blue-400' : 'bg-purple-400' + ' '} />
           </Card>
@@ -9817,7 +10282,7 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
                       </td>
                       <td className="py-3 px-4 text-center">
                         <Badge variant="outline" className={
-                          getYearFromSemester(student.semester) === '1st Year' ? 'border-orange-300 text-orange-700' :
+                          getYearFromSemester(student.semester) === '1st Year' ? 'border-amber-300 text-amber-700' :
                           getYearFromSemester(student.semester) === '2nd Year' ? 'border-emerald-300 text-emerald-700' :
                           getYearFromSemester(student.semester) === '3rd Year' ? 'border-blue-300 text-blue-700' :
                           'border-purple-300 text-purple-700'
@@ -10080,7 +10545,7 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
                         <p className="text-xs text-gray-500">Created</p>
                       </div>
                       <div className="text-center p-3 bg-white rounded-lg border">
-                        <p className="text-2xl font-bold text-orange-500">{importResults.skipped || 0}</p>
+                        <p className="text-2xl font-bold text-amber-500">{importResults.skipped || 0}</p>
                         <p className="text-xs text-gray-500">Skipped</p>
                       </div>
                       <div className="text-center p-3 bg-white rounded-lg border">
@@ -10133,41 +10598,54 @@ function HODManagementPage({ user }: { user: User }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <motion.div 
+        initial={{ opacity: 0, y: -15 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 text-white p-6 rounded-3xl border border-blue-800/40 shadow-lg"
+      >
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
-              <Database className="w-5 h-5 text-white" />
-            </div>
+          <h2 className="text-2xl font-extrabold text-white flex items-center gap-3">
+            <motion.div 
+              whileHover={{ rotate: 10, scale: 1.05 }}
+              className="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-inner"
+            >
+              <Database className="w-5 h-5 text-cyan-300" />
+            </motion.div>
             Department Management
           </h2>
-          <p className="text-gray-500 mt-1 text-sm">Manage Students, Staff & Batches</p>
+          <p className="text-blue-100 mt-1 text-sm font-medium">Manage Students, Staff & Batches efficiently</p>
         </div>
-        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 px-3 py-1">
+        <Badge className="bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 px-4 py-1.5 text-xs font-bold">
           {user.departmentName}
         </Badge>
-      </div>
+      </motion.div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-2 p-1 bg-gray-100 rounded-xl w-fit">
+      <div className="relative flex items-center gap-2 p-1.5 bg-slate-200/80 rounded-2xl border border-slate-300/70 w-fit shadow-inner">
         {[
-          { id: 'students' as const, label: 'Students', icon: GraduationCap, color: 'from-blue-500 to-blue-600' },
-          { id: 'staff' as const, label: 'Staff', icon: Users, color: 'from-purple-500 to-purple-600' },
-          { id: 'batches' as const, label: 'Batches', icon: FolderOpen, color: 'from-amber-500 to-orange-600' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => { setActiveTab(tab.id); setShowForm(false); setEditingItem(null); }}
-            className={'flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ' + 
-              activeTab === tab.id 
-                ? 'bg-white text-gray-900 shadow-md' 
-                : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-             + ''}
-          >
-            <tab.icon className={'w-4 h-4 ' + activeTab === tab.id ? 'text-' + tab.color.split('-')[1] : '' + ''} />
-            {tab.label}
-          </button>
-        ))}
+          { id: 'students' as const, label: 'Students', icon: GraduationCap, activeIconColor: 'text-blue-600' },
+          { id: 'staff' as const, label: 'Staff', icon: Users, activeIconColor: 'text-blue-600' },
+          { id: 'batches' as const, label: 'Batches', icon: FolderOpen, activeIconColor: 'text-blue-600' },
+        ].map((tab) => {
+          const isActive = activeTab === tab.id
+          const Icon = tab.icon
+          return (
+            <motion.button
+              key={tab.id}
+              onClick={() => { setActiveTab(tab.id); setShowForm(false); setEditingItem(null); }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`relative z-10 flex items-center gap-2.5 px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 select-none ${
+                isActive 
+                  ? 'text-blue-950 bg-white shadow-md border border-slate-200' 
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-slate-500'}`} />
+              {tab.label}
+            </motion.button>
+          )
+        })}
       </div>
 
       {/* Tab Content */}
@@ -10269,6 +10747,7 @@ function StudentManagementSection({
     registerNumber: '',
     name: '',
     email: '',
+    password: '',
     phone: '',
     semester: '',
     section: '',
@@ -10316,7 +10795,7 @@ function StudentManagementSection({
   const openCreateForm = () => {
     setEditingItem(null)
     setFormData({
-      registerNumber: '', name: '', email: '', phone: '',
+      registerNumber: '', name: '', email: '', password: '', phone: '',
       semester: '', section: '', batchId: '', cgpa: '', admissionYear: '',
     })
     setShowForm(true)
@@ -10328,6 +10807,7 @@ function StudentManagementSection({
       registerNumber: student.registerNumber,
       name: student.user?.name || '',
       email: student.user?.email || '',
+      password: '',
       phone: student.user?.phone || '',
       semester: student.semester?.toString() || '',
       section: student.section || '',
@@ -10355,6 +10835,8 @@ function StudentManagementSection({
         if (data.success) {
           setShowForm(false)
           fetchStudents()
+        } else {
+          alert(data.error || 'Failed to update student')
         }
       } else {
         const res = await fetch('/api/students', {
@@ -10369,10 +10851,13 @@ function StudentManagementSection({
         if (data.success) {
           setShowForm(false)
           fetchStudents()
+        } else {
+          alert(data.error || 'Failed to create student')
         }
       }
     } catch (error) {
       console.error('Error saving student:', error)
+      alert('Error saving student')
     } finally {
       setSubmitting(false)
     }
@@ -10430,10 +10915,9 @@ function StudentManagementSection({
 
   // Generate sample CSV for download
   const downloadSampleCSV = () => {
-    const csvContent = `registerNumber,name,email,phone,semester,section,cgpa,admissionYear
-2024CS001,John Smith,john@niet.edu,9876543210,1,A,8.5,2024
-2024CS002,Jane Doe,jane@niet.edu,9876543211,1,A,9.0,2024
-2024CS03,Bob Wilson,bob@niet.edu,9876543212,1,B,8.0,2024`
+    const csvContent = `reg_no,name,email,password,department,batch,semester,cgpa
+CSE2024004,Student 4,student_cse4@niet.ac.in,Student@123,CSE,2024-2028,5,8.15
+CSE2024005,Student 5,student_cse5@niet.ac.in,Student@123,CSE,2024-2028,5,8.90`
     const blob = new Blob([csvContent], { type: 'text/csv' })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -10490,16 +10974,22 @@ function StudentManagementSection({
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Register Number *</label>
-                <Input value={formData.registerNumber} onChange={(e) => setFormData(p => ({...p, registerNumber: e.target.value}))} required disabled={!!editingItem} />
+                <Input value={formData.registerNumber} onChange={(e) => setFormData(p => ({...p, registerNumber: e.target.value}))} required disabled={!!editingItem} placeholder="e.g. CSE2024004" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-                <Input value={formData.name} onChange={(e) => setFormData(p => ({...p, name: e.target.value}))} required />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Student Name *</label>
+                <Input value={formData.name} onChange={(e) => setFormData(p => ({...p, name: e.target.value}))} required placeholder="Full student name" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <Input type="email" value={formData.email} onChange={(e) => setFormData(p => ({...p, email: e.target.value}))} />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <Input type="email" value={formData.email} onChange={(e) => setFormData(p => ({...p, email: e.target.value}))} required placeholder="student_cse4@niet.ac.in" />
               </div>
+              {!editingItem && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+                  <Input type="password" value={formData.password} onChange={(e) => setFormData(p => ({...p, password: e.target.value}))} placeholder="Student@123" required />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                 <Input value={formData.phone} onChange={(e) => setFormData(p => ({...p, phone: e.target.value}))} />
@@ -11457,7 +11947,7 @@ function BatchManagementSection({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input placeholder="Search batches..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
         </div>
-        <Button onClick={openCreateForm} className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700">
+        <Button onClick={openCreateForm} className="bg-gradient-to-r from-amber-500 to-amber-700 hover:from-amber-600 hover:to-amber-800">
           <Plus className="w-4 h-4 mr-2" /> Create Batch
         </Button>
       </div>
@@ -11502,7 +11992,7 @@ function BatchManagementSection({
               </div>
               <div className="md:col-span-2 lg:col-span-3 flex justify-end gap-3 mt-2">
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-                <Button type="submit" disabled={submitting} className="bg-gradient-to-r from-amber-500 to-orange-600">
+                <Button type="submit" disabled={submitting} className="bg-gradient-to-r from-amber-500 to-amber-700">
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                   {editingItem ? 'Update Batch' : 'Create Batch'}
                 </Button>
@@ -11555,7 +12045,7 @@ function BatchManagementSection({
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 cursor-pointer flex-1" onClick={() => toggleBatchExpand(batch.id)}>
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-bold shadow-lg">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white font-bold shadow-lg">
                       {batch.year.toString().slice(-2)}
                     </div>
                     <div>
@@ -11648,139 +12138,174 @@ function HODReportGeneratorPage({ user }: { user: User }) {
   const [generating, setGenerating] = useState(false)
   const [activeSection, setActiveSection] = useState<number>(0)
   const [generated, setGenerated] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
+
+  const handleSaveDraft = () => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('iqac_report_draft', JSON.stringify(reportData))
+      }
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 2500)
+    } catch (e) {
+      console.error('Failed to save draft', e)
+    }
+  }
   
-  // Basic Info Section
+  // Basic Info Section with Automatic Previous Month Logic
+  const prevMonthInfo = getPreviousServerMonth()
   const [reportData, setReportData] = useState({
-    // Header Info
-    schoolName: '',
-    department: user.departmentName || '',
-    reportingMonth: '',
-    reportingYear: '2026',
-    academicYear: '2026 – 2027',
+    // Header Info - Defaults automatically to CLOSED Previous Month (e.g. July 2026)
+    schoolName: 'School of Engineering and Technology (SET)',
+    department: user.departmentName || 'Computer Science and Engineering',
+    reportingMonth: prevMonthInfo.monthName,
+    reportingYear: String(prevMonthInfo.year),
+    academicYear: `${prevMonthInfo.year} – ${prevMonthInfo.year + 1}`,
     
     // DEPT. BASIC INFORMATION
-    facultyCount: '',
-    profCount: '',
-    aspCount: '',
-    apCount: '',
-    phdHolders: '',
-    phdCount: '',
-    pursuingPhd: '',
-    notRegistered: '',
-    totalStudents: '',
-    year1Students: '',
-    year2Students: '',
-    year3Students: '',
-    year4Students: '',
+    facultyCount: '15',
+    profCount: '2',
+    aspCount: '4',
+    apCount: '9',
+    phdHolders: '6',
+    phdCount: '6',
+    pursuingPhd: '5',
+    notRegistered: '4',
+    totalStudents: '240',
+    year1Students: '60',
+    year2Students: '60',
+    year3Students: '60',
+    year4Students: '60',
     
     // A. ACADEMIC ACTIVITIES
-    syllabusCoverageTheory: '',
-    syllabusCoverageLab: '',
-    lessonPlanTheory: '',
-    lessonPlanLab: '',
-    ciaConducted: '',
-    ciaEnclose: '',
-    attendanceReport: '',
-    attendanceEnclose: '',
-    remedialClasses: '',
-    remedialEnclose: '',
-    mentoringSessions: '',
+    syllabusCoverageTheory: '85%',
+    syllabusCoverageLab: '90%',
+    lessonPlanTheory: 'Yes',
+    lessonPlanLab: 'Yes',
+    ciaConducted: 'Yes',
+    ciaEnclose: 'Yes',
+    attendanceReport: 'Yes',
+    attendanceEnclose: 'Yes',
+    remedialClasses: '12',
+    remedialEnclose: 'Yes',
+    mentoringSessions: '24',
     
     // B. STUDENT DEVELOPMENT ACTIVITIES
     studentDev: {
-      guestLectures: { prev: '', curr: '' },
-      workshops: { prev: '', curr: '' },
-      industrialVisits: { prev: '', curr: '' },
-      valueAddedCourses: { prev: '', curr: '' },
-      skillEnhancement: { prev: '', curr: '' },
-      handsOnTraining: { prev: '', curr: '' },
-      hackathon: { prev: '', curr: '' },
-      profSocietyActivities: { prev: '', curr: '' }
+      guestLectures: { prev: '4', curr: '2' },
+      workshops: { prev: '6', curr: '3' },
+      industrialVisits: { prev: '2', curr: '1' },
+      valueAddedCourses: { prev: '5', curr: '2' },
+      skillEnhancement: { prev: '8', curr: '4' },
+      handsOnTraining: { prev: '3', curr: '2' },
+      hackathon: { prev: '5', curr: '3' },
+      profSocietyActivities: { prev: '4', curr: '2' }
     },
     
     // C. RESEARCH & INNOVATION
-    researchFaculty: Array(9).fill(null).map(() => ({
-      name: '',
-      journalPub: { prev: '', curr: '' },
-      conferencePapers: { prev: '', curr: '' },
-      book: { prev: '', curr: '' },
-      bookChapters: { prev: '', curr: '' },
-      patents: { prev: '', curr: '' },
-      fundedProjects: { prev: '', curr: '' }
-    })),
+    researchFaculty: [
+      { name: 'Dr. R. Kumar', journalPub: { prev: '3', curr: '1' }, conferencePapers: { prev: '2', curr: '1' }, book: { prev: '1', curr: '0' }, bookChapters: { prev: '2', curr: '1' }, patents: { prev: '1', curr: '0' }, fundedProjects: { prev: '1', curr: '0' } },
+      { name: 'Dr. S. Meena', journalPub: { prev: '2', curr: '1' }, conferencePapers: { prev: '1', curr: '0' }, book: { prev: '0', curr: '0' }, bookChapters: { prev: '1', curr: '0' }, patents: { prev: '1', curr: '1' }, fundedProjects: { prev: '0', curr: '1' } },
+      { name: 'Prof. A. Prakash', journalPub: { prev: '4', curr: '0' }, conferencePapers: { prev: '3', curr: '1' }, book: { prev: '1', curr: '0' }, bookChapters: { prev: '3', curr: '0' }, patents: { prev: '2', curr: '0' }, fundedProjects: { prev: '1', curr: '0' } },
+      { name: 'Dr. V. Lakshmi', journalPub: { prev: '1', curr: '1' }, conferencePapers: { prev: '2', curr: '0' }, book: { prev: '0', curr: '0' }, bookChapters: { prev: '1', curr: '1' }, patents: { prev: '0', curr: '0' }, fundedProjects: { prev: '0', curr: '0' } },
+      { name: 'Prof. K. Ramesh', journalPub: { prev: '2', curr: '0' }, conferencePapers: { prev: '1', curr: '1' }, book: { prev: '0', curr: '0' }, bookChapters: { prev: '0', curr: '0' }, patents: { prev: '1', curr: '0' }, fundedProjects: { prev: '1', curr: '0' } },
+    ],
     
     // Cumulative Research
     cumulativeResearch: {
-      journalPub: { prev: '', cumulative: '' },
-      conferencePapers: { prev: '', cumulative: '' },
-      book: { prev: '', cumulative: '' },
-      bookChapters: { prev: '', cumulative: '' },
-      patents: { prev: '', cumulative: '' },
-      fundedProjects: { prev: '', cumulative: '' }
+      journalPub: { prev: '12', cumulative: '15' },
+      conferencePapers: { prev: '9', cumulative: '12' },
+      book: { prev: '2', cumulative: '2' },
+      bookChapters: { prev: '7', cumulative: '9' },
+      patents: { prev: '5', cumulative: '6' },
+      fundedProjects: { prev: '3', cumulative: '4' }
     },
     
     // D. FACULTY DEVELOPMENT
-    facultyDev: Array(9).fill(null).map(() => ({
-      name: '',
-      fdpsAttended: { prev: '', curr: '' },
-      fdpsOrganized: { prev: '', curr: '' },
-      nptelCompleted: { prev: '', curr: '' },
-      moocsCompleted: { prev: '', curr: '' },
-      resourcePerson: { prev: '', curr: '' }
-    })),
+    facultyDev: [
+      { name: 'Dr. R. Kumar', fdpsAttended: { prev: '2', curr: '1' }, fdpsOrganized: { prev: '1', curr: '1' }, nptelCompleted: { prev: '2', curr: '0' }, moocsCompleted: { prev: '3', curr: '1' }, resourcePerson: { prev: '4', curr: '1' } },
+      { name: 'Dr. S. Meena', fdpsAttended: { prev: '3', curr: '0' }, fdpsOrganized: { prev: '2', curr: '0' }, nptelCompleted: { prev: '1', curr: '1' }, moocsCompleted: { prev: '2', curr: '0' }, resourcePerson: { prev: '2', curr: '0' } },
+      { name: 'Prof. A. Prakash', fdpsAttended: { prev: '1', curr: '1' }, fdpsOrganized: { prev: '1', curr: '0' }, nptelCompleted: { prev: '2', curr: '0' }, moocsCompleted: { prev: '1', curr: '1' }, resourcePerson: { prev: '3', curr: '1' } },
+      { name: 'Dr. V. Lakshmi', fdpsAttended: { prev: '2', curr: '1' }, fdpsOrganized: { prev: '0', curr: '1' }, nptelCompleted: { prev: '1', curr: '0' }, moocsCompleted: { prev: '2', curr: '1' }, resourcePerson: { prev: '1', curr: '0' } },
+      { name: 'Prof. K. Ramesh', fdpsAttended: { prev: '4', curr: '0' }, fdpsOrganized: { prev: '2', curr: '0' }, nptelCompleted: { prev: '3', curr: '1' }, moocsCompleted: { prev: '4', curr: '0' }, resourcePerson: { prev: '2', curr: '1' } },
+    ],
     
     // Cumulative Faculty Dev
     cumulativeFacultyDev: {
-      fdpsAttended: { prev: '', cumulative: '' },
-      fdpsOrganized: { prev: '', cumulative: '' },
-      nptelCompleted: { prev: '', cumulative: '' },
-      moocsCompleted: { prev: '', cumulative: '' },
-      resourcePerson: { prev: '', cumulative: '' }
+      fdpsAttended: { prev: '12', cumulative: '15' },
+      fdpsOrganized: { prev: '5', cumulative: '7' },
+      nptelCompleted: { prev: '9', cumulative: '11' },
+      moocsCompleted: { prev: '12', cumulative: '15' },
+      resourcePerson: { prev: '12', cumulative: '15' }
     },
     
     // E. STUDENTS INTERNSHIP
     internship: {
-      previous: { paid: '', nonPaid: '', virtual: '', notAvailed: '' },
-      current: { paid: '', nonPaid: '', virtual: '', notAvailed: '' },
-      total: { paid: '', nonPaid: '', virtual: '', notAvailed: '' }
+      previous: { paid: '45', nonPaid: '80', virtual: '30', notAvailed: '25' },
+      current: { paid: '12', nonPaid: '15', virtual: '10', notAvailed: '8' },
+      total: { paid: '57', nonPaid: '95', virtual: '40', notAvailed: '33' }
     },
     
     // F. FACULTY-INDUSTRY INTERACTION
-    industryInteraction: Array(8).fill(null).map(() => ({
-      name: '',
-      mousSigned: { prev: '', curr: '' },
-      industryVisits: { prev: '', curr: '' },
-      expertsInvited: { prev: '', curr: '' },
-      collaborativeActivities: { prev: '', curr: '' },
-      consultancyServices: { prev: '', curr: '' }
-    })),
+    industryInteraction: [
+      { name: 'Dr. R. Kumar', mousSigned: { prev: '2', curr: '1' }, industryVisits: { prev: '3', curr: '1' }, expertsInvited: { prev: '4', curr: '2' }, collaborativeActivities: { prev: '3', curr: '1' }, consultancyServices: { prev: '2', curr: '1' } },
+      { name: 'Dr. S. Meena', mousSigned: { prev: '1', curr: '0' }, industryVisits: { prev: '2', curr: '1' }, expertsInvited: { prev: '3', curr: '1' }, collaborativeActivities: { prev: '2', curr: '0' }, consultancyServices: { prev: '1', curr: '0' } },
+      { name: 'Prof. A. Prakash', mousSigned: { prev: '3', curr: '1' }, industryVisits: { prev: '4', curr: '0' }, expertsInvited: { prev: '5', curr: '1' }, collaborativeActivities: { prev: '4', curr: '1' }, consultancyServices: { prev: '3', curr: '1' } },
+    ],
     
     // G. QUALITY ASSURANCE ACTIVITIES
     qaActivities: [
-      { particular: 'Course File', status: 'Updated', remarks: '' },
-      { particular: 'Question Bank', status: 'Updated', remarks: '' },
-      { particular: 'CO-PO Mapping File', status: 'Updated', remarks: '' },
-      { particular: "Student's Monthly Feedback with ATR", status: 'Updated', remarks: '' },
-      { particular: 'Academic Audit Observations', status: 'Phase I / II / III / IV Completed', remarks: 'Enclose the report' },
-      { particular: 'Best Practices Implemented', status: 'Yes / No', remarks: '' },
-      { particular: 'Mentor-Mentee Records', status: 'Updated', remarks: '' },
-      { particular: 'SDG Activities File', status: 'Updated', remarks: '' },
-      { particular: 'Dept./NBA Documentation Updation', status: 'Updated', remarks: '' },
-      { particular: 'Total Fees pending', status: '', remarks: '' }
+      { particular: 'Course File', status: 'Updated & Audited', remarks: 'All units completed' },
+      { particular: 'Question Bank', status: 'Updated with Bloom Taxonomy', remarks: 'Verified by HOD' },
+      { particular: 'CO-PO Mapping File', status: 'Calculated & Verified', remarks: 'Target attained' },
+      { particular: "Student's Monthly Feedback with ATR", status: 'Action Taken Complete', remarks: 'ATR uploaded' },
+      { particular: 'Academic Audit Observations', status: 'Phase I / II Completed', remarks: 'Enclosed in report' },
+      { particular: 'Best Practices Implemented', status: 'Yes (Peer Learning)', remarks: 'Documented' },
+      { particular: 'Mentor-Mentee Records', status: 'Updated (1:15 ratio)', remarks: 'Logs signed' },
+      { particular: 'SDG Activities File', status: '2 Extension Events Conducted', remarks: 'Reports attached' },
+      { particular: 'Dept./NBA Documentation Updation', status: 'Criterion 1-7 Updated', remarks: 'Verified' },
+      { particular: 'Total Fees pending', status: 'Cleared 92%', remarks: 'List submitted to AO' }
     ],
     
     // H. DOCUMENTS TO BE ATTACHED
     documents: {
-      eventReports: false,
-      workshopCertificates: false,
-      publicationProofs: false,
-      placementDetails: false,
-      internshipDetails: false,
-      studentAchievementProofs: false,
-      sdgExtensionReports: false,
-      mouIndustryDocuments: false
-    }
+      eventReports: true,
+      workshopCertificates: true,
+      publicationProofs: true,
+      placementDetails: true,
+      internshipDetails: true,
+      studentAchievementProofs: true,
+      sdgExtensionReports: true,
+      mouIndustryDocuments: true
+    },
+
+    // Custom Academic, Student Dev, Internship Rows & Approval Signatures
+    customAcademicRows: [] as Array<{ id: string, particulars: string, theory: string, lab: string }>,
+    customStudentDevRows: [] as Array<{ id: string, label: string, prev: string, curr: string }>,
+    customInternshipRows: [] as Array<{ id: string, period: string, paid: string, nonPaid: string, virtual: string, notAvailed: string }>,
+    signatures: {
+      hod: '',
+      dean: '',
+      iqac: '',
+      vicePrincipal: '',
+      principal: ''
+    } as Record<string, string>
   })
+
+  // Load saved draft on mount
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('iqac_report_draft')
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          setReportData(prev => ({ ...prev, ...parsed }))
+        }
+      }
+    } catch (e) {
+      console.error('Error loading draft', e)
+    }
+  }, [])
 
   const sections = [
     { id: 0, title: 'Header Information', icon: FileText },
@@ -11868,6 +12393,182 @@ function HODReportGeneratorPage({ user }: { user: User }) {
     setReportData(prev => ({
       ...prev,
       documents: { ...prev.documents, [field]: value }
+    }))
+  }
+
+  const addCustomAcademicRow = () => {
+    setReportData(prev => ({
+      ...prev,
+      customAcademicRows: [
+        ...(prev.customAcademicRows || []),
+        { id: Date.now().toString(), particulars: '', theory: '', lab: '' }
+      ]
+    }))
+  }
+
+  const updateCustomAcademicRow = (id: string, field: 'particulars' | 'theory' | 'lab', value: string) => {
+    setReportData(prev => ({
+      ...prev,
+      customAcademicRows: (prev.customAcademicRows || []).map(row => 
+        row.id === id ? { ...row, [field]: value } : row
+      )
+    }))
+  }
+
+  const removeCustomAcademicRow = (id: string) => {
+    setReportData(prev => ({
+      ...prev,
+      customAcademicRows: (prev.customAcademicRows || []).filter(row => row.id !== id)
+    }))
+  }
+
+  const handleSignatureUpload = (roleKey: string, file: File) => {
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string
+      if (dataUrl) {
+        setReportData(prev => ({
+          ...prev,
+          signatures: {
+            ...(prev.signatures || {}),
+            [roleKey]: dataUrl
+          }
+        }))
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const removeSignature = (roleKey: string) => {
+    setReportData(prev => ({
+      ...prev,
+      signatures: {
+        ...(prev.signatures || {}),
+        [roleKey]: ''
+      }
+    }))
+  }
+
+  // Section 3: Student Dev Custom Rows
+  const addCustomStudentDevRow = () => {
+    setReportData(prev => ({
+      ...prev,
+      customStudentDevRows: [
+        ...(prev.customStudentDevRows || []),
+        { id: Date.now().toString(), label: '', prev: '0', curr: '0' }
+      ]
+    }))
+  }
+
+  const updateCustomStudentDevRow = (id: string, field: 'label' | 'prev' | 'curr', value: string) => {
+    setReportData(prev => ({
+      ...prev,
+      customStudentDevRows: (prev.customStudentDevRows || []).map(r => r.id === id ? { ...r, [field]: value } : r)
+    }))
+  }
+
+  const removeCustomStudentDevRow = (id: string) => {
+    setReportData(prev => ({
+      ...prev,
+      customStudentDevRows: (prev.customStudentDevRows || []).filter(r => r.id !== id)
+    }))
+  }
+
+  // Section 4: Research Faculty Row Addition & Removal
+  const addResearchFacultyRow = () => {
+    setReportData(prev => ({
+      ...prev,
+      researchFaculty: [
+        ...prev.researchFaculty,
+        { name: '', journalPub: { prev: '0', curr: '0' }, conferencePapers: { prev: '0', curr: '0' }, book: { prev: '0', curr: '0' }, bookChapters: { prev: '0', curr: '0' }, patents: { prev: '0', curr: '0' }, fundedProjects: { prev: '0', curr: '0' } }
+      ]
+    }))
+  }
+
+  const removeResearchFacultyRow = (index: number) => {
+    setReportData(prev => ({
+      ...prev,
+      researchFaculty: prev.researchFaculty.filter((_, idx) => idx !== index)
+    }))
+  }
+
+  // Section 5: Faculty Dev Row Addition & Removal
+  const addFacultyDevRow = () => {
+    setReportData(prev => ({
+      ...prev,
+      facultyDev: [
+        ...prev.facultyDev,
+        { name: '', fdpsAttended: { prev: '0', curr: '0' }, fdpsOrganized: { prev: '0', curr: '0' }, nptelCompleted: { prev: '0', curr: '0' }, moocsCompleted: { prev: '0', curr: '0' }, resourcePerson: { prev: '0', curr: '0' } }
+      ]
+    }))
+  }
+
+  const removeFacultyDevRow = (index: number) => {
+    setReportData(prev => ({
+      ...prev,
+      facultyDev: prev.facultyDev.filter((_, idx) => idx !== index)
+    }))
+  }
+
+  // Section 6: Internship Custom Rows
+  const addCustomInternshipRow = () => {
+    setReportData(prev => ({
+      ...prev,
+      customInternshipRows: [
+        ...(prev.customInternshipRows || []),
+        { id: Date.now().toString(), period: '', paid: '0', nonPaid: '0', virtual: '0', notAvailed: '0' }
+      ]
+    }))
+  }
+
+  const updateCustomInternshipRow = (id: string, field: 'period' | 'paid' | 'nonPaid' | 'virtual' | 'notAvailed', value: string) => {
+    setReportData(prev => ({
+      ...prev,
+      customInternshipRows: (prev.customInternshipRows || []).map(r => r.id === id ? { ...r, [field]: value } : r)
+    }))
+  }
+
+  const removeCustomInternshipRow = (id: string) => {
+    setReportData(prev => ({
+      ...prev,
+      customInternshipRows: (prev.customInternshipRows || []).filter(r => r.id !== id)
+    }))
+  }
+
+  // Section 7: Industry Interaction Row Addition & Removal
+  const addIndustryInteractionRow = () => {
+    setReportData(prev => ({
+      ...prev,
+      industryInteraction: [
+        ...prev.industryInteraction,
+        { name: '', mousSigned: { prev: '0', curr: '0' }, industryVisits: { prev: '0', curr: '0' }, expertsInvited: { prev: '0', curr: '0' }, collaborativeActivities: { prev: '0', curr: '0' }, consultancyServices: { prev: '0', curr: '0' } }
+      ]
+    }))
+  }
+
+  const removeIndustryInteractionRow = (index: number) => {
+    setReportData(prev => ({
+      ...prev,
+      industryInteraction: prev.industryInteraction.filter((_, idx) => idx !== index)
+    }))
+  }
+
+  // Section 8: Quality Assurance Row Addition & Removal
+  const addQARow = () => {
+    setReportData(prev => ({
+      ...prev,
+      qaActivities: [
+        ...prev.qaActivities,
+        { particular: '', status: '', remarks: '' }
+      ]
+    }))
+  }
+
+  const removeQARow = (index: number) => {
+    setReportData(prev => ({
+      ...prev,
+      qaActivities: prev.qaActivities.filter((_, idx) => idx !== index)
     }))
   }
 
@@ -12036,688 +12737,967 @@ function HODReportGeneratorPage({ user }: { user: User }) {
       }
     } catch (error) {
       console.error('Error fetching data:', error)
-      alert('Error fetching data from database. Please try again.')
     } finally {
       setFetchingData(false)
     }
   }
 
+  useEffect(() => {
+    fetchDataFromDatabase()
+  }, [])
+
   return (
-    <div className="h-[calc(100vh-110px)] flex flex-col gap-1.5 p-2.5 overflow-hidden bg-gray-50">
-      {/* Header - Ultra Compact with Export Buttons */}
-      <div className="flex items-center justify-between gap-2 flex-shrink-0">
+    <div className="space-y-6 min-w-0 pb-12">
+      {/* Header - Corporate Top Bar with 42px Export Buttons */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-[#e3e9f2] shadow-sm">
         <div className="min-w-0">
-          <h2 className="text-base font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-tight truncate">
-            📋 Report Generator
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <FileText className="w-5 h-5 text-blue-600" />
+            Report Generator
           </h2>
-          <p className="text-gray-500 text-[10px]">NIET Monthly Department Report</p>
+          <p className="text-slate-500 text-xs mt-0.5 font-medium">NIET Monthly Department Report</p>
         </div>
-        <div className="flex gap-1 flex-shrink-0">
+        <div className="flex flex-wrap items-center gap-2.5">
           <Button 
             onClick={fetchDataFromDatabase} 
             disabled={fetchingData}
-            variant="outline"
-            className="bg-blue-50 hover:bg-blue-100 border-blue-300 text-blue-700 px-2.5 h-7 text-[10px] font-medium"
+            className="bg-blue-600 hover:bg-blue-700 text-white h-[42px] px-4 rounded-xl text-xs font-semibold shadow-sm inline-flex items-center gap-2"
           >
             {fetchingData ? (
-              <><Loader2 className="w-3 h-3 mr-1 animate-spin" />Fetch...</>
+              <><Loader2 className="w-4 h-4 animate-spin" />Fetching...</>
             ) : (
-              <><Database className="w-3 h-3 mr-1" />Fetch Data</>
+              <><Database className="w-4 h-4" />Fetch Data</>
             )}
           </Button>
           <Button 
             onClick={generateExcel} 
             disabled={generating}
-            variant="outline"
-            className="bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-700 px-2.5 h-7 text-[10px] font-medium"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white h-[42px] px-4 rounded-xl text-xs font-semibold shadow-sm inline-flex items-center gap-2"
           >
-            <FileSpreadsheet className="w-3 h-3 mr-1" />
+            <FileSpreadsheet className="w-4 h-4" />
             Excel
           </Button>
           <Button 
             onClick={generatePDF} 
             disabled={generating}
-            variant="outline"
-            className="bg-red-50 hover:bg-red-100 border-red-300 text-red-700 px-2.5 h-7 text-[10px] font-medium"
+            className="bg-rose-600 hover:bg-rose-700 text-white h-[42px] px-4 rounded-xl text-xs font-semibold shadow-sm inline-flex items-center gap-2"
           >
-            <FileText className="w-3 h-3 mr-1" />
+            <FileText className="w-4 h-4" />
             PDF
           </Button>
           <Button 
             onClick={generateReport} 
             disabled={generating}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-2.5 h-7 text-[10px] font-medium shadow-md"
+            className="bg-slate-800 hover:bg-slate-900 text-white h-[42px] px-4 rounded-xl text-xs font-semibold shadow-sm inline-flex items-center gap-2"
           >
             {generating ? (
-              <><Loader2 className="w-3 h-3 mr-1 animate-spin" />...</>
+              <><Loader2 className="w-4 h-4 animate-spin" />Generating...</>
             ) : (
-              <><Download className="w-3 h-3 mr-1" />DOCX</>
+              <><Download className="w-4 h-4" />DOCX</>
             )}
           </Button>
         </div>
       </div>
 
       {generated && (
-        <div className="bg-green-100 border border-green-300 rounded px-2 py-1 flex items-center gap-1.5 flex-shrink-0">
-          <CheckCircle className="w-3 h-3 text-green-600" />
-          <span className="text-green-700 font-medium text-[10px]">Report generated successfully!</span>
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center gap-2 shadow-sm">
+          <CheckCircle className="w-4 h-4 text-emerald-600" />
+          <span className="text-emerald-900 font-semibold text-xs">Monthly Report generated and downloaded successfully!</span>
         </div>
       )}
 
-      {/* Section Navigation - Single Row, Ultra Compact */}
-      <div className="bg-white rounded-lg border border-gray-200 p-0.5 flex-shrink-0">
-        <div className="flex gap-0.5 justify-center flex-wrap">
+      {/* Section Navigation - Responsive Clean Grid System */}
+      <div className="bg-white rounded-2xl border border-[#e3e9f2] p-2 shadow-sm">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-5 gap-1.5">
           {sections.map((section) => (
             <button
               key={section.id}
               onClick={() => setActiveSection(section.id)}
-              className={'flex items-center gap-1 px-1.5 py-[3px] rounded-[4px] text-[9px] transition-all ' + 
+              className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all h-10 select-none ${
                 activeSection === section.id
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-100'
-               + ''}
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
             >
-              <section.icon className="w-2.5 h-2.5" />
-              <span className="hidden md:inline">{section.title}</span>
-              <span className="md:hidden">{section.title.split(' ')[0]}</span>
+              <section.icon className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{section.title}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Section Content - No Scroll, Fits Screen Perfectly */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex-1 min-h-0 overflow-hidden">
-        {/* Section 0: Header Information - Ultra Compact */}
+      {/* Section Content - Clean White Card */}
+      <div className="bg-white rounded-2xl border border-[#e3e9f2] shadow-sm p-6">
+        {/* Section 0: Header Information */}
         {activeSection === 0 && (
-          <div className="p-2.5 space-y-2 h-full flex flex-col overflow-hidden">
-            <div className="border-b pb-1.5">
-              <h3 className="text-xs font-bold text-gray-900 flex items-center gap-1">
-                <FileText className="w-3 h-3 text-blue-500" />
+          <div className="space-y-6">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-blue-600" />
                 Header Information
               </h3>
+              <p className="text-xs text-slate-500 mt-0.5">Select school, department, and reporting period for the monthly report</p>
             </div>
             
-            {/* NIET Header with Logos - Ultra Compact */}
-            <div className="bg-gradient-to-r from-slate-800 to-blue-900 rounded-md p-2 text-white">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+            {/* NIET Banner */}
+            <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 rounded-xl p-5 text-white shadow-sm border border-blue-800/40">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
                   <img 
                     src="/images/niet-logo.png" 
                     alt="NIET Coimbatore" 
-                    className="w-10 h-10 object-contain bg-white rounded p-0.5"
+                    className="w-12 h-12 object-contain bg-white rounded-lg p-1 shadow-sm"
                   />
                   <div>
-                    <h1 className="text-[11px] font-bold leading-tight">NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY</h1>
-                    <p className="text-blue-200 text-[9px]">(AUTONOMOUS) – ISO Certified | NAAC "A+" | NBA</p>
+                    <h1 className="text-sm font-extrabold tracking-tight">NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY</h1>
+                    <p className="text-cyan-200 text-xs mt-0.5">(AUTONOMOUS) – ISO Certified | NAAC "A+" | NBA</p>
                   </div>
                 </div>
                 <img 
                   src="/images/nehrugroup-logo.png" 
                   alt="Nehru Group" 
-                  className="w-10 h-10 object-contain bg-white rounded p-0.5"
+                  className="w-12 h-12 object-contain bg-white rounded-lg p-1 shadow-sm"
                 />
               </div>
             </div>
 
-            <div className="bg-blue-50 rounded px-2 py-1 border border-blue-200">
-              <span className="font-bold text-blue-900 text-[10px]">MONTHLY DEPARTMENT REPORT - {reportData.academicYear}</span>
+            <div className="bg-blue-50/80 rounded-xl p-3 border border-blue-200/80 text-center">
+              <span className="font-extrabold text-blue-950 text-xs uppercase tracking-wider">MONTHLY DEPARTMENT REPORT — {reportData.academicYear}</span>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
-              <div className="space-y-0.5">
-                <label className="text-[9px] font-medium text-gray-600">School *</label>
-                <Input value={reportData.schoolName} onChange={(e) => updateField('schoolName', e.target.value)} placeholder="School of..." className="border-gray-300 h-6 text-[10px]" />
+            {/* 4-Column Responsive Grid for School / Dept / Month / Year */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 pt-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 block">School *</label>
+                <select 
+                  value={reportData.schoolName} 
+                  onChange={(e) => updateField('schoolName', e.target.value)} 
+                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                >
+                  <option value="">Select School</option>
+                  {SCHOOLS_LIST.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
               </div>
-              <div className="space-y-0.5">
-                <label className="text-[9px] font-medium text-gray-600">Department *</label>
-                <Input value={reportData.department} onChange={(e) => updateField('department', e.target.value)} placeholder="Dept Name" className="border-gray-300 h-6 text-[10px]" />
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 block">Department *</label>
+                <select 
+                  value={reportData.department} 
+                  onChange={(e) => updateField('department', e.target.value)} 
+                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                >
+                  <option value="">Select Department</option>
+                  {DEPARTMENTS_LIST.map((d) => (
+                    <option key={d.code} value={d.name}>{d.name}</option>
+                  ))}
+                </select>
               </div>
-              <div className="space-y-0.5">
-                <label className="text-[9px] font-medium text-gray-600">Month / Year *</label>
-                <div className="flex gap-1">
-                  <select value={reportData.reportingMonth} onChange={(e) => updateField('reportingMonth', e.target.value)} className="flex-1 px-1.5 py-0 border border-gray-300 rounded text-[10px] h-6">
-                    <option value="">Select</option>
-                    {['January','February','March','April','May','June','July','August','September','October','November','December'].map(m => <option key={m} value={m}>{m}</option>)}
-                  </select>
-                  <Input value={reportData.reportingYear} onChange={(e) => updateField('reportingYear', e.target.value)} className="w-14 border-gray-300 h-6 text-[10px]" />
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 block">Reporting Month *</label>
+                <select 
+                  value={reportData.reportingMonth} 
+                  onChange={(e) => updateField('reportingMonth', e.target.value)} 
+                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                >
+                  <option value="">Select Month</option>
+                  {['January','February','March','April','May','June','July','August','September','October','November','December'].map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 block">Reporting Year *</label>
+                <Input 
+                  value={reportData.reportingYear} 
+                  onChange={(e) => updateField('reportingYear', e.target.value)} 
+                  placeholder="2026"
+                  className="w-full px-3.5 py-2.5 border-gray-300 rounded-xl text-xs h-10" 
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Section 1: Dept. Basic Information */}
+        {activeSection === 1 && (
+          <div className="space-y-6">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Users className="w-5 h-5 text-blue-600" />
+                Department Basic Information
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">Faculty designations, PhD metrics, and student strength per academic year</p>
+            </div>
+
+            {/* 3 Sub-Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Faculty Breakdown */}
+              <div className="bg-slate-50/70 border border-slate-200 rounded-2xl p-5 space-y-4">
+                <h4 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-600" />
+                  Faculty Cadre Count
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 block">Total Faculty *</label>
+                    <Input value={reportData.facultyCount} onChange={(e) => updateField('facultyCount', e.target.value)} className="w-full bg-white h-9 text-xs rounded-xl border-slate-300" placeholder="Count" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 block">Professors *</label>
+                    <Input value={reportData.profCount} onChange={(e) => updateField('profCount', e.target.value)} className="w-full bg-white h-9 text-xs rounded-xl border-slate-300" placeholder="Prof" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 block">Associate Prof *</label>
+                    <Input value={reportData.aspCount} onChange={(e) => updateField('aspCount', e.target.value)} className="w-full bg-white h-9 text-xs rounded-xl border-slate-300" placeholder="AsP" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 block">Assistant Prof *</label>
+                    <Input value={reportData.apCount} onChange={(e) => updateField('apCount', e.target.value)} className="w-full bg-white h-9 text-xs rounded-xl border-slate-300" placeholder="AP" />
+                  </div>
+                </div>
+              </div>
+
+              {/* PhD Metrics */}
+              <div className="bg-slate-50/70 border border-slate-200 rounded-2xl p-5 space-y-4">
+                <h4 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-cyan-600" />
+                  PhD Statistics
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1 col-span-2">
+                    <label className="text-[11px] font-bold text-slate-700 block">PhD Holders (Total) *</label>
+                    <Input value={reportData.phdHolders} onChange={(e) => updateField('phdHolders', e.target.value)} className="w-full bg-white h-9 text-xs rounded-xl border-slate-300" placeholder="Total Holders" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 block">Pursuing PhD *</label>
+                    <Input value={reportData.pursuingPhd} onChange={(e) => updateField('pursuingPhd', e.target.value)} className="w-full bg-white h-9 text-xs rounded-xl border-slate-300" placeholder="Pursuing" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 block">Not Registered *</label>
+                    <Input value={reportData.notRegistered} onChange={(e) => updateField('notRegistered', e.target.value)} className="w-full bg-white h-9 text-xs rounded-xl border-slate-300" placeholder="Not Reg." />
+                  </div>
+                </div>
+              </div>
+
+              {/* Student Strength */}
+              <div className="bg-slate-50/70 border border-slate-200 rounded-2xl p-5 space-y-4">
+                <h4 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-blue-600" />
+                  Student Year Breakdown
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1 col-span-2">
+                    <label className="text-[11px] font-bold text-slate-700 block">Total Students *</label>
+                    <Input value={reportData.totalStudents} onChange={(e) => updateField('totalStudents', e.target.value)} className="w-full bg-white h-9 text-xs rounded-xl border-slate-300" placeholder="Total Students" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 block">I Year *</label>
+                    <Input value={reportData.year1Students} onChange={(e) => updateField('year1Students', e.target.value)} className="w-full bg-white h-9 text-xs rounded-xl border-slate-300" placeholder="I Yr" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 block">II Year *</label>
+                    <Input value={reportData.year2Students} onChange={(e) => updateField('year2Students', e.target.value)} className="w-full bg-white h-9 text-xs rounded-xl border-slate-300" placeholder="II Yr" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 block">III Year *</label>
+                    <Input value={reportData.year3Students} onChange={(e) => updateField('year3Students', e.target.value)} className="w-full bg-white h-9 text-xs rounded-xl border-slate-300" placeholder="III Yr" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 block">IV Year *</label>
+                    <Input value={reportData.year4Students} onChange={(e) => updateField('year4Students', e.target.value)} className="w-full bg-white h-9 text-xs rounded-xl border-slate-300" placeholder="IV Yr" />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Section 1: Dept. Basic Information - Ultra Compact */}
-        {activeSection === 1 && (
-          <div className="p-2.5 space-y-2 h-full flex flex-col overflow-hidden">
-            <div className="border-b pb-1.5">
-              <h3 className="text-xs font-bold text-gray-900 flex items-center gap-1">
-                <Users className="w-3 h-3 text-green-500" />
-                DEPT. BASIC INFORMATION
-              </h3>
-            </div>
-
-            <div className="flex-1 overflow-auto">
-              <table className="w-full border-collapse text-[10px]">
-                <tbody>
-                  <tr className="border-b">
-                    <td className="p-1 bg-teal-50 font-semibold text-teal-900 w-20">Faculty</td>
-                    <td className="p-0.5 border"><Input value={reportData.facultyCount} onChange={(e) => updateField('facultyCount', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
-                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">Prof</td>
-                    <td className="p-0.5 border"><Input value={reportData.profCount} onChange={(e) => updateField('profCount', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
-                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">AsP</td>
-                    <td className="p-0.5 border"><Input value={reportData.aspCount} onChange={(e) => updateField('aspCount', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
-                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">AP</td>
-                    <td className="p-0.5 border"><Input value={reportData.apCount} onChange={(e) => updateField('apCount', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">PhD Holders</td>
-                    <td className="p-0.5 border" colSpan={2}><Input value={reportData.phdHolders} onChange={(e) => updateField('phdHolders', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
-                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">PhD</td>
-                    <td className="p-0.5 border"><Input value={reportData.phdCount} onChange={(e) => updateField('phdCount', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
-                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">Pursuing</td>
-                    <td className="p-0.5 border"><Input value={reportData.pursuingPhd} onChange={(e) => updateField('pursuingPhd', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
-                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">Not Reg.</td>
-                    <td className="p-0.5 border"><Input value={reportData.notRegistered} onChange={(e) => updateField('notRegistered', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
-                  </tr>
-                  <tr>
-                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">Students</td>
-                    <td className="p-0.5 border"><Input value={reportData.totalStudents} onChange={(e) => updateField('totalStudents', e.target.value)} className="border-0 h-5 text-[10px] px-1" placeholder="Total" /></td>
-                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">I Yr</td>
-                    <td className="p-0.5 border"><Input value={reportData.year1Students} onChange={(e) => updateField('year1Students', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
-                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">II Yr</td>
-                    <td className="p-0.5 border"><Input value={reportData.year2Students} onChange={(e) => updateField('year2Students', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
-                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">III Yr</td>
-                    <td className="p-0.5 border"><Input value={reportData.year3Students} onChange={(e) => updateField('year3Students', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
-                  </tr>
-                  <tr>
-                    <td className="p-1 bg-gray-50"></td><td className="p-0.5 border"></td>
-                    <td className="p-1 bg-teal-50 font-semibold text-teal-900">IV Yr</td>
-                    <td className="p-0.5 border" colSpan={5}><Input value={reportData.year4Students} onChange={(e) => updateField('year4Students', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Section 2: A. Academic Activities - Ultra Compact */}
+        {/* Section 2: A. Academic Activities */}
         {activeSection === 2 && (
-          <div className="p-2.5 space-y-1.5 h-full flex flex-col overflow-hidden">
-            <div className="bg-green-100 border border-green-300 rounded-t px-2 py-1">
-              <h3 className="font-bold text-green-900 text-[10px]">A. ACADEMIC ACTIVITIES</h3>
+          <div className="space-y-6">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-blue-600" />
+                A. Academic Activities
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">Syllabus coverage, lesson plans, CIA exams, attendance, and mentoring</p>
             </div>
-            <div className="flex-1 overflow-auto">
-              <table className="w-full border-collapse border text-[10px]">
-                <thead><tr className="bg-green-50"><th className="p-1 border font-semibold w-28">Particulars</th><th className="p-1 border font-semibold w-16">Theory</th><th className="p-1 border font-semibold w-16">Lab</th></tr></thead>
-                <tbody>
-                  <tr><td className="p-1 border">Syllabus Coverage</td><td className="p-0 border"><Input value={reportData.syllabusCoverageTheory} onChange={(e) => updateField('syllabusCoverageTheory', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td><td className="p-0 border"><Input value={reportData.syllabusCoverageLab} onChange={(e) => updateField('syllabusCoverageLab', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td></tr>
-                  <tr><td className="p-1 border">Lesson Plan</td><td className="p-0 border"><select value={reportData.lessonPlanTheory} onChange={(e) => updateField('lessonPlanTheory', e.target.value)} className="w-full border-0 bg-transparent text-[10px] h-5"><option>Y/N</option><option>Yes</option><option>No</option></select></td><td className="p-0 border"><select value={reportData.lessonPlanLab} onChange={(e) => updateField('lessonPlanLab', e.target.value)} className="w-full border-0 bg-transparent text-[10px] h-5"><option>Y/N</option><option>Yes</option><option>No</option></select></td></tr>
-                  <tr><td className="p-1 border">CIA Conducted</td><td className="p-0 border"><select value={reportData.ciaConducted} onChange={(e) => updateField('ciaConducted', e.target.value)} className="w-full border-0 bg-transparent text-[10px] h-5"><option>Y/N</option><option>Yes</option><option>No</option></select></td><td className="p-0 border text-gray-400 text-center">NA</td></tr>
-                  <tr><td className="p-1 border">Attendance Report</td><td className="p-0 border" colSpan={2}><select value={reportData.attendanceReport} onChange={(e) => updateField('attendanceReport', e.target.value)} className="w-full border-0 bg-transparent text-[10px] h-5"><option>Y/N</option><option>Yes</option><option>No</option></select></td></tr>
-                  <tr><td className="p-1 border">Remedial Classes</td><td className="p-0 border"><Input value={reportData.remedialClasses} onChange={(e) => updateField('remedialClasses', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td><td className="p-0 border text-gray-400 text-center">NA</td></tr>
-                  <tr><td className="p-1 border">Mentoring Sessions</td><td className="p-0 border"><Input value={reportData.mentoringSessions} onChange={(e) => updateField('mentoringSessions', e.target.value)} className="border-0 h-5 text-[10px] px-1" /></td><td className="p-0 border text-gray-400 text-center">NA</td></tr>
+
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-slate-900 text-white font-bold">
+                  <tr>
+                    <th className="p-3 border-b border-slate-800">Academic Particulars</th>
+                    <th className="p-3 border-b border-slate-800 text-center w-36">Theory</th>
+                    <th className="p-3 border-b border-slate-800 text-center w-36">Practical / Lab</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 bg-white">
+                  <tr>
+                    <td className="p-3 font-semibold text-slate-800">Syllabus Coverage (%)</td>
+                    <td className="p-2"><Input value={reportData.syllabusCoverageTheory} onChange={(e) => updateField('syllabusCoverageTheory', e.target.value)} className="h-9 text-xs text-center rounded-lg border-slate-300" placeholder="Theory %" /></td>
+                    <td className="p-2"><Input value={reportData.syllabusCoverageLab} onChange={(e) => updateField('syllabusCoverageLab', e.target.value)} className="h-9 text-xs text-center rounded-lg border-slate-300" placeholder="Lab %" /></td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 font-semibold text-slate-800">Lesson Plan Execution</td>
+                    <td className="p-2">
+                      <select value={reportData.lessonPlanTheory} onChange={(e) => updateField('lessonPlanTheory', e.target.value)} className="w-full h-9 px-2 text-xs border border-slate-300 rounded-lg bg-white">
+                        <option value="">Select</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </td>
+                    <td className="p-2">
+                      <select value={reportData.lessonPlanLab} onChange={(e) => updateField('lessonPlanLab', e.target.value)} className="w-full h-9 px-2 text-xs border border-slate-300 rounded-lg bg-white">
+                        <option value="">Select</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 font-semibold text-slate-800">Continuous Internal Assessment (CIA)</td>
+                    <td className="p-2">
+                      <select value={reportData.ciaConducted} onChange={(e) => updateField('ciaConducted', e.target.value)} className="w-full h-9 px-2 text-xs border border-slate-300 rounded-lg bg-white">
+                        <option value="">Select</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </td>
+                    <td className="p-2 text-center text-slate-400 font-medium">N/A</td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 font-semibold text-slate-800">Monthly Attendance Report Generated</td>
+                    <td className="p-2" colSpan={2}>
+                      <select value={reportData.attendanceReport} onChange={(e) => updateField('attendanceReport', e.target.value)} className="w-full h-9 px-2 text-xs border border-slate-300 rounded-lg bg-white">
+                        <option value="">Select</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 font-semibold text-slate-800">Remedial Classes Conducted</td>
+                    <td className="p-2"><Input value={reportData.remedialClasses} onChange={(e) => updateField('remedialClasses', e.target.value)} className="h-9 text-xs text-center rounded-lg border-slate-300" placeholder="Sessions" /></td>
+                    <td className="p-2 text-center text-slate-400 font-medium">N/A</td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 font-semibold text-slate-800">Mentoring / Counseling Sessions</td>
+                    <td className="p-2"><Input value={reportData.mentoringSessions} onChange={(e) => updateField('mentoringSessions', e.target.value)} className="h-9 text-xs text-center rounded-lg border-slate-300" placeholder="Sessions" /></td>
+                    <td className="p-2 text-center text-slate-400 font-medium">N/A</td>
+                  </tr>
+
+                  {/* DYNAMIC CUSTOM ACADEMIC ROWS */}
+                  {reportData.customAcademicRows && reportData.customAcademicRows.length > 0 && (
+                    reportData.customAcademicRows.map((row) => (
+                      <tr key={row.id} className="bg-blue-50/40">
+                        <td className="p-2">
+                          <Input 
+                            value={row.particulars} 
+                            onChange={(e) => updateCustomAcademicRow(row.id, 'particulars', e.target.value)}
+                            className="h-9 text-xs rounded-lg border-blue-300 font-semibold bg-white"
+                            placeholder="Enter custom academic particular..."
+                          />
+                        </td>
+                        <td className="p-2">
+                          <Input 
+                            value={row.theory} 
+                            onChange={(e) => updateCustomAcademicRow(row.id, 'theory', e.target.value)}
+                            className="h-9 text-xs text-center rounded-lg border-blue-300 bg-white"
+                            placeholder="Theory % / Val"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <div className="flex items-center gap-2">
+                            <Input 
+                              value={row.lab} 
+                              onChange={(e) => updateCustomAcademicRow(row.id, 'lab', e.target.value)}
+                              className="h-9 text-xs text-center rounded-lg border-blue-300 bg-white flex-1"
+                              placeholder="Lab % / Val"
+                            />
+                            <button 
+                              onClick={() => removeCustomAcademicRow(row.id)}
+                              className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors shrink-0"
+                              title="Delete custom row"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <Button 
+                onClick={addCustomAcademicRow}
+                variant="outline"
+                size="sm"
+                className="text-xs font-bold text-blue-600 border-blue-200 hover:bg-blue-50 gap-1.5 rounded-xl px-4 py-2"
+              >
+                <Plus className="w-4 h-4" /> Add Custom Academic Row
+              </Button>
             </div>
           </div>
         )}
 
         {/* Section 3: B. Student Development Activities */}
         {activeSection === 3 && (
-          <div className="p-4 space-y-4">
-            <div className="bg-purple-100 border border-purple-300 rounded-t-lg p-2.5">
-              <h3 className="font-bold text-purple-900 text-sm">B. STUDENT DEVELOPMENT ACTIVITIES</h3>
-              <p className="text-purple-700 text-xs">(*Prev Months: Cumulative counting starts from 1st July)</p>
+          <div className="space-y-6">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-blue-600" />
+                B. Student Development Activities
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">Guest lectures, workshops, industrial visits, value-added courses, and hackathons</p>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border text-xs">
-                <thead>
-                  <tr className="bg-purple-50">
-                    <th className="p-1.5 border font-semibold text-purple-900" rowSpan={2}>Particulars</th>
-                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Guest Lectures</th>
-                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Workshops</th>
-                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Industrial Visits</th>
-                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Value Added</th>
-                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Skill Enhance.</th>
-                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Hands-on</th>
-                    <th className="p-1 border font-semibold text-purple-900" colSpan={2}>Hackathon</th>
-                    <th className="p-1 border font-semibold text-purple-900" rowSpan={2}>Prof. Society</th>
-                  </tr>
-                  <tr className="bg-purple-50">
-                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
-                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
-                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
-                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
-                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
-                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
-                    <th className="p-0.5 border text-xs">P</th><th className="p-0.5 border text-xs">C</th>
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-slate-900 text-white font-bold">
+                  <tr>
+                    <th className="p-3 border-b border-slate-800">Activity Category</th>
+                    <th className="p-3 border-b border-slate-800 text-center w-28">Previous Months</th>
+                    <th className="p-3 border-b border-slate-800 text-center w-28">Current Month</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr>
-                    <td className="p-1.5 border font-medium bg-gray-50">Prev Months*</td>
-                    <td className="p-0.5 border"><Input value={reportData.studentDev.guestLectures.prev} onChange={(e) => updateStudentDev('guestLectures', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
-                    <td className="p-0.5 border"></td>
-                    <td className="p-0.5 border"><Input value={reportData.studentDev.workshops.prev} onChange={(e) => updateStudentDev('workshops', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
-                    <td className="p-0.5 border"></td>
-                    <td className="p-0.5 border"><Input value={reportData.studentDev.industrialVisits.prev} onChange={(e) => updateStudentDev('industrialVisits', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
-                    <td className="p-0.5 border"></td>
-                    <td className="p-0.5 border"><Input value={reportData.studentDev.valueAddedCourses.prev} onChange={(e) => updateStudentDev('valueAddedCourses', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
-                    <td className="p-0.5 border"></td>
-                    <td className="p-0.5 border"><Input value={reportData.studentDev.skillEnhancement.prev} onChange={(e) => updateStudentDev('skillEnhancement', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
-                    <td className="p-0.5 border"></td>
-                    <td className="p-0.5 border"><Input value={reportData.studentDev.handsOnTraining.prev} onChange={(e) => updateStudentDev('handsOnTraining', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
-                    <td className="p-0.5 border"></td>
-                    <td className="p-0.5 border"><Input value={reportData.studentDev.hackathon.prev} onChange={(e) => updateStudentDev('hackathon', 'prev', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
-                    <td className="p-0.5 border"></td>
-                    <td className="p-0.5 border"></td>
-                  </tr>
-                  <tr>
-                    <td className="p-1.5 border font-medium bg-blue-50">Curr Month</td>
-                    <td className="p-0.5 border"></td>
-                    <td className="p-0.5 border"><Input value={reportData.studentDev.guestLectures.curr} onChange={(e) => updateStudentDev('guestLectures', 'curr', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
-                    <td className="p-0.5 border"></td>
-                    <td className="p-0.5 border"><Input value={reportData.studentDev.workshops.curr} onChange={(e) => updateStudentDev('workshops', 'curr', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
-                    <td className="p-0.5 border"></td>
-                    <td className="p-0.5 border"><Input value={reportData.studentDev.industrialVisits.curr} onChange={(e) => updateStudentDev('industrialVisits', 'curr', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
-                    <td className="p-0.5 border"></td>
-                    <td className="p-0.5 border"><Input value={reportData.studentDev.valueAddedCourses.curr} onChange={(e) => updateStudentDev('valueAddedCourses', 'curr', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
-                    <td className="p-0.5 border"></td>
-                    <td className="p-0.5 border"><Input value={reportData.studentDev.skillEnhancement.curr} onChange={(e) => updateStudentDev('skillEnhancement', 'curr', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
-                    <td className="p-0.5 border"></td>
-                    <td className="p-0.5 border"><Input value={reportData.studentDev.handsOnTraining.curr} onChange={(e) => updateStudentDev('handsOnTraining', 'curr', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
-                    <td className="p-0.5 border"></td>
-                    <td className="p-0.5 border"><Input value={reportData.studentDev.hackathon.curr} onChange={(e) => updateStudentDev('hackathon', 'curr', e.target.value)} className="border-0 h-6 text-center text-xs px-0" /></td>
-                    <td className="p-0.5 border"></td>
-                    <td className="p-0.5 border"></td>
-                  </tr>
-                  <tr>
-                    <td className="p-1.5 border font-bold bg-green-50">Total (Cumulative)</td>
-                    <td className="p-0.5 border bg-green-50" colSpan={2}></td>
-                    <td className="p-0.5 border bg-green-50" colSpan={2}></td>
-                    <td className="p-0.5 border bg-green-50" colSpan={2}></td>
-                    <td className="p-0.5 border bg-green-50" colSpan={2}></td>
-                    <td className="p-0.5 border bg-green-50" colSpan={2}></td>
-                    <td className="p-0.5 border bg-green-50" colSpan={2}></td>
-                    <td className="p-0.5 border bg-green-50" colSpan={2}></td>
-                    <td className="p-0.5 border bg-green-50"></td>
-                  </tr>
+                <tbody className="divide-y divide-slate-200 bg-white">
+                  {[
+                    { key: 'guestLectures', label: 'Guest Lectures' },
+                    { key: 'workshops', label: 'Workshops & Seminars' },
+                    { key: 'industrialVisits', label: 'Industrial Visits' },
+                    { key: 'valueAddedCourses', label: 'Value-Added Courses' },
+                    { key: 'skillEnhancement', label: 'Skill Enhancement Programs' },
+                    { key: 'handsOnTraining', label: 'Hands-on Training' },
+                    { key: 'hackathon', label: 'Hackathons & Competitions' },
+                  ].map((act) => (
+                    <tr key={act.key} className="hover:bg-slate-50/50">
+                      <td className="p-3 font-semibold text-slate-800">{act.label}</td>
+                      <td className="p-2">
+                        <Input 
+                          value={(reportData.studentDev as any)[act.key]?.prev || ''} 
+                          onChange={(e) => updateStudentDev(act.key, 'prev', e.target.value)} 
+                          className="h-9 text-xs text-center rounded-lg border-slate-300" 
+                          placeholder="Previous" 
+                        />
+                      </td>
+                      <td className="p-2">
+                        <Input 
+                          value={(reportData.studentDev as any)[act.key]?.curr || ''} 
+                          onChange={(e) => updateStudentDev(act.key, 'curr', e.target.value)} 
+                          className="h-9 text-xs text-center rounded-lg border-slate-300" 
+                          placeholder="Current" 
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                  {/* DYNAMIC CUSTOM STUDENT DEV ROWS */}
+                  {reportData.customStudentDevRows && reportData.customStudentDevRows.length > 0 && (
+                    reportData.customStudentDevRows.map((row) => (
+                      <tr key={row.id} className="bg-blue-50/40">
+                        <td className="p-2">
+                          <Input 
+                            value={row.label} 
+                            onChange={(e) => updateCustomStudentDevRow(row.id, 'label', e.target.value)}
+                            className="h-9 text-xs rounded-lg border-blue-300 font-semibold bg-white"
+                            placeholder="Enter custom student activity name..."
+                          />
+                        </td>
+                        <td className="p-2">
+                          <Input 
+                            value={row.prev} 
+                            onChange={(e) => updateCustomStudentDevRow(row.id, 'prev', e.target.value)}
+                            className="h-9 text-xs text-center rounded-lg border-blue-300 bg-white"
+                            placeholder="Prev"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <div className="flex items-center gap-2">
+                            <Input 
+                              value={row.curr} 
+                              onChange={(e) => updateCustomStudentDevRow(row.id, 'curr', e.target.value)}
+                              className="h-9 text-xs text-center rounded-lg border-blue-300 bg-white flex-1"
+                              placeholder="Curr"
+                            />
+                            <button 
+                              onClick={() => removeCustomStudentDevRow(row.id)}
+                              className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors shrink-0"
+                              title="Delete custom row"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <Button 
+                onClick={addCustomStudentDevRow}
+                variant="outline"
+                size="sm"
+                className="text-xs font-bold text-blue-600 border-blue-200 hover:bg-blue-50 gap-1.5 rounded-xl px-4 py-2"
+              >
+                <Plus className="w-4 h-4" /> Add Custom Activity Row
+              </Button>
             </div>
           </div>
         )}
 
         {/* Section 4: C. Research & Innovation */}
         {activeSection === 4 && (
-          <div className="p-4 space-y-4">
-            <div className="bg-emerald-100 border border-emerald-300 rounded-t-lg p-2.5">
-              <h3 className="font-bold text-emerald-900 text-sm">C. RESEARCH & INNOVATION</h3>
-              <p className="text-emerald-700 text-xs">(*Prev Months: Cumulative counting starts from 1st July)</p>
+          <div className="space-y-6">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-blue-600" />
+                C. Research & Innovation
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">Faculty journal publications, conference papers, books, patents, and funded projects</p>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border text-xs">
-                <thead>
-                  <tr className="bg-emerald-50">
-                    <th className="p-1 border font-semibold text-emerald-900" rowSpan={2}>Particulars</th>
-                    <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Journal Pub (SCI/Scopus)</th>
-                    <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Conf Papers</th>
-                    <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Book</th>
-                    <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Book Chapters</th>
-                    <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Patents</th>
-                    <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Funded Projects</th>
-                    <th className="p-1 border font-semibold text-emerald-900" rowSpan={2}>Sign</th>
-                  </tr>
-                  <tr className="bg-emerald-50">
-                    {[...Array(6)].map((_, i) => (
-                      <React.Fragment key={i}>
-                        <th className="p-0.5 border text-xs">P</th>
-                        <th className="p-0.5 border text-xs">C</th>
-                      </React.Fragment>
-                    ))}
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-slate-900 text-white font-bold">
+                  <tr>
+                    <th className="p-3 border-b border-slate-800 min-w-[140px]">Faculty Name</th>
+                    <th className="p-3 border-b border-slate-800 text-center">Journals (P/C)</th>
+                    <th className="p-3 border-b border-slate-800 text-center">Conferences (P/C)</th>
+                    <th className="p-3 border-b border-slate-800 text-center">Books (P/C)</th>
+                    <th className="p-3 border-b border-slate-800 text-center">Patents (P/C)</th>
+                    <th className="p-3 border-b border-slate-800 text-center">Funded Proj (P/C)</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr><td className="p-1 border font-semibold bg-gray-50">Faculty Name</td>
-                    {Array(12).fill(null).map((_, i) => <td key={i} className="p-0.5 border"></td>)}
-                    <td className="p-0.5 border"></td>
-                  </tr>
+                <tbody className="divide-y divide-slate-200 bg-white">
                   {reportData.researchFaculty.map((faculty, idx) => (
-                    <tr key={idx}>
-                      <td className="p-1 border">
-                        <Input value={faculty.name} onChange={(e) => updateResearchFaculty(idx, 'name', undefined, e.target.value)} className="border-0 h-6 text-xs px-1" placeholder={'F' + idx + 1 + ''} />
+                    <tr key={idx} className="hover:bg-slate-50/50">
+                      <td className="p-2">
+                        <Input 
+                          value={faculty.name} 
+                          onChange={(e) => updateResearchFaculty(idx, 'name', undefined, e.target.value)} 
+                          className="h-9 text-xs rounded-lg border-slate-300" 
+                          placeholder={`Faculty ${idx + 1}`} 
+                        />
                       </td>
-                      <td className="p-0.5 border"><Input value={faculty.journalPub.prev} onChange={(e) => updateResearchFaculty(idx, 'journalPub', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.journalPub.curr} onChange={(e) => updateResearchFaculty(idx, 'journalPub', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.conferencePapers.prev} onChange={(e) => updateResearchFaculty(idx, 'conferencePapers', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.conferencePapers.curr} onChange={(e) => updateResearchFaculty(idx, 'conferencePapers', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.book.prev} onChange={(e) => updateResearchFaculty(idx, 'book', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.book.curr} onChange={(e) => updateResearchFaculty(idx, 'book', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.bookChapters.prev} onChange={(e) => updateResearchFaculty(idx, 'bookChapters', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.bookChapters.curr} onChange={(e) => updateResearchFaculty(idx, 'bookChapters', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.patents.prev} onChange={(e) => updateResearchFaculty(idx, 'patents', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.patents.curr} onChange={(e) => updateResearchFaculty(idx, 'patents', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.fundedProjects.prev} onChange={(e) => updateResearchFaculty(idx, 'fundedProjects', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.fundedProjects.curr} onChange={(e) => updateResearchFaculty(idx, 'fundedProjects', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"></td>
+                      <td className="p-2">
+                        <div className="flex gap-1">
+                          <Input value={faculty.journalPub.prev} onChange={(e) => updateResearchFaculty(idx, 'journalPub', 'prev', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="P" />
+                          <Input value={faculty.journalPub.curr} onChange={(e) => updateResearchFaculty(idx, 'journalPub', 'curr', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="C" />
+                        </div>
+                      </td>
+                      <td className="p-2">
+                        <div className="flex gap-1">
+                          <Input value={faculty.conferencePapers.prev} onChange={(e) => updateResearchFaculty(idx, 'conferencePapers', 'prev', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="P" />
+                          <Input value={faculty.conferencePapers.curr} onChange={(e) => updateResearchFaculty(idx, 'conferencePapers', 'curr', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="C" />
+                        </div>
+                      </td>
+                      <td className="p-2">
+                        <div className="flex gap-1">
+                          <Input value={faculty.book.prev} onChange={(e) => updateResearchFaculty(idx, 'book', 'prev', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="P" />
+                          <Input value={faculty.book.curr} onChange={(e) => updateResearchFaculty(idx, 'book', 'curr', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="C" />
+                        </div>
+                      </td>
+                      <td className="p-2">
+                        <div className="flex gap-1">
+                          <Input value={faculty.patents.prev} onChange={(e) => updateResearchFaculty(idx, 'patents', 'prev', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="P" />
+                          <Input value={faculty.patents.curr} onChange={(e) => updateResearchFaculty(idx, 'patents', 'curr', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="C" />
+                        </div>
+                      </td>
+                      <td className="p-2">
+                        <div className="flex gap-1 items-center">
+                          <Input value={faculty.fundedProjects.prev} onChange={(e) => updateResearchFaculty(idx, 'fundedProjects', 'prev', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="P" />
+                          <Input value={faculty.fundedProjects.curr} onChange={(e) => updateResearchFaculty(idx, 'fundedProjects', 'curr', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="C" />
+                          <button 
+                            onClick={() => removeResearchFacultyRow(idx)}
+                            className="p-1 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors shrink-0 ml-1"
+                            title="Delete faculty row"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            {/* Cumulative Research Table - Compact */}
-            <div className="mt-4">
-              <h4 className="font-semibold text-emerald-800 mb-2 text-sm">Cumulative Faculty Research Contribution</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse border text-xs">
-                  <thead>
-                    <tr className="bg-emerald-50">
-                      <th className="p-1 border font-semibold text-emerald-900" rowSpan={2}></th>
-                      <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Journal Pub</th>
-                      <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Conf Papers</th>
-                      <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Book</th>
-                      <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Book Ch.</th>
-                      <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Patents</th>
-                      <th className="p-1 border font-semibold text-emerald-900" colSpan={2}>Funded Proj.</th>
-                    </tr>
-                    <tr className="bg-emerald-50">
-                      {[...Array(6)].map((_, i) => (
-                        <React.Fragment key={i}>
-                          <th className="p-0.5 border text-xs">Prev</th>
-                          <th className="p-0.5 border text-xs">Cum.</th>
-                        </React.Fragment>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="p-1 border font-medium bg-orange-50 text-xs">As on (Month), 20...</td>
-                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.journalPub.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, journalPub: {...p.cumulativeResearch.journalPub, prev: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.journalPub.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, journalPub: {...p.cumulativeResearch.journalPub, cumulative: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.conferencePapers.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, conferencePapers: {...p.cumulativeResearch.conferencePapers, prev: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.conferencePapers.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, conferencePapers: {...p.cumulativeResearch.conferencePapers, cumulative: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.book.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, book: {...p.cumulativeResearch.book, prev: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.book.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, book: {...p.cumulativeResearch.book, cumulative: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.bookChapters.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, bookChapters: {...p.cumulativeResearch.bookChapters, prev: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.bookChapters.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, bookChapters: {...p.cumulativeResearch.bookChapters, cumulative: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.patents.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, patents: {...p.cumulativeResearch.patents, prev: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.patents.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, patents: {...p.cumulativeResearch.patents, cumulative: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.fundedProjects.prev} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, fundedProjects: {...p.cumulativeResearch.fundedProjects, prev: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={reportData.cumulativeResearch.fundedProjects.cumulative} onChange={(e) => setReportData(p => ({...p, cumulativeResearch: {...p.cumulativeResearch, fundedProjects: {...p.cumulativeResearch.fundedProjects, cumulative: e.target.value}}}))} className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+            <div className="flex justify-end pt-1">
+              <Button 
+                onClick={addResearchFacultyRow}
+                variant="outline"
+                size="sm"
+                className="text-xs font-bold text-blue-600 border-blue-200 hover:bg-blue-50 gap-1.5 rounded-xl px-4 py-2"
+              >
+                <Plus className="w-4 h-4" /> Add Research Faculty Row
+              </Button>
             </div>
           </div>
         )}
 
         {/* Section 5: D. Faculty Development */}
         {activeSection === 5 && (
-          <div className="p-4 space-y-4">
-            <div className="bg-amber-100 border border-amber-300 rounded-t-lg p-2.5">
-              <h3 className="font-bold text-amber-900 text-sm">D. FACULTY DEVELOPMENT</h3>
-              <p className="text-amber-700 text-xs">(*Prev Months: Cumulative counting starts from 1st July)</p>
+          <div className="space-y-6">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Users className="w-5 h-5 text-blue-600" />
+                D. Faculty Development
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">FDPs attended, FDPs organized, NPTEL/MOOCs completion, and resource person roles</p>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border text-xs">
-                <thead>
-                  <tr className="bg-amber-50">
-                    <th className="p-1 border font-semibold text-amber-900" rowSpan={2}>Particulars</th>
-                    <th className="p-1 border font-semibold text-amber-900" colSpan={2}>FDPs Attended</th>
-                    <th className="p-1 border font-semibold text-amber-900" colSpan={2}>FDPs Organized</th>
-                    <th className="p-1 border font-semibold text-amber-900" colSpan={2}>NPTEL</th>
-                    <th className="p-1 border font-semibold text-amber-900" colSpan={2}>MOOCs</th>
-                    <th className="p-1 border font-semibold text-amber-900" colSpan={2}>Resource Person</th>
-                    <th className="p-1 border font-semibold text-amber-900" rowSpan={2}>Sign</th>
-                  </tr>
-                  <tr className="bg-amber-50">
-                    {[...Array(5)].map((_, i) => (
-                      <React.Fragment key={i}>
-                        <th className="p-0.5 border text-xs">P</th>
-                        <th className="p-0.5 border text-xs">C</th>
-                      </React.Fragment>
-                    ))}
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-slate-900 text-white font-bold">
+                  <tr>
+                    <th className="p-3 border-b border-slate-800 min-w-[140px]">Faculty Name</th>
+                    <th className="p-3 border-b border-slate-800 text-center">FDPs Attended (P/C)</th>
+                    <th className="p-3 border-b border-slate-800 text-center">FDPs Organized (P/C)</th>
+                    <th className="p-3 border-b border-slate-800 text-center">NPTEL Certs (P/C)</th>
+                    <th className="p-3 border-b border-slate-800 text-center">Resource Person (P/C)</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr><td className="p-1 border font-semibold bg-gray-50">Faculty Name</td>
-                    {Array(10).fill(null).map((_, i) => <td key={i} className="p-0.5 border"></td>)}
-                    <td className="p-0.5 border"></td>
-                  </tr>
+                <tbody className="divide-y divide-slate-200 bg-white">
                   {reportData.facultyDev.map((faculty, idx) => (
-                    <tr key={idx}>
-                      <td className="p-1 border">
-                        <Input value={faculty.name} onChange={(e) => {
-                          const newF = [...reportData.facultyDev]
-                          newF[idx] = {...newF[idx], name: e.target.value}
-                          setReportData(p => ({...p, facultyDev: newF}))
-                        }} className="border-0 h-6 text-xs px-1" placeholder={'F' + idx + 1 + ''} />
+                    <tr key={idx} className="hover:bg-slate-50/50">
+                      <td className="p-2">
+                        <Input 
+                          value={faculty.name} 
+                          onChange={(e) => {
+                            const newF = [...reportData.facultyDev]
+                            newF[idx] = {...newF[idx], name: e.target.value}
+                            setReportData(p => ({...p, facultyDev: newF}))
+                          }} 
+                          className="h-9 text-xs rounded-lg border-slate-300" 
+                          placeholder={`Faculty ${idx + 1}`} 
+                        />
                       </td>
-                      <td className="p-0.5 border"><Input value={faculty.fdpsAttended.prev} onChange={(e) => updateFacultyDev(idx, 'fdpsAttended', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.fdpsAttended.curr} onChange={(e) => updateFacultyDev(idx, 'fdpsAttended', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.fdpsOrganized.prev} onChange={(e) => updateFacultyDev(idx, 'fdpsOrganized', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.fdpsOrganized.curr} onChange={(e) => updateFacultyDev(idx, 'fdpsOrganized', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.nptelCompleted.prev} onChange={(e) => updateFacultyDev(idx, 'nptelCompleted', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.nptelCompleted.curr} onChange={(e) => updateFacultyDev(idx, 'nptelCompleted', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.moocsCompleted.prev} onChange={(e) => updateFacultyDev(idx, 'moocsCompleted', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.moocsCompleted.curr} onChange={(e) => updateFacultyDev(idx, 'moocsCompleted', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.resourcePerson.prev} onChange={(e) => updateFacultyDev(idx, 'resourcePerson', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.resourcePerson.curr} onChange={(e) => updateFacultyDev(idx, 'resourcePerson', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"></td>
+                      <td className="p-2">
+                        <div className="flex gap-1">
+                          <Input value={faculty.fdpsAttended.prev} onChange={(e) => updateFacultyDev(idx, 'fdpsAttended', 'prev', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="P" />
+                          <Input value={faculty.fdpsAttended.curr} onChange={(e) => updateFacultyDev(idx, 'fdpsAttended', 'curr', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="C" />
+                        </div>
+                      </td>
+                      <td className="p-2">
+                        <div className="flex gap-1">
+                          <Input value={faculty.fdpsOrganized.prev} onChange={(e) => updateFacultyDev(idx, 'fdpsOrganized', 'prev', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="P" />
+                          <Input value={faculty.fdpsOrganized.curr} onChange={(e) => updateFacultyDev(idx, 'fdpsOrganized', 'curr', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="C" />
+                        </div>
+                      </td>
+                      <td className="p-2">
+                        <div className="flex gap-1">
+                          <Input value={faculty.nptelCompleted.prev} onChange={(e) => updateFacultyDev(idx, 'nptelCompleted', 'prev', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="P" />
+                          <Input value={faculty.nptelCompleted.curr} onChange={(e) => updateFacultyDev(idx, 'nptelCompleted', 'curr', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="C" />
+                        </div>
+                      </td>
+                      <td className="p-2">
+                        <div className="flex gap-1 items-center">
+                          <Input value={faculty.resourcePerson.prev} onChange={(e) => updateFacultyDev(idx, 'resourcePerson', 'prev', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="P" />
+                          <Input value={faculty.resourcePerson.curr} onChange={(e) => updateFacultyDev(idx, 'resourcePerson', 'curr', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="C" />
+                          <button 
+                            onClick={() => removeFacultyDevRow(idx)}
+                            className="p-1 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors shrink-0 ml-1"
+                            title="Delete faculty row"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            {/* Cumulative Faculty Development - Compact */}
-            <div className="mt-4">
-              <h4 className="font-semibold text-amber-800 mb-2 text-sm">Cumulative Faculty Contribution</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse border text-xs">
-                  <thead>
-                    <tr className="bg-amber-50">
-                      <th className="p-1 border font-semibold text-amber-900" rowSpan={2}>As on (Month), 2026</th>
-                      <th className="p-1 border font-semibold text-amber-900" colSpan={2}>FDPs Attended</th>
-                      <th className="p-1 border font-semibold text-amber-900" colSpan={2}>FDPs Organized</th>
-                      <th className="p-1 border font-semibold text-amber-900" colSpan={2}>NPTEL</th>
-                      <th className="p-1 border font-semibold text-amber-900" colSpan={2}>MOOCs</th>
-                      <th className="p-1 border font-semibold text-amber-900" colSpan={2}>Resource Person</th>
-                    </tr>
-                    <tr className="bg-amber-50">
-                      {[...Array(5)].map((_, i) => (
-                        <React.Fragment key={i}>
-                          <th className="p-0.5 border text-xs">Prev</th>
-                          <th className="p-0.5 border text-xs">Cum.</th>
-                        </React.Fragment>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="p-1 border font-medium bg-orange-50"></td>
-                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input className="border-0 h-6 w-12 text-center text-xs px-0" /></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+            <div className="flex justify-end pt-1">
+              <Button 
+                onClick={addFacultyDevRow}
+                variant="outline"
+                size="sm"
+                className="text-xs font-bold text-blue-600 border-blue-200 hover:bg-blue-50 gap-1.5 rounded-xl px-4 py-2"
+              >
+                <Plus className="w-4 h-4" /> Add Faculty Dev Row
+              </Button>
             </div>
           </div>
         )}
 
         {/* Section 6: E. Students Internship */}
         {activeSection === 6 && (
-          <div className="p-4 space-y-4">
-            <div className="bg-red-100 border border-red-300 rounded-t-lg p-2.5">
-              <h3 className="font-bold text-red-900 text-sm">E. STUDENTS INTERNSHIP</h3>
-              <p className="text-red-700 text-xs">(*Prev Months: Cumulative counting starts from 1st July)</p>
+          <div className="space-y-6">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Briefcase className="w-5 h-5 text-blue-600" />
+                E. Students Internship
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">Paid, non-paid, virtual, and unavailed internships</p>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border text-xs">
-                <thead>
-                  <tr className="bg-red-50">
-                    <th className="p-2 border font-semibold text-red-900" colSpan={2}>Internship Details</th>
-                    <th className="p-2 border font-semibold text-red-900 w-24">Paid</th>
-                    <th className="p-2 border font-semibold text-red-900 w-24">Non-Paid</th>
-                    <th className="p-2 border font-semibold text-red-900 w-24">Virtual</th>
-                    <th className="p-2 border font-semibold text-red-900 w-28">Not Availed</th>
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-slate-900 text-white font-bold">
+                  <tr>
+                    <th className="p-3 border-b border-slate-800">Period</th>
+                    <th className="p-3 border-b border-slate-800 text-center">Paid Internships</th>
+                    <th className="p-3 border-b border-slate-800 text-center">Non-Paid Internships</th>
+                    <th className="p-3 border-b border-slate-800 text-center">Virtual Internships</th>
+                    <th className="p-3 border-b border-slate-800 text-center">Not Availed</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-200 bg-white">
                   <tr>
-                    <td className="p-2 border font-medium bg-pink-50 colSpan={2} text-xs">Previous Months</td>
-                    <td className="p-2 border"><Input value={reportData.internship.previous.paid} onChange={(e) => updateInternship('previous', 'paid', e.target.value)} className="border-0 h-7 text-xs" /></td>
-                    <td className="p-2 border"><Input value={reportData.internship.previous.nonPaid} onChange={(e) => updateInternship('previous', 'nonPaid', e.target.value)} className="border-0 h-7 text-xs" /></td>
-                    <td className="p-2 border"><Input value={reportData.internship.previous.virtual} onChange={(e) => updateInternship('previous', 'virtual', e.target.value)} className="border-0 h-7 text-xs" /></td>
-                    <td className="p-2 border"><Input value={reportData.internship.previous.notAvailed} onChange={(e) => updateInternship('previous', 'notAvailed', e.target.value)} className="border-0 h-7 text-xs" /></td>
+                    <td className="p-3 font-semibold text-slate-800">Previous Months</td>
+                    <td className="p-2"><Input value={reportData.internship.previous.paid} onChange={(e) => updateInternship('previous', 'paid', e.target.value)} className="h-9 text-xs text-center rounded-lg border-slate-300" /></td>
+                    <td className="p-2"><Input value={reportData.internship.previous.nonPaid} onChange={(e) => updateInternship('previous', 'nonPaid', e.target.value)} className="h-9 text-xs text-center rounded-lg border-slate-300" /></td>
+                    <td className="p-2"><Input value={reportData.internship.previous.virtual} onChange={(e) => updateInternship('previous', 'virtual', e.target.value)} className="h-9 text-xs text-center rounded-lg border-slate-300" /></td>
+                    <td className="p-2"><Input value={reportData.internship.previous.notAvailed} onChange={(e) => updateInternship('previous', 'notAvailed', e.target.value)} className="h-9 text-xs text-center rounded-lg border-slate-300" /></td>
                   </tr>
                   <tr>
-                    <td className="p-2 border font-medium bg-blue-50 colSpan={2} text-xs">Current Month</td>
-                    <td className="p-2 border"><Input value={reportData.internship.current.paid} onChange={(e) => updateInternship('current', 'paid', e.target.value)} className="border-0 h-7 text-xs" /></td>
-                    <td className="p-2 border"><Input value={reportData.internship.current.nonPaid} onChange={(e) => updateInternship('current', 'nonPaid', e.target.value)} className="border-0 h-7 text-xs" /></td>
-                    <td className="p-2 border"><Input value={reportData.internship.current.virtual} onChange={(e) => updateInternship('current', 'virtual', e.target.value)} className="border-0 h-7 text-xs" /></td>
-                    <td className="p-2 border"><Input value={reportData.internship.current.notAvailed} onChange={(e) => updateInternship('current', 'notAvailed', e.target.value)} className="border-0 h-7 text-xs" /></td>
+                    <td className="p-3 font-semibold text-slate-800">Current Month</td>
+                    <td className="p-2"><Input value={reportData.internship.current.paid} onChange={(e) => updateInternship('current', 'paid', e.target.value)} className="h-9 text-xs text-center rounded-lg border-slate-300" /></td>
+                    <td className="p-2"><Input value={reportData.internship.current.nonPaid} onChange={(e) => updateInternship('current', 'nonPaid', e.target.value)} className="h-9 text-xs text-center rounded-lg border-slate-300" /></td>
+                    <td className="p-2"><Input value={reportData.internship.current.virtual} onChange={(e) => updateInternship('current', 'virtual', e.target.value)} className="h-9 text-xs text-center rounded-lg border-slate-300" /></td>
+                    <td className="p-2"><Input value={reportData.internship.current.notAvailed} onChange={(e) => updateInternship('current', 'notAvailed', e.target.value)} className="h-9 text-xs text-center rounded-lg border-slate-300" /></td>
                   </tr>
-                  <tr>
-                    <td className="p-2 border font-bold bg-green-50 colSpan={2} text-xs">Total (Cumulative)</td>
-                    <td className="p-2 border bg-green-50"><Input value={reportData.internship.total.paid} onChange={(e) => updateInternship('total', 'paid', e.target.value)} className="border-0 bg-transparent font-semibold h-7 text-xs" /></td>
-                    <td className="p-2 border bg-green-50"><Input value={reportData.internship.total.nonPaid} onChange={(e) => updateInternship('total', 'nonPaid', e.target.value)} className="border-0 bg-transparent font-semibold h-7 text-xs" /></td>
-                    <td className="p-2 border bg-green-50"><Input value={reportData.internship.total.virtual} onChange={(e) => updateInternship('total', 'virtual', e.target.value)} className="border-0 bg-transparent font-semibold h-7 text-xs" /></td>
-                    <td className="p-2 border bg-green-50"><Input value={reportData.internship.total.notAvailed} onChange={(e) => updateInternship('total', 'notAvailed', e.target.value)} className="border-0 bg-transparent font-semibold h-7 text-xs" /></td>
+                  <tr className="bg-slate-50 font-bold">
+                    <td className="p-3 text-slate-900">Total (Cumulative)</td>
+                    <td className="p-2"><Input value={reportData.internship.total.paid} onChange={(e) => updateInternship('total', 'paid', e.target.value)} className="h-9 text-xs text-center font-bold bg-white rounded-lg border-slate-300" /></td>
+                    <td className="p-2"><Input value={reportData.internship.total.nonPaid} onChange={(e) => updateInternship('total', 'nonPaid', e.target.value)} className="h-9 text-xs text-center font-bold bg-white rounded-lg border-slate-300" /></td>
+                    <td className="p-2"><Input value={reportData.internship.total.virtual} onChange={(e) => updateInternship('total', 'virtual', e.target.value)} className="h-9 text-xs text-center font-bold bg-white rounded-lg border-slate-300" /></td>
+                    <td className="p-2"><Input value={reportData.internship.total.notAvailed} onChange={(e) => updateInternship('total', 'notAvailed', e.target.value)} className="h-9 text-xs text-center font-bold bg-white rounded-lg border-slate-300" /></td>
                   </tr>
+
+                  {/* DYNAMIC CUSTOM INTERNSHIP ROWS */}
+                  {reportData.customInternshipRows && reportData.customInternshipRows.length > 0 && (
+                    reportData.customInternshipRows.map((row) => (
+                      <tr key={row.id} className="bg-blue-50/40">
+                        <td className="p-2">
+                          <Input 
+                            value={row.period} 
+                            onChange={(e) => updateCustomInternshipRow(row.id, 'period', e.target.value)}
+                            className="h-9 text-xs rounded-lg border-blue-300 font-semibold bg-white"
+                            placeholder="Enter custom period / category..."
+                          />
+                        </td>
+                        <td className="p-2"><Input value={row.paid} onChange={(e) => updateCustomInternshipRow(row.id, 'paid', e.target.value)} className="h-9 text-xs text-center rounded-lg border-blue-300 bg-white" placeholder="Paid" /></td>
+                        <td className="p-2"><Input value={row.nonPaid} onChange={(e) => updateCustomInternshipRow(row.id, 'nonPaid', e.target.value)} className="h-9 text-xs text-center rounded-lg border-blue-300 bg-white" placeholder="Non-Paid" /></td>
+                        <td className="p-2"><Input value={row.virtual} onChange={(e) => updateCustomInternshipRow(row.id, 'virtual', e.target.value)} className="h-9 text-xs text-center rounded-lg border-blue-300 bg-white" placeholder="Virtual" /></td>
+                        <td className="p-2">
+                          <div className="flex items-center gap-2">
+                            <Input value={row.notAvailed} onChange={(e) => updateCustomInternshipRow(row.id, 'notAvailed', e.target.value)} className="h-9 text-xs text-center rounded-lg border-blue-300 bg-white flex-1" placeholder="Not Availed" />
+                            <button 
+                              onClick={() => removeCustomInternshipRow(row.id)}
+                              className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors shrink-0"
+                              title="Delete custom row"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <Button 
+                onClick={addCustomInternshipRow}
+                variant="outline"
+                size="sm"
+                className="text-xs font-bold text-blue-600 border-blue-200 hover:bg-blue-50 gap-1.5 rounded-xl px-4 py-2"
+              >
+                <Plus className="w-4 h-4" /> Add Custom Internship Row
+              </Button>
             </div>
           </div>
         )}
 
-        {/* Section 7: F. Faculty-Industry Interaction */}
+        {/* Section 7: F. Industry Interaction */}
         {activeSection === 7 && (
-          <div className="p-4 space-y-4">
-            <div className="bg-cyan-100 border border-cyan-300 rounded-t-lg p-2.5">
-              <h3 className="font-bold text-cyan-900 text-sm">F. FACULTY - INDUSTRY INTERACTION</h3>
-              <p className="text-cyan-700 text-xs">(*Prev months: Cumulative counting starts from 1st July)</p>
+          <div className="space-y-6">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-blue-600" />
+                F. Faculty - Industry Interaction
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">MoUs signed, industry visits, invited experts, collaborative activities, and consultancy</p>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border text-xs">
-                <thead>
-                  <tr className="bg-cyan-50">
-                    <th className="p-1 border font-semibold text-cyan-900" rowSpan={2}>Faculty Name</th>
-                    <th className="p-1 border font-semibold text-cyan-900" colSpan={2}>MoUs</th>
-                    <th className="p-1 border font-semibold text-cyan-900" colSpan={2}>Ind. Visits</th>
-                    <th className="p-1 border font-semibold text-cyan-900" colSpan={2}>Experts Inv.</th>
-                    <th className="p-1 border font-semibold text-cyan-900" colSpan={2}>Collab. Act.</th>
-                    <th className="p-1 border font-semibold text-cyan-900" colSpan={2}>Consultancy</th>
-                  </tr>
-                  <tr className="bg-cyan-50">
-                    {[...Array(5)].map((_, i) => (
-                      <React.Fragment key={i}>
-                        <th className="p-0.5 border text-xs">P</th>
-                        <th className="p-0.5 border text-xs">C</th>
-                      </React.Fragment>
-                    ))}
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-slate-900 text-white font-bold">
+                  <tr>
+                    <th className="p-3 border-b border-slate-800 min-w-[140px]">Faculty Name</th>
+                    <th className="p-3 border-b border-slate-800 text-center">MoUs (P/C)</th>
+                    <th className="p-3 border-b border-slate-800 text-center">Ind. Visits (P/C)</th>
+                    <th className="p-3 border-b border-slate-800 text-center">Experts Inv. (P/C)</th>
+                    <th className="p-3 border-b border-slate-800 text-center">Consultancy (P/C)</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-200 bg-white">
                   {reportData.industryInteraction.map((faculty, idx) => (
-                    <tr key={idx}>
-                      <td className="p-1 border">
-                        <Input value={faculty.name} onChange={(e) => {
-                          const newData = [...reportData.industryInteraction]
-                          newData[idx] = {...newData[idx], name: e.target.value}
-                          setReportData(p => ({...p, industryInteraction: newData}))
-                        }} className="border-0 h-6 text-xs px-1" placeholder={'F' + idx + 1 + ''} />
+                    <tr key={idx} className="hover:bg-slate-50/50">
+                      <td className="p-2">
+                        <Input 
+                          value={faculty.name} 
+                          onChange={(e) => {
+                            const newData = [...reportData.industryInteraction]
+                            newData[idx] = {...newData[idx], name: e.target.value}
+                            setReportData(p => ({...p, industryInteraction: newData}))
+                          }} 
+                          className="h-9 text-xs rounded-lg border-slate-300" 
+                          placeholder={`Faculty ${idx + 1}`} 
+                        />
                       </td>
-                      <td className="p-0.5 border"><Input value={faculty.mousSigned.prev} onChange={(e) => updateIndustryInteraction(idx, 'mousSigned', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.mousSigned.curr} onChange={(e) => updateIndustryInteraction(idx, 'mousSigned', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.industryVisits.prev} onChange={(e) => updateIndustryInteraction(idx, 'industryVisits', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.industryVisits.curr} onChange={(e) => updateIndustryInteraction(idx, 'industryVisits', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.expertsInvited.prev} onChange={(e) => updateIndustryInteraction(idx, 'expertsInvited', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.expertsInvited.curr} onChange={(e) => updateIndustryInteraction(idx, 'expertsInvited', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.collaborativeActivities.prev} onChange={(e) => updateIndustryInteraction(idx, 'collaborativeActivities', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.collaborativeActivities.curr} onChange={(e) => updateIndustryInteraction(idx, 'collaborativeActivities', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.consultancyServices.prev} onChange={(e) => updateIndustryInteraction(idx, 'consultancyServices', 'prev', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
-                      <td className="p-0.5 border"><Input value={faculty.consultancyServices.curr} onChange={(e) => updateIndustryInteraction(idx, 'consultancyServices', 'curr', e.target.value)} className="border-0 h-6 w-10 text-center text-xs px-0" /></td>
+                      <td className="p-2">
+                        <div className="flex gap-1">
+                          <Input value={faculty.mousSigned.prev} onChange={(e) => updateIndustryInteraction(idx, 'mousSigned', 'prev', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="P" />
+                          <Input value={faculty.mousSigned.curr} onChange={(e) => updateIndustryInteraction(idx, 'mousSigned', 'curr', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="C" />
+                        </div>
+                      </td>
+                      <td className="p-2">
+                        <div className="flex gap-1">
+                          <Input value={faculty.industryVisits.prev} onChange={(e) => updateIndustryInteraction(idx, 'industryVisits', 'prev', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="P" />
+                          <Input value={faculty.industryVisits.curr} onChange={(e) => updateIndustryInteraction(idx, 'industryVisits', 'curr', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="C" />
+                        </div>
+                      </td>
+                      <td className="p-2">
+                        <div className="flex gap-1">
+                          <Input value={faculty.expertsInvited.prev} onChange={(e) => updateIndustryInteraction(idx, 'expertsInvited', 'prev', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="P" />
+                          <Input value={faculty.expertsInvited.curr} onChange={(e) => updateIndustryInteraction(idx, 'expertsInvited', 'curr', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="C" />
+                        </div>
+                      </td>
+                      <td className="p-2">
+                        <div className="flex gap-1 items-center">
+                          <Input value={faculty.consultancyServices.prev} onChange={(e) => updateIndustryInteraction(idx, 'consultancyServices', 'prev', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="P" />
+                          <Input value={faculty.consultancyServices.curr} onChange={(e) => updateIndustryInteraction(idx, 'consultancyServices', 'curr', e.target.value)} className="h-9 text-xs text-center border-slate-300" placeholder="C" />
+                          <button 
+                            onClick={() => removeIndustryInteractionRow(idx)}
+                            className="p-1 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors shrink-0 ml-1"
+                            title="Delete faculty row"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
-                  <tr>
-                    <td className="p-1 border font-bold bg-green-50 text-xs">As on _____, 20...</td>
-                    {[...Array(10)].map((_, i) => <td key={i} className="p-0.5 border bg-green-50"></td>)}
-                  </tr>
                 </tbody>
               </table>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <Button 
+                onClick={addIndustryInteractionRow}
+                variant="outline"
+                size="sm"
+                className="text-xs font-bold text-blue-600 border-blue-200 hover:bg-blue-50 gap-1.5 rounded-xl px-4 py-2"
+              >
+                <Plus className="w-4 h-4" /> Add Industry Interaction Row
+              </Button>
             </div>
           </div>
         )}
 
         {/* Section 8: G. Quality Assurance Activities */}
         {activeSection === 8 && (
-          <div className="p-4 space-y-4">
-            <div className="bg-lime-100 border border-lime-300 rounded-t-lg p-2.5">
-              <h3 className="font-bold text-lime-900 text-sm">G. QUALITY ASSURANCE ACTIVITIES</h3>
-              <p className="text-lime-700 text-xs">(Documents and supporting evidence shall be maintained for Academic Audit)</p>
+          <div className="space-y-6">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-blue-600" />
+                G. Quality Assurance Activities
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">Documents and supporting evidence maintained for Academic Audit</p>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border text-xs">
-                <thead>
-                  <tr className="bg-lime-50">
-                    <th className="p-2 border font-semibold text-lime-900">Particulars</th>
-                    <th className="p-2 border font-semibold text-lime-900 w-32">Status</th>
-                    <th className="p-2 border font-semibold text-lime-900 w-40">Remarks</th>
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-slate-900 text-white font-bold">
+                  <tr>
+                    <th className="p-3 border-b border-slate-800">Quality Particulars</th>
+                    <th className="p-3 border-b border-slate-800 w-48 text-center">Execution Status</th>
+                    <th className="p-3 border-b border-slate-800">Remarks / Remarks Details</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-200 bg-white">
                   {reportData.qaActivities.map((item, idx) => (
-                    <tr key={idx}>
-                      <td className="p-2 border font-medium text-xs">{item.particular}</td>
-                      <td className="p-2 border">
+                    <tr key={idx} className="hover:bg-slate-50/50">
+                      <td className="p-2">
+                        <Input 
+                          value={item.particular} 
+                          onChange={(e) => updateQAActivity(idx, 'particular', e.target.value)}
+                          className="h-9 text-xs font-semibold text-slate-800 rounded-lg border-slate-300"
+                          placeholder="Enter quality particular name..."
+                        />
+                      </td>
+                      <td className="p-2">
                         <Input 
                           value={item.status} 
                           onChange={(e) => updateQAActivity(idx, 'status', e.target.value)}
-                          className="border-0 h-7 text-xs"
+                          className="h-9 text-xs text-center rounded-lg border-slate-300"
+                          placeholder="Status"
                         />
                       </td>
-                      <td className="p-2 border">
-                        <Input 
-                          value={item.remarks} 
-                          onChange={(e) => updateQAActivity(idx, 'remarks', e.target.value)}
-                          className="border-0 h-7 text-xs"
-                          placeholder="Add remarks..."
-                        />
+                      <td className="p-2">
+                        <div className="flex items-center gap-2">
+                          <Input 
+                            value={item.remarks} 
+                            onChange={(e) => updateQAActivity(idx, 'remarks', e.target.value)}
+                            className="h-9 text-xs rounded-lg border-slate-300 flex-1"
+                            placeholder="Enter audit remarks..."
+                          />
+                          <button 
+                            onClick={() => removeQARow(idx)}
+                            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors shrink-0"
+                            title="Delete quality row"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+
+            <div className="flex justify-end pt-1">
+              <Button 
+                onClick={addQARow}
+                variant="outline"
+                size="sm"
+                className="text-xs font-bold text-blue-600 border-blue-200 hover:bg-blue-50 gap-1.5 rounded-xl px-4 py-2"
+              >
+                <Plus className="w-4 h-4" /> Add Quality Particulars Row
+              </Button>
+            </div>
           </div>
         )}
 
-        {/* Section 9: H. Documents to be Attached */}
+        {/* Section 9: H. Documents Checklist & Signatures */}
         {activeSection === 9 && (
-          <div className="p-4 space-y-4">
-            <div className="bg-indigo-100 border border-indigo-300 rounded-t-lg p-2.5">
-              <h3 className="font-bold text-indigo-900 text-sm">H. DOCUMENTS TO BE ATTACHED</h3>
+          <div className="space-y-6">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-blue-600" />
+                H. Documents Checklist & Signatures
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">Attached verification documents and official approval sign-offs</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
                 { key: 'eventReports', label: 'Event Reports' },
                 { key: 'workshopCertificates', label: 'Workshop / FDP / Conference Certificates' },
@@ -12728,62 +13708,160 @@ function HODReportGeneratorPage({ user }: { user: User }) {
                 { key: 'sdgExtensionReports', label: 'SDG / Extension Activity Reports' },
                 { key: 'mouIndustryDocuments', label: 'MoU / Industry Interaction Documents' }
               ].map((doc) => (
-                <label key={doc.key} className="flex items-center gap-2 p-2.5 border rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
+                <label key={doc.key} className="flex items-center gap-3 p-3.5 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors select-none">
                   <input 
                     type="checkbox" 
                     checked={reportData.documents[doc.key as keyof typeof reportData.documents]}
                     onChange={(e) => updateDocuments(doc.key, e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 accent-blue-600"
                   />
-                  <span className="text-xs text-gray-700">{doc.label}</span>
+                  <span className="text-xs font-semibold text-slate-800">{doc.label}</span>
                 </label>
               ))}
             </div>
 
-            {/* Signature Section - Compact */}
-            <div className="mt-4 pt-4 border-t">
-              <h4 className="font-semibold text-gray-900 mb-3 text-sm">Approval Signatures</h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                {['HoD', 'School Dean', 'Head-IQAC', 'Vice-Principal', 'Principal'].map((role) => (
-                  <div key={role} className="text-center p-2 border rounded-md">
-                    <div className="h-12 border-b-2 border-dashed mb-1 flex items-end justify-center">
-                      <span className="text-xs text-gray-400">Signature</span>
-                    </div>
-                    <p className="font-semibold text-xs text-gray-900">{role}</p>
-                    <p className="text-xs text-gray-500">Date: ___</p>
-                  </div>
-                ))}
+            {/* Approval Signatures with Image Upload & Fix */}
+            <div className="pt-4 border-t border-slate-200 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">Official Approval Signatures</h4>
+                  <p className="text-xs text-slate-500 mt-0.5">Upload signature images to automatically affix onto generated PDF and DOCX reports</p>
+                </div>
               </div>
-            </div>
 
-            {/* Copy Submitted To - Compact */}
-            <div className="mt-4 p-3 bg-gray-50 rounded-md">
-              <h4 className="font-semibold text-gray-900 mb-2 text-sm">Copy submitted to</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="flex items-start gap-2">
-                  <span className="font-medium text-xs">1.</span>
-                  <div>
-                    <p className="font-medium text-xs">AO / HR / Principal office</p>
-                    <div className="flex gap-3 mt-0.5 text-xs text-gray-600">
-                      <span>Submitted on: ___</span>
-                      <span>Received by: ___</span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                {[
+                  { key: 'hod', role: 'HoD' },
+                  { key: 'dean', role: 'School Dean' },
+                  { key: 'iqac', role: 'Head-IQAC' },
+                  { key: 'vicePrincipal', role: 'Vice-Principal' },
+                  { key: 'principal', role: 'Principal' }
+                ].map(({ key, role }) => {
+                  const sigData = reportData.signatures?.[key]
+                  return (
+                    <div key={key} className="text-center p-3.5 border border-slate-200 rounded-2xl bg-white shadow-sm hover:shadow-md transition-all flex flex-col justify-between h-48">
+                      
+                      {/* Signature Display / Upload Dropzone Box */}
+                      <div className="flex-1 h-24 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 mb-2 flex items-center justify-center p-2 relative group overflow-hidden">
+                        {sigData ? (
+                          <div className="relative w-full h-full flex items-center justify-center">
+                            <img 
+                              src={sigData} 
+                              alt={`${role} Signature`} 
+                              className="max-h-full max-w-full object-contain mix-blend-multiply drop-shadow-sm" 
+                            />
+                            <button
+                              onClick={() => removeSignature(key)}
+                              className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-red-600"
+                              title="Remove signature image"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="cursor-pointer flex flex-col items-center justify-center w-full h-full text-slate-400 hover:text-blue-600 transition-colors p-1 text-center">
+                            <Upload className="w-5 h-5 mb-1 text-slate-400" />
+                            <span className="text-[10px] font-bold">Import Signature</span>
+                            <span className="text-[9px] text-slate-400">PNG / JPG / WEBP</span>
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              onChange={(e) => e.target.files?.[0] && handleSignatureUpload(key, e.target.files[0])} 
+                              className="hidden" 
+                            />
+                          </label>
+                        )}
+                      </div>
+
+                      <div>
+                        <p className="font-bold text-xs text-slate-900">{role}</p>
+                        <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1 pt-1 border-t border-slate-100">
+                          <span>Date: {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                          {sigData && (
+                            <label className="text-blue-600 hover:underline cursor-pointer font-semibold">
+                              Change
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                onChange={(e) => e.target.files?.[0] && handleSignatureUpload(key, e.target.files[0])} 
+                                className="hidden" 
+                              />
+                            </label>
+                          )}
+                        </div>
+                      </div>
+
                     </div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="font-medium text-xs">2.</span>
-                  <div>
-                    <p className="font-medium text-xs">IQAC</p>
-                    <div className="flex gap-3 mt-0.5 text-xs text-gray-600">
-                      <span>Submitted on: ___</span>
-                      <span>Received by: ___</span>
-                    </div>
-                  </div>
-                </div>
+                  )
+                })}
               </div>
             </div>
           </div>
         )}
+
+        {/* BOTTOM NAVIGATION & ACTION BAR */}
+        <div className="pt-6 mt-8 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+          {/* Previous Button */}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setActiveSection(prev => Math.max(0, prev - 1))
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
+            disabled={activeSection === 0}
+            className="text-xs font-bold gap-2 px-5 py-2.5 rounded-xl border-slate-300 hover:bg-slate-100 disabled:opacity-40"
+          >
+            <ChevronLeft className="w-4 h-4" /> Previous
+          </Button>
+
+          {/* Center Save Draft Button */}
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleSaveDraft}
+              className="text-xs font-bold gap-2 px-5 py-2.5 rounded-xl border-blue-200 text-blue-700 bg-blue-50/50 hover:bg-blue-100 transition-all"
+            >
+              {saveSuccess ? (
+                <>
+                  <CheckCircle className="w-4 h-4 text-emerald-600" />
+                  <span className="text-emerald-700 font-bold">Draft Saved!</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 text-blue-600" />
+                  Save Draft
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Next / Finish Button */}
+          {activeSection < 9 ? (
+            <Button
+              type="button"
+              onClick={() => {
+                setActiveSection(prev => Math.min(9, prev + 1))
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
+              className="text-xs font-bold gap-2 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-blue-200 transition-all"
+            >
+              Next <ChevronRight className="w-4 h-4" />
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              onClick={generateReport}
+              disabled={generating}
+              className="text-xs font-bold gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-emerald-200 transition-all"
+            >
+              {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              Export PDF Report
+            </Button>
+          )}
+        </div>
+
       </div>
     </div>
   )
@@ -12801,7 +13879,7 @@ function AnalyticsPage() {
         <StatCard title="Placement Rate" value="92%" icon={TrendingUp} color="green" trend="+5% from last year" />
         <StatCard title="Pass Percentage" value="94%" icon={CheckCircle} color="blue" />
         <StatCard title="Industry Connect" value="45" icon={HeartHandshake} color="purple" />
-        <StatCell title="Accreditation Score" value="A+" icon={Star} color="orange" />
+        <StatCell title="Accreditation Score" value="A+" icon={Star} color="amber" />
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -12814,8 +13892,8 @@ function AnalyticsPage() {
               { dept: 'CSE', result: 92, color: 'from-blue-500 to-blue-600' },
               { dept: 'ECE', result: 89, color: 'from-purple-500 to-purple-600' },
               { dept: 'EEE', result: 87, color: 'from-green-500 to-green-600' },
-              { dept: 'MECH', result: 91, color: 'from-orange-500 to-orange-600' },
-              { dept: 'CIVIL', result: 85, color: 'from-pink-500 to-pink-600' },
+              { dept: 'MECH', result: 91, color: 'from-amber-500 to-amber-600' },
+              { dept: 'CSBS', result: 88, color: 'from-sky-500 to-sky-600' },
             ].map(item => (
               <div key={item.dept}>
                 <div className="flex justify-between text-sm mb-1">
@@ -12839,7 +13917,7 @@ function AnalyticsPage() {
               { label: 'Workshops', value: 35, color: 'bg-blue-500' },
               { label: 'Seminars', value: 28, color: 'bg-purple-500' },
               { label: 'FDPs', value: 18, color: 'bg-green-500' },
-              { label: 'Events', value: 19, color: 'bg-orange-500' },
+              { label: 'Events', value: 19, color: 'bg-amber-500' },
             ].map(item => (
               <div key={item.label} className="p-4 rounded-xl bg-gray-50">
                 <p className="text-2xl font-bold text-gray-900">{item.value}%</p>
@@ -12914,7 +13992,7 @@ function AdminAchievementsPage() {
 
   const getAchievementColor = (type: string) => {
     switch (type) {
-      case 'award': return 'from-amber-500 to-orange-500'
+      case 'award': return 'from-amber-500 to-amber-600'
       case 'certification': return 'from-green-500 to-emerald-500'
       case 'patent': return 'from-purple-500 to-violet-500'
       case 'research': return 'from-blue-500 to-cyan-500'
@@ -12991,7 +14069,7 @@ function AdminAchievementsPage() {
           <Card className={'p-4 border-2 cursor-pointer transition-all ' + activeFilter === 'all' ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-amber-300' + ''}
                 onClick={() => setActiveFilter('all')}>
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600">
                 <Star className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -13691,8 +14769,322 @@ function AdminAnalyticsPage() {
   )
 }
 
+// ============ AUTOMATIC MONTHLY REPORTING & PERIOD LOCK WIDGET ============
+function PeriodLockHistoryWidget({ user }: { user?: User }) {
+  const [history, setHistory] = useState<ReportingPeriod[]>([])
+  const [showAdminModal, setShowAdminModal] = useState(false)
+  const [reopenTarget, setReopenTarget] = useState<ReportingPeriod | null>(null)
+  const [reopenReason, setReopenReason] = useState('')
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([])
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [notification, setNotification] = useState<string | null>(null)
+
+  const currentMonthInfo = getCurrentServerDate()
+  const prevMonthInfo = getPreviousServerMonth()
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'
+
+  const refreshData = () => {
+    setHistory(getMonthlyReportingHistory(6))
+    setAuditLogs(getAuditLogs())
+  }
+
+  useEffect(() => {
+    refreshData()
+  }, [])
+
+  const handleOpenReopenModal = (period: ReportingPeriod) => {
+    setReopenTarget(period)
+    setReopenReason('')
+    setShowConfirmDialog(true)
+  }
+
+  const confirmReopenPeriod = () => {
+    if (!reopenTarget || !user) return
+    reopenReportingPeriod(
+      reopenTarget.year, 
+      reopenTarget.month, 
+      { name: user.name || 'Admin User', email: user.email || 'admin@niet.edu', role: user.role || 'ADMIN' },
+      reopenReason || 'Correction requested by IQAC'
+    )
+    setShowConfirmDialog(false)
+    setReopenTarget(null)
+    setReopenReason('')
+    setNotification(`Period ${reopenTarget.monthLabel} successfully reopened!`)
+    setTimeout(() => setNotification(null), 3500)
+    refreshData()
+  }
+
+  const handleClosePeriod = (period: ReportingPeriod) => {
+    if (!user) return
+    closeReportingPeriod(
+      period.year,
+      period.month,
+      { name: user.name || 'Admin User', email: user.email || 'admin@niet.edu', role: user.role || 'ADMIN' },
+      'Manual lock closure'
+    )
+    setNotification(`Period ${period.monthLabel} locked!`)
+    setTimeout(() => setNotification(null), 3500)
+    refreshData()
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-xs">
+      {/* Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 p-4.5 rounded-xl text-white shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300 shrink-0">
+            <Lock className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-blue-300">Automatic Monthly Reporting Cycle</span>
+              <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[10px] px-2 py-0.5">ACTIVE</Badge>
+            </div>
+            <p className="text-sm font-semibold text-slate-100 mt-0.5">
+              Current: <span className="text-emerald-400 font-bold">{currentMonthInfo.monthName} {currentMonthInfo.year} (OPEN 🔓)</span> • Default Report: <span className="text-amber-300 font-bold">{prevMonthInfo.monthName} {prevMonthInfo.year} (CLOSED 🔒)</span>
+            </p>
+          </div>
+        </div>
+
+        {isAdmin && (
+          <Button 
+            onClick={() => setShowAdminModal(true)} 
+            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 shrink-0 shadow-sm"
+          >
+            <Shield className="w-4 h-4" />
+            Manage Period Locks & Audit Log
+          </Button>
+        )}
+      </div>
+
+      {notification && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl text-xs font-semibold flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+          {notification}
+        </div>
+      )}
+
+      {/* Monthly Report History Table */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+            <CalendarDays className="w-4 h-4 text-blue-600" />
+            Monthly Reporting History
+          </h4>
+          <span className="text-xs text-slate-500 font-medium">Previous month automatically closes on 1st of every month</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          {history.map((period) => (
+            <div 
+              key={`${period.year}-${period.month}`}
+              className={`p-3.5 rounded-xl border transition-all ${
+                period.status === 'OPEN' 
+                  ? 'bg-emerald-50/50 border-emerald-200 shadow-xs' 
+                  : 'bg-slate-50/70 border-slate-200'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-slate-900">{period.monthLabel}</span>
+                <Badge className={
+                  period.status === 'OPEN' 
+                    ? 'bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px]' 
+                    : 'bg-slate-200 text-slate-700 border-slate-300 text-[10px]'
+                }>
+                  {period.status === 'OPEN' ? 'OPEN 🔓' : 'CLOSED 🔒'}
+                </Badge>
+              </div>
+
+              <div className="mt-2 text-[11px] text-slate-500">
+                {period.isCurrentMonth ? (
+                  <span className="text-emerald-600 font-semibold">Current Month • Data Entry Open</span>
+                ) : period.isPreviousMonth ? (
+                  <span className="text-amber-700 font-semibold">Previous Month • Default Report</span>
+                ) : period.isReopenedByAdmin ? (
+                  <span className="text-indigo-600 font-semibold">Reopened by Admin Override</span>
+                ) : (
+                  <span className="text-slate-400">Finalized & Locked</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Admin Modal & Audit Log */}
+      {showAdminModal && isAdmin && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden shadow-2xl border border-slate-200 flex flex-col">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
+              <div className="flex items-center gap-2.5">
+                <Shield className="w-5 h-5 text-indigo-400" />
+                <div>
+                  <h3 className="font-bold text-base">Period Lock Control & Audit Log</h3>
+                  <p className="text-xs text-slate-400">Admin override for monthly reporting cycles</p>
+                </div>
+              </div>
+              <button onClick={() => setShowAdminModal(false)} className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-6 flex-1">
+              {/* Period Management Table */}
+              <div>
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3">Reporting Period Statuses</h4>
+                <div className="border border-slate-200 rounded-xl overflow-hidden">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+                      <tr>
+                        <th className="p-3">Period</th>
+                        <th className="p-3">Status</th>
+                        <th className="p-3">Access Level</th>
+                        <th className="p-3 text-right">Admin Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {history.map((period) => (
+                        <tr key={`${period.year}-${period.month}`} className="hover:bg-slate-50">
+                          <td className="p-3 font-semibold text-slate-800">
+                            {period.monthLabel}
+                            {period.isCurrentMonth && <span className="ml-2 text-[10px] text-emerald-600 font-bold">(Current)</span>}
+                            {period.isPreviousMonth && <span className="ml-2 text-[10px] text-amber-600 font-bold">(Previous)</span>}
+                          </td>
+                          <td className="p-3">
+                            <Badge className={period.status === 'OPEN' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}>
+                              {period.status === 'OPEN' ? 'OPEN 🔓' : 'CLOSED 🔒'}
+                            </Badge>
+                          </td>
+                          <td className="p-3 text-slate-500">
+                            {period.status === 'OPEN' ? 'Editable by Student/Staff/HOD' : 'Read-Only for Student/Staff/HOD'}
+                          </td>
+                          <td className="p-3 text-right">
+                            {period.isCurrentMonth ? (
+                              <span className="text-slate-400 font-medium">Auto-Open</span>
+                            ) : period.status === 'CLOSED' ? (
+                              <Button 
+                                size="sm" 
+                                onClick={() => handleOpenReopenModal(period)}
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] h-7 px-3 rounded-lg"
+                              >
+                                Reopen Period
+                              </Button>
+                            ) : (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleClosePeriod(period)}
+                                className="border-slate-300 text-slate-700 hover:bg-slate-100 text-[11px] h-7 px-3 rounded-lg"
+                              >
+                                Lock Period
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Audit Log Table */}
+              <div>
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3">Period Lock Audit Log</h4>
+                <div className="border border-slate-200 rounded-xl overflow-hidden max-h-56 overflow-y-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200 sticky top-0">
+                      <tr>
+                        <th className="p-2.5">Date & Time</th>
+                        <th className="p-2.5">User</th>
+                        <th className="p-2.5">Action</th>
+                        <th className="p-2.5">Period</th>
+                        <th className="p-2.5">Reason</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {auditLogs.map((log) => (
+                        <tr key={log.id} className="hover:bg-slate-50">
+                          <td className="p-2.5 text-slate-500">{log.date} {log.time}</td>
+                          <td className="p-2.5 font-medium text-slate-800">{log.user} ({log.role})</td>
+                          <td className="p-2.5">
+                            <Badge className={log.action === 'REOPEN_PERIOD' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'}>
+                              {log.action === 'REOPEN_PERIOD' ? 'Reopened' : 'Closed'}
+                            </Badge>
+                          </td>
+                          <td className="p-2.5 font-semibold text-slate-700">{log.reportingMonth}</td>
+                          <td className="p-2.5 text-slate-600 italic truncate max-w-xs">{log.reason}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+              <Button onClick={() => setShowAdminModal(false)} className="bg-slate-800 hover:bg-slate-900 text-white text-xs px-5 rounded-lg">
+                Close Panel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog for Reopening Period */}
+      {showConfirmDialog && reopenTarget && (
+        <div className="fixed inset-0 z-60 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center gap-3 text-amber-600">
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+              </div>
+              <h3 className="font-bold text-base text-slate-900">Reopen Reporting Period?</h3>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 leading-relaxed">
+              Reopening <strong>{reopenTarget.monthLabel}</strong> will allow authorized users to modify previously finalized data. Continue?
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Reason for Reopening <span className="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                placeholder="e.g. Correction requested by IQAC"
+                value={reopenReason}
+                onChange={(e) => setReopenReason(e.target.value)}
+                className="w-full text-xs p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowConfirmDialog(false)} 
+                className="text-xs px-4 border-slate-300 text-slate-700"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={confirmReopenPeriod} 
+                className="text-xs px-5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-sm"
+              >
+                Confirm & Reopen
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ============ ENTERPRISE REPORT GENERATOR PAGE ============
-function ReportGeneratorPage() {
+function ReportGeneratorPage({ user, initialView }: { user?: User; initialView?: 'institutional' | 'hod_report' | 'achievement_generator' }) {
+  const [mainReportView, setMainReportView] = useState<'institutional' | 'hod_report' | 'achievement_generator'>(
+    initialView || (user?.role === 'STAFF' ? 'achievement_generator' : user?.role === 'HOD' ? 'hod_report' : 'institutional')
+  )
   // State for advanced filters
   const [generating, setGenerating] = useState(false)
   const [downloading, setDownloading] = useState(false)
@@ -13708,7 +15100,7 @@ function ReportGeneratorPage() {
     'Artificial Intelligence & Data Science',
     'AI&DS',
     'AI & DS',
-    'Cyber Security',
+    'Computer Science and Business Systems',
     'CSBS',
     'Computer Science and Engineering',
     'CSE',
@@ -14176,7 +15568,7 @@ function ReportGeneratorPage() {
     csv += '                              END OF REPORT\n'
     csv += '=============================================================================\n\n'
     csv += 'Report Generated By:,NIET IQAC Automated Reporting System\n'
-    csv += 'System Version:,IQAC Portal v2.0 Enterprise Edition\n'
+    csv += 'System Version:,IQAC Portal v2.0 Edition\n'
     csv += 'Data Source:,Centralized Database - Real-time Extraction\n'
     csv += 'Verification Status:,Data Verified by IQAC Coordinator\n'
     csv += 'Confidentiality:,Official Use Only - For Higher Authority Submission\n'
@@ -14218,42 +15610,79 @@ function ReportGeneratorPage() {
 
   return (
     <div className="space-y-6 min-h-screen">
-      {/* Premium Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0A2E6D] via-[#1a4a9e] to-[#D4AF37] p-8 text-white">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
-        
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl">
-                <FileSpreadsheet className="w-7 h-7" />
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight">Enterprise Report Generator</h1>
-            </div>
-            <p className="text-white/80 max-w-xl">
-              Generate professional, analytics-driven reports with institutional branding, AI insights, and multi-format export capabilities.
-            </p>
-          </div>
-          
-          <div className="flex gap-2">
-            {['configure', 'preview', 'editor'].map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab as any)}
-                className={
-                  'px-4 py-2 rounded-lg font-medium transition-all capitalize ' + 
-                  (activeTab === tab 
-                    ? 'bg-white text-[#0A2E6D] shadow-lg' 
-                    : 'bg-white/10 hover:bg-white/20 text-white')
-                }
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+      {/* Automatic Monthly Reporting & Period Lock Control */}
+      <PeriodLockHistoryWidget user={user} />
+
+      {/* Top Report Module Selector */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-3.5 rounded-2xl border border-[#E2E8F0] shadow-xs">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setMainReportView('institutional')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all ${
+              mainReportView === 'institutional'
+                ? 'bg-[#155EEF] text-white shadow-md'
+                : 'bg-slate-50 text-[#64748B] hover:text-[#172033] hover:bg-slate-100 border border-[#E2E8F0]'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span>Institutional Advanced Reports</span>
+          </button>
+          <button
+            onClick={() => setMainReportView('hod_report')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all ${
+              mainReportView === 'hod_report'
+                ? 'bg-[#155EEF] text-white shadow-md'
+                : 'bg-slate-50 text-[#64748B] hover:text-[#172033] hover:bg-slate-100 border border-[#E2E8F0]'
+            }`}
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Department Monthly IQAC Report (HOD Form)</span>
+          </button>
+        </div>
+        <div className="text-xs font-semibold text-[#06B6D4] px-3 py-1 bg-cyan-50 rounded-lg border border-cyan-100 shrink-0">
+          {mainReportView === 'institutional' 
+            ? '📊 All Departments Summary' 
+            : '📝 16-Section Department IQAC Report'}
         </div>
       </div>
+
+      {mainReportView === 'hod_report' ? (
+        <HODReportGeneratorPage user={user || { id: 'admin-1', role: 'ADMIN', name: 'Administrator', email: 'admin@niet.edu', departmentName: 'Computer Science and Engineering' }} />
+      ) : (
+        <>
+          {/* Executive Header Banner */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0B1F3A] via-[#0F284B] to-[#155EEF] p-8 text-white">
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl">
+                    <FileSpreadsheet className="w-7 h-7" />
+                  </div>
+                  <h1 className="text-3xl font-bold tracking-tight">Institutional Report Generator</h1>
+                </div>
+                <p className="text-white/80 max-w-xl">
+                  Generate professional, analytics-driven reports with institutional branding, AI insights, and multi-format export capabilities.
+                </p>
+              </div>
+              
+              <div className="flex gap-2">
+                {['configure', 'preview', 'editor'].map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab as any)}
+                    className={
+                      'px-4 py-2 rounded-lg font-medium transition-all capitalize ' + 
+                      (activeTab === tab 
+                        ? 'bg-white text-[#0B1F3A] shadow-lg font-bold' 
+                        : 'bg-white/10 hover:bg-white/20 text-white')
+                    }
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
 
       {/* Configure Tab */}
       {activeTab === 'configure' && (
@@ -14545,7 +15974,7 @@ function ReportGeneratorPage() {
                       { id: 'pdf', label: 'PDF', icon: FileText, color: 'red' },
                       { id: 'excel', label: 'Excel', icon: FileSpreadsheet, color: 'emerald' },
                       { id: 'word', label: 'Word', icon: FileText, color: 'blue' },
-                      { id: 'powerpoint', label: 'PPT', icon: Presentation, color: 'orange' },
+                      { id: 'powerpoint', label: 'PPT', icon: Presentation, color: 'amber' },
                       { id: 'html', label: 'HTML', icon: Code, color: 'purple' },
                       { id: 'csv', label: 'CSV', icon: Database, color: 'cyan' },
                     ].map(fmt => (
@@ -14706,6 +16135,8 @@ function ReportGeneratorPage() {
           onExport={exportReport}
         />
       )}
+        </>
+      )}
     </div>
   )
 }
@@ -14739,7 +16170,7 @@ function EnterpriseReportPreview({
     { label: 'Patents', value: execSummary.totalPatents || 0, icon: Award, color: 'from-indigo-500 to-indigo-600', bgColor: 'bg-indigo-50' },
     { label: 'Events', value: execSummary.totalEvents || 0, icon: Calendar, color: 'from-pink-500 to-pink-600', bgColor: 'bg-pink-50' },
     { label: 'Internships', value: execSummary.totalInternships || 0, icon: Wrench, color: 'from-teal-500 to-teal-600', bgColor: 'bg-teal-50' },
-    { label: 'Certifications', value: execSummary.totalCertifications || 0, icon: Shield, color: 'from-orange-500 to-orange-600', bgColor: 'bg-orange-50' },
+    { label: 'Certifications', value: execSummary.totalCertifications || 0, icon: Shield, color: 'from-amber-500 to-amber-600', bgColor: 'bg-amber-50' },
     { label: 'Verified Records', value: execSummary.verifiedRecords || 0, icon: CheckCircle, color: 'from-green-500 to-green-600', bgColor: 'bg-green-50' },
     { label: 'Pending Approvals', value: execSummary.pendingApprovals || 0, icon: Clock, color: 'from-yellow-500 to-yellow-600', bgColor: 'bg-yellow-50' },
   ]
@@ -16049,7 +17480,7 @@ function DatabaseManagementPage() {
       {/* Pending Items */}
       {(dbInfo?.pendingItems?.approvals > 0 || dbInfo?.pendingItems?.notifications > 0) && (
         <Card className="border border-amber-200 bg-amber-50 overflow-hidden">
-          <CardHeader className="bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+          <CardHeader className="bg-gradient-to-r from-amber-500 to-amber-600 text-white">
             <CardTitle className="flex items-center gap-2">
               <AlertCircle className="w-5 h-5" /> Pending Items
             </CardTitle>
@@ -16210,8 +17641,8 @@ function AdminDepartmentResultsPage() {
           </Card>
           <Card className="p-4 border border-gray-200 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
-                <Award className="w-5 h-5 text-orange-600" />
+              <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                <Award className="w-5 h-5 text-amber-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{data.totals.totalResearch}</p>
@@ -16249,7 +17680,7 @@ function AdminDepartmentResultsPage() {
         {filteredDepartments.map((dept: any) => (
           <Card key={dept.id} className="border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
             {/* Card Header */}
-            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-4 text-white">
+            <div className="bg-gradient-to-r from-amber-500 to-amber-600 p-4 text-white">
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="font-bold text-lg">{dept.name}</h3>
@@ -16277,9 +17708,9 @@ function AdminDepartmentResultsPage() {
                   <p className="text-xl font-bold text-purple-700">{dept.stats.totalActivities}</p>
                   <p className="text-[10px] text-purple-600">Activities</p>
                 </div>
-                <div className="text-center p-2 bg-orange-50 rounded-lg">
-                  <p className="text-xl font-bold text-orange-700">{dept.stats.totalResearch}</p>
-                  <p className="text-[10px] text-orange-600">Research</p>
+                <div className="text-center p-2 bg-amber-50 rounded-lg">
+                  <p className="text-xl font-bold text-amber-700">{dept.stats.totalResearch}</p>
+                  <p className="text-[10px] text-amber-600">Research</p>
                 </div>
               </div>
 
@@ -16419,7 +17850,7 @@ function AdminShowcasePage() {
   return (
     <div className="space-y-6">
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 p-8 text-white">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-red-500 p-8 text-white">
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl" />
         
@@ -16481,8 +17912,8 @@ function AdminShowcasePage() {
             <p className="text-sm text-gray-500">Activities</p>
           </Card>
           <Card className="p-4 border border-gray-200 text-center hover:shadow-md transition-shadow">
-            <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-2">
-              <Award className="w-6 h-6 text-orange-600" />
+            <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-2">
+              <Award className="w-6 h-6 text-amber-600" />
             </div>
             <p className="text-2xl font-bold text-gray-900">{data?.highlights?.totalResearch || 0}</p>
             <p className="text-sm text-gray-500">Research Papers</p>
@@ -16956,39 +18387,50 @@ function SettingsPage({ user }: { user: User }) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-[#0B1F3A] via-[#0F284B] to-[#155EEF] text-white rounded-2xl p-6 sm:p-8 shadow-md border border-[#1E3A5F] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">System Settings</h2>
-          <p className="text-gray-500 mt-1">Configure and manage all system settings</p>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="px-3 py-1 bg-[#155EEF]/30 text-[#06B6D4] rounded-full text-xs font-bold uppercase tracking-wider border border-[#06B6D4]/30 flex items-center gap-1.5">
+              <Settings className="w-3.5 h-3.5 text-[#06B6D4]" /> System Configuration
+            </span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            System Settings & Governance
+          </h2>
+          <p className="text-slate-200 text-xs sm:text-sm mt-1 max-w-xl font-normal">
+            Manage institutional parameters, domain configurations, security access controls, and database preferences.
+          </p>
         </div>
+
         {saveMessage && (
-          <div className={'px-4 py-2 rounded-lg flex items-center gap-2 ' + 
-            saveMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-           + ''}>
+          <div className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-sm ${
+            saveMessage.type === 'success' ? 'bg-emerald-500 text-white border border-emerald-400' : 'bg-red-500 text-white border border-red-400'
+          }`}>
             {saveMessage.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-            {saveMessage.message}
+            <span>{saveMessage.message}</span>
           </div>
         )}
       </div>
 
-      {/* Settings Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-2 border-b border-gray-200">
+      {/* Settings Navigation Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-[#E2E8F0] scrollbar-hide">
         {tabs.map((tab) => {
           const Icon = tab.icon
+          const isActive = activeSettingsTab === tab.id
           return (
             <button
               key={tab.id}
               onClick={() => setActiveSettingsTab(tab.id)}
-              className={'flex items-center gap-2 px-4 py-2.5 rounded-t-lg font-medium text-sm whitespace-nowrap transition-colors ' + 
-                activeSettingsTab === tab.id
-                  ? 'bg-amber-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-               + ''}
+              className={`flex items-center gap-2.5 px-4 py-3 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                isActive
+                  ? 'bg-[#155EEF] text-white shadow-md shadow-blue-900/20'
+                  : 'bg-white text-[#64748B] hover:text-[#172033] hover:bg-slate-100 border border-[#E2E8F0]'
+              }`}
             >
-              <Icon className="w-4 h-4" />
-              {tab.label}
+              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-[#155EEF]'}`} />
+              <span>{tab.label}</span>
             </button>
           )
         })}
@@ -17305,14 +18747,14 @@ function SettingsPage({ user }: { user: User }) {
                   className="mt-1"
                 />
               </div>
-              <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200 md:col-span-2">
+              <div className="flex items-center justify-between p-4 bg-amber-50 rounded-lg border border-amber-200 md:col-span-2">
                 <div>
                   <p className="font-medium text-gray-900">Maintenance Mode</p>
                   <p className="text-sm text-gray-500">Temporarily disable public access</p>
                 </div>
                 <button
                   onClick={() => setNetworkForm({...networkForm, maintenanceMode: !networkForm.maintenanceMode})}
-                  className={'relative w-12 h-6 rounded-full transition-colors ' + networkForm.maintenanceMode ? 'bg-orange-500' : 'bg-gray-300' + ''}
+                  className={'relative w-12 h-6 rounded-full transition-colors ' + networkForm.maintenanceMode ? 'bg-amber-500' : 'bg-gray-300' + ''}
                 >
                   <span className={'absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ' + networkForm.maintenanceMode ? 'translate-x-6' : '' + ''} />
                 </button>
@@ -17673,9 +19115,9 @@ function NotificationDropdown() {
           
           <div className="max-h-80 overflow-y-auto">
             {notifications.map(notif => (
-              <div key={notif.id} className={'p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors ' + !notif.read ? 'bg-blue-50/30' : '' + ''}>
+              <div key={notif.id} className={`p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors ${!notif.read ? 'bg-blue-50/30' : ''}`}>
                 <div className="flex items-start gap-3">
-                  <div className={'w-2 h-2 rounded-full mt-2 ' + !notif.read ? 'bg-blue-500' : 'bg-gray-300' + ''} />
+                  <div className={`w-2 h-2 rounded-full mt-2 ${!notif.read ? 'bg-blue-500' : 'bg-gray-300'}`} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900">{notif.title}</p>
                     <p className="text-xs text-gray-500 mt-1">{notif.time}</p>
@@ -17731,30 +19173,32 @@ const ROLE_SIDEBAR_CONFIG = {
       { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'Overview & Stats' },
       { id: 'staff_management', icon: Users, label: 'Class Management', badge: 'My Class', description: 'Manage your class students' },
       { id: 'staff_achievement', icon: Award, label: 'Staff Achievements', badge: 'New', description: 'Your achievements' },
-      { id: 'student_achievement_view', icon: GraduationCap, label: 'Student Achievements', badge: 'View', description: 'View student data' },
+      { id: 'student_achievement_view', icon: GraduationCap, label: 'Student Approval', badge: 'Pending', description: 'Review student submissions' },
+      { id: 'achievement_report', icon: FileSpreadsheet, label: 'Report Generator', badge: 'Excel', description: 'Achievement Excel Reports' },
       { id: 'feedback', icon: MessageSquare, label: 'Feedback', description: 'Send feedback' },
     ] as MenuItem[],
   },
   HOD: {
-    brandColor: 'from-purple-500 via-fuchsia-500 to-pink-500',
-    bgColor: 'bg-purple-50',
-    textColor: 'text-purple-700',
-    accentColor: 'purple',
+    brandColor: 'from-slate-900 via-blue-900 to-indigo-950',
+    bgColor: 'bg-blue-50/80',
+    textColor: 'text-blue-700',
+    accentColor: 'blue',
     roleLabel: 'HOD Portal',
     roleIcon: UserCheck,
     menuItems: [
       { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'Department Overview' },
-      { id: 'hod_student_approval', icon: GraduationCap, label: 'Student Approvals', badge: 'Pending', description: 'Review student submissions' },
       { id: 'hod_staff_approval', icon: BookOpen, label: 'Staff Approvals', badge: 'Pending', description: 'Review staff submissions' },
+      { id: 'hod_monthly_report', icon: FileText, label: 'Monthly IQAC Report', badge: '16-Sec', description: 'Department Monthly IQAC Report' },
+      { id: 'achievement_report', icon: FileSpreadsheet, label: 'Achievement Sheet Generator', badge: 'Excel', description: 'Student & Staff Achievement Export' },
+      { id: 'feedback', icon: MessageSquare, label: 'Feedback', badge: 'Form', description: 'Complete & view feedback' },
       { id: 'my_achievement', icon: Trophy, label: 'My Achievements', description: 'Personal achievements' },
       { id: 'analytics', icon: BarChart3, label: 'Department Analytics', description: 'Stats & Reports' },
       { id: 'hod_management', icon: Database, label: 'Management', badge: 'CRUD', description: 'Students/Staff/Batches' },
-      { id: 'report_generator', icon: FileText, label: 'Report Generator', badge: 'New', description: 'Monthly Reports' },
       { id: 'settings', icon: Settings, label: 'Settings', description: 'Preferences' },
     ] as MenuItem[],
   },
   ADMIN: {
-    brandColor: 'from-amber-500 via-orange-500 to-red-500',
+    brandColor: 'from-amber-500 via-amber-600 to-red-500',
     bgColor: 'bg-amber-50',
     textColor: 'text-amber-700',
     accentColor: 'amber',
@@ -17762,7 +19206,26 @@ const ROLE_SIDEBAR_CONFIG = {
     roleIcon: Shield,
     menuItems: [
       { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'IQAC Overview' },
-      { id: 'report_generator', icon: FileSpreadsheet, label: 'Reports', description: 'Generate reports' },
+      { id: 'feedback', icon: MessageSquare, label: 'Feedback Creator', badge: 'Creator', description: 'Create & manage feedback' },
+      { id: 'report_generator', icon: FileSpreadsheet, label: 'Report Generator Hub', badge: 'All-in-1', description: 'All Report & Sheet Generators' },
+      { id: 'achievement_report', icon: Trophy, label: 'Achievement Sheet Generator', badge: 'Excel', description: 'Achievement Sheet Export' },
+      { id: 'database', icon: Database, label: 'Database', description: 'Database management' },
+      { id: 'settings', icon: Settings, label: 'Settings', description: 'Preferences' },
+    ] as MenuItem[],
+  },
+  SUPER_ADMIN: {
+    brandColor: 'from-purple-600 via-indigo-600 to-blue-600',
+    bgColor: 'bg-purple-50',
+    textColor: 'text-purple-700',
+    accentColor: 'purple',
+    roleLabel: 'Super Admin',
+    roleIcon: Crown,
+    menuItems: [
+      { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'IQAC Overview' },
+      { id: 'feedback', icon: MessageSquare, label: 'Feedback Creator', badge: 'Creator', description: 'Create & manage feedback' },
+      { id: 'report_generator', icon: FileSpreadsheet, label: 'Report Generator Hub', badge: 'All-in-1', description: 'All Report & Sheet Generators' },
+      { id: 'achievement_report', icon: Trophy, label: 'Achievement Sheet Generator', badge: 'Excel', description: 'Achievement Sheet Export' },
+      { id: 'database', icon: Database, label: 'Database', description: 'Database management' },
       { id: 'settings', icon: Settings, label: 'Settings', description: 'Preferences' },
     ] as MenuItem[],
   }
@@ -17781,87 +19244,75 @@ function Sidebar({
   open: boolean;
   onToggle: () => void;
 }) {
-  const roleConfig = ROLE_SIDEBAR_CONFIG[user.role as keyof typeof ROLE_SIDEBAR_CONFIG] || ROLE_SIDEBAR_CONFIG.STUDENT
+  const roleConfig = ROLE_SIDEBAR_CONFIG[user.role as keyof typeof ROLE_SIDEBAR_CONFIG] || ROLE_SIDEBAR_CONFIG.ADMIN
   const menuItems = roleConfig.menuItems
   const RoleIcon = roleConfig.roleIcon
 
-  // Mobile: sidebar is overlay (hidden or shown), Desktop: sidebar always visible but collapses to icons
   return (
     <>
-      {/* Mobile Overlay Backdrop - only show when open on mobile */}
+      {/* Mobile Overlay Backdrop */}
       {open && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
           onClick={onToggle}
         />
       )}
       <aside className={[
-        // Width based on state
         open 
           ? 'w-72 max-lg:w-72 translate-x-0' 
           : 'max-lg:-translate-x-full max-lg:w-72 lg:w-20 lg:translate-x-0',
-        // Common styles
-        'bg-white/95 backdrop-blur-xl border-r border-gray-200 flex flex-col z-50 transition-all duration-300 fixed top-0 bottom-0 left-0 shadow-2xl sidebar-shadow'
+        'bg-[#0B1F3A] text-slate-100 border-r border-[#1E293B]',
+        'flex flex-col z-50 transition-all duration-300 fixed top-0 bottom-0 left-0 shadow-2xl'
       ].join(' ')}>
     
     {/* ====== ROLE-BASED HEADER ====== */}
-    <div className={`p-4 border-b border-gray-100 bg-gradient-to-r ${roleConfig.brandColor} bg-opacity-5 relative ${!open ? 'flex items-center justify-center' : ''}`}>
-      {/* Toggle Button */}
-      <button
-        onClick={onToggle}
-        className={`absolute top-3 right-3 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100/80 transition-colors z-10 ${!open ? 'top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2' : ''}`}
-        title={open ? "Collapse Sidebar" : "Expand Sidebar"}
-      >
-        {open ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-      </button>
-      
+    <div className={`p-4 border-b border-[#1E293B] bg-[#08172C] relative ${!open ? 'flex items-center justify-center' : ''}`}>
       {open ? (
-        <div className="flex items-center gap-3 pr-8">
-          {/* Role-Specific Logo */}
-          <div className={'w-11 h-11 rounded-xl bg-gradient-to-br ' + roleConfig.brandColor + ' flex items-center justify-center shadow-lg logo-glow relative overflow-hidden'}>
+        <div className="flex items-center gap-3 pr-2">
+          {/* Logo Icon */}
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#155EEF] to-[#06B6D4] flex items-center justify-center shadow-lg relative overflow-hidden">
             <RoleIcon className="w-6 h-6 text-white" />
-            <div className="absolute inset-0 bg-white/20 rounded-xl" />
+            <div className="absolute inset-0 bg-white/10 rounded-xl" />
           </div>
           <div className="overflow-hidden flex-1">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-gray-900 text-sm block truncate">NIET IQAC</span>
-              <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full ${roleConfig.bgColor} ${roleConfig.textColor}`}>
+              <span className="font-bold text-sm block truncate text-white">NIET IQAC</span>
+              <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-[#155EEF]/20 text-[#06B6D4] border border-[#06B6D4]/30">
                 {user.role}
               </span>
             </div>
-            <span className={'text-xs ' + roleConfig.textColor + ' font-medium flex items-center gap-1 mt-0.5'}>
-              <RoleIcon className="w-3 h-3" />
+            <span className="text-xs font-medium flex items-center gap-1 mt-0.5 text-[#06B6D4]">
+              <RoleIcon className="w-3.5 h-3.5" />
               {roleConfig.roleLabel}
             </span>
           </div>
         </div>
       ) : (
-        /* Icon only mode - just show small logo */
-        <div className={'w-10 h-10 rounded-xl bg-gradient-to-br ' + roleConfig.brandColor + ' flex items-center justify-center shadow-lg'}>
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#155EEF] to-[#06B6D4] flex items-center justify-center shadow-lg">
           <RoleIcon className="w-5 h-5 text-white" />
         </div>
       )}
       
       {/* User Info - only in expanded mode */}
       {open && (
-        <div className="mt-3 pt-3 border-t border-white/20">
-          <div className="flex items-center gap-2">
-            <div className={'w-8 h-8 rounded-lg ' + roleConfig.bgColor + ' flex items-center justify-center'}>
-              <span className={'text-sm font-bold ' + roleConfig.textColor + ''}>{user.name?.charAt(0) || 'U'}</span>
+        <div className="mt-3 pt-3 border-t border-[#1E293B]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs bg-[#155EEF] text-white shadow-sm">
+              <span>{user.name?.charAt(0) || 'A'}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">{user.name || 'User'}</p>
-              <p className="text-xs text-gray-500 truncate">{user.departmentName || 'Department'}</p>
+              <p className="text-xs font-semibold truncate text-white">{user.name || 'System Administrator'}</p>
+              <p className="text-[11px] truncate text-slate-400">{user.departmentName || 'Computer Science and Engineering'}</p>
             </div>
           </div>
         </div>
       )}
     </div>
 
-    {/* ====== MENU SECTION LABEL - Only show when open ====== */}
+    {/* ====== MENU SECTION LABEL ====== */}
     {open && (
       <div className="px-4 pt-4 pb-2">
-        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Main Menu</span>
+        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Main Menu</span>
       </div>
     )}
 
@@ -17870,6 +19321,11 @@ function Sidebar({
       {menuItems.map((item, index) => {
         const Icon = item.icon
         const isActive = activeTab === item.id
+        
+        const itemClass = isActive 
+          ? 'bg-[#155EEF] text-white font-semibold shadow-md shadow-blue-950/40' 
+          : 'text-slate-300 hover:bg-[#1E293B]/80 hover:text-white'
+
         return (
           <button
             key={item.id}
@@ -17877,63 +19333,65 @@ function Sidebar({
               e.stopPropagation()
               setActiveTab(item.id)
             }}
-            className={'w-full flex items-center ' + (open ? 'gap-3 px-3' : 'justify-center px-0') + ' py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative group ' + (isActive ? roleConfig.bgColor + ' ' + roleConfig.textColor + ' shadow-sm border border-' + roleConfig.accentColor + '-200' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900')}
+            className={'w-full flex items-center ' + (open ? 'gap-3 px-3' : 'justify-center px-0') + ' py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative group ' + itemClass}
             title={!open ? item.label : undefined}
-            style={{ animationDelay: (index * 30) + 'ms' }}
           >
             {/* Icon Container */}
-            <div className={'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 ' + (isActive ? 'bg-gradient-to-br ' + roleConfig.brandColor + ' shadow-md' : 'bg-gray-100 group-hover:bg-gray-200')}>
-              <Icon className={'w-4 h-4 transition-colors ' + (isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700')} />
+            <div className={'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 ' + (
+              isActive ? 'bg-white/20 text-white' : 'bg-[#1E293B] text-slate-400 group-hover:text-[#06B6D4] group-hover:bg-[#283850]'
+            )}>
+              <Icon className="w-4 h-4" />
             </div>
             
-            {/* Label & Badge - Only show when open */}
+            {/* Label & Badge */}
             {open && (
               <div className="flex-1 text-left min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className={'truncate ' + (isActive ? 'font-bold' : '')}>{item.label}</span>
+                  <span className={'truncate ' + (isActive ? 'font-bold text-white' : 'text-slate-200')}>{item.label}</span>
                   {item.badge && (
-                    <span className={'ml-auto px-2 py-0.5 text-[10px] rounded-full font-bold shrink-0 ' + (isActive ? 'bg-white/30 text-current' : 'bg-red-50 text-red-600')}>
+                    <span className={'ml-auto px-2 py-0.5 text-[10px] rounded-full font-bold shrink-0 ' + (
+                      isActive ? 'bg-[#06B6D4]/30 text-white' : 'bg-[#155EEF]/20 text-[#06B6D4] border border-[#06B6D4]/30'
+                    )}>
                       {item.badge}
                     </span>
                   )}
                 </div>
                 {!isActive && item.description && (
-                  <span className="text-[10px] text-gray-400 truncate block mt-0.5">{item.description}</span>
+                  <span className="text-[10px] truncate block mt-0.5 text-slate-400">{item.description}</span>
                 )}
               </div>
             )}
             
-            {/* Active Left Border */}
+            {/* Cyan Left Indicator Bar */}
             {isActive && open && (
-              <span className={'absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-gradient-to-b ' + roleConfig.brandColor + ''} />
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 rounded-r-full bg-[#06B6D4] shadow-sm shadow-[#06B6D4]/50" />
             )}
             
             {/* Active indicator dot for collapsed mode */}
             {isActive && !open && (
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-current opacity-60" />
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#06B6D4]" />
             )}
           </button>
         )
       })}
     </nav>
 
-    {/* ====== BOTTOM SECTION - Only show when open ====== */}
+    {/* ====== BOTTOM QUICK INFO ====== */}
     {open && (
-      <div className="p-3 border-t border-gray-100 space-y-2">
-        {/* Quick Stats Card */}
-        <div className={`p-3 rounded-xl bg-gradient-to-br ${roleConfig.brandColor} bg-opacity-5 border border-${roleConfig.accentColor}-100`}>
+      <div className="p-3 border-t border-[#1E293B] space-y-2">
+        <div className="p-3 rounded-xl border border-[#1E3A5F] bg-[#08192E] text-white">
           <div className="flex items-center gap-2 mb-2">
-            <Zap className={'w-4 h-4 ' + roleConfig.textColor + ''} />
-            <span className={'text-xs font-bold ' + roleConfig.textColor + ''}>Quick Info</span>
+            <Zap className="w-3.5 h-3.5 text-[#06B6D4]" />
+            <span className="text-xs font-bold text-slate-200">Quick Info</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div className="text-center p-2 bg-white/60 rounded-lg">
-              <span className="text-lg font-bold text-gray-900">{user.role === 'ADMIN' ? '20' : user.role === 'HOD' ? '1' : 'CSE'}</span>
-              <p className="text-[9px] text-gray-500">{user.role === 'ADMIN' ? 'Depts' : user.role === 'HOD' ? 'Dept' : 'Code'}</p>
+            <div className="text-center p-2 rounded-lg bg-[#0B1F3A] border border-[#1E3A5F]">
+              <span className="text-base font-bold text-[#06B6D4]">{user.role === 'ADMIN' ? '11' : user.role === 'HOD' ? '1' : 'CSE'}</span>
+              <p className="text-[9px] text-slate-400">{user.role === 'ADMIN' ? 'Depts' : user.role === 'HOD' ? 'Dept' : 'Code'}</p>
             </div>
-            <div className="text-center p-2 bg-white/60 rounded-lg">
-              <span className="text-lg font-bold text-gray-900">{user.role === 'STUDENT' ? '13' : user.role === 'STAFF' ? '13' : user.role === 'HOD' ? '50+' : '150+'}</span>
-              <p className="text-[9px] text-gray-500">{user.role === 'ADMIN' ? 'Users' : user.role === 'HOD' ? 'Faculty' : 'Types'}</p>
+            <div className="text-center p-2 rounded-lg bg-[#0B1F3A] border border-[#1E3A5F]">
+              <span className="text-base font-bold text-[#06B6D4]">{user.role === 'STUDENT' ? '13' : user.role === 'STAFF' ? '13' : user.role === 'HOD' ? '50+' : '150+'}</span>
+              <p className="text-[9px] text-slate-400">{user.role === 'ADMIN' ? 'Users' : user.role === 'HOD' ? 'Faculty' : 'Types'}</p>
             </div>
           </div>
         </div>
@@ -18073,27 +19531,81 @@ function StudentAchievementsPage({ user }: { user: User }) {
     setFormData(prev => ({ ...prev, [fieldId]: value }))
   }
 
-  const handleSubmit = async () => {
+  const [duplicateModal, setDuplicateModal] = useState<{
+    isOpen: boolean
+    category: string
+    title: string
+    serialNo: string
+  }>({
+    isOpen: false,
+    category: '',
+    title: '',
+    serialNo: '01',
+  })
+
+  const handleSubmit = async (overrideContinue = false) => {
+    const forceContinue = overrideContinue === true
     if (!selectedType) return
+
+    // Period Lock Check
+    const targetDate = formData.date || formData.event_date || formData.submittedAt || new Date().toISOString().split('T')[0]
+    const lockCheck = checkAchievementDateLock(targetDate)
+    if (lockCheck.locked) {
+      alert(lockCheck.error || 'This reporting period is closed. The achievement can no longer be modified.')
+      return
+    }
+
+    const typeConfig = ACHIEVEMENT_TYPES[selectedType]
+    const typeName = typeConfig?.label || selectedType
+    const title = formData.title || formData.paper_title || formData.invention_title || formData.course || formData.event_title || formData.title_sem || 'Untitled Achievement'
+
+    // Special duplicate title check for Journal Publication, Conference Publication, and Patent
+    if (isSpecialCategory(typeName) && !forceContinue) {
+      try {
+        const res = await fetch('/api/achievements/check-duplicate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            category: typeName,
+            title: title,
+            userId: user.id,
+            departmentId: user.departmentId,
+            localRecords: achievements,
+          }),
+        })
+        const data = await res.json()
+        if (data.isDuplicate) {
+          setDuplicateModal({
+            isOpen: true,
+            category: data.category || getCanonicalCategoryLabel(typeName),
+            title: data.title || title,
+            serialNo: data.serialNo || '02',
+          })
+          return
+        }
+      } catch (err) {
+        console.error('Error checking duplicate title:', err)
+      }
+    }
+
     setIsSubmitting(true)
     
     // Simulate submission
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise(resolve => setTimeout(resolve, 800))
     
     const newAchievement = {
       id: Date.now(),
       type: selectedType,
       typeName: ACHIEVEMENT_TYPES[selectedType]?.label || selectedType,
-      title: formData.title || formData.award_name || formData.prog_name || formData.course || formData.event_name || formData.paper_title || formData.invention_title || 'Untitled',
+      title: title,
       dept: user.departmentName,
       studentName: user.name,
       studentEmail: user.email,
       studentId: user.id,
       date: new Date().toISOString().split('T')[0],
-      status: 'pending_staff',  // First goes to same-department Staff/Faculty for review
+      status: 'pending_staff',
       submittedAt: new Date().toISOString(),
       data: formData,
-      // Routing info - will be reviewed by same dept faculty then HOD
       reviewRoute: {
         current: 'staff',
         next: 'hod',
@@ -18103,7 +19615,6 @@ function StudentAchievementsPage({ user }: { user: User }) {
     
     setAchievements(prev => {
       const updatedAchievements = [newAchievement, ...prev]
-      // Save to localStorage for dashboard to read
       localStorage.setItem('student_achievements', JSON.stringify(updatedAchievements))
       return updatedAchievements
     })
@@ -18115,7 +19626,7 @@ function StudentAchievementsPage({ user }: { user: User }) {
       setShowSuccess(false)
       setSelectedType('')
       setFormData({})
-    }, 2000)
+    }, 1800)
   }
 
   const handleClear = () => {
@@ -18123,111 +19634,52 @@ function StudentAchievementsPage({ user }: { user: User }) {
     setFormData({})
   }
 
-  // ============ DRAG AND DROP HANDLERS FOR REORDERING ============
-  const handleDragStart = (index: number) => {
-    setDraggedItem(index)
-  }
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault()
-    setDragOverIndex(index)
-  }
-
+  // Drag and Drop Handlers
+  const handleDragStart = (index: number) => { setDraggedItem(index) }
+  const handleDragOver = (e: React.DragEvent, index: number) => { e.preventDefault(); setDragOverIndex(index); }
   const handleDrop = (dropIndex: number) => {
     if (draggedItem === null || draggedItem === dropIndex) return
-    
     const newAchievements = [...filteredAchievements]
     const draggedAchievement = newAchievements[draggedItem]
     newAchievements.splice(draggedItem, 1)
     newAchievements.splice(dropIndex, 0, draggedAchievement)
-    
-    // Update the original achievements array with new order
-    const achievementIds = newAchievements.map(a => a.id)
-    const reorderedAchievements = achievementIds.map(id => 
-      achievements.find(a => a.id === id)
-    ).filter(Boolean)
-    
-    setAchievements(reorderedAchievements)
+    setAchievements(newAchievements)
     setDraggedItem(null)
     setDragOverIndex(null)
   }
+  const handleDragEnd = () => { setDraggedItem(null); setDragOverIndex(null); }
 
-  const handleDragEnd = () => {
-    setDraggedItem(null)
-    setDragOverIndex(null)
-  }
-
-  // ============ FILE UPLOAD WITH DRAG & DROP ============
-  const handleFileDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(true)
-  }
-
-  const handleFileDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(false)
-  }
-
+  const handleFileDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(true); }
+  const handleFileDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(false); }
   const handleFileDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(false)
-    
+    e.preventDefault(); setIsDragOver(false);
     const files = Array.from(e.dataTransfer.files)
-    if (files.length > 0) {
-      setUploadedFiles(prev => [...prev, ...files])
-    }
+    if (files.length > 0) setUploadedFiles(prev => [...prev, ...files])
   }
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    if (files.length > 0) {
-      setUploadedFiles(prev => [...prev, ...files])
-    }
+    if (files.length > 0) setUploadedFiles(prev => [...prev, ...files])
   }
+  const removeFile = (index: number) => { setUploadedFiles(prev => prev.filter((_, i) => i !== index)); }
 
-  const removeFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index))
-  }
-
-  // ============ DRAG AND DROP HANDLERS FOR ACHIEVEMENT TYPE CARDS ============
-  const handleTypeDragStart = (index: number) => {
-    setDraggedTypeIndex(index)
-  }
-
-  const handleTypeDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragOverTypeIndex(index)
-  }
-
+  const handleTypeDragStart = (index: number) => { setDraggedTypeIndex(index); }
+  const handleTypeDragOver = (e: React.DragEvent, index: number) => { e.preventDefault(); e.stopPropagation(); setDragOverTypeIndex(index); }
   const handleTypeDrop = (dropIndex: number) => {
     if (draggedTypeIndex === null || draggedTypeIndex === dropIndex) return
-    
     const newOrder = [...achievementTypesOrder]
     const draggedType = newOrder[draggedTypeIndex]
     newOrder.splice(draggedTypeIndex, 1)
     newOrder.splice(dropIndex, 0, draggedType)
-    
     setAchievementTypesOrder(newOrder)
     setDraggedTypeIndex(null)
     setDragOverTypeIndex(null)
   }
-
-  const handleTypeDragEnd = () => {
-    setDraggedTypeIndex(null)
-    setDragOverTypeIndex(null)
-  }
-
-  // Allow dropping on the container for reordering
-  const handleTypeContainerDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-  }
+  const handleTypeDragEnd = () => { setDraggedTypeIndex(null); setDragOverTypeIndex(null); }
+  const handleTypeContainerDragOver = (e: React.DragEvent) => { e.preventDefault(); }
 
   const currentTypeConfig = selectedType ? ACHIEVEMENT_TYPES[selectedType] : null
 
-  // Filter achievements
   const filteredAchievements = achievements.filter(a => {
-    // IMPORTANT: Only show current student's own records
     const isOwnRecord = a.studentId === user.id || a.studentEmail === user.email || a.studentName === user.name
     if (!isOwnRecord) return false
     
@@ -18240,27 +19692,26 @@ function StudentAchievementsPage({ user }: { user: User }) {
 
   return (
     <div className="space-y-6">
-      {/* Back to Types Button - Above Add Achievement (shown when type is selected) */}
+      {/* Back to Types Button */}
       {selectedType && (
         <button
           onClick={() => { setSelectedType(''); setFormData({}); }}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors w-fit"
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:text-blue-700 bg-white hover:bg-blue-50 border border-gray-200 rounded-xl transition-all shadow-sm w-fit"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Types
+          <ArrowLeft className="w-4 h-4" /> Back to Achievement Categories
         </button>
       )}
 
       {/* Add Student Achievement Card */}
-      <Card className="border border-gray-200">
+      <Card className="border border-gray-200 shadow-md">
         <CardContent className="p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <PlusCircle className="w-5 h-5 text-cyan-500" /> Add Student Achievement
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <PlusCircle className="w-5 h-5 text-blue-600" /> Student Achievement Categories
           </h3>
           
-          {/* Type Selector - DRAGGABLE CARDS */}
           <div className="space-y-4">
             {!selectedType ? (
-              /* Draggable Achievement Type Cards Grid */
+              /* Achievement Type Cards Grid with Visually Distinct States */
               <div
                 onDragOver={handleTypeContainerDragOver}
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
@@ -18271,8 +19722,11 @@ function StudentAchievementsPage({ user }: { user: User }) {
                   
                   const Icon = typeConfig.icon
                   const isSelected = selectedType === typeKey
-                  const isDragging = draggedTypeIndex === index
-                  const isDragOver = dragOverTypeIndex === index
+                  
+                  // DYNAMIC INDEPENDENT STATE CALCULATION
+                  const typeRecords = achievements.filter(a => a.type === typeKey && (a.studentId === user.id || a.studentEmail === user.email || a.studentName === user.name))
+                  const isFilled = typeRecords.length > 0
+                  const isApproved = typeRecords.some(a => a.status === 'hod_approved' || a.status === 'approved' || a.status === 'verified')
                   
                   return (
                     <div
@@ -18283,117 +19737,136 @@ function StudentAchievementsPage({ user }: { user: User }) {
                       onDrop={() => handleTypeDrop(index)}
                       onDragEnd={handleTypeDragEnd}
                       onClick={() => setSelectedType(typeKey)}
-                      className={'relative p-4 rounded-xl border-2 cursor-grab active:cursor-grabbing transition-all duration-200 group ' + 
-                        isDragging 
-                          ? 'opacity-40 scale-95 rotate-2 shadow-lg z-10' 
-                          : isDragOver 
-                            ? 'border-cyan-400 bg-cyan-50 scale-[1.02] shadow-md border-dashed' 
-                            : 'border-gray-200 hover:border-cyan-300 hover:bg-cyan-50/50 hover:shadow-md'
-                       + ''}
+                      className={`relative p-5 rounded-2xl cursor-pointer transition-all duration-500 ease-in-out group flex flex-col justify-between ${
+                        isApproved
+                          ? 'achievement-card-approved border-2 border-emerald-500 bg-gradient-to-br from-emerald-50/90 via-white to-emerald-50/40 shadow-lg shadow-emerald-500/20 ring-2 ring-emerald-400/30 scale-[1.01] opacity-100 filter-none saturate-150'
+                          : isFilled
+                            ? 'achievement-card-filled border-2 border-blue-500 bg-gradient-to-br from-blue-50/90 via-white to-blue-50/40 shadow-lg shadow-blue-500/20 ring-2 ring-blue-400/30 scale-[1.01] opacity-100 filter-none saturate-150'
+                            : 'achievement-card-empty border-2 border-dashed border-slate-300/80 bg-slate-50/70 opacity-55 blur-[0.5px] grayscale-[40%] saturate-50 hover:opacity-90 hover:blur-none hover:grayscale-0 hover:saturate-100 hover:border-blue-400 hover:bg-white hover:shadow-md'
+                      }`}
                     >
-                      {/* Drag Handle Indicator */}
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <GripVertical className="w-4 h-4 text-gray-400" />
-                      </div>
-                      
-                      {/* Type Icon */}
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${typeConfig.color} flex items-center justify-center mb-3 transition-transform group-hover:scale-110 ${isDragging ? 'scale-90' : ''}`}>
-                        <Icon className="w-6 h-6 text-white" />
-                      </div>
-                      
-                      {/* Type Label */}
-                      <span className="text-sm font-semibold text-gray-800 block">{typeConfig.label}</span>
-                      
-                      {/* Selection Indicator */}
-                      {isSelected && (
-                        <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-cyan-500 flex items-center justify-center">
-                          <CheckCircle className="w-4 h-4 text-white" />
+                      {/* Top Row: Icon + Completion Badge */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${typeConfig.color} flex items-center justify-center shadow-md transition-all duration-500 ${
+                          isFilled || isApproved 
+                            ? 'opacity-100 saturate-150 shadow-md scale-105 group-hover:scale-110' 
+                            : 'opacity-60 saturate-50 group-hover:opacity-100 group-hover:saturate-100'
+                        }`}>
+                          <Icon className="w-6 h-6 text-white" />
                         </div>
-                      )}
-                      
-                      {/* Drag Overlay for visual feedback */}
-                      {isDragOver && !isDragging && (
-                        <div className="absolute inset-0 border-2 border-cyan-400 border-dashed rounded-xl pointer-events-none" />
-                      )}
+                        
+                        {/* State Indicator Badge */}
+                        {isApproved ? (
+                          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500 text-white text-xs font-bold shadow-sm shadow-emerald-500/30">
+                            <CheckCircle className="w-3.5 h-3.5 text-white" /> Approved
+                          </span>
+                        ) : isFilled ? (
+                          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-600 text-white text-xs font-bold shadow-sm shadow-blue-500/30 animate-pulse">
+                            <CheckCircle className="w-3.5 h-3.5 text-white" /> Submitted
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-full bg-slate-200/80 text-slate-500 text-[11px] font-semibold border border-slate-300/60">
+                            Not Filled
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Title & Status */}
+                      <div>
+                        <span className={`text-base font-bold block transition-colors ${
+                          isFilled || isApproved ? 'text-gray-900 font-extrabold' : 'text-slate-600 group-hover:text-blue-600'
+                        }`}>
+                          {typeConfig.label}
+                        </span>
+                        <p className={`text-xs mt-1 transition-all ${
+                          isApproved 
+                            ? 'text-emerald-700 font-bold flex items-center gap-1' 
+                            : isFilled 
+                              ? 'text-blue-700 font-bold flex items-center gap-1' 
+                              : 'text-slate-400 font-medium'
+                        }`}>
+                          {isFilled ? `✓ ${typeRecords.length} Record(s) Submitted` : 'Click to add achievement'}
+                        </p>
+                      </div>
                     </div>
                   )
                 })}
               </div>
             ) : (
-              /* Dynamic Form Fields - Selected Type */
-              <div className="space-y-4 border-t pt-4">
-                {/* Selected Type Header with Back Button */}
-                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+              /* DYNAMIC FORM FIELDS - GLOBAL 2-COLUMN CONSISTENT ALIGNMENT */
+              <div className="space-y-6 pt-2">
+                <div className="flex items-center justify-between pb-4 border-b border-gray-200">
                   <div className="flex items-center gap-3">
-                    <div className={'w-10 h-10 rounded-xl bg-gradient-to-br ' + currentTypeConfig?.color + ' flex items-center justify-center'}>
+                    <div className={'w-12 h-12 rounded-xl bg-gradient-to-br ' + currentTypeConfig?.color + ' flex items-center justify-center shadow-md'}>
                       {(() => {
                         const Icon = currentTypeConfig?.icon
-                        return Icon ? <Icon className="w-5 h-5 text-white" /> : null
+                        return Icon ? <Icon className="w-6 h-6 text-white" /> : null
                       })()}
                     </div>
                     <div>
-                      <h4 className="font-semibold text-gray-800">{currentTypeConfig?.label}</h4>
-                      <p className="text-xs text-gray-500">{currentTypeConfig?.fields.length} fields to complete</p>
+                      <h4 className="text-lg font-bold text-gray-900">{currentTypeConfig?.label}</h4>
+                      <p className="text-xs text-gray-500 font-medium">Fill in the achievement details below</p>
                     </div>
                   </div>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                {/* FORM GRID: 2-COLUMN SYSTEM */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
                   {currentTypeConfig?.fields.filter(field => field.type !== 'textarea').map((field) => (
-                    <div key={field.id} className={'space-y-1 ' + field.full ? 'md:col-span-2' : '' + ''}>
-                      <label className="text-sm font-medium text-gray-600">
+                    <div key={field.id} className={`flex flex-col gap-1.5 w-full ${field.full ? 'md:col-span-2' : ''}`}>
+                      <label className="text-sm font-semibold text-gray-800 block">
                         {field.label}
                         {field.required && <span className="text-red-500 ml-1">*</span>}
-                        {field.locked && <Lock className="w-3 h-3 inline ml-1 text-gray-400" />}
+                        {field.locked && <Lock className="w-3.5 h-3.5 inline ml-1.5 text-gray-400" />}
                       </label>
-                      
+
                       {field.type === 'text' && (
                         <input
                           type="text"
                           value={formData[field.id] || ''}
                           onChange={(e) => handleFieldChange(field.id, e.target.value)}
                           disabled={field.locked}
-                          placeholder={'Enter ' + field.label.toLowerCase() + ''}
-                          className={'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 ' + 
-                            field.locked ? 'bg-gray-100 cursor-not-allowed border-gray-200' : 'bg-white border-gray-200'
-                           + ''}
+                          placeholder={'Enter ' + field.label.toLowerCase()}
+                          className={`w-full min-h-[48px] px-4 py-3 border rounded-xl text-sm transition-all outline-none ${
+                            field.locked ? 'bg-gray-100 text-gray-600 border-gray-200 cursor-not-allowed' : 'bg-white border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
+                          }`}
                         />
                       )}
-                      
+
                       {field.type === 'number' && (
                         <input
                           type="number"
                           value={formData[field.id] || ''}
                           onChange={(e) => handleFieldChange(field.id, e.target.value)}
-                          placeholder={'Enter ' + field.label.toLowerCase() + ''}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+                          placeholder={'Enter ' + field.label.toLowerCase()}
+                          className="w-full min-h-[48px] px-4 py-3 border border-gray-300 rounded-xl text-sm bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                         />
                       )}
-                      
+
                       {field.type === 'url' && (
                         <input
                           type="url"
                           value={formData[field.id] || ''}
                           onChange={(e) => handleFieldChange(field.id, e.target.value)}
                           placeholder="https://..."
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+                          className="w-full min-h-[48px] px-4 py-3 border border-gray-300 rounded-xl text-sm bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                         />
                       )}
-                      
+
                       {field.type === 'date' && (
                         <input
                           type="date"
                           value={formData[field.id] || ''}
                           onChange={(e) => handleFieldChange(field.id, e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+                          className="w-full min-h-[48px] px-4 py-3 border border-gray-300 rounded-xl text-sm bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                         />
                       )}
-                      
+
                       {field.type === 'select' && (
                         <select
                           value={formData[field.id] || ''}
                           onChange={(e) => handleFieldChange(field.id, e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+                          className="w-full min-h-[48px] px-4 py-3 border border-gray-300 rounded-xl text-sm bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                         >
                           <option value="">Select {field.label}</option>
                           {field.options?.map((opt: string) => (
@@ -18402,19 +19875,19 @@ function StudentAchievementsPage({ user }: { user: User }) {
                         </select>
                       )}
 
-                      {field.type === 'constant' && field.value && (
-                        <div className="w-full px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-green-700 font-medium flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4" />
-                          {field.value}
+                      {field.type === 'constant' && (
+                        <div className="w-full min-h-[48px] px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 font-semibold text-sm flex items-center gap-2">
+                          <CheckCircle className="w-4.5 h-4.5 text-emerald-600" />
+                          <span>{field.value || 'Published'}</span>
                         </div>
                       )}
 
                       {field.type === 'select_with_other' && (
-                        <div className="space-y-2">
+                        <div className="space-y-2 w-full">
                           <select
                             value={formData[field.id] || ''}
                             onChange={(e) => handleFieldChange(field.id, e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-white"
+                            className="w-full min-h-[48px] px-4 py-3 border border-gray-300 rounded-xl text-sm bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                           >
                             <option value="">Select {field.label}</option>
                             {field.options?.map((opt: string) => (
@@ -18428,14 +19901,14 @@ function StudentAchievementsPage({ user }: { user: User }) {
                               value={formData[field.id + '_other'] || ''}
                               onChange={(e) => handleFieldChange(field.id + '_other', e.target.value)}
                               placeholder="Please specify..."
-                              className="w-full px-3 py-2 border border-cyan-300 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-cyan-50"
+                              className="w-full min-h-[48px] px-4 py-3 border border-cyan-300 rounded-xl text-sm bg-cyan-50 focus:border-cyan-500 outline-none"
                             />
                           )}
                         </div>
                       )}
 
                       {field.type === 'publisher_select' && (
-                        <div className="space-y-2">
+                        <div className="space-y-2 w-full">
                           <div className="grid grid-cols-2 gap-2">
                             {field.options?.map((opt: string) => (
                               <button
@@ -18443,11 +19916,9 @@ function StudentAchievementsPage({ user }: { user: User }) {
                                 type="button"
                                 onClick={() => {
                                   handleFieldChange(field.id, opt)
-                                  if (opt !== 'Other') {
-                                    handleFieldChange(field.id + '_other', '')
-                                  }
+                                  if (opt !== 'Other') handleFieldChange(field.id + '_other', '')
                                 }}
-                                className={'px-3 py-2 rounded-lg text-sm font-medium transition-all ' + (formData[field.id] === opt ? 'bg-cyan-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200') + (opt === 'Other' && formData[field.id] === 'Other' ? ' col-span-2' : '')}
+                                className={'min-h-[44px] px-3 py-2 rounded-xl text-sm font-medium transition-all ' + (formData[field.id] === opt ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200')}
                               >
                                 {opt}
                               </button>
@@ -18459,31 +19930,46 @@ function StudentAchievementsPage({ user }: { user: User }) {
                               value={formData[field.id + '_other'] || ''}
                               onChange={(e) => handleFieldChange(field.id + '_other', e.target.value)}
                               placeholder="Enter publisher name..."
-                              className="w-full px-3 py-2 border border-cyan-300 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 bg-cyan-50"
+                              className="w-full min-h-[48px] px-4 py-3 border border-blue-300 rounded-xl text-sm bg-blue-50 outline-none"
                             />
                           )}
                         </div>
                       )}
                     </div>
                   ))}
+
+                  {/* Textarea fields - Full Width */}
+                  {currentTypeConfig?.fields.filter(field => field.type === 'textarea').map((field) => (
+                    <div key={field.id} className="flex flex-col gap-1.5 md:col-span-2 w-full">
+                      <label className="text-sm font-semibold text-gray-800 block">
+                        {field.label} {field.required && <span className="text-red-500">*</span>}
+                      </label>
+                      <textarea
+                        value={formData[field.id] || ''}
+                        onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                        placeholder={'Enter ' + field.label.toLowerCase()}
+                        rows={4}
+                        className="w-full min-h-[120px] px-4 py-3 border border-gray-300 rounded-xl text-sm bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none resize-y"
+                      />
+                    </div>
+                  ))}
                 </div>
 
-                {/* File Upload with Drag & Drop - Above Submit Button */}
-                <div className="pt-4 border-t border-gray-100">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                    <Upload className="w-4 h-4 text-cyan-500" /> Attachments
-                  </h4>
+                {/* File Upload Zone - Centered, Full Width */}
+                <div className="pt-4 border-t border-gray-200">
+                  <label className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <Upload className="w-4 h-4 text-blue-600" /> Attachments / Proof Documents
+                  </label>
                   
-                  {/* Drop Zone */}
                   <div
                     onDragOver={handleFileDragOver}
                     onDragLeave={handleFileDragLeave}
                     onDrop={handleFileDrop}
-                    className={'relative border-2 border-dashed rounded-xl p-6 text-center transition-all ' + 
+                    className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all ${
                       isDragOver 
-                        ? 'border-cyan-400 bg-cyan-50 scale-[1.02]' 
+                        ? 'border-blue-500 bg-blue-50/60 scale-[1.01]' 
                         : 'border-gray-300 hover:border-gray-400 bg-gray-50'
-                     + ''}
+                    }`}
                   >
                     <input
                       type="file"
@@ -18492,40 +19978,33 @@ function StudentAchievementsPage({ user }: { user: User }) {
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     />
                     
-                    {isDragOver ? (
-                      <div className="space-y-2">
-                        <div className="w-12 h-12 mx-auto rounded-full bg-cyan-100 flex items-center justify-center animate-bounce">
-                          <Upload className="w-6 h-6 text-cyan-500" />
-                        </div>
-                        <p className="text-sm font-semibold text-cyan-600">Drop files here!</p>
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                        <Upload className="w-6 h-6 text-blue-600" />
                       </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <Upload className="w-8 h-8 mx-auto text-gray-400" />
-                        <p className="text-sm text-gray-600 font-medium">
-                          Drag & drop or <span className="text-cyan-600 underline">browse</span>
-                        </p>
-                        <p className="text-xs text-gray-400">PDF, Images, Docs (Max 10MB)</p>
-                      </div>
-                    )}
+                      <p className="text-sm text-gray-700 font-semibold">
+                        Drag & drop or <span className="text-blue-600 underline">browse</span> certificate files
+                      </p>
+                      <p className="text-xs text-gray-400">PDF, JPG, PNG, Docs (Max 10MB)</p>
+                    </div>
                   </div>
 
-                  {/* Uploaded Files List */}
                   {uploadedFiles.length > 0 && (
                     <div className="mt-3 space-y-2">
                       {uploadedFiles.map((file, index) => (
                         <div 
-                          key={'${file.name}-' + index + ''}
-                          className="flex items-center gap-2 p-2 bg-white border border-gray-200 rounded-lg group hover:border-cyan-300 transition-colors"
+                          key={index}
+                          className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl"
                         >
-                          <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                          <span className="text-sm text-gray-700 truncate flex-1">{file.name}</span>
+                          <FileText className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                          <span className="text-sm font-medium text-gray-800 truncate flex-1">{file.name}</span>
                           <span className="text-xs text-gray-400">{(file.size / 1024).toFixed(1)} KB</span>
                           <button
+                            type="button"
                             onClick={() => removeFile(index)}
-                            className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+                            className="p-1 rounded text-gray-400 hover:text-red-500 transition-colors"
                           >
-                            <XCircle className="w-3.5 h-3.5" />
+                            <XCircle className="w-4 h-4" />
                           </button>
                         </div>
                       ))}
@@ -18533,30 +20012,28 @@ function StudentAchievementsPage({ user }: { user: User }) {
                   )}
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-3 pt-4">
+                {/* Form Buttons - Fixed Height & Full Row */}
+                <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-gray-200">
                   <button
-                    onClick={handleSubmit}
+                    type="button"
+                    onClick={() => handleSubmit()}
                     disabled={isSubmitting}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-semibold rounded-lg shadow-md transition-all disabled:opacity-50"
+                    className="min-h-[48px] px-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
                   >
-                    {isSubmitting ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4" />
-                    )}
-                    Submit for Approval
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    Submit Achievement for Approval
                   </button>
                   <button
+                    type="button"
                     onClick={handleClear}
-                    className="px-6 py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+                    className="min-h-[48px] px-6 border border-gray-300 text-gray-700 font-semibold text-sm rounded-xl hover:bg-gray-100 transition-colors"
                   >
-                    Clear
+                    Clear Form
                   </button>
                   
                   {showSuccess && (
-                    <span className="flex items-center gap-1 text-green-600 font-medium ml-4">
-                      <CheckCircle className="w-4 h-4" /> Submitted successfully!
+                    <span className="flex items-center gap-1.5 text-emerald-600 font-semibold text-sm bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200">
+                      <CheckCircle className="w-4 h-4" /> Achievement submitted successfully!
                     </span>
                   )}
                 </div>
@@ -18566,13 +20043,12 @@ function StudentAchievementsPage({ user }: { user: User }) {
         </CardContent>
       </Card>
 
-      {/* My Achievements - Drag & Drop Cards */}
-      <Card className="border border-gray-200">
+      {/* Submitted Achievements List */}
+      <Card className="border border-gray-200 shadow-md">
         <CardContent className="p-6">
-          {/* Table Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-cyan-500" /> My Achievements
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-blue-600" /> My Submitted Achievements ({filteredAchievements.length})
             </h3>
             <div className="flex flex-wrap gap-3">
               <div className="relative">
@@ -18581,113 +20057,99 @@ function StudentAchievementsPage({ user }: { user: User }) {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search..."
-                  className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400 w-40"
+                  placeholder="Search achievements..."
+                  className="pl-9 pr-4 min-h-[40px] border border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 w-44"
                 />
               </div>
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
-                className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400"
+                className="px-3 min-h-[40px] border border-gray-200 rounded-xl text-sm focus:border-blue-500"
               >
-                <option value="all">All Types</option>
+                <option value="all">All Categories</option>
                 {Object.entries(ACHIEVEMENT_TYPES).map(([key, type]) => (
                   <option key={key} value={key}>{type.label}</option>
                 ))}
               </select>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-400"
-              >
-                <option value="all">All Status</option>
-                <option value="pending_staff">Pending Staff</option>
-                <option value="staff_approved">Staff Approved</option>
-                <option value="pending_hod">Pending HOD</option>
-                <option value="hod_approved">HOD Approved</option>
-                <option value="rejected">Rejected</option>
-              </select>
             </div>
           </div>
 
-          {/* Drag and Drop Achievement Cards */}
           {filteredAchievements.length === 0 ? (
             <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
               <Trophy className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p>No achievements yet</p>
-              <p className="text-sm mt-1">Submit your first achievement above!</p>
+              <p className="font-semibold text-gray-700">No achievements recorded yet</p>
+              <p className="text-sm text-gray-500 mt-1">Select a category above to submit your achievement!</p>
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredAchievements.map((achievement, index) => (
-                <div
-                  key={achievement.id}
-                  draggable
-                  onDragStart={() => handleDragStart(index)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDrop={() => handleDrop(index)}
-                  onDragEnd={handleDragEnd}
-                  className={'flex items-center gap-4 p-4 rounded-xl border-2 transition-all cursor-grab active:cursor-grabbing ' + 
-                    draggedItem === index 
-                      ? 'opacity-50 scale-95 border-cyan-300 bg-cyan-50 shadow-lg' 
-                      : dragOverIndex === index 
-                        ? 'border-cyan-400 bg-cyan-50 border-dashed' 
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                   + ''}
-                >
-                  {/* Drag Handle */}
-                  <div className="text-gray-400 hover:text-gray-600 touch-none">
-                    <GripVertical className="w-5 h-5" />
-                  </div>
-                  
-                  {/* Index Badge */}
-                  <span className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 text-emerald-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
-                    {index + 1}
-                  </span>
-                  
-                  {/* Achievement Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="font-medium text-xs">{achievement.typeName}</Badge>
-                      <span className="text-sm font-medium text-gray-800 truncate">{achievement.title}</span>
-                    </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                      <span>{achievement.dept}</span>
-                      <span>•</span>
-                      <span>{achievement.date}</span>
-                    </div>
-                  </div>
-                  
-                  {/* Status Badge */}
-                  <Badge 
-                    className={
-                      achievement.status === 'hod_approved' ? 'bg-green-100 text-green-700' :
-                      achievement.status === 'staff_approved' ? 'bg-blue-100 text-blue-700' :
-                      achievement.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                      'bg-amber-100 text-amber-700'
-                    }
+              {filteredAchievements.map((achievement, index) => {
+                const isLocked = checkAchievementDateLock(achievement.date || achievement.submittedAt).locked
+                return (
+                  <div
+                    key={achievement.id}
+                    className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm transition-all"
                   >
-                    {achievement.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  </Badge>
-                  
-                  {/* Actions */}
-                  <div className="flex gap-1 flex-shrink-0">
-                    <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-blue-600 transition-colors" title="View">
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-amber-600 transition-colors" title="Edit">
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                    <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-red-600 transition-colors" title="Delete">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center flex-shrink-0">
+                      {index + 1}
+                    </span>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="secondary" className="font-semibold text-xs">{achievement.typeName}</Badge>
+                        <span className="text-sm font-bold text-gray-900 truncate">{achievement.title}</span>
+                        {isLocked && (
+                          <Badge className="bg-slate-100 text-slate-700 border-slate-300 font-medium text-[10px] inline-flex items-center gap-1">
+                            <Lock className="w-3 h-3 text-slate-500" /> 🔒 Report Period Closed
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                        <span>{achievement.dept}</span>
+                        <span>•</span>
+                        <span>Submitted: {achievement.date}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Badge 
+                        className={
+                          achievement.status === 'hod_approved' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
+                          achievement.status === 'staff_approved' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                          achievement.status === 'rejected' ? 'bg-rose-100 text-rose-800 border-rose-200' :
+                          'bg-amber-100 text-amber-800 border-amber-200'
+                        }
+                      >
+                        {achievement.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Badge>
+                      {isLocked ? (
+                        <span className="text-xs text-slate-500 font-semibold px-2.5 py-1 bg-slate-100 rounded-md border border-slate-200">
+                          Read Only
+                        </span>
+                      ) : (
+                        <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                          Editable
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </CardContent>
       </Card>
+
+      <DuplicateAchievementModal
+        isOpen={duplicateModal.isOpen}
+        category={duplicateModal.category}
+        title={duplicateModal.title}
+        serialNo={duplicateModal.serialNo}
+        onCancel={() => setDuplicateModal(prev => ({ ...prev, isOpen: false }))}
+        onContinue={() => {
+          setDuplicateModal(prev => ({ ...prev, isOpen: false }))
+          handleSubmit(true)
+        }}
+      />
     </div>
   )
 }
@@ -18825,7 +20287,7 @@ function StudentFeedbackPage({ user, feedbackEnabled }: { user: User; feedbackEn
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting || !message.trim()}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-md transition-all disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold rounded-xl shadow-md transition-all disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -18937,27 +20399,100 @@ const STAFF_ACHIEVEMENT_TYPES = {
     ]
   },
 
-  // ==================== RESEARCH & PUBLICATION CATEGORY ====================
-  // Add Grant
-  grant: {
-    label: 'Grant',
-    icon: DollarSign,
-    color: 'from-blue-500 to-indigo-600',
+  // ==================== RESEARCH & PUBLICATION CATEGORY (Reverse Order) ====================
+  // Journal Publication (Detailed - Screenshot 6)
+  journal_detailed: {
+    label: 'Journal Paper',
+    icon: Newspaper,
+    color: 'from-slate-500 to-gray-700',
     category: 'research_publication',
-    headerTitle: 'Add Grant',
+    headerTitle: 'Add Record',
     headerIcon: PlusCircle,
     fields: [
-      { id: 'pi_name', label: 'PI NAME', type: 'text', required: true, full: false },
-      { id: 'co_pi_name', label: 'CO-PI NAME (IF ANY)', type: 'text', required: false, placeholder: 'Co-PI faculty name', full: false },
+      { id: 'faculty_name', label: 'FACULTY NAME', type: 'text', required: true, full: false },
       { id: 'dept', label: 'DEPT', type: 'dept_select', required: true, full: false },
-      { id: 'project_title', label: 'PROJECT TITLE', type: 'text', required: true, full: true },
-      { id: 'funding_agency', label: 'FUNDING AGENCY', type: 'text', required: false, full: false },
-      { id: 'scheme', label: 'SCHEME', type: 'text', required: false, full: false },
+      { id: 'designation', label: 'DESIGNATION', type: 'text', required: false, full: false },
+      { id: 'paper_title', label: 'PAPER TITLE', type: 'text', required: true, full: true },
+      { id: 'journal_name', label: 'JOURNAL NAME', type: 'text', required: true, full: true },
+      { id: 'publisher', label: 'PUBLISHER', type: 'text', required: false, full: false },
+      { id: 'issn', label: 'ISSN', type: 'text', required: false, full: false },
+      { id: 'month', label: 'MONTH', type: 'month_select', required: false, full: false },
       { id: 'year', label: 'YEAR', type: 'year_only', required: false, defaultValue: '2025', full: false },
-      { id: 'amount', label: 'AMOUNT (₹)', type: 'number', required: false, full: false },
-      { id: 'received', label: 'RECEIVED (₹)', type: 'number', required: false, full: false },
-      { id: 'status', label: 'STATUS', type: 'select', options: ['Sanctioned', 'In Progress', 'Completed', 'Submitted', 'Approved', 'Rejected'], full: false },
-      { id: 'sanction_letter_link', label: 'SANCTION LETTER PDF LINK', type: 'url', required: false, placeholder: 'https://drive.google.com/...', full: true }
+      { id: 'no_of_authors', label: 'NO. OF AUTHORS', type: 'number', required: false, full: false },
+      { id: 'author_position', label: 'AUTHOR POSITION', type: 'text', required: false, full: false },
+      { id: 'indexed', label: 'INDEXED', type: 'select', options: ['SCI', 'Scopus', 'UGC Care', 'Web of Science', 'IEEE Xplore', 'ACM Digital Library', 'Not Indexed', 'Other'], full: false },
+      { id: 'impact_factor', label: 'IMPACT FACTOR', type: 'text', required: false, full: false },
+      { id: 'quartile', label: 'QUARTILE', type: 'select', options: ['Q1', 'Q2', 'Q3', 'Q4', 'NA'], full: false },
+      { id: 'paper_link', label: 'PAPER LINK (DRIVE)', type: 'url', required: false, placeholder: 'https://...', full: false },
+      { id: 'publisher_online_link', label: 'PUBLISHER ONLINE LINK', type: 'url', required: false, placeholder: 'https://doi.org/...', full: false }
+    ]
+  },
+  // Add Patent
+  patent: {
+    label: 'Patent',
+    icon: Lightbulb,
+    color: 'from-red-500 to-pink-600',
+    category: 'research_publication',
+    headerTitle: 'Add Patent',
+    headerIcon: PlusCircle,
+    fields: [
+      { id: 'faculty_name', label: 'FACULTY NAME', type: 'text', required: true, full: false },
+      { id: 'dept', label: 'DEPT', type: 'dept_select', required: true, full: false },
+      { id: 'designation', label: 'DESIGNATION', type: 'text', required: false, full: false },
+      { id: 'invention_title', label: 'INVENTION TITLE', type: 'text', required: true, full: true },
+      { id: 'patent_no', label: 'PATENT NO.', type: 'text', required: false, full: false },
+      { id: 'month', label: 'MONTH', type: 'month_select', required: false, full: false },
+      { id: 'year', label: 'YEAR', type: 'year_only', required: false, defaultValue: '2025', full: false },
+      { id: 'patent_type', label: 'TYPE', type: 'select', options: ['Design', 'Product', 'Process', 'Software', 'Other'], full: false },
+      { id: 'status', label: 'STATUS', type: 'select', options: ['Filed', 'Published', 'Granted', 'Under Examination', 'Abandoned'], full: false },
+      { id: 'country', label: 'COUNTRY', type: 'text', required: false, defaultValue: 'India', full: false },
+      { id: 'google_drive_link', label: 'PATENT GOOGLE DRIVE LINK', type: 'url', required: false, placeholder: 'https://drive.google.com/...', full: true }
+    ]
+  },
+  // Add Book
+  book: {
+    label: 'Book',
+    icon: BookOpen,
+    color: 'from-amber-500 to-amber-600',
+    category: 'research_publication',
+    headerTitle: 'Add Book',
+    headerIcon: PlusCircle,
+    fields: [
+      { id: 'faculty_name', label: 'FACULTY NAME', type: 'text', required: true, full: false },
+      { id: 'dept', label: 'DEPT', type: 'dept_select', required: true, full: false },
+      { id: 'book_title', label: 'BOOK TITLE', type: 'text', required: true, full: true },
+      { id: 'publisher', label: 'PUBLISHER', type: 'text', required: false, full: false },
+      { id: 'isbn', label: 'ISBN', type: 'text', required: false, full: false },
+      { id: 'month', label: 'MONTH', type: 'month_select', required: false, full: false },
+      { id: 'year', label: 'YEAR', type: 'year_only', required: false, defaultValue: '2025', full: false },
+      { id: 'designation', label: 'DESIGNATION', type: 'text', required: false, placeholder: 'e.g. Professor', full: false },
+      { id: 'no_of_authors', label: 'NO. OF AUTHORS', type: 'number', required: false, full: false },
+      { id: 'author_position', label: 'AUTHOR POSITION', type: 'text', required: false, placeholder: 'e.g. First Author', full: false },
+      { id: 'indexed', label: 'INDEXED', type: 'text', required: false, full: false },
+      { id: 'book_front_page_link', label: 'BOOK FRONT PAGE + AUTHOR PAGE LINK', type: 'url', required: false, placeholder: 'https://drive.google.com/...', full: true }
+    ]
+  },
+  // Add Chapter
+  chapter: {
+    label: 'Book Chapter',
+    icon: BookOpen,
+    color: 'from-cyan-500 to-blue-600',
+    category: 'research_publication',
+    headerTitle: 'Add Chapter',
+    headerIcon: PlusCircle,
+    fields: [
+      { id: 'faculty_name', label: 'FACULTY NAME', type: 'text', required: true, full: false },
+      { id: 'dept', label: 'DEPT', type: 'dept_select', required: true, full: false },
+      { id: 'chapter_title', label: 'CHAPTER TITLE', type: 'text', required: true, full: true },
+      { id: 'book_name', label: 'BOOK NAME', type: 'text', required: true, full: true },
+      { id: 'publisher', label: 'PUBLISHER', type: 'text', required: false, full: false },
+      { id: 'month', label: 'MONTH', type: 'month_select', required: false, full: false },
+      { id: 'year', label: 'YEAR', type: 'year_only', required: false, defaultValue: '2025', full: false },
+      { id: 'designation', label: 'DESIGNATION', type: 'text', required: false, placeholder: 'e.g. Professor', full: false },
+      { id: 'no_of_authors', label: 'NO. OF AUTHORS', type: 'number', required: false, full: false },
+      { id: 'author_position', label: 'AUTHOR POSITION', type: 'text', required: false, placeholder: 'e.g. First Author', full: false },
+      { id: 'indexed', label: 'INDEXED', type: 'text', required: false, full: false },
+      { id: 'pdf_link', label: 'BOOK CHAPTER PDF LINK', type: 'url', required: false, placeholder: 'https://drive.google.com/...', full: true }
     ]
   },
   // Add Publication (Conference)
@@ -18985,99 +20520,26 @@ const STAFF_ACHIEVEMENT_TYPES = {
       { id: 'proceeding_link', label: 'PROCEEDING LINK', type: 'url', required: false, placeholder: 'https://...', full: true }
     ]
   },
-  // Add Chapter
-  chapter: {
-    label: 'Book Chapter',
-    icon: BookOpen,
-    color: 'from-cyan-500 to-blue-600',
+  // Add Grant
+  grant: {
+    label: 'Grant',
+    icon: DollarSign,
+    color: 'from-blue-500 to-indigo-600',
     category: 'research_publication',
-    headerTitle: 'Add Chapter',
+    headerTitle: 'Add Grant',
     headerIcon: PlusCircle,
     fields: [
-      { id: 'faculty_name', label: 'FACULTY NAME', type: 'text', required: true, full: false },
+      { id: 'pi_name', label: 'PI NAME', type: 'text', required: true, full: false },
+      { id: 'co_pi_name', label: 'CO-PI NAME (IF ANY)', type: 'text', required: false, placeholder: 'Co-PI faculty name', full: false },
       { id: 'dept', label: 'DEPT', type: 'dept_select', required: true, full: false },
-      { id: 'chapter_title', label: 'CHAPTER TITLE', type: 'text', required: true, full: true },
-      { id: 'book_name', label: 'BOOK NAME', type: 'text', required: true, full: true },
-      { id: 'publisher', label: 'PUBLISHER', type: 'text', required: false, full: false },
-      { id: 'month', label: 'MONTH', type: 'month_select', required: false, full: false },
+      { id: 'project_title', label: 'PROJECT TITLE', type: 'text', required: true, full: true },
+      { id: 'funding_agency', label: 'FUNDING AGENCY', type: 'text', required: false, full: false },
+      { id: 'scheme', label: 'SCHEME', type: 'text', required: false, full: false },
       { id: 'year', label: 'YEAR', type: 'year_only', required: false, defaultValue: '2025', full: false },
-      { id: 'designation', label: 'DESIGNATION', type: 'text', required: false, placeholder: 'e.g. Professor', full: false },
-      { id: 'no_of_authors', label: 'NO. OF AUTHORS', type: 'number', required: false, full: false },
-      { id: 'author_position', label: 'AUTHOR POSITION', type: 'text', required: false, placeholder: 'e.g. First Author', full: false },
-      { id: 'indexed', label: 'INDEXED', type: 'text', required: false, full: false },
-      { id: 'pdf_link', label: 'BOOK CHAPTER PDF LINK', type: 'url', required: false, placeholder: 'https://drive.google.com/...', full: true }
-    ]
-  },
-  // Add Book
-  book: {
-    label: 'Book',
-    icon: BookOpen,
-    color: 'from-amber-500 to-orange-600',
-    category: 'research_publication',
-    headerTitle: 'Add Book',
-    headerIcon: PlusCircle,
-    fields: [
-      { id: 'faculty_name', label: 'FACULTY NAME', type: 'text', required: true, full: false },
-      { id: 'dept', label: 'DEPT', type: 'dept_select', required: true, full: false },
-      { id: 'book_title', label: 'BOOK TITLE', type: 'text', required: true, full: true },
-      { id: 'publisher', label: 'PUBLISHER', type: 'text', required: false, full: false },
-      { id: 'isbn', label: 'ISBN', type: 'text', required: false, full: false },
-      { id: 'month', label: 'MONTH', type: 'month_select', required: false, full: false },
-      { id: 'year', label: 'YEAR', type: 'year_only', required: false, defaultValue: '2025', full: false },
-      { id: 'designation', label: 'DESIGNATION', type: 'text', required: false, placeholder: 'e.g. Professor', full: false },
-      { id: 'no_of_authors', label: 'NO. OF AUTHORS', type: 'number', required: false, full: false },
-      { id: 'author_position', label: 'AUTHOR POSITION', type: 'text', required: false, placeholder: 'e.g. First Author', full: false },
-      { id: 'indexed', label: 'INDEXED', type: 'text', required: false, full: false },
-      { id: 'book_front_page_link', label: 'BOOK FRONT PAGE + AUTHOR PAGE LINK', type: 'url', required: false, placeholder: 'https://drive.google.com/...', full: true }
-    ]
-  },
-  // Add Patent
-  patent: {
-    label: 'Patent',
-    icon: Lightbulb,
-    color: 'from-red-500 to-pink-600',
-    category: 'research_publication',
-    headerTitle: 'Add Patent',
-    headerIcon: PlusCircle,
-    fields: [
-      { id: 'faculty_name', label: 'FACULTY NAME', type: 'text', required: true, full: false },
-      { id: 'dept', label: 'DEPT', type: 'dept_select', required: true, full: false },
-      { id: 'designation', label: 'DESIGNATION', type: 'text', required: false, full: false },
-      { id: 'invention_title', label: 'INVENTION TITLE', type: 'text', required: true, full: true },
-      { id: 'patent_no', label: 'PATENT NO.', type: 'text', required: false, full: false },
-      { id: 'month', label: 'MONTH', type: 'month_select', required: false, full: false },
-      { id: 'year', label: 'YEAR', type: 'year_only', required: false, defaultValue: '2025', full: false },
-      { id: 'patent_type', label: 'TYPE', type: 'select', options: ['Design', 'Product', 'Process', 'Software', 'Other'], full: false },
-      { id: 'status', label: 'STATUS', type: 'select', options: ['Filed', 'Published', 'Granted', 'Under Examination', 'Abandoned'], full: false },
-      { id: 'country', label: 'COUNTRY', type: 'text', required: false, defaultValue: 'India', full: false },
-      { id: 'google_drive_link', label: 'PATENT GOOGLE DRIVE LINK', type: 'url', required: false, placeholder: 'https://drive.google.com/...', full: true }
-    ]
-  },
-  // Journal Publication (Detailed - Screenshot 6)
-  journal_detailed: {
-    label: 'Journal Paper',
-    icon: Newspaper,
-    color: 'from-slate-500 to-gray-700',
-    category: 'research_publication',
-    headerTitle: 'Add Record',
-    headerIcon: PlusCircle,
-    fields: [
-      { id: 'faculty_name', label: 'FACULTY NAME', type: 'text', required: true, full: false },
-      { id: 'dept', label: 'DEPT', type: 'dept_select', required: true, full: false },
-      { id: 'designation', label: 'DESIGNATION', type: 'text', required: false, full: false },
-      { id: 'paper_title', label: 'PAPER TITLE', type: 'text', required: true, full: true },
-      { id: 'journal_name', label: 'JOURNAL NAME', type: 'text', required: true, full: true },
-      { id: 'publisher', label: 'PUBLISHER', type: 'text', required: false, full: false },
-      { id: 'issn', label: 'ISSN', type: 'text', required: false, full: false },
-      { id: 'month', label: 'MONTH', type: 'month_select', required: false, full: false },
-      { id: 'year', label: 'YEAR', type: 'year_only', required: false, defaultValue: '2025', full: false },
-      { id: 'no_of_authors', label: 'NO. OF AUTHORS', type: 'number', required: false, full: false },
-      { id: 'author_position', label: 'AUTHOR POSITION', type: 'text', required: false, full: false },
-      { id: 'indexed', label: 'INDEXED', type: 'select', options: ['SCI', 'Scopus', 'UGC Care', 'Web of Science', 'IEEE Xplore', 'ACM Digital Library', 'Not Indexed', 'Other'], full: false },
-      { id: 'impact_factor', label: 'IMPACT FACTOR', type: 'text', required: false, full: false },
-      { id: 'quartile', label: 'QUARTILE', type: 'select', options: ['Q1', 'Q2', 'Q3', 'Q4', 'NA'], full: false },
-      { id: 'paper_link', label: 'PAPER LINK (DRIVE)', type: 'url', required: false, placeholder: 'https://...', full: false },
-      { id: 'publisher_online_link', label: 'PUBLISHER ONLINE LINK', type: 'url', required: false, placeholder: 'https://doi.org/...', full: false }
+      { id: 'amount', label: 'AMOUNT (₹)', type: 'number', required: false, full: false },
+      { id: 'received', label: 'RECEIVED (₹)', type: 'number', required: false, full: false },
+      { id: 'status', label: 'STATUS', type: 'select', options: ['Sanctioned', 'In Progress', 'Completed', 'Submitted', 'Approved', 'Rejected'], full: false },
+      { id: 'sanction_letter_link', label: 'SANCTION LETTER PDF LINK', type: 'url', required: false, placeholder: 'https://drive.google.com/...', full: true }
     ]
   },
   // Resource Person Engagement
@@ -19152,16 +20614,19 @@ function FileUpload({ onFileSelect, accept = '*', maxFiles = 5 }: {
 
   return (
     <div className="space-y-3">
+      <label className="block text-sm font-semibold text-gray-700">
+        ATTACH DOCUMENT / PROOF
+      </label>
       <div
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={'border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ' + 
+        className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ${
           isDragging 
-            ? 'border-blue-500 bg-blue-50 scale-[1.02]' 
-            : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
-         + ''}
+            ? 'border-blue-500 bg-blue-50/80 scale-[1.01]' 
+            : 'border-slate-300 hover:border-blue-500 hover:bg-slate-50/80 bg-slate-50/40'
+        }`}
       >
         <input
           ref={fileInputRef}
@@ -19171,30 +20636,37 @@ function FileUpload({ onFileSelect, accept = '*', maxFiles = 5 }: {
           onChange={handleFileInput}
           className="hidden"
         />
-        <Upload className={'w-10 h-10 mx-auto mb-3 ' + isDragging ? 'text-blue-500' : 'text-gray-400' + ''} />
-        <p className="text-sm font-medium text-gray-700">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 transition-colors ${
+          isDragging ? 'bg-blue-500 text-white' : 'bg-blue-50 text-blue-600'
+        }`}>
+          <Upload className="w-6 h-6" />
+        </div>
+        <p className="text-sm font-semibold text-gray-800">
           {isDragging ? 'Drop files here...' : 'Drag & drop files here'}
         </p>
-        <p className="text-xs text-gray-500 mt-1">or click to browse</p>
-        <p className="text-xs text-gray-400 mt-2">Max {maxFiles} files • PDF, DOC, Images</p>
+        <p className="text-xs text-gray-500 mt-1">or click to browse from device</p>
+        <p className="text-xs text-gray-400 mt-2">Max {maxFiles} files • PDF, DOC, DOCX, PNG, JPG</p>
       </div>
       
       {selectedFiles.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-gray-700">Selected Files:</p>
-          {selectedFiles.map((file, index) => (
-            <div key={index} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
-              <FileText className="w-5 h-5 text-blue-500 flex-shrink-0" />
-              <span className="text-sm text-gray-700 truncate flex-1">{file.name}</span>
-              <span className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</span>
-              <button
-                onClick={(e) => { e.stopPropagation(); removeFile(index) }}
-                className="p-1 hover:bg-red-100 rounded-full text-gray-400 hover:text-red-500"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
+        <div className="space-y-2 pt-1">
+          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Attached Files ({selectedFiles.length}):</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {selectedFiles.map((file, index) => (
+              <div key={index} className="flex items-center gap-2.5 p-2.5 bg-white border border-gray-200 rounded-lg shadow-sm">
+                <FileText className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                <span className="text-xs font-medium text-gray-800 truncate flex-1">{file.name}</span>
+                <span className="text-[11px] text-gray-500">{(file.size / 1024).toFixed(1)} KB</span>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); removeFile(index) }}
+                  className="p-1 hover:bg-red-50 rounded-full text-gray-400 hover:text-red-600 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -19203,7 +20675,7 @@ function FileUpload({ onFileSelect, accept = '*', maxFiles = 5 }: {
 
 // ============ STAFF ACHIEVEMENT PAGE ============
 function StaffAchievementPage({ user }: { user: User }) {
-  const [selectedCategory, setSelectedCategory] = useState<'achievement' | 'research_publication'>('')
+  const [selectedCategory, setSelectedCategory] = useState<'achievement' | 'research_publication' | ''>('')
   const [selectedType, setSelectedType] = useState<string>('')
   const [formData, setFormData] = useState<Record<string, string>>({})
   const [submittedEntries, setSubmittedEntries] = useState<any[]>([])
@@ -19291,19 +20763,73 @@ function StaffAchievementPage({ user }: { user: User }) {
     setAttachedFiles([])
   }
 
-  const handleSubmit = async () => {
+  const [duplicateModal, setDuplicateModal] = useState<{
+    isOpen: boolean
+    category: string
+    title: string
+    serialNo: string
+  }>({
+    isOpen: false,
+    category: '',
+    title: '',
+    serialNo: '01',
+  })
+
+  const handleSubmit = async (overrideContinue = false) => {
+    const forceContinue = overrideContinue === true
     if (!selectedType) return
+
+    // Period Lock Check
+    const targetDate = formData.publish_date || formData.award_date || formData.submittedAt || new Date().toISOString().split('T')[0]
+    const lockCheck = checkAchievementDateLock(targetDate)
+    if (lockCheck.locked) {
+      alert(lockCheck.error || 'This reporting period is closed. The achievement can no longer be modified.')
+      return
+    }
+
+    const typeConfig = STAFF_ACHIEVEMENT_TYPES[selectedType]
+    const typeName = typeConfig?.label || selectedType
+    const title = formData.pi_name || formData.paper_title || formData.project_title || formData.invention_title || formData.book_title || formData.chapter_title || formData.award_name || formData.event_title || formData.company_name || formData.course_name || 'Untitled'
+
+    // Special duplicate title check for Journal Publication, Conference Publication, and Patent
+    if (isSpecialCategory(typeName) && !forceContinue) {
+      try {
+        const res = await fetch('/api/achievements/check-duplicate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            category: typeName,
+            title: title,
+            userId: user.id,
+            departmentId: user.departmentId,
+            localRecords: submittedEntries,
+          }),
+        })
+        const data = await res.json()
+        if (data.isDuplicate) {
+          setDuplicateModal({
+            isOpen: true,
+            category: data.category || getCanonicalCategoryLabel(typeName),
+            title: data.title || title,
+            serialNo: data.serialNo || '02',
+          })
+          return
+        }
+      } catch (err) {
+        console.error('Error checking duplicate title:', err)
+      }
+    }
+
     setIsSubmitting(true)
     
     await new Promise(resolve => setTimeout(resolve, 1200))
     
-    const typeConfig = STAFF_ACHIEVEMENT_TYPES[selectedType]
     const newEntry = {
       id: Date.now(),
       type: selectedType,
       typeName: typeConfig?.label || selectedType,
       category: typeConfig?.category,
-      title: formData.pi_name || formData.paper_title || formData.project_title || formData.invention_title || formData.book_title || formData.chapter_title || formData.award_name || formData.event_title || formData.company_name || formData.course_name || 'Untitled',
+      title: title,
       dept: user.departmentName,
       data: formData,
       files: attachedFiles.map(f => f.name),
@@ -19511,10 +21037,10 @@ function StaffAchievementPage({ user }: { user: User }) {
                 <BookOpen className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">RESEARCH AND PUBLICATION</h3>
-              <p className="text-gray-500 text-sm mb-4">Grants, Publications, Chapters, Books, Patents, Journals & more</p>
+              <p className="text-gray-500 text-sm mb-4">Journals, Patents, Books, Chapters, Publications, Grants & more</p>
               
               <div className="space-y-2">
-                {['Grant', 'Publication', 'Book Chapter', 'Book', 'Patent', 'Journal Paper'].map(item => (
+                {['Journal Paper', 'Patent', 'Book', 'Book Chapter', 'Publication', 'Grant'].map(item => (
                   <div key={item} className="flex items-center gap-2 text-sm text-gray-600">
                     <ChevronRight className="w-4 h-4 text-slate-600" />
                     <span>{item}</span>
@@ -19592,10 +21118,10 @@ function StaffAchievementPage({ user }: { user: User }) {
               </div>
               
               <CardContent className="p-6 space-y-5">
-                {/* Dynamic Fields Grid - 3 columns like screenshots */}
+                {/* Dynamic Fields Grid - 3 columns */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                   {currentTypeConfig?.fields.map(field => (
-                    <div key={field.id} className={'' + field.full ? 'md:col-span-2 lg:col-span-3' : '' + ''}>
+                    <div key={field.id} className={field.full ? 'col-span-full md:col-span-2 lg:col-span-3' : ''}>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">
                         {field.label} {field.required && <span className="text-red-500">*</span>}
                       </label>
@@ -19616,7 +21142,7 @@ function StaffAchievementPage({ user }: { user: User }) {
                 {/* Action Buttons - Save & Clear like screenshots */}
                 <div className="flex items-center gap-3 pt-4">
                   <Button
-                    onClick={handleSubmit}
+                    onClick={() => handleSubmit()}
                     disabled={isSubmitting}
                     className="px-6 py-2.5 bg-[#0f172a] hover:bg-[#1e293b] text-white font-medium rounded-lg shadow-md flex items-center gap-2"
                   >
@@ -19648,6 +21174,7 @@ function StaffAchievementPage({ user }: { user: User }) {
                   <div className="space-y-3 max-h-96 overflow-y-auto">
                     {submittedEntries.slice(0, 10).map(entry => {
                       const EntryIcon = STAFF_ACHIEVEMENT_TYPES[entry.type]?.icon || FileText
+                      const isLocked = checkAchievementDateLock(entry.submittedAt || entry.data?.publish_date).locked
                       return (
                         <div key={entry.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
                           <div className="flex items-center gap-3">
@@ -19655,7 +21182,12 @@ function StaffAchievementPage({ user }: { user: User }) {
                               <EntryIcon className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                              <p className="font-semibold text-sm text-gray-800">{entry.typeName}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold text-sm text-gray-800">{entry.typeName}</p>
+                                {isLocked && (
+                                  <Badge className="bg-slate-200 text-slate-700 border-slate-300 text-[10px]">🔒 Closed</Badge>
+                                )}
+                              </div>
                               <p className="text-xs text-gray-500 mt-0.5">{entry.title.substring(0, 50)}...</p>
                               <p className="text-xs text-gray-400 mt-0.5">{new Date(entry.submittedAt).toLocaleDateString()}</p>
                             </div>
@@ -19770,9 +21302,9 @@ function StaffAchievementPage({ user }: { user: User }) {
                   return (
                     <div 
                       key={key} 
-                      className={'border rounded-lg transition-all hover:shadow-md ' + 
+                      className={`border rounded-lg transition-all hover:shadow-md ${ 
                         count > 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-60'
-                       + ''}
+                      }`}
                     >
                       {/* Type Header Row */}
                       <div className="flex items-center justify-between p-4 cursor-pointer" onClick={() => toggleAchievementType(key)}>
@@ -19786,14 +21318,14 @@ function StaffAchievementPage({ user }: { user: User }) {
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className={'px-3 py-1 rounded-full text-sm font-bold ' + 
+                          <span className={`px-3 py-1 rounded-full text-sm font-bold ${ 
                             count > 0 
                               ? 'bg-blue-100 text-blue-700' 
                               : 'bg-gray-100 text-gray-500'
-                           + ''}>
+                          }`}>
                             {count}
                           </span>
-                          <ChevronDown className={'w-4 h-4 text-gray-400 transition-transform ' + expandedTypes.has(key) ? 'rotate-180' : '' + ''} />
+                          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedTypes.has(key) ? 'rotate-180' : ''}`} />
                         </div>
                       </div>
 
@@ -19843,6 +21375,18 @@ function StaffAchievementPage({ user }: { user: User }) {
           })()}
         </CardContent>
       </Card>
+
+      <DuplicateAchievementModal
+        isOpen={duplicateModal.isOpen}
+        category={duplicateModal.category}
+        title={duplicateModal.title}
+        serialNo={duplicateModal.serialNo}
+        onCancel={() => setDuplicateModal(prev => ({ ...prev, isOpen: false }))}
+        onContinue={() => {
+          setDuplicateModal(prev => ({ ...prev, isOpen: false }))
+          handleSubmit(true)
+        }}
+      />
     </div>
   )
 }
@@ -19906,13 +21450,16 @@ function StudentAchievementViewPage({ user }: { user: User }) {
   const [selectedEntry, setSelectedEntry] = useState<any>(null)
   const [processingAction, setProcessingAction] = useState<string | null>(null)
 
+  const getStudentName = (entry: any) => entry?.studentName || entry?.submittedBy || entry?.data?.name || entry?.data?.studentName || 'Student'
+  const getRegNo = (entry: any) => entry?.regNo || entry?.reg || entry?.data?.reg || entry?.data?.regNo || 'N/A'
+
   const filteredAchievements = studentAchievements.filter(a => {
     const matchesStatus = filterStatus === 'all' || a.status === filterStatus
     const matchesType = filterType === 'all' || a.type === filterType
     const matchesSearch = searchTerm === '' || 
-      a.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.regNo.toLowerCase().includes(searchTerm.toLowerCase())
+      getStudentName(a).toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (a.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      getRegNo(a).toLowerCase().includes(searchTerm.toLowerCase())
     return matchesStatus && matchesType && matchesSearch
   })
 
@@ -19938,28 +21485,87 @@ function StudentAchievementViewPage({ user }: { user: User }) {
     }
   }
 
+  // Load saved student achievements from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('student_achievements')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setStudentAchievements(prev => {
+            const map = new Map(prev.map(item => [item.id, item]))
+            parsed.forEach((item: any) => map.set(item.id, item))
+            return Array.from(map.values())
+          })
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load student achievements:', e)
+    }
+  }, [])
+
   const handleApprove = async (id: string) => {
     setProcessingAction(id)
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise(resolve => setTimeout(resolve, 800))
     
-    setStudentAchievements(prev => prev.map(a => 
-      a.id.toString() === id 
-        ? { ...a, status: 'pending_hod', approvedBy: user.name, approvedAt: new Date().toISOString() }
-        : a
-    ))
+    setStudentAchievements(prev => {
+      const updated = prev.map(a => 
+        a.id.toString() === id
+          ? { ...a, status: 'pending_hod', approvedBy: user.name, approvedAt: new Date().toISOString() }
+          : a
+      )
+      try { localStorage.setItem('student_achievements', JSON.stringify(updated)) } catch (e) {}
+      return updated
+    })
     setProcessingAction(null)
     setSelectedEntry(null)
   }
 
   const handleReject = async (id: string) => {
     setProcessingAction(id)
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise(resolve => setTimeout(resolve, 800))
     
-    setStudentAchievements(prev => prev.map(a => 
-      a.id.toString() === id 
-        ? { ...a, status: 'rejected', rejectedBy: user.name, rejectedAt: new Date().toISOString() }
-        : a
-    ))
+    setStudentAchievements(prev => {
+      const updated = prev.map(a => 
+        a.id.toString() === id
+          ? { ...a, status: 'rejected', rejectedBy: user.name, rejectedAt: new Date().toISOString() }
+          : a
+      )
+      try { localStorage.setItem('student_achievements', JSON.stringify(updated)) } catch (e) {}
+      return updated
+    })
+    setProcessingAction(null)
+    setSelectedEntry(null)
+  }
+
+  const handleApproveAll = async () => {
+    setProcessingAction('all_approve')
+    await new Promise(resolve => setTimeout(resolve, 800))
+    setStudentAchievements(prev => {
+      const updated = prev.map(a => 
+        a.status === 'pending_staff'
+          ? { ...a, status: 'pending_hod', approvedBy: user.name, approvedAt: new Date().toISOString() }
+          : a
+      )
+      try { localStorage.setItem('student_achievements', JSON.stringify(updated)) } catch (e) {}
+      return updated
+    })
+    setProcessingAction(null)
+    setSelectedEntry(null)
+  }
+
+  const handleRejectAll = async () => {
+    setProcessingAction('all_reject')
+    await new Promise(resolve => setTimeout(resolve, 800))
+    setStudentAchievements(prev => {
+      const updated = prev.map(a => 
+        a.status === 'pending_staff'
+          ? { ...a, status: 'rejected', rejectedBy: user.name, rejectedAt: new Date().toISOString() }
+          : a
+      )
+      try { localStorage.setItem('student_achievements', JSON.stringify(updated)) } catch (e) {}
+      return updated
+    })
     setProcessingAction(null)
     setSelectedEntry(null)
   }
@@ -19976,12 +21582,31 @@ function StudentAchievementViewPage({ user }: { user: User }) {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Student Achievements Review</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Student Approval</h2>
           <p className="text-gray-500 mt-1">Review and approve student submissions before sending to HOD</p>
         </div>
-        <Badge variant="outline" className="px-4 py-2 text-sm bg-purple-50 text-purple-700 border-purple-200">
-          {user.departmentName} • Staff Reviewer
-        </Badge>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            onClick={handleApproveAll}
+            disabled={stats.pending_staff === 0 || processingAction !== null}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm flex items-center gap-2"
+          >
+            <CheckCircle className="w-4 h-4" />
+            {processingAction === 'all_approve' ? 'Approving All...' : `Approve All (${stats.pending_staff})`}
+          </Button>
+          <Button
+            onClick={handleRejectAll}
+            disabled={stats.pending_staff === 0 || processingAction !== null}
+            variant="destructive"
+            className="font-medium shadow-sm flex items-center gap-2"
+          >
+            <XCircle className="w-4 h-4" />
+            {processingAction === 'all_reject' ? 'Rejecting All...' : `Reject All (${stats.pending_staff})`}
+          </Button>
+          <Badge variant="outline" className="px-4 py-2 text-sm bg-purple-50 text-purple-700 border-purple-200">
+            {user.departmentName} • Staff Reviewer
+          </Badge>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -20085,24 +21710,24 @@ function StudentAchievementViewPage({ user }: { user: User }) {
           filteredAchievements.map(entry => (
             <Card key={entry.id} className="overflow-hidden hover:shadow-md transition-shadow">
               <div className={'h-1 ' + 
-                entry.status === 'pending_staff' ? 'bg-yellow-500' :
+                (entry.status === 'pending_staff' ? 'bg-yellow-500' :
                 entry.status === 'staff_approved' ? 'bg-blue-500' :
                 entry.status === 'pending_hod' ? 'bg-purple-500' :
                 entry.status === 'hod_approved' ? 'bg-green-500' :
-                'bg-red-500'
-               + ''}></div>
+                'bg-red-500')
+               }></div>
               <CardContent className="p-4">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   <div className="flex items-start gap-4 flex-1">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                      {entry.studentName.charAt(0)}
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-md">
+                      {(getStudentName(entry)).charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-gray-900">{entry.studentName}</h3>
+                        <h3 className="font-semibold text-gray-900">{getStudentName(entry)}</h3>
                         <span className="text-sm text-gray-500">•</span>
-                        <span className="text-sm text-gray-600">{entry.regNo}</span>
-                        <span className={'px-2 py-0.5 text-xs rounded-full border ' + getStatusColor(entry.status) + ''}>
+                        <span className="text-sm text-gray-600">{getRegNo(entry)}</span>
+                        <span className={'px-2 py-0.5 text-xs rounded-full border ' + getStatusColor(entry.status)}>
                           {getStatusLabel(entry.status)}
                         </span>
                       </div>
@@ -20187,13 +21812,13 @@ function StudentAchievementViewPage({ user }: { user: User }) {
             <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-80px)]">
               {/* Student Info */}
               <div className="flex items-center gap-4 pb-4 border-b">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">
-                  {selectedEntry.studentName.charAt(0)}
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
+                  {(getStudentName(selectedEntry)).charAt(0)}
                 </div>
                 <div>
-                  <h4 className="font-bold text-gray-900 text-lg">{selectedEntry.studentName}</h4>
-                  <p className="text-gray-600">{selectedEntry.regNo} • {selectedEntry.department}</p>
-                  <span className={'inline-block mt-1 px-3 py-1 text-xs rounded-full border ' + getStatusColor(selectedEntry.status) + ''}>
+                  <h4 className="font-bold text-gray-900 text-lg">{getStudentName(selectedEntry)}</h4>
+                  <p className="text-gray-600">{getRegNo(selectedEntry)} • {selectedEntry.department || selectedEntry.dept || user.departmentName}</p>
+                  <span className={'inline-block mt-1 px-3 py-1 text-xs rounded-full border ' + getStatusColor(selectedEntry.status)}>
                     {getStatusLabel(selectedEntry.status)}
                   </span>
                 </div>
@@ -20242,7 +21867,7 @@ function StudentAchievementViewPage({ user }: { user: User }) {
               {/* Attached Files Placeholder */}
               <div className="space-y-3">
                 <h5 className="font-semibold text-gray-800 flex items-center gap-2">
-                  <Paperclip className="w-5 h-5 text-orange-500" />
+                  <Paperclip className="w-5 h-5 text-amber-500" />
                   Attached Documents
                 </h5>
                 <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
@@ -20412,7 +22037,7 @@ function MyAchievementPage({ user }: { user: User }) {
       ) : (
         <form onSubmit={handleSubmit}>
           <Card className="overflow-hidden">
-            <div className={'h-1.5 bg-gradient-to-r ' + ACHIEVEMENT_TYPES[selectedType]?.color + ''} />
+            <div className={'h-1.5 bg-gradient-to-r ' + ACHIEVEMENT_TYPES[selectedType]?.color} />
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">{ACHIEVEMENT_TYPES[selectedType]?.label}</CardTitle>
@@ -20423,7 +22048,7 @@ function MyAchievementPage({ user }: { user: User }) {
             </CardHeader>
             <CardContent className="space-y-4">
               {ACHIEVEMENT_TYPES[selectedType]?.fields.map(field => (
-                <div key={field.id} className={'' + field.full ? 'col-span-full' : '' + ''}>
+                <div key={field.id} className={(field.full ? 'col-span-full' : '')}>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     {field.label} {field.required && <span className="text-red-500">*</span>}
                   </label>
@@ -20444,7 +22069,7 @@ function MyAchievementPage({ user }: { user: User }) {
                       onChange={(e) => setFormData(prev => ({...prev, [field.id]: e.target.value}))}
                       required={field.required}
                       rows={4}
-                      placeholder={'Enter ' + field.label.toLowerCase() + ''}
+                      placeholder={'Enter ' + field.label.toLowerCase()}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                     />
                   ) : (
@@ -20454,7 +22079,7 @@ function MyAchievementPage({ user }: { user: User }) {
                       onChange={(e) => setFormData(prev => ({...prev, [field.id]: e.target.value}))}
                       required={field.required}
                       readOnly={field.locked}
-                      placeholder={'Enter ' + field.label.toLowerCase() + ''}
+                      placeholder={'Enter ' + field.label.toLowerCase()}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
                     />
                   )}
@@ -20561,13 +22186,113 @@ function HODStudentApprovalPage({ user }: { user: User }) {
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [rejectingId, setRejectingId] = useState<string | null>(null)
 
+  // Load saved student achievements from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('student_achievements')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setStudentAchievements(prev => {
+            const map = new Map(prev.map(item => [item.id, item]))
+            parsed.forEach((item: any) => map.set(item.id, item))
+            return Array.from(map.values())
+          })
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load student achievements:', e)
+    }
+  }, [])
+
+  const handleApprove = async (id: string) => {
+    setProcessingAction(id)
+    await new Promise(resolve => setTimeout(resolve, 800))
+
+    setStudentAchievements(prev => {
+      const updated = prev.map(a =>
+        a.id.toString() === id
+          ? { ...a, status: 'hod_approved', hodApprovedBy: user.name, approvedAt: new Date().toISOString() }
+          : a
+      )
+      try { localStorage.setItem('student_achievements', JSON.stringify(updated)) } catch (e) {}
+      return updated
+    })
+    setProcessingAction(null)
+    setSelectedEntry(null)
+  }
+
+  const handleRejectWithReason = async () => {
+    if (!rejectingId || !rejectReason.trim()) return
+
+    setProcessingAction(rejectingId)
+    await new Promise(resolve => setTimeout(resolve, 800))
+
+    setStudentAchievements(prev => {
+      const updated = prev.map(a =>
+        a.id.toString() === rejectingId
+          ? { ...a, status: 'rejected', rejectionReason: rejectReason, rejectedBy: user.name, rejectedAt: new Date().toISOString() }
+          : a
+      )
+      try { localStorage.setItem('student_achievements', JSON.stringify(updated)) } catch (e) {}
+      return updated
+    })
+    setProcessingAction(null)
+    setShowRejectModal(false)
+    setRejectReason('')
+    setRejectingId(null)
+    setSelectedEntry(null)
+  }
+
+  const openRejectModal = (id: string) => {
+    setRejectingId(id)
+    setRejectReason('')
+    setShowRejectModal(true)
+  }
+
+  const handleApproveAll = async () => {
+    setProcessingAction('all_approve')
+    await new Promise(resolve => setTimeout(resolve, 800))
+    setStudentAchievements(prev => {
+      const updated = prev.map(a => 
+        (a.status === 'pending_hod' || a.status === 'pending_staff')
+          ? { ...a, status: 'hod_approved', hodApprovedBy: user.name, approvedAt: new Date().toISOString() }
+          : a
+      )
+      try { localStorage.setItem('student_achievements', JSON.stringify(updated)) } catch (e) {}
+      return updated
+    })
+    setProcessingAction(null)
+    setSelectedEntry(null)
+  }
+
+  const handleRejectAll = async () => {
+    setProcessingAction('all_reject')
+    await new Promise(resolve => setTimeout(resolve, 800))
+    setStudentAchievements(prev => {
+      const updated = prev.map(a => 
+        (a.status === 'pending_hod' || a.status === 'pending_staff')
+          ? { ...a, status: 'rejected', rejectionReason: 'Bulk rejected by HOD', rejectedBy: user.name, rejectedAt: new Date().toISOString() }
+          : a
+      )
+      try { localStorage.setItem('student_achievements', JSON.stringify(updated)) } catch (e) {}
+      return updated
+    })
+    setProcessingAction(null)
+    setSelectedEntry(null)
+  }
+
+  const getStudentName = (entry: any) => entry?.studentName || entry?.submittedBy || entry?.data?.name || entry?.data?.studentName || 'Student'
+  const getRegNo = (entry: any) => entry?.regNo || entry?.reg || entry?.data?.reg || entry?.data?.regNo || 'N/A'
+  const getStaffName = (entry: any) => entry?.staffName || entry?.submittedBy || entry?.data?.faculty_name || entry?.data?.pi_name || 'Faculty Member'
+
   const filteredAchievements = studentAchievements.filter(a => {
     const matchesStatus = filterStatus === 'all' || a.status === filterStatus
     const matchesType = filterType === 'all' || a.type === filterType
     const matchesSearch = searchTerm === '' || 
-      a.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.regNo.toLowerCase().includes(searchTerm.toLowerCase())
+      getStudentName(a).toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (a.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      getRegNo(a).toLowerCase().includes(searchTerm.toLowerCase())
     return matchesStatus && matchesType && matchesSearch
   })
 
@@ -20593,46 +22318,9 @@ function HODStudentApprovalPage({ user }: { user: User }) {
     }
   }
 
-  const handleApprove = async (id: string) => {
-    setProcessingAction(id)
-    await new Promise(resolve => setTimeout(resolve, 1200))
-    
-    setStudentAchievements(prev => prev.map(a => 
-      a.id.toString() === id 
-        ? { ...a, status: 'hod_approved', hodApprovedBy: user.name, approvedAt: new Date().toISOString() }
-        : a
-    ))
-    setProcessingAction(null)
-    setSelectedEntry(null)
-  }
-
-  const handleRejectWithReason = async () => {
-    if (!rejectingId || !rejectReason.trim()) return
-    
-    setProcessingAction(rejectingId)
-    await new Promise(resolve => setTimeout(resolve, 1200))
-    
-    setStudentAchievements(prev => prev.map(a => 
-      a.id.toString() === rejectingId 
-        ? { ...a, status: 'rejected', rejectionReason: rejectReason, rejectedBy: user.name, rejectedAt: new Date().toISOString() }
-        : a
-    ))
-    setProcessingAction(null)
-    setShowRejectModal(false)
-    setRejectReason('')
-    setRejectingId(null)
-    setSelectedEntry(null)
-  }
-
-  const openRejectModal = (id: string) => {
-    setRejectingId(id)
-    setRejectReason('')
-    setShowRejectModal(true)
-  }
-
   const stats = {
     total: studentAchievements.length,
-    pending_hod: studentAchievements.filter(a => a.status === 'pending_hod').length,
+    pending_hod: studentAchievements.filter(a => a.status === 'pending_hod' || a.status === 'pending_staff').length,
     approved: studentAchievements.filter(a => a.status === 'hod_approved').length,
     rejected: studentAchievements.filter(a => a.status === 'rejected').length
   }
@@ -20642,64 +22330,83 @@ function HODStudentApprovalPage({ user }: { user: User }) {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Student Achievement Approval</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Student Approval</h2>
           <p className="text-gray-500 mt-1">Review and approve student achievements sent by staff members</p>
         </div>
-        <Badge variant="outline" className="px-4 py-2 text-sm bg-purple-50 text-purple-700 border-purple-200">
-          {user.departmentName} • HOD Reviewer
-        </Badge>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            onClick={handleApproveAll}
+            disabled={stats.pending_hod === 0 || processingAction !== null}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm flex items-center gap-2"
+          >
+            <CheckCircle className="w-4 h-4" />
+            {processingAction === 'all_approve' ? 'Approving All...' : `Approve All (${stats.pending_hod})`}
+          </Button>
+          <Button
+            onClick={handleRejectAll}
+            disabled={stats.pending_hod === 0 || processingAction !== null}
+            variant="destructive"
+            className="font-medium shadow-sm flex items-center gap-2"
+          >
+            <XCircle className="w-4 h-4" />
+            {processingAction === 'all_reject' ? 'Rejecting All...' : `Reject All (${stats.pending_hod})`}
+          </Button>
+          <Badge variant="outline" className="px-4 py-2 text-sm bg-blue-50 text-blue-800 border-blue-200">
+            {user.departmentName} • HOD Reviewer
+          </Badge>
+        </div>
       </div>
 
       {/* Section Header - Standalone Title Above Stats Cards */}
       <div className="flex items-center gap-3 mb-4">
-        <FileText className="w-5 h-5 text-slate-500" />
-        <h3 className="text-lg font-semibold text-slate-700">Approval Statistics</h3>
+        <FileText className="w-5 h-5 text-blue-600" />
+        <h3 className="text-lg font-semibold text-slate-800">Approval Statistics</h3>
         <div className="flex-1 h-px bg-gradient-to-r from-slate-200 to-transparent ml-2" />
       </div>
 
       {/* Stats Cards - 4 Column Responsive Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <Card className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 border-slate-200">
+        <Card className="p-4 bg-white border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center">
               <FileText className="w-5 h-5 text-white" />
             </div>
             <div>
               <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
-              <p className="text-xs text-slate-600">Total Submissions</p>
+              <p className="text-xs text-slate-500">Total Submissions</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+        <Card className="p-4 bg-amber-50/70 border border-amber-200 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center">
               <Clock className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-purple-900">{stats.pending_hod}</p>
-              <p className="text-xs text-purple-600">Pending Your Approval</p>
+              <p className="text-2xl font-bold text-amber-900">{stats.pending_hod}</p>
+              <p className="text-xs text-amber-700">Pending Your Approval</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+        <Card className="p-4 bg-emerald-50/70 border border-emerald-200 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-green-900">{stats.approved}</p>
-              <p className="text-xs text-green-600">Approved by You</p>
+              <p className="text-2xl font-bold text-emerald-900">{stats.approved}</p>
+              <p className="text-xs text-emerald-700">Approved by You</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4 bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+        <Card className="p-4 bg-rose-50/70 border border-rose-200 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-rose-500 flex items-center justify-center">
               <XCircle className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-red-900">{stats.rejected}</p>
-              <p className="text-xs text-red-600">Rejected</p>
+              <p className="text-2xl font-bold text-rose-900">{stats.rejected}</p>
+              <p className="text-xs text-rose-700">Rejected</p>
             </div>
           </div>
         </Card>
@@ -20770,18 +22477,18 @@ function HODStudentApprovalPage({ user }: { user: User }) {
               <div 
                 key={entry.id} 
                 className={'px-6 py-4 transition-colors duration-150 hover:bg-[#F8FAFC] group ' + 
-                  entry.status === 'pending_hod' ? 'bg-white' : ''
-                 + ''}
+                  (entry.status === 'pending_hod' ? 'bg-white' : '')
+                 }
               >
                 <div className="grid grid-cols-12 gap-4 items-center">
                   {/* Student Info */}
                   <div className="col-span-3 flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm">
-                      {entry.studentName.charAt(0)}
+                      {(getStudentName(entry)).charAt(0)}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">{entry.studentName}</p>
-                      <p className="text-xs text-gray-500">{entry.regNo}</p>
+                      <p className="font-semibold text-gray-900 truncate">{getStudentName(entry)}</p>
+                      <p className="text-xs text-gray-500">{getRegNo(entry)}</p>
                     </div>
                   </div>
 
@@ -20806,7 +22513,7 @@ function HODStudentApprovalPage({ user }: { user: User }) {
 
                   {/* Status Badge */}
                   <div className="col-span-2">
-                    <span className={'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ' + getStatusColor(entry.status) + ''}>
+                    <span className={'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ' + getStatusColor(entry.status)}>
                       {getStatusLabel(entry.status)}
                     </span>
                     {entry.status === 'rejected' && entry.rejectionReason && (
@@ -20882,13 +22589,13 @@ function HODStudentApprovalPage({ user }: { user: User }) {
             <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-80px)]">
               {/* Student Info */}
               <div className="flex items-center gap-4 pb-4 border-b">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xl">
-                  {selectedEntry.studentName.charAt(0)}
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
+                  {(getStudentName(selectedEntry)).charAt(0)}
                 </div>
                 <div>
-                  <h4 className="font-bold text-gray-900 text-lg">{selectedEntry.studentName}</h4>
-                  <p className="text-gray-600">{selectedEntry.regNo} • {selectedEntry.department}</p>
-                  <span className={'inline-block mt-1 px-3 py-1 text-xs rounded-full border ' + getStatusColor(selectedEntry.status) + ''}>
+                  <h4 className="font-bold text-gray-900 text-lg">{getStudentName(selectedEntry)}</h4>
+                  <p className="text-gray-600">{getRegNo(selectedEntry)} • {selectedEntry.department}</p>
+                  <span className={'inline-block mt-1 px-3 py-1 text-xs rounded-full border ' + getStatusColor(selectedEntry.status)}>
                     {getStatusLabel(selectedEntry.status)}
                   </span>
                 </div>
@@ -20964,16 +22671,13 @@ function HODStudentApprovalPage({ user }: { user: User }) {
       {/* Reject Modal with Reason - Clean White on Dark Backdrop */}
       {showRejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Dark Backdrop with Blur */}
           <div 
             className="absolute inset-0 bg-black/60 backdrop-blur-md" 
             onClick={() => setShowRejectModal(false)}
           />
           
-          {/* Clean White Modal */}
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 fade-in duration-200">
-            {/* Modal Header */}
-            <div className="bg-gradient-to-r from-red-50 to-orange-50 px-6 py-5 border-b border-red-100">
+            <div className="bg-gradient-to-r from-red-50 to-amber-50 px-6 py-5 border-b border-red-100">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0 border border-red-200">
                   <AlertCircle className="w-6 h-6 text-red-500" />
@@ -20985,7 +22689,6 @@ function HODStudentApprovalPage({ user }: { user: User }) {
               </div>
             </div>
 
-            {/* Modal Body */}
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -21002,7 +22705,6 @@ function HODStudentApprovalPage({ user }: { user: User }) {
                 <p className="text-xs text-gray-400 mt-1.5">Be specific and helpful to help improve future submissions</p>
               </div>
               
-              {/* Action Buttons */}
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setShowRejectModal(false)}
@@ -21109,11 +22811,109 @@ function HODStaffApprovalPage({ user }: { user: User }) {
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [rejectingId, setRejectingId] = useState<string | null>(null)
 
+  // Load saved staff achievements from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('staff_achievements')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setStaffAchievements(prev => {
+            const map = new Map(prev.map(item => [item.id, item]))
+            parsed.forEach((item: any) => map.set(item.id, item))
+            return Array.from(map.values())
+          })
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load staff achievements:', e)
+    }
+  }, [])
+
+  const handleApprove = async (id: string) => {
+    setProcessingAction(id)
+    await new Promise(resolve => setTimeout(resolve, 800))
+
+    setStaffAchievements(prev => {
+      const updated = prev.map(a =>
+        a.id.toString() === id
+          ? { ...a, status: 'hod_approved', hodApprovedBy: user.name, approvedAt: new Date().toISOString() }
+          : a
+      )
+      try { localStorage.setItem('staff_achievements', JSON.stringify(updated)) } catch (e) {}
+      return updated
+    })
+    setProcessingAction(null)
+    setSelectedEntry(null)
+  }
+
+  const handleRejectWithReason = async () => {
+    if (!rejectingId || !rejectReason.trim()) return
+
+    setProcessingAction(rejectingId)
+    await new Promise(resolve => setTimeout(resolve, 800))
+
+    setStaffAchievements(prev => {
+      const updated = prev.map(a =>
+        a.id.toString() === rejectingId
+          ? { ...a, status: 'rejected', rejectionReason: rejectReason, rejectedBy: user.name, rejectedAt: new Date().toISOString() }
+          : a
+      )
+      try { localStorage.setItem('staff_achievements', JSON.stringify(updated)) } catch (e) {}
+      return updated
+    })
+    setProcessingAction(null)
+    setShowRejectModal(false)
+    setRejectReason('')
+    setRejectingId(null)
+    setSelectedEntry(null)
+  }
+
+  const openRejectModal = (id: string) => {
+    setRejectingId(id)
+    setRejectReason('')
+    setShowRejectModal(true)
+  }
+
+  const handleApproveAll = async () => {
+    setProcessingAction('all_approve')
+    await new Promise(resolve => setTimeout(resolve, 800))
+    setStaffAchievements(prev => {
+      const updated = prev.map(a => 
+        (a.status === 'pending_hod' || a.status === 'pending_staff')
+          ? { ...a, status: 'hod_approved', hodApprovedBy: user.name, approvedAt: new Date().toISOString() }
+          : a
+      )
+      try { localStorage.setItem('staff_achievements', JSON.stringify(updated)) } catch (e) {}
+      return updated
+    })
+    setProcessingAction(null)
+    setSelectedEntry(null)
+  }
+
+  const handleRejectAll = async () => {
+    setProcessingAction('all_reject')
+    await new Promise(resolve => setTimeout(resolve, 800))
+    setStaffAchievements(prev => {
+      const updated = prev.map(a => 
+        (a.status === 'pending_hod' || a.status === 'pending_staff')
+          ? { ...a, status: 'rejected', rejectionReason: 'Bulk rejected by HOD', rejectedBy: user.name, rejectedAt: new Date().toISOString() }
+          : a
+      )
+      try { localStorage.setItem('staff_achievements', JSON.stringify(updated)) } catch (e) {}
+      return updated
+    })
+    setProcessingAction(null)
+    setSelectedEntry(null)
+  }
+
+  const getStaffName = (entry: any) => entry?.staffName || entry?.submittedBy || entry?.data?.faculty_name || entry?.data?.pi_name || 'Faculty Member'
+
   const filteredAchievements = staffAchievements.filter(a => {
     const matchesStatus = filterStatus === 'all' || a.status === filterStatus
     const matchesSearch = searchTerm === '' || 
-      a.staffName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.title.toLowerCase().includes(searchTerm.toLowerCase())
+      getStaffName(a).toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (a.title || '').toLowerCase().includes(searchTerm.toLowerCase())
     return matchesStatus && matchesSearch
   })
 
@@ -21135,46 +22935,9 @@ function HODStaffApprovalPage({ user }: { user: User }) {
     }
   }
 
-  const handleApprove = async (id: string) => {
-    setProcessingAction(id)
-    await new Promise(resolve => setTimeout(resolve, 1200))
-    
-    setStaffAchievements(prev => prev.map(a => 
-      a.id.toString() === id 
-        ? { ...a, status: 'hod_approved', hodApprovedBy: user.name, approvedAt: new Date().toISOString() }
-        : a
-    ))
-    setProcessingAction(null)
-    setSelectedEntry(null)
-  }
-
-  const handleRejectWithReason = async () => {
-    if (!rejectingId || !rejectReason.trim()) return
-    
-    setProcessingAction(rejectingId)
-    await new Promise(resolve => setTimeout(resolve, 1200))
-    
-    setStaffAchievements(prev => prev.map(a => 
-      a.id.toString() === rejectingId 
-        ? { ...a, status: 'rejected', rejectionReason: rejectReason, rejectedBy: user.name, rejectedAt: new Date().toISOString() }
-        : a
-    ))
-    setProcessingAction(null)
-    setShowRejectModal(false)
-    setRejectReason('')
-    setRejectingId(null)
-    setSelectedEntry(null)
-  }
-
-  const openRejectModal = (id: string) => {
-    setRejectingId(id)
-    setRejectReason('')
-    setShowRejectModal(true)
-  }
-
   const stats = {
     total: staffAchievements.length,
-    pending_hod: staffAchievements.filter(a => a.status === 'pending_hod').length,
+    pending_hod: staffAchievements.filter(a => a.status === 'pending_hod' || a.status === 'pending_staff').length,
     approved: staffAchievements.filter(a => a.status === 'hod_approved').length,
     rejected: staffAchievements.filter(a => a.status === 'rejected').length
   }
@@ -21187,61 +22950,80 @@ function HODStaffApprovalPage({ user }: { user: User }) {
           <h2 className="text-2xl font-bold text-gray-900">Staff Achievement Approval</h2>
           <p className="text-gray-500 mt-1">Review and approve staff research and achievement submissions</p>
         </div>
-        <Badge variant="outline" className="px-4 py-2 text-sm bg-indigo-50 text-indigo-700 border-indigo-200">
-          {user.departmentName} • HOD Reviewer
-        </Badge>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            onClick={handleApproveAll}
+            disabled={stats.pending_hod === 0 || processingAction !== null}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm flex items-center gap-2"
+          >
+            <CheckCircle className="w-4 h-4" />
+            {processingAction === 'all_approve' ? 'Approving All...' : `Approve All (${stats.pending_hod})`}
+          </Button>
+          <Button
+            onClick={handleRejectAll}
+            disabled={stats.pending_hod === 0 || processingAction !== null}
+            variant="destructive"
+            className="font-medium shadow-sm flex items-center gap-2"
+          >
+            <XCircle className="w-4 h-4" />
+            {processingAction === 'all_reject' ? 'Rejecting All...' : `Reject All (${stats.pending_hod})`}
+          </Button>
+          <Badge variant="outline" className="px-4 py-2 text-sm bg-blue-50 text-blue-800 border-blue-200">
+            {user.departmentName} • HOD Reviewer
+          </Badge>
+        </div>
       </div>
 
       {/* Section Header - Standalone Title Above Stats Cards */}
       <div className="flex items-center gap-3 mb-4">
-        <FileText className="w-5 h-5 text-slate-500" />
-        <h3 className="text-lg font-semibold text-slate-700">Approval Statistics</h3>
+        <FileText className="w-5 h-5 text-blue-600" />
+        <h3 className="text-lg font-semibold text-slate-800">Approval Statistics</h3>
         <div className="flex-1 h-px bg-gradient-to-r from-slate-200 to-transparent ml-2" />
       </div>
 
       {/* Stats Cards - 4 Column Responsive Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <Card className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 border-slate-200">
+        <Card className="p-4 bg-white border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center">
               <FileText className="w-5 h-5 text-white" />
             </div>
             <div>
               <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
-              <p className="text-xs text-slate-600">Total Submissions</p>
+              <p className="text-xs text-slate-500">Total Submissions</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+        <Card className="p-4 bg-amber-50/70 border border-amber-200 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center">
               <Clock className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-purple-900">{stats.pending_hod}</p>
-              <p className="text-xs text-purple-600">Pending Your Approval</p>
+              <p className="text-2xl font-bold text-amber-900">{stats.pending_hod}</p>
+              <p className="text-xs text-amber-700">Pending Your Approval</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+        <Card className="p-4 bg-emerald-50/70 border border-emerald-200 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-green-900">{stats.approved}</p>
-              <p className="text-xs text-green-600">Approved by You</p>
+              <p className="text-2xl font-bold text-emerald-900">{stats.approved}</p>
+              <p className="text-xs text-emerald-700">Approved by You</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4 bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+        <Card className="p-4 bg-rose-50/70 border border-rose-200 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-rose-500 flex items-center justify-center">
               <XCircle className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-red-900">{stats.rejected}</p>
-              <p className="text-xs text-red-600">Rejected</p>
+              <p className="text-2xl font-bold text-rose-900">{stats.rejected}</p>
+              <p className="text-xs text-rose-700">Rejected</p>
             </div>
           </div>
         </Card>
@@ -21273,6 +23055,42 @@ function HODStaffApprovalPage({ user }: { user: User }) {
         </div>
       </Card>
 
+      {/* Bulk Action Banner */}
+      {stats.pending_hod > 0 && (
+        <Card className="p-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border border-emerald-200 shadow-sm mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center shadow-sm">
+                <Clock className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900">{stats.pending_hod} Staff Submission(s) Pending HOD Approval</p>
+                <p className="text-xs text-gray-600">Approve or reject all pending staff achievement and publication submissions at once</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handleApproveAll}
+                disabled={processingAction !== null}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center gap-1.5 shadow-sm"
+              >
+                <CheckCircle className="w-4 h-4" />
+                {processingAction === 'all_approve' ? 'Processing...' : `Approve All (${stats.pending_hod})`}
+              </Button>
+              <Button
+                onClick={handleRejectAll}
+                disabled={processingAction !== null}
+                variant="destructive"
+                className="font-semibold flex items-center gap-1.5 shadow-sm"
+              >
+                <XCircle className="w-4 h-4" />
+                {processingAction === 'all_reject' ? 'Processing...' : `Reject All (${stats.pending_hod})`}
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Submissions List - High Contrast Data Table */}
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
         {/* Table Header */}
@@ -21299,17 +23117,17 @@ function HODStaffApprovalPage({ user }: { user: User }) {
               <div 
                 key={entry.id} 
                 className={'px-6 py-4 transition-colors duration-150 hover:bg-[#F8FAFC] group ' + 
-                  entry.status === 'pending_hod' ? 'bg-white' : ''
-                 + ''}
+                  (entry.status === 'pending_hod' ? 'bg-white' : '')
+                 }
               >
                 <div className="grid grid-cols-12 gap-4 items-center">
                   {/* Staff Info */}
                   <div className="col-span-3 flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm">
-                      {entry.staffName.charAt(0)}
+                      {(getStaffName(entry)).charAt(0)}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">{entry.staffName}</p>
+                      <p className="font-semibold text-gray-900 truncate">{getStaffName(entry)}</p>
                       <p className="text-xs text-gray-500">{entry.department}</p>
                     </div>
                   </div>
@@ -21318,7 +23136,7 @@ function HODStaffApprovalPage({ user }: { user: User }) {
                   <div className="col-span-3 min-w-0">
                     <p className="text-sm font-medium text-gray-800 truncate">{entry.title}</p>
                     {entry.staffNote && (
-                      <p className="text-xs text-orange-600 mt-0.5 truncate" title={entry.staffNote}>
+                      <p className="text-xs text-amber-600 mt-0.5 truncate" title={entry.staffNote}>
                         📝 {entry.staffNote}
                       </p>
                     )}
@@ -21327,10 +23145,10 @@ function HODStaffApprovalPage({ user }: { user: User }) {
                   {/* Category */}
                   <div className="col-span-2">
                     <span className={'inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ' + 
-                      entry.category === 'research' 
+                      (entry.category === 'research' 
                         ? 'bg-blue-100 text-blue-700' 
-                        : 'bg-amber-100 text-amber-700'
-                     + ''}>
+                        : 'bg-amber-100 text-amber-700')
+                     }>
                       {entry.category === 'research' ? '📄' : '🏆'}
                       {entry.typeName}
                     </span>
@@ -21339,7 +23157,7 @@ function HODStaffApprovalPage({ user }: { user: User }) {
 
                   {/* Status Badge */}
                   <div className="col-span-2">
-                    <span className={'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ' + getStatusColor(entry.status) + ''}>
+                    <span className={'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ' + getStatusColor(entry.status)}>
                       {getStatusLabel(entry.status)}
                     </span>
                     {entry.status === 'rejected' && entry.rejectionReason && (
@@ -21415,11 +23233,11 @@ function HODStaffApprovalPage({ user }: { user: User }) {
             <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-80px)]">
               {/* Staff Info */}
               <div className="flex items-center gap-4 pb-4 border-b">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold text-xl">
-                  {selectedEntry.staffName.charAt(0)}
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
+                  {(getStaffName(selectedEntry)).charAt(0)}
                 </div>
                 <div>
-                  <h4 className="font-bold text-gray-900 text-lg">{selectedEntry.staffName}</h4>
+                  <h4 className="font-bold text-gray-900 text-lg">{getStaffName(selectedEntry)}</h4>
                   <p className="text-gray-600">{selectedEntry.department} Department</p>
                   <span className={'inline-block mt-1 px-3 py-1 text-xs rounded-full border ' + getStatusColor(selectedEntry.status) + ''}>
                     {getStatusLabel(selectedEntry.status)}
@@ -21471,10 +23289,10 @@ function HODStaffApprovalPage({ user }: { user: User }) {
               {selectedEntry.staffNote && (
                 <div className="space-y-3">
                   <h5 className="font-semibold text-gray-800 flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5 text-orange-500" />
+                    <MessageSquare className="w-5 h-5 text-amber-500" />
                     Staff Note
                   </h5>
-                  <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
+                  <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
                     <p className="text-sm text-gray-700 italic">{selectedEntry.staffNote}</p>
                   </div>
                 </div>
@@ -21513,7 +23331,7 @@ function HODStaffApprovalPage({ user }: { user: User }) {
           {/* Clean White Modal */}
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 fade-in duration-200">
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-red-50 to-orange-50 px-6 py-5 border-b border-red-100">
+            <div className="bg-gradient-to-r from-red-50 to-amber-50 px-6 py-5 border-b border-red-100">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0 border border-red-200">
                   <AlertCircle className="w-6 h-6 text-red-500" />
@@ -21616,12 +23434,20 @@ export default function IQACPortal() {
     }
   }, [darkMode, mounted])
 
+  // Reset activeTab and hierarchy state automatically when user or role changes
+  useEffect(() => {
+    if (user) {
+      setActiveTab('dashboard')
+      setHierarchyState({ level: 'department' })
+    }
+  }, [user?.id, user?.role, user?.email])
+
   if (!mounted) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center" suppressHydrationWarning>
         <div className="text-center" suppressHydrationWarning>
           <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-4" />
-          <p className="text-gray-500">Loading IQAC Portal...</p>
+          <p className="text-gray-500">Loading AI Enabled IQAC Portal...</p>
         </div>
       </div>
     )
@@ -21632,6 +23458,21 @@ export default function IQACPortal() {
   }
 
   const renderContent = () => {
+    // Role-specific safety mapping & guard
+    if (user?.role === 'HOD') {
+      if (activeTab === 'staff_achievement' || activeTab === 'achievements') {
+        return <MyAchievementPage user={user} />
+      }
+    } else if (user?.role === 'STAFF') {
+      if (activeTab === 'my_achievement' || activeTab === 'achievements') {
+        return <StaffAchievementPage user={user} />
+      }
+    } else if (user?.role === 'STUDENT') {
+      if (['staff_achievement', 'my_achievement', 'hod_student_approval', 'hod_staff_approval', 'hod_management', 'staff_management', 'report_generator', 'database'].includes(activeTab)) {
+        return <StudentAchievementsPage user={user} />
+      }
+    }
+
     switch (activeTab) {
       case 'dashboard': return <DashboardContent user={user} setActiveTab={setActiveTab} />
       case 'departments': return <DepartmentsPage />
@@ -21653,9 +23494,9 @@ export default function IQACPortal() {
         : user?.role === 'STUDENT' 
           ? <StudentAchievementsPage user={user} />
           : <AchievementForm user={user} onBack={() => setActiveTab('dashboard')} />
-      case 'report_generator': return user?.role === 'ADMIN'
-        ? <ReportGeneratorPage />
-        : <HODReportGeneratorPage user={user} />
+      case 'report_generator': return <ReportGeneratorPage user={user} />
+      case 'hod_monthly_report': return <HODReportGeneratorPage user={user || { id: 'hod-1', role: 'HOD', name: 'HOD User', email: 'hod@niet.edu', departmentName: user?.departmentName || 'Computer Science and Engineering' }} />
+      case 'achievement_report': return <AchievementReportGenerator user={user || { id: 'staff-1', role: 'STAFF', name: 'Staff User', email: 'staff@niet.edu' }} />
       case 'staff_achievement': return <StaffAchievementPage user={user} />
       case 'student_achievement_view': return user?.role === 'STUDENT' 
         ? <StudentAchievementsPage user={user} />
@@ -21663,10 +23504,7 @@ export default function IQACPortal() {
       case 'my_achievement': return <MyAchievementPage user={user} />
       case 'hod_student_approval': return <HODStudentApprovalPage user={user} />
       case 'hod_staff_approval': return <HODStaffApprovalPage user={user} />
-      case 'feedback': return user?.role === 'STUDENT'
-        ? <StudentFeedbackPage user={user} feedbackEnabled={feedbackEnabled} />
-        : <FeedbackModule user={user} feedbackEnabled={feedbackEnabled} setFeedbackEnabled={setFeedbackEnabled} />
-      case 'report_generator': return <HODReportGeneratorPage user={user} />
+      case 'feedback': return <FeedbackModuleContainer user={user} />
       case 'hod_management': return <HODManagementPage user={user} />
       case 'staff_management': return <StaffManagementPage user={user} />
       case 'showcase': return <AdminShowcasePage />
@@ -21690,17 +23528,18 @@ export default function IQACPortal() {
       {/* Main Content Area - Offset by sidebar width using padding */}
       <div className={[
         'min-h-screen flex flex-col transition-all duration-300',
+        user.role === 'HOD' ? 'bg-[#f5f8fc]' : '',
         // Desktop: Add left padding equal to sidebar width  
         sidebarOpen ? 'lg:pl-72' : 'lg:pl-20'
       ].join(' ')}>
         {/* Header - Full width within container */}
-        <header className="bg-white/95 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-30 header-shadow flex-shrink-0 w-full">
+        <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-30 flex-shrink-0 w-full">
           <div className="flex items-center justify-between px-4 lg:px-6 h-16 w-full">
             {/* Sidebar Toggle Button - Top Left with Logo */}
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2.5 rounded-xl bg-gradient-to-r from-[#0a2a5e] to-blue-600 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-200 hover:scale-105"
+                className="p-2.5 rounded-xl bg-[#0B1F3A] hover:bg-[#155EEF] text-white shadow-xs transition-colors duration-200"
                 title={sidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
               >
                 {sidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeft className="w-5 h-5" />}
@@ -21708,21 +23547,21 @@ export default function IQACPortal() {
               
               {/* Logo - Always visible */}
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0a2a5e] via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 logo-glow">
+                <div className="w-9 h-9 rounded-xl bg-[#155EEF] flex items-center justify-center text-white shadow-xs">
                   <GraduationCap className="w-5 h-5 text-white" />
                 </div>
                 <div className="hidden sm:block">
-                  <span className="font-bold text-gray-900 text-sm block leading-tight">NIET IQAC</span>
-                  <span className="text-xs text-gray-500 block leading-tight">ERP Portal</span>
+                  <span className="font-bold text-[#172033] text-sm block leading-tight">NIET IQAC</span>
+                  <span className="text-xs text-[#64748B] block leading-tight">ERP Portal</span>
                 </div>
               </div>
             </div>
 
             {/* Search */}
-            <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors w-64">
-              <Search className="w-4 h-4" />
+            <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-[#F4F7FB] border border-[#E2E8F0] text-[#64748B] hover:bg-[#EEF2F6] transition-colors w-64">
+              <Search className="w-4 h-4 text-[#155EEF]" />
               <span className="text-sm">Search...</span>
-              <kbd className="hidden lg:inline-flex items-center px-2 py-0.5 rounded bg-gray-200 text-xs text-gray-600 ml-auto">⌘K</kbd>
+              <kbd className="hidden lg:inline-flex items-center px-2 py-0.5 rounded bg-[#E2E8F0] text-xs text-[#64748B] ml-auto">⌘K</kbd>
             </div>
 
             {/* Right Section */}
@@ -21733,7 +23572,7 @@ export default function IQACPortal() {
                   setDarkMode(!darkMode)
                   localStorage.setItem('iqac-theme', !darkMode ? 'dark' : 'light')
                 }}
-                className="p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
+                className="p-2.5 text-[#64748B] hover:text-[#172033] hover:bg-[#F4F7FB] rounded-xl transition-colors"
               >
                 {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
@@ -21742,17 +23581,20 @@ export default function IQACPortal() {
               <NotificationDropdown />
 
               {/* Profile */}
-              <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-3 border-l border-gray-200">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm shadow-lg shadow-blue-500/20">
+              <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-3 border-l border-[#E2E8F0]">
+                <div className="w-9 h-9 rounded-xl bg-[#155EEF] flex items-center justify-center text-white font-semibold text-sm shadow-xs">
                   {user.name?.charAt(0) || 'U'}
                 </div>
                 <div className="hidden sm:block">
-                  <p className="text-sm font-semibold text-gray-900">{user.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user.role?.toLowerCase()}</p>
+                  <p className="text-sm font-semibold text-[#172033]">{user.name}</p>
+                  <p className="text-xs text-[#64748B] capitalize">{user.role?.toLowerCase()}</p>
                 </div>
                 <button
-                  onClick={logout}
-                  className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                  onClick={async () => {
+                    setActiveTab('dashboard')
+                    await logout()
+                  }}
+                  className="p-2.5 text-[#64748B] hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                   title="Logout"
                 >
                   <LogOut className="w-4 h-4" />
@@ -21762,15 +23604,15 @@ export default function IQACPortal() {
           </div>
         </header>
 
-        {/* Main Content */}
-        <main className="flex-1 p-4 lg:p-6 pb-20 content-area w-full overflow-x-hidden">
+        {/* Main Content Area */}
+        <main className="flex-1 p-4 lg:p-6 pb-20 content-area w-full overflow-x-hidden bg-[#F4F7FB]">
           {renderContent()}
         </main>
 
         {/* Footer */}
-        <footer className="py-4 px-6 border-t border-gray-200 bg-white/80 backdrop-blur-sm mt-auto footer-sticky w-full">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-gray-500">
-            <p>© 2024 NIET IQAC Enterprise Management System</p>
+        <footer className="py-4 px-6 border-t border-[#E2E8F0] bg-white/90 backdrop-blur-sm mt-auto footer-sticky w-full">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-[#64748B]">
+            <p>© 2024 NIET IQAC Management System</p>
             <p>Nehru Institute of Engineering and Technology (Autonomous)</p>
           </div>
         </footer>
@@ -21791,7 +23633,7 @@ function AcademicHierarchyPage({
 }: { 
   user: User
   hierarchyState: HierarchyState
-  setHierarchyState: (s: HierarchyState) => void
+  setHierarchyState: (s: HierarchyState | ((prev: HierarchyState) => HierarchyState)) => void
   setActiveTab: (t: TabType) => void
 }) {
   const [departments, setDepartments] = useState<any[]>([])
@@ -21869,26 +23711,18 @@ function AcademicHierarchyPage({
 
   // Generate sample achievement data for demonstration
   const generateSampleAchievements = () => {
-    // Use comprehensive list of ALL departments
+    // Use comprehensive list of 11 official departments
     const allDepartments = [
-      'Computer Science and Engineering',
-      'Electronics & Communication Engineering', 
-      'Mechanical Engineering',
-      'Civil Engineering',
-      'Information Technology',
-      'Electrical & Electronics Engineering',
-      'Artificial Intelligence & Data Science',
-      'Cyber Security',
-      'Biomedical Engineering',
-      'Biotechnology',
-      'Chemical Engineering',
       'Aeronautical Engineering',
-      'Automobile Engineering',
-      'Agricultural Engineering',
-      'Food Technology',
-      'Pharmacy',
+      'Artificial Intelligence & Data Science',
+      'Computer Science and Business Systems',
+      'Computer Science and Engineering',
+      'Electronics & Communication Engineering',
+      'Electrical & Electronics Engineering',
+      'Information Technology',
+      'Mechatronics',
+      'Mechanical Engineering',
       'MBA',
-      'MCA',
       'Science & Humanities'
     ]
     
@@ -22140,6 +23974,12 @@ function AcademicHierarchyPage({
     } finally {
       setLoading(false)
     }
+  }
+
+  interface BreadcrumbItem {
+    label: string
+    icon?: any
+    href?: string
   }
 
   // Generate breadcrumb items
@@ -22493,7 +24333,7 @@ function AcademicHierarchyPage({
                           e.stopPropagation()
                           openAchievementDetailView('total', dept.id, dept.name)
                         }}
-                        className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-3 cursor-pointer hover:from-amber-100 hover:to-orange-100 transition-colors"
+                        className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg p-3 cursor-pointer hover:from-amber-100 hover:to-yellow-100 transition-colors"
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-medium text-amber-700">Total Achievements</span>
@@ -22561,7 +24401,7 @@ function AcademicHierarchyPage({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {years.map((year, idx) => {
               const colors = [
-                'from-orange-500 to-amber-500',
+                'from-amber-500 to-yellow-500',
                 'from-emerald-500 to-teal-500',
                 'from-blue-500 to-indigo-500',
                 'from-purple-500 to-pink-500'
@@ -22663,7 +24503,7 @@ function AcademicHierarchyPage({
               const sectionColors = [
                 'from-cyan-500 to-blue-500',
                 'from-emerald-500 to-green-500',
-                'from-orange-500 to-red-500',
+                'from-amber-500 to-red-500',
                 'from-purple-500 to-indigo-500'
               ]
               
@@ -23551,10 +25391,10 @@ function AcademicHierarchyPage({
                         </div>
                         <div className="w-px h-10 bg-gray-200" />
                         <div className="flex items-center gap-2">
-                          <Clock className="w-5 h-5 text-orange-500" />
+                          <Clock className="w-5 h-5 text-amber-500" />
                           <div>
                             <p className="text-xs text-gray-500">Pending</p>
-                            <p className="text-lg font-bold text-orange-600">{pending}</p>
+                            <p className="text-lg font-bold text-amber-600">{pending}</p>
                           </div>
                         </div>
                       </>
@@ -23591,7 +25431,7 @@ function AcademicHierarchyPage({
                       return acc
                     }, {} as Record<string, typeof studentAchievementsList>)
 
-                    return Object.entries(groupedByType).map(([type, achievements]) => (
+                    return Object.entries(groupedByType).map(([type, achievements]: [string, any]) => (
                       <div key={type} className="mb-6 last:mb-0">
                         <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-2">
                           <FolderOpen className="w-4 h-4 text-emerald-500" />
@@ -23989,7 +25829,7 @@ function StudentProfilePage({
   user: User
   studentId: string
   hierarchyState: HierarchyState
-  setHierarchyState: (s: HierarchyState) => void
+  setHierarchyState: (s: HierarchyState | ((prev: HierarchyState) => HierarchyState)) => void
   setActiveTab: (t: TabType) => void
 }) {
   const [studentData, setStudentData] = useState<any>(null)
@@ -24168,8 +26008,8 @@ function StudentProfilePage({
         <Card className="border border-gray-200">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
-                <CalendarDays className="w-5 h-5 text-orange-600" />
+              <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                <CalendarDays className="w-5 h-5 text-amber-600" />
               </div>
               <div>
                 <p className="text-sm text-gray-500">Events</p>

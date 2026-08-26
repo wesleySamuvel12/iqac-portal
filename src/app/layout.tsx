@@ -15,12 +15,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IQAC Portal - NIET Management System",
-  description: "Enterprise IQAC Management System for Nehru Institute of Engineering and Technology (Autonomous). Comprehensive dashboard for departments, faculty, students, and research management.",
-  keywords: ["IQAC", "NIET", "Management System", "Education", "Quality Assurance", "Autonomous"],
+  title: "AI Enabled IQAC Portal - NIET Management System",
+  description: "AI Enabled IQAC Management System for Nehru Institute of Engineering and Technology (Autonomous). Comprehensive dashboard for departments, faculty, students, and research management.",
+  keywords: ["IQAC", "AI Enabled IQAC", "NIET", "Management System", "Education", "Quality Assurance", "Autonomous"],
   authors: [{ name: "NIET IQAC Team" }],
   icons: {
-    icon: "/logo.svg",
+    icon: "/images/niet-logo.png",
   },
 };
 

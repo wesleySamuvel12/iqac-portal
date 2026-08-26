@@ -99,14 +99,60 @@ async function generateWithPlaywright(htmlContent: string, outputPath: string): 
   // Dynamic import for playwright
   const { chromium } = await import('playwright')
   
-  const browser = await chromium.launch({
+  let browser
+  const launchOptions: any = {
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  })
-  
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-extensions',
+      '--disable-component-extensions-with-background-pages',
+      '--disable-default-apps'
+    ]
+  }
+
+  try {
+    browser = await chromium.launch(launchOptions)
+  } catch (err) {
+    console.warn('Default Playwright chromium launch failed, trying fallback channels/paths...', err)
+    
+    // Try system installed channels
+    const channels = ['chrome', 'msedge']
+    for (const channel of channels) {
+      try {
+        browser = await chromium.launch({ ...launchOptions, channel })
+        break
+      } catch (cErr) {}
+    }
+
+    // If channel launch failed, try common Windows paths
+    if (!browser) {
+      const possiblePaths = [
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+        'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+      ]
+
+      for (const execPath of possiblePaths) {
+        if (existsSync(execPath)) {
+          try {
+            browser = await chromium.launch({ ...launchOptions, executablePath: execPath })
+            break
+          } catch (pErr) {}
+        }
+      }
+    }
+
+    if (!browser) {
+      throw err
+    }
+  }
+
   try {
     const page = await browser.newPage()
-    await page.setContent(htmlContent, { waitUntil: 'networkidle' })
+    await page.setContent(htmlContent, { waitUntil: 'load', timeout: 15000 })
     
     await page.pdf({
       path: outputPath,
@@ -123,7 +169,9 @@ async function generateWithPlaywright(htmlContent: string, outputPath: string): 
       footerTemplate: '<div style="font-size: 8px; text-align: center; width: 100%; color: #9ca3af;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>'
     })
   } finally {
-    await browser.close()
+    if (browser) {
+      await browser.close()
+    }
   }
 }
 
@@ -557,6 +605,9 @@ function generateReportHTML(data: any, dept: string, nietLogoDataUrl: string = '
         <tr><td class="row-label">Attendance Report Prepared</td><td colspan="2">${safeData.attendanceReport || '-'}</td></tr>
         <tr><td class="row-label">Remedial Classes Conducted</td><td>${safeData.remedialClasses || '-'}</td><td>NA</td></tr>
         <tr><td class="row-label">Mentoring Sessions Conducted</td><td>${safeData.mentoringSessions || '-'}</td><td>NA</td></tr>
+        ${(safeData.customAcademicRows || []).map((row: any) => `
+          <tr><td class="row-label">${row.particulars || 'Custom Academic Activity'}</td><td>${row.theory || '-'}</td><td>${row.lab || '-'}</td></tr>
+        `).join('')}
       </tbody>
     </table>
   </div>
@@ -692,6 +743,9 @@ function generateReportHTML(data: any, dept: string, nietLogoDataUrl: string = '
         <tr><td class="row-label">Previous Months</td><td>${prevIntern.paid || ''}</td><td>${prevIntern.nonPaid || ''}</td><td>${prevIntern.virtual || ''}</td><td>${prevIntern.notAvailed || ''}</td></tr>
         <tr><td class="row-label">Current Month</td><td>${currIntern.paid || ''}</td><td>${currIntern.nonPaid || ''}</td><td>${currIntern.virtual || ''}</td><td>${currIntern.notAvailed || ''}</td></tr>
         <tr><td class="row-label" style="background: #dbeafe;">Total (Cumulative)</td><td style="background: #dbeafe;">${totalIntern.paid || ''}</td><td style="background: #dbeafe;">${totalIntern.nonPaid || ''}</td><td style="background: #dbeafe;">${totalIntern.virtual || ''}</td><td style="background: #dbeafe;">${totalIntern.notAvailed || ''}</td></tr>
+        ${(safeData.customInternshipRows || []).map((row: any) => `
+          <tr><td class="row-label">${row.period || 'Custom Period'}</td><td>${row.paid || '-'}</td><td>${row.nonPaid || '-'}</td><td>${row.virtual || '-'}</td><td>${row.notAvailed || '-'}</td></tr>
+        `).join('')}
       </tbody>
     </table>
   </div>
@@ -718,26 +772,41 @@ function generateReportHTML(data: any, dept: string, nietLogoDataUrl: string = '
   <div class="signature-section">
     <div class="signature-row">
       <div class="signature-box">
+        <div style="height: 35px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
+          ${safeData.signatures?.hod ? `<img src="${safeData.signatures.hod}" style="max-height: 35px; max-width: 100%; object-fit: contain;" />` : ''}
+        </div>
         <div class="signature-line"></div>
         <div class="signature-label">HoD</div>
         <div class="signature-date">Date: _______</div>
       </div>
       <div class="signature-box">
+        <div style="height: 35px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
+          ${safeData.signatures?.dean ? `<img src="${safeData.signatures.dean}" style="max-height: 35px; max-width: 100%; object-fit: contain;" />` : ''}
+        </div>
         <div class="signature-line"></div>
         <div class="signature-label">School Dean</div>
         <div class="signature-date">Date: _______</div>
       </div>
       <div class="signature-box">
+        <div style="height: 35px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
+          ${safeData.signatures?.iqac ? `<img src="${safeData.signatures.iqac}" style="max-height: 35px; max-width: 100%; object-fit: contain;" />` : ''}
+        </div>
         <div class="signature-line"></div>
         <div class="signature-label">Head-IQAC</div>
         <div class="signature-date">Date: _______</div>
       </div>
       <div class="signature-box">
+        <div style="height: 35px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
+          ${safeData.signatures?.vicePrincipal ? `<img src="${safeData.signatures.vicePrincipal}" style="max-height: 35px; max-width: 100%; object-fit: contain;" />` : ''}
+        </div>
         <div class="signature-line"></div>
         <div class="signature-label">Vice Principal</div>
         <div class="signature-date">Date: _______</div>
       </div>
       <div class="signature-box">
+        <div style="height: 35px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
+          ${safeData.signatures?.principal ? `<img src="${safeData.signatures.principal}" style="max-height: 35px; max-width: 100%; object-fit: contain;" />` : ''}
+        </div>
         <div class="signature-line"></div>
         <div class="signature-label">Principal</div>
         <div class="signature-date">Date: _______</div>

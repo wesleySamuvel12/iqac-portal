@@ -1,135 +1,76 @@
-/**
- * Premium UI Component Library for IQAC Portal
- * 
- * Enterprise-grade React components with modern design system.
- * Built with Tailwind CSS v4 and TypeScript.
- * 
- * @module premium
- */
+import GlassCard, { GlassCardGradient, GlassCardDark, type GlassCardProps, type GlassCardGradientProps } from './GlassCard';
+import AnimatedCounter, { CounterBadge, useAnimatedCounter, type AnimatedCounterProps, type CounterBadgeProps } from './AnimatedCounter';
+import ProgressRing, { ProgressRingMini, ProgressRingWithCounter, StatusDot, type ProgressRingProps, type ProgressRingMiniProps, type StatusDotProps } from './ProgressRing';
+import StatCard, { InlineStat, StatsGrid, type StatCardProps, type InlineStatProps, type StatsGridProps, type ColorVariant } from './StatCard';
+import BreadcrumbNav, { PageHeader, BreadcrumbMobile, type BreadcrumbNavProps, type BreadcrumbItem, type PageHeaderProps } from './BreadcrumbNav';
+import HierarchyNav, { AcademicHierarchy, type HierarchyNavProps, type HierarchyStep, type AcademicHierarchyProps } from './HierarchyNav';
+import SearchFilter, { useKeyboardShortcut, type SearchFilterProps, type FilterConfig, type FilterOption } from './SearchFilter';
+import DataTable, { presetColumns, type DataTableProps, type Column, type Action } from './DataTable';
+import ProfileCard, { ProfileListItem, type ProfileCardProps, type StudentProfile, type ProfileListItemProps } from './ProfileCard';
+import MiniChart, { Sparkline, MiniBar, MiniDonut, StatSparkline, type MiniChartProps, type SparklineProps, type StatSparklineProps, type ChartDataPoint, type ChartType } from './MiniChart';
 
-// Glass Card Components
-export { 
-  GlassCard, 
-  GlassCardGradient, 
-  GlassCardDark,
-  type GlassCardProps,
-  type GlassCardGradientProps
-} from './GlassCard';
-
-// Animated Counter Components
 export {
+  GlassCard,
+  GlassCardGradient,
+  GlassCardDark,
   AnimatedCounter,
   CounterBadge,
   useAnimatedCounter,
-  type AnimatedCounterProps,
-  type CounterBadgeProps
-} from './AnimatedCounter';
-
-// Progress Ring Components
-export {
   ProgressRing,
   ProgressRingMini,
   ProgressRingWithCounter,
   StatusDot,
-  type ProgressRingProps,
-  type ProgressRingMiniProps,
-  type StatusDotProps
-} from './ProgressRing';
-
-// Stat Card Components
-export {
   StatCard,
   InlineStat,
   StatsGrid,
-  type StatCardProps,
-  type InlineStatProps,
-  type StatsGridProps,
-  type ColorVariant
-} from './StatCard';
-
-// Breadcrumb Navigation Components
-export {
   BreadcrumbNav,
   PageHeader,
   BreadcrumbMobile,
-  type BreadcrumbNavProps,
-  type BreadcrumbItem,
-  type PageHeaderProps
-} from './BreadcrumbNav';
-
-// Hierarchy Navigation Components
-export {
   HierarchyNav,
   AcademicHierarchy,
-  type HierarchyNavProps,
-  type HierarchyStep,
-  type AcademicHierarchyProps
-} from './HierarchyNav';
-
-// Search & Filter Components
-export {
   SearchFilter,
   useKeyboardShortcut,
-  type SearchFilterProps,
-  type FilterConfig,
-  type FilterOption
-} from './SearchFilter';
-
-// Data Table Components
-export {
   DataTable,
   presetColumns,
-  type DataTableProps,
-  type Column,
-  type Action
-} from './DataTable';
-
-// Profile Card Components
-export {
   ProfileCard,
   ProfileListItem,
-  type ProfileCardProps,
-  type StudentProfile,
-  type ProfileListItemProps
-} from './ProfileCard';
-
-// Mini Chart Components
-export {
   MiniChart,
   Sparkline,
   MiniBar,
   MiniDonut,
-  StatSparkline,
-  type MiniChartProps,
-  type SparklineProps,
-  type StatSparklineProps,
-  type ChartDataPoint,
-  type ChartType
-} from './MiniChart';
-
-// Re-export types for convenience
-export type {
-  // GlassCard
-  GlassCardProps as PremiumCardProps,
-  
-  // Common patterns
-  ColorVariant as ThemeColor,
+  StatSparkline
 };
 
-/**
- * Quick import example:
- * 
- * ```tsx
- * import {
- *   GlassCard,
- *   StatCard,
- *   DataTable,
- *   ProfileCard,
- *   BreadcrumbNav,
- *   SearchFilter,
- *   AnimatedCounter,
- *   ProgressRing,
- *   MiniChart,
- * } from '@/components/premium';
- * ```
- */
+export type {
+  GlassCardProps,
+  GlassCardGradientProps,
+  AnimatedCounterProps,
+  CounterBadgeProps,
+  ProgressRingProps,
+  ProgressRingMiniProps,
+  StatusDotProps,
+  StatCardProps,
+  InlineStatProps,
+  StatsGridProps,
+  ColorVariant,
+  BreadcrumbNavProps,
+  BreadcrumbItem,
+  PageHeaderProps,
+  HierarchyNavProps,
+  HierarchyStep,
+  AcademicHierarchyProps,
+  SearchFilterProps,
+  FilterConfig,
+  FilterOption,
+  DataTableProps,
+  Column,
+  Action,
+  ProfileCardProps,
+  StudentProfile,
+  ProfileListItemProps,
+  MiniChartProps,
+  SparklineProps,
+  StatSparklineProps,
+  ChartDataPoint,
+  ChartType
+};

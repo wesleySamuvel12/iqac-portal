@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { hashPassword } from '@/lib/auth-helpers'
 
 // GET all students or filter by department/batch
 export async function GET(request: NextRequest) {
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
       batch, 
       cgpa, 
       admissionYear,
-      password = 'student123'
+      password
     } = data
 
     if (!registerNumber || !departmentId) {
@@ -84,54 +85,69 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const trimmedRegNo = registerNumber.trim()
+    const userEmail = (email ? email.trim() : `${trimmedRegNo.toLowerCase()}@niet.ac.in`).toLowerCase()
+
     // Check if register number already exists
-    const existingStudent = await db.student.findUnique({ where: { registerNumber } })
+    const existingStudent = await db.student.findUnique({ where: { registerNumber: trimmedRegNo } })
     if (existingStudent) {
       return NextResponse.json(
-        { success: false, error: 'Register number already exists' },
+        { success: false, error: `Register number '${trimmedRegNo}' already exists` },
         { status: 409 }
       )
     }
 
-    // Create user account for student
-    const userEmail = email || `${registerNumber.toLowerCase()}@niet.edu`
-    const userName = name || `Student ${registerNumber}`
-    
-    const user = await db.user.create({
-      data: {
-        email: userEmail,
-        password, // In production, hash this password
-        name: userName,
-        role: 'STUDENT',
-        phone: phone || null,
-        departmentId,
-      }
-    })
+    // Check if email already exists
+    const existingUser = await db.user.findUnique({ where: { email: userEmail } })
+    if (existingUser) {
+      return NextResponse.json(
+        { success: false, error: `Email '${userEmail}' already exists` },
+        { status: 409 }
+      )
+    }
 
-    const student = await db.student.create({
-      data: {
-        registerNumber,
-        userId: user.id,
-        departmentId,
-        batchId: batchId || null,
-        semester: semester ? parseInt(semester) : null,
-        section,
-        batch,
-        cgpa: cgpa ? parseFloat(cgpa) : null,
-        admissionYear: admissionYear ? parseInt(admissionYear) : null,
-      },
-      include: {
-        user: { select: { id: true, email: true, name: true, role: true } },
-        department: true,
-        batchInfo: true,
-      },
+    // Hash initial password securely
+    const rawPassword = password && password.trim() ? password.trim() : 'Student@123'
+    const hashedPassword = await hashPassword(rawPassword)
+    const userName = name ? name.trim() : `Student ${trimmedRegNo}`
+    
+    const student = await db.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email: userEmail,
+          password: hashedPassword,
+          name: userName,
+          role: 'STUDENT',
+          phone: phone || null,
+          departmentId,
+        }
+      })
+
+      return await tx.student.create({
+        data: {
+          registerNumber: trimmedRegNo,
+          userId: user.id,
+          departmentId,
+          batchId: batchId || null,
+          semester: semester ? parseInt(semester) : null,
+          section: section || null,
+          batch: batch || null,
+          cgpa: cgpa ? parseFloat(cgpa) : null,
+          admissionYear: admissionYear ? parseInt(admissionYear) : null,
+        },
+        include: {
+          user: { select: { id: true, email: true, name: true, role: true } },
+          department: true,
+          batchInfo: true,
+        },
+      })
     })
 
     return NextResponse.json({ success: true, student })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating student:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to create student' },
+      { success: false, error: error.message || 'Failed to create student' },
       { status: 500 }
     )
   }

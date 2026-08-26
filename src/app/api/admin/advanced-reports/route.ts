@@ -8,7 +8,7 @@ const ALLOWED_DEPARTMENTS = [
   'Artificial Intelligence & Data Science',
   'AI&DS',
   'AI & DS',
-  'Cyber Security',
+  'Computer Science and Business Systems',
   'CSBS',
   'Computer Science and Engineering',
   'CSE',

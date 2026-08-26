@@ -1,209 +1,123 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { hashPassword } from '@/lib/auth-helpers'
 
-// POST - Bulk import students from CSV data
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData()
-    const file = formData.get('file') as File
-    const departmentId = formData.get('departmentId') as string
-    const batchId = formData.get('batchId') as string || null
-    
-    if (!file) {
-      return NextResponse.json(
-        { success: false, error: 'No file provided' },
-        { status: 400 }
-      )
+    const contentType = request.headers.get('content-type') || ''
+    let records: any[] = []
+    let departmentId = ''
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData()
+      const file = formData.get('file') as File
+      departmentId = (formData.get('departmentId') as string) || ''
+
+      if (!file) {
+        return NextResponse.json({ success: false, error: 'No CSV file provided' }, { status: 400 })
+      }
+
+      const text = await file.text()
+      const lines = text.split(/\r?\n/).filter(line => line.trim())
+      if (lines.length <= 1) {
+        return NextResponse.json({ success: false, error: 'CSV file is empty or missing headers' }, { status: 400 })
+      }
+
+      const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''))
+      
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim().replace(/^["']|["']$/g, ''))
+        if (values.length < 2) continue
+        const row: any = {}
+        headers.forEach((h, idx) => {
+          row[h] = values[idx] || ''
+        })
+        records.push(row)
+      }
+    } else {
+      const body = await request.json()
+      records = body.students || body.records || []
+      departmentId = body.departmentId || ''
     }
-    
+
+    if (records.length === 0) {
+      return NextResponse.json({ success: false, error: 'No valid student records found to import' }, { status: 400 })
+    }
+
+    // Default department fallback if not provided
     if (!departmentId) {
-      return NextResponse.json(
-        { success: false, error: 'Department ID is required' },
-        { status: 400 }
-      )
+      const firstDept = await db.department.findFirst()
+      if (firstDept) departmentId = firstDept.id
     }
 
-    // Read file content
-    const text = await file.text()
-    const lines = text.split('\n').filter(line => line.trim())
-    
-    if (lines.length < 2) {
-      return NextResponse.json(
-        { success: false, error: 'CSV file must have a header row and at least one data row' },
-        { status: 400 }
-      )
-    }
+    const importedStudents: any[] = []
+    const errors: string[] = []
+    const defaultPassword = await hashPassword('Student@123')
 
-    // Parse header
-    const header = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim())
-    
-    // Expected columns (flexible - can be in any order)
-    const requiredFields = ['registernumber', 'regno', 'register_no', 'registrationnumber']
-    const nameFields = ['name', 'studentname', 'student_name']
-    const emailFields = ['email', 'emailid', 'email_id']
-    const phoneFields = ['phone', 'mobile', 'phonenumber', 'contact']
-    const semesterFields = ['semester', 'sem']
-    const sectionFields = ['section', 'sec']
-    const cgpaFields = ['cgpa', 'gpa']
-    const admissionYearFields = ['admissionyear', 'admission_year', 'yearofadmission', 'batchyear']
+    for (const record of records) {
+      const regNo = (record.registerNumber || record.regNo || record.reg_no || '').trim()
+      const name = (record.name || record.studentName || `Student ${regNo}`).trim()
+      const email = (record.email || `${regNo.toLowerCase()}@niet.ac.in`).trim().toLowerCase()
+      const phone = (record.phone || '').trim()
+      const semester = parseInt(record.semester || '1') || 1
+      const section = (record.section || 'A').toUpperCase()
+      const batch = record.batch || '2024-2028'
+      const cgpa = parseFloat(record.cgpa || '0.00') || 0.0
 
-    // Find column indices
-    const getColumnIndex = (fields: string[]): number => {
-      for (const field of fields) {
-        const index = header.findIndex(h => h === field || h.includes(field) || field.includes(h))
-        if (index !== -1) return index
-      }
-      return -1
-    }
-
-    const regNoCol = getColumnIndex(requiredFields)
-    
-    if (regNoCol === -1) {
-      return NextResponse.json(
-        { success: false, error: 'CSV must contain a register number column (registerNumber, regNo, etc.)' },
-        { status: 400 }
-      )
-    }
-
-    const nameCol = getColumnIndex(nameFields)
-    const emailCol = getColumnIndex(emailFields)
-    const phoneCol = getColumnIndex(phoneFields)
-    const semesterCol = getColumnIndex(semesterFields)
-    const sectionCol = getColumnIndex(sectionFields)
-    const cgpaCol = getColumnIndex(cgpaFields)
-    const admissionYearCol = getColumnIndex(admissionYearFields)
-
-    // Process data rows
-    const results = {
-      success: [] as any[],
-      errors: [] as { row: number; registerNumber: string; reason: string }[],
-      total: lines.length - 1,
-      created: 0,
-      skipped: 0,
-      failed: 0
-    }
-
-    // Get existing register numbers to check for duplicates
-    const existingStudents = await db.student.findMany({
-      where: { departmentId },
-      select: { registerNumber: true }
-    })
-    const existingRegNos = new Set(existingStudents.map(s => s.registerNumber))
-
-    for (let i = 1; i < lines.length; i++) {
-      const rowNum = i + 1
-      const values = parseCSVLine(lines[i])
-      
-      // Skip empty rows
-      if (values.every(v => !v.trim())) continue
-
-      const registerNumber = values[regNoCol]?.trim()
-      
-      if (!registerNumber) {
-        results.errors.push({ row: rowNum, registerNumber: 'N/A', reason: 'Missing register number' })
-        results.failed++
-        continue
-      }
-
-      // Check duplicate
-      if (existingRegNos.has(registerNumber)) {
-        results.errors.push({ row: rowNum, registerNumber, reason: 'Register number already exists' })
-        results.skipped++
-        continue
-      }
+      if (!regNo) continue
 
       try {
-        const name = nameCol >= 0 ? values[nameCol]?.trim() : `Student ${registerNumber}`
-        const email = emailCol >= 0 ? values[emailCol]?.trim() : `${registerNumber.toLowerCase()}@niet.edu`
-        const phone = phoneCol >= 0 ? values[phoneCol]?.trim() || null : null
-        const semester = semesterCol >= 0 ? parseInt(values[semesterCol]) || null : null
-        const section = sectionCol >= 0 ? values[sectionCol]?.trim() || null : null
-        const cgpa = cgpaCol >= 0 ? parseFloat(values[cgpaCol]) || null : null
-        const admissionYear = admissionYearCol >= 0 ? parseInt(values[admissionYearCol]) || null : null
+        // Check if student exists
+        const existingStudent = await db.student.findUnique({ where: { registerNumber: regNo } })
+        if (existingStudent) {
+          importedStudents.push(existingStudent)
+          continue
+        }
 
-        // Create user
-        const user = await db.user.create({
-          data: {
-            email: email || `${registerNumber.toLowerCase()}@niet.edu`,
-            password: 'student123',
-            name: name || `Student ${registerNumber}`,
+        const user = await db.user.upsert({
+          where: { email },
+          update: { name, phone: phone || null },
+          create: {
+            email,
+            password: defaultPassword,
+            name,
             role: 'STUDENT',
-            phone,
-            departmentId,
+            phone: phone || null,
+            departmentId: departmentId || undefined,
           }
         })
 
-        // Create student
         const student = await db.student.create({
           data: {
-            registerNumber,
+            registerNumber: regNo,
             userId: user.id,
-            departmentId,
-            batchId,
+            departmentId: departmentId || undefined,
             semester,
             section,
+            batch,
             cgpa,
-            admissionYear,
           },
           include: {
             user: { select: { id: true, email: true, name: true } },
-            batchInfo: true,
+            department: true,
           }
         })
 
-        existingRegNos.add(registerNumber)
-        results.success.push(student)
-        results.created++
-
-      } catch (error: any) {
-        results.errors.push({ 
-          row: rowNum, 
-          registerNumber, 
-          reason: error.message?.includes('Unique') ? 'Duplicate entry' : 'Failed to create record' 
-        })
-        results.failed++
+        importedStudents.push(student)
+      } catch (err: any) {
+        console.error(`Error importing ${regNo}:`, err)
+        errors.push(`RegNo ${regNo}: ${err.message}`)
       }
     }
 
     return NextResponse.json({
       success: true,
-      message: `Import completed: ${results.created} created, ${results.skipped} skipped, ${results.failed} failed`,
-      results
+      count: importedStudents.length,
+      imported: importedStudents,
+      errors
     })
-
-  } catch (error) {
-    console.error('Error importing students:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to import students' },
-      { status: 500 }
-    )
+  } catch (error: any) {
+    console.error('Bulk import error:', error)
+    return NextResponse.json({ success: false, error: error.message || 'Failed to import CSV' }, { status: 500 })
   }
-}
-
-// Helper function to parse CSV line handling quoted values
-function parseCSVLine(line: string): string[] {
-  const result: string[] = []
-  let current = ''
-  let inQuotes = false
-  
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i]
-    
-    if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"'
-        i++ // skip next quote
-      } else {
-        inQuotes = !inQuotes
-      }
-    } else if (char === ',' && !inQuotes) {
-      result.push(current.trim())
-      current = ''
-    } else {
-      current += char
-    }
-  }
-  
-  result.push(current.trim())
-  return result
 }

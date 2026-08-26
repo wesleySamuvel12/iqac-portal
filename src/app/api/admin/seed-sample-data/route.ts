@@ -5,7 +5,7 @@ import { db } from '@/lib/db'
 const IQAC_DEPARTMENTS = [
   { name: 'Aeronautical Engineering', code: 'AER', shortName: 'Aero' },
   { name: 'Artificial Intelligence & Data Science', code: 'AI&DS', shortName: 'AI&DS' },
-  { name: 'Cyber Security', code: 'CSBS', shortName: 'CSBS' },
+  { name: 'Computer Science and Business Systems', code: 'CSBS', shortName: 'CSBS' },
   { name: 'Computer Science and Engineering', code: 'CSE', shortName: 'CSE' },
   { name: 'Electronics & Communication Engineering', code: 'ECE', shortName: 'ECE' },
   { name: 'Electrical & Electronics Engineering', code: 'EEE', shortName: 'EEE' },

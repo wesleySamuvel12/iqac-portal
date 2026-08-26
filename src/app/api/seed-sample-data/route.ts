@@ -7,10 +7,10 @@ import { db } from '@/lib/db'
 const DEPARTMENTS = [
   'Aeronautical Engineering',
   'Artificial Intelligence & Data Science',
+  'Computer Science and Business Systems',
   'Computer Science and Engineering',
-  'Cyber Security',
-  'Electrical & Electronics Engineering',
   'Electronics & Communication Engineering',
+  'Electrical & Electronics Engineering',
   'Information Technology',
   'Mechanical Engineering',
   'Mechatronics',

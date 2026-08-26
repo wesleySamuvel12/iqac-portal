@@ -63,10 +63,10 @@ const colorVariants: Record<ColorVariant, { bg: string; icon: string; text: stri
     gradient: 'from-violet-500 to-purple-600',
   },
   orange: {
-    bg: 'bg-orange-50',
-    icon: 'text-orange-600',
-    text: 'text-orange-600',
-    gradient: 'from-orange-500 to-amber-500',
+    bg: 'bg-amber-50',
+    icon: 'text-amber-600',
+    text: 'text-amber-600',
+    gradient: 'from-amber-500 to-amber-600',
   },
   red: {
     bg: 'bg-red-50',

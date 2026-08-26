@@ -51,7 +51,7 @@ const resolveColor = (color: string): string => {
     red: '#ef4444',
     blue: '#3b82f6',
     green: '#22c55e',
-    orange: '#f97316',
+    orange: '#f59e0b',
     slate: '#64748b',
   };
   
@@ -256,9 +256,8 @@ const MiniChart: React.FC<MiniChartProps> = ({
         ctx.arc(centerX, centerY, innerRadius, endAngle, startAngle, true);
         ctx.closePath();
 
-        // Use color from data or cycle through colors
-        const sliceColor = Array.isArray(data[0]) 
-          ? resolveColor((data as ChartDataPoint)[i]?.color || color)
+        const sliceColor = typeof data[0] === 'object' 
+          ? resolveColor((data as unknown as ChartDataPoint[])[i]?.color || color)
           : i % 2 === 0 ? primaryColor : secColor;
         
         ctx.fillStyle = sliceColor;

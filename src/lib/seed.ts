@@ -1,26 +1,17 @@
 import { db } from '@/lib/db'
 
 const DEPARTMENTS = [
-  { name: 'Computer Science and Engineering', code: 'CSE', vision: 'To be a center of excellence in computer science education and research', mission: 'To produce competent computer science professionals with ethical values' },
+  { name: 'Aeronautical Engineering', code: 'AERO', vision: 'To excel in Aeronautical Engineering education and research', mission: 'To produce skilled aeronautical engineers' },
   { name: 'Artificial Intelligence & Data Science', code: 'AI&DS', vision: 'To excel in AI and Data Science education and innovation', mission: 'To nurture future leaders in AI and Data Science' },
-  { name: 'Information Technology', code: 'IT', vision: 'To be a premier department for IT education', mission: 'To produce industry-ready IT professionals' },
+  { name: 'Computer Science and Business Systems', code: 'CSBS', vision: 'Center of excellence in Computer Science and Business Systems', mission: 'To produce industry-ready CSBS professionals' },
+  { name: 'Computer Science and Engineering', code: 'CSE', vision: 'To be a center of excellence in computer science education and research', mission: 'To produce competent computer science professionals with ethical values' },
   { name: 'Electronics & Communication Engineering', code: 'ECE', vision: 'Excellence in Electronics and Communication engineering', mission: 'To produce skilled ECE professionals' },
   { name: 'Electrical & Electronics Engineering', code: 'EEE', vision: 'Leadership in Electrical Engineering education', mission: 'To develop competent electrical engineers' },
+  { name: 'Information Technology', code: 'IT', vision: 'To be a premier department for IT education', mission: 'To produce industry-ready IT professionals' },
+  { name: 'Mechatronics Engineering', code: 'MCT', vision: 'Excellence in Mechatronics Engineering', mission: 'To develop mechatronics engineers' },
   { name: 'Mechanical Engineering', code: 'MECH', vision: 'Excellence in Mechanical Engineering', mission: 'To produce innovative mechanical engineers' },
-  { name: 'Civil Engineering', code: 'CIVIL', vision: 'Leadership in Civil Engineering', mission: 'To develop skilled civil engineers' },
-  { name: 'Mathematics', code: 'MATHS', vision: 'Excellence in Mathematical Sciences', mission: 'To promote mathematical thinking and applications' },
-  { name: 'Physics', code: 'PHY', vision: 'Excellence in Physics education and research', mission: 'To advance physics knowledge' },
-  { name: 'Chemistry', code: 'CHEM', vision: 'Excellence in Chemical Sciences', mission: 'To promote chemistry education and research' },
-  { name: 'English', code: 'ENG', vision: 'Excellence in Language and Communication', mission: 'To enhance communication skills' },
   { name: 'MBA', code: 'MBA', vision: 'Center of excellence in Management Education', mission: 'To develop business leaders' },
-  { name: 'MCA', code: 'MCA', vision: 'Excellence in Computer Applications', mission: 'To produce skilled IT professionals' },
-  { name: 'Biotechnology', code: 'BIO', vision: 'Excellence in Biotechnology', mission: 'To advance biotech knowledge' },
-  { name: 'Agricultural Engineering', code: 'AGRI', vision: 'Excellence in Agricultural Engineering', mission: 'To develop agricultural innovators' },
-  { name: 'Biomedical Engineering', code: 'BME', vision: 'Excellence in Biomedical Engineering', mission: 'To produce biomedical engineers' },
-  { name: 'Robotics & Automation', code: 'R&A', vision: 'Leadership in Robotics and Automation', mission: 'To produce robotics specialists' },
-  { name: 'Mechatronics', code: 'MECHT', vision: 'Excellence in Mechatronics', mission: 'To develop mechatronics engineers' },
-  { name: 'Cyber Security', code: 'CYBER', vision: 'Center of Excellence in Cyber Security', mission: 'To produce cyber security experts' },
-  { name: 'Data Science', code: 'DS', vision: 'Excellence in Data Science', mission: 'To produce data science professionals' },
+  { name: 'Science & Humanities', code: 'S&H', vision: 'Excellence in Science and Humanities education', mission: 'To promote fundamental scientific and humanistic thinking' },
 ]
 
 export async function seedDatabase() {
@@ -58,7 +49,7 @@ export async function seedDatabase() {
     }
 
     // Create Departments
-    const createdDepartments = []
+    const createdDepartments: any[] = []
     for (const dept of DEPARTMENTS) {
       try {
         const existing = await db.department.findUnique({ where: { code: dept.code } })
@@ -223,7 +214,7 @@ export async function seedDatabase() {
           try {
             await db.activity.create({
               data: {
-                ...activity,
+                ...(activity as any),
                 description: `Sample activity for ${dept.name}`,
                 startDate: new Date(),
                 endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
