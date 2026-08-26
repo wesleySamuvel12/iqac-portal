@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
 function generatePdfWithPdfKit(reportData: any, department: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ margin: 36, size: 'A4' })
+      const doc = new PDFDocument({ margin: 36, size: 'A4', layout: 'landscape' })
       const chunks: Buffer[] = []
 
       doc.on('data', (chunk: Buffer) => chunks.push(chunk))
@@ -121,42 +121,35 @@ function generatePdfWithPdfKit(reportData: any, department: string): Promise<Buf
       const researchFaculty = safeData.researchFaculty || []
       const facultyDev = safeData.facultyDev || []
 
-      // Header Banner
-      doc.fillColor('#1e40af').fontSize(14).text('NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY', { align: 'center' })
-      doc.fillColor('#4b5563').fontSize(9).text('(AUTONOMOUS) | ISO Certified | NAAC "A+" | NBA Accredited', { align: 'center' })
-      doc.moveDown(0.5)
-      doc.fillColor('#1e40af').fontSize(12).text('MONTHLY DEPARTMENT REPORT', { align: 'center' })
-      doc.fillColor('#6b7280').fontSize(8.5).text(`Department: ${department || 'NIET'}  |  Academic Year: ${safeData.academicYear || '2025-2026'}`, { align: 'center' })
-      doc.text(`Reporting Period: ${safeData.reportingMonth || 'Current'} ${safeData.reportingYear || ''}  |  Generated: ${new Date().toLocaleDateString('en-IN')}`, { align: 'center' })
+      // Header Banner - Landscape Mode (width ~770pt)
+      doc.fillColor('#1e40af').fontSize(16).text('NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY', { align: 'center' })
+      doc.fillColor('#4b5563').fontSize(9.5).text('(AUTONOMOUS) | ISO Certified | NAAC "A+" | NBA Accredited', { align: 'center' })
+      doc.moveDown(0.4)
+      doc.fillColor('#1e40af').fontSize(13).text('MONTHLY DEPARTMENT REPORT (LANDSCAPE FORMAT)', { align: 'center' })
+      doc.fillColor('#6b7280').fontSize(9).text(`Department: ${department || 'NIET'}  |  Academic Year: ${safeData.academicYear || '2025-2026'}  |  Reporting Period: ${safeData.reportingMonth || 'Current'} ${safeData.reportingYear || ''}`, { align: 'center' })
+      doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, { align: 'center' })
       doc.moveDown(0.8)
 
       // Section A: Academic Activities
       doc.fillColor('#059669').fontSize(11).text('A. ACADEMIC ACTIVITIES')
-      doc.fillColor('#1f2937').fontSize(8.5)
-      doc.text(`  • Syllabus Coverage (Theory): ${safeData.syllabusCoverageTheory || '-'}`)
-      doc.text(`  • Syllabus Coverage (Lab): ${safeData.syllabusCoverageLab || '-'}`)
-      doc.text(`  • Lesson Plan Update (Theory): ${safeData.lessonPlanTheory || '-'}`)
-      doc.text(`  • CIA Conducted & Submitted: ${safeData.ciaConducted || '-'}`)
-      doc.text(`  • Attendance Report Prepared: ${safeData.attendanceReport || '-'}`)
-      doc.text(`  • Remedial Classes Conducted: ${safeData.remedialClasses || '-'}`)
-      doc.text(`  • Mentoring Sessions Conducted: ${safeData.mentoringSessions || '-'}`)
+      doc.fillColor('#1f2937').fontSize(9)
+      doc.text(`  • Syllabus Coverage (Theory): ${safeData.syllabusCoverageTheory || '-'}    |    Syllabus Coverage (Lab): ${safeData.syllabusCoverageLab || '-'}    |    Lesson Plan Update: ${safeData.lessonPlanTheory || '-'}`)
+      doc.text(`  • CIA Conducted & Submitted: ${safeData.ciaConducted || '-'}    |    Attendance Report Prepared: ${safeData.attendanceReport || '-'}`)
+      doc.text(`  • Remedial Classes Conducted: ${safeData.remedialClasses || '-'}    |    Mentoring Sessions Conducted: ${safeData.mentoringSessions || '-'}`)
       doc.moveDown(0.8)
 
       // Section B: Student Development Activities
       doc.fillColor('#7c3aed').fontSize(11).text('B. STUDENT DEVELOPMENT ACTIVITIES')
-      doc.fillColor('#1f2937').fontSize(8.5)
-      doc.text(`  • Guest Lectures: Current (${studentDev.guestLectures?.curr || 0}), Cumulative (${studentDev.guestLectures?.prev || 0})`)
-      doc.text(`  • Workshops: Current (${studentDev.workshops?.curr || 0}), Cumulative (${studentDev.workshops?.prev || 0})`)
-      doc.text(`  • Industrial Visits: Current (${studentDev.industrialVisits?.curr || 0}), Cumulative (${studentDev.industrialVisits?.prev || 0})`)
-      doc.text(`  • Value Added Courses: Current (${studentDev.valueAddedCourses?.curr || 0}), Cumulative (${studentDev.valueAddedCourses?.prev || 0})`)
-      doc.text(`  • Skill Enhancement: Current (${studentDev.skillEnhancement?.curr || 0}), Cumulative (${studentDev.skillEnhancement?.prev || 0})`)
-      doc.text(`  • Hands-on Training: Current (${studentDev.handsOnTraining?.curr || 0}), Cumulative (${studentDev.handsOnTraining?.prev || 0})`)
+      doc.fillColor('#1f2937').fontSize(9)
+      doc.text(`  • Guest Lectures: Current (${studentDev.guestLectures?.curr || 0}), Cumulative (${studentDev.guestLectures?.prev || 0})    |    Workshops: Current (${studentDev.workshops?.curr || 0}), Cumulative (${studentDev.workshops?.prev || 0})`)
+      doc.text(`  • Industrial Visits: Current (${studentDev.industrialVisits?.curr || 0}), Cumulative (${studentDev.industrialVisits?.prev || 0})    |    Value Added Courses: Current (${studentDev.valueAddedCourses?.curr || 0}), Cumulative (${studentDev.valueAddedCourses?.prev || 0})`)
+      doc.text(`  • Skill Enhancement: Current (${studentDev.skillEnhancement?.curr || 0}), Cumulative (${studentDev.skillEnhancement?.prev || 0})    |    Hands-on Training: Current (${studentDev.handsOnTraining?.curr || 0}), Cumulative (${studentDev.handsOnTraining?.prev || 0})`)
       doc.text(`  • Hackathon / SIH: Current (${studentDev.hackathon?.curr || 0}), Cumulative (${studentDev.hackathon?.prev || 0})`)
       doc.moveDown(0.8)
 
       // Section C: Research & Innovation
       doc.fillColor('#d97706').fontSize(11).text('C. RESEARCH & INNOVATION (FACULTY WISE)')
-      doc.fillColor('#1f2937').fontSize(8.5)
+      doc.fillColor('#1f2937').fontSize(9)
       if (researchFaculty.length > 0) {
         researchFaculty.forEach((f: any, idx: number) => {
           if (!f) return
@@ -169,7 +162,7 @@ function generatePdfWithPdfKit(reportData: any, department: string): Promise<Buf
 
       // Section D: Faculty Development
       doc.fillColor('#0369a1').fontSize(11).text('D. FACULTY DEVELOPMENT PROGRAMS')
-      doc.fillColor('#1f2937').fontSize(8.5)
+      doc.fillColor('#1f2937').fontSize(9)
       if (facultyDev.length > 0) {
         facultyDev.forEach((f: any, idx: number) => {
           if (!f) return
@@ -182,7 +175,7 @@ function generatePdfWithPdfKit(reportData: any, department: string): Promise<Buf
 
       // Section E: Students Internship Details
       doc.fillColor('#0f766e').fontSize(11).text('E. STUDENTS INTERNSHIP DETAILS')
-      doc.fillColor('#1f2937').fontSize(8.5)
+      doc.fillColor('#1f2937').fontSize(9)
       const prevInt = internship.previous || {}
       const currInt = internship.current || {}
       doc.text(`  • Current Month: Paid (${currInt.paid || 0}), Non-Paid (${currInt.nonPaid || 0}), Virtual (${currInt.virtual || 0}), Not Availed (${currInt.notAvailed || 0})`)
@@ -191,7 +184,7 @@ function generatePdfWithPdfKit(reportData: any, department: string): Promise<Buf
 
       // Section G: Quality Assurance Activities
       doc.fillColor('#65a30d').fontSize(11).text('G. QUALITY ASSURANCE ACTIVITIES')
-      doc.fillColor('#1f2937').fontSize(8.5)
+      doc.fillColor('#1f2937').fontSize(9)
       if (qaActivities.length > 0) {
         qaActivities.forEach((qa: any, idx: number) => {
           if (!qa) return
@@ -203,9 +196,9 @@ function generatePdfWithPdfKit(reportData: any, department: string): Promise<Buf
       doc.moveDown(1.5)
 
       // Signatures
-      doc.fontSize(8.5).fillColor('#374151')
-      doc.text('_____________________        _____________________        _____________________        _____________________', { align: 'center' })
-      doc.text('       HoD                        School Dean                   Head-IQAC                   Vice Principal     ', { align: 'center' })
+      doc.fontSize(9).fillColor('#374151')
+      doc.text('_____________________________         _____________________________         _____________________________         _____________________________', { align: 'center' })
+      doc.text('            HoD                                School Dean                            Head-IQAC                            Vice Principal        ', { align: 'center' })
 
       doc.end()
     } catch (err) {
@@ -276,12 +269,13 @@ async function generateWithPlaywright(htmlContent: string, outputPath: string): 
     await page.pdf({
       path: outputPath,
       format: 'A4',
+      landscape: true,
       printBackground: true,
       margin: {
-        top: '12mm',
-        bottom: '12mm',
-        left: '12mm',
-        right: '12mm'
+        top: '10mm',
+        bottom: '10mm',
+        left: '10mm',
+        right: '10mm'
       },
       displayHeaderFooter: true,
       headerTemplate: '<div></div>',
@@ -401,8 +395,8 @@ function generateReportHTML(data: any, dept: string, nietLogoDataUrl: string = '
   <title>Monthly Department Report - ${dept}</title>
   <style>
     @page {
-      size: A4;
-      margin: 12mm;
+      size: A4 landscape;
+      margin: 10mm;
     }
     
     * {
