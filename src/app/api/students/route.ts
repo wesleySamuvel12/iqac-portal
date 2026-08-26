@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Hash initial password securely
-    const rawPassword = password && password.trim() ? password.trim() : 'Student@123'
+    const rawPassword = password && password.trim() ? password.trim() : '12345678'
     const hashedPassword = await hashPassword(rawPassword)
     const userName = name ? name.trim() : `Student ${trimmedRegNo}`
     

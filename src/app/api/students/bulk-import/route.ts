@@ -23,11 +23,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'CSV file is empty or missing headers' }, { status: 400 })
       }
 
-      const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''))
+      const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, '').toLowerCase().replace(/[^a-z0-9]/g, ''))
       
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map(v => v.trim().replace(/^["']|["']$/g, ''))
-        if (values.length < 2) continue
+        if (values.length < 1 || (values.length === 1 && !values[0])) continue
         const row: any = {}
         headers.forEach((h, idx) => {
           row[h] = values[idx] || ''
@@ -50,69 +50,143 @@ export async function POST(request: NextRequest) {
       if (firstDept) departmentId = firstDept.id
     }
 
+    // Pre-fetch all departments for department code mapping
+    const allDepartments = await db.department.findMany({ select: { id: true, code: true, name: true } })
+    const deptMap = new Map<string, string>()
+    allDepartments.forEach(d => {
+      deptMap.set(d.code.toLowerCase(), d.id)
+      deptMap.set(d.name.toLowerCase(), d.id)
+    })
+
+    const defaultHashedPassword = await hashPassword('12345678')
     const importedStudents: any[] = []
     const errors: string[] = []
-    const defaultPassword = await hashPassword('Student@123')
 
     for (const record of records) {
-      const regNo = (record.registerNumber || record.regNo || record.reg_no || '').trim()
-      const name = (record.name || record.studentName || `Student ${regNo}`).trim()
-      const email = (record.email || `${regNo.toLowerCase()}@niet.ac.in`).trim().toLowerCase()
-      const phone = (record.phone || '').trim()
-      const semester = parseInt(record.semester || '1') || 1
-      const section = (record.section || 'A').toUpperCase()
-      const batch = record.batch || '2024-2028'
-      const cgpa = parseFloat(record.cgpa || '0.00') || 0.0
+      // Flexible field resolution
+      const regNo = (
+        record.registernumber || 
+        record.registerNumber || 
+        record.regno || 
+        record.reg_no || 
+        record.rollno || 
+        record.roll_no || 
+        record['sno'] || 
+        ''
+      ).trim()
 
-      if (!regNo) continue
+      const name = (
+        record.name || 
+        record.studentname || 
+        record.student_name || 
+        record.fullname || 
+        record.full_name || 
+        `Student ${regNo}`
+      ).trim()
+
+      const email = (
+        record.email || 
+        record.studentemail || 
+        record.useremail || 
+        (regNo ? `${regNo.toLowerCase()}@niet.ac.in` : '')
+      ).trim().toLowerCase()
+
+      const phone = (record.phone || record.mobile || record.phonenumber || '').trim()
+      const semester = parseInt(record.semester || record.sem || '1') || 1
+      const section = (record.section || record.sec || 'A').toUpperCase()
+      const batch = record.batch || record.batchyear || '2024-2028'
+      const cgpa = parseFloat(record.cgpa || '0.00') || 0.0
+      
+      // Check for row department or use default
+      let rowDeptId = departmentId
+      const deptVal = (record.department || record.departmentcode || record.dept || record.deptcode || '').trim().toLowerCase()
+      if (deptVal && deptMap.has(deptVal)) {
+        rowDeptId = deptMap.get(deptVal)!
+      }
+
+      if (!regNo) {
+        errors.push(`Row missing Register Number: ${JSON.stringify(record)}`)
+        continue
+      }
+
+      if (!email) {
+        errors.push(`RegNo ${regNo}: Missing email address`)
+        continue
+      }
 
       try {
-        // Check if student exists
-        const existingStudent = await db.student.findUnique({ where: { registerNumber: regNo } })
-        if (existingStudent) {
-          importedStudents.push(existingStudent)
-          continue
-        }
+        // Resolve row password if custom password provided, otherwise use default '12345678'
+        const customPass = (record.password || record.pass || record.studentpassword || '').trim()
+        const userPassword = customPass ? await hashPassword(customPass) : defaultHashedPassword
 
+        // Upsert User account with STUDENT role and login access password '12345678'
         const user = await db.user.upsert({
           where: { email },
-          update: { name, phone: phone || null },
+          update: { 
+            name, 
+            phone: phone || undefined,
+            departmentId: rowDeptId || undefined,
+            role: 'STUDENT',
+            isActive: true,
+          },
           create: {
             email,
-            password: defaultPassword,
+            password: userPassword,
             name,
             role: 'STUDENT',
             phone: phone || null,
-            departmentId: departmentId || undefined,
+            departmentId: rowDeptId || undefined,
+            isActive: true,
           }
         })
 
-        const student = await db.student.create({
-          data: {
+        // Upsert Student profile linked to user account
+        const student = await db.student.upsert({
+          where: { registerNumber: regNo },
+          update: {
+            userId: user.id,
+            departmentId: rowDeptId || undefined,
+            semester,
+            section,
+            batch,
+            cgpa,
+          },
+          create: {
             registerNumber: regNo,
             userId: user.id,
-            departmentId: departmentId || undefined,
+            departmentId: rowDeptId || undefined,
             semester,
             section,
             batch,
             cgpa,
           },
           include: {
-            user: { select: { id: true, email: true, name: true } },
-            department: true,
+            user: { select: { id: true, email: true, name: true, role: true } },
+            department: { select: { id: true, name: true, code: true } },
           }
         })
 
-        importedStudents.push(student)
+        importedStudents.push({
+          id: student.id,
+          registerNumber: student.registerNumber,
+          name: user.name,
+          email: user.email,
+          defaultPassword: customPass || '12345678',
+          department: student.department?.name || 'Assigned Department',
+          semester: student.semester,
+          section: student.section,
+        })
       } catch (err: any) {
-        console.error(`Error importing ${regNo}:`, err)
-        errors.push(`RegNo ${regNo}: ${err.message}`)
+        console.error(`Error importing student ${regNo}:`, err)
+        errors.push(`RegNo ${regNo}: ${err.message || 'Import failed'}`)
       }
     }
 
     return NextResponse.json({
       success: true,
       count: importedStudents.length,
+      defaultPassword: '12345678',
+      message: `Successfully imported ${importedStudents.length} students with default login password '12345678'`,
       imported: importedStudents,
       errors
     })
