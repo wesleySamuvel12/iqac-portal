@@ -422,6 +422,13 @@ async function generateExcel(reportData: any, type: string | null, now: Date, pe
     XLSX.utils.book_append_sheet(wb, wsAch, 'Achievements')
   }
   
+  // Set landscape orientation for all worksheets
+  wb.SheetNames.forEach((sheetName) => {
+    if (wb.Sheets[sheetName]) {
+      wb.Sheets[sheetName]['!pageSetup'] = { orientation: 'landscape', paperSize: 9 }
+    }
+  })
+
   // Generate buffer
   const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
   

@@ -204,6 +204,12 @@ export async function POST(request: NextRequest) {
     const ws9 = XLSX.utils.aoa_to_sheet(docData)
     XLSX.utils.book_append_sheet(wb, ws9, 'Documents')
 
+    // Set Landscape print orientation for all worksheets
+    const sheets = [ws1, ws2, ws3, ws4, ws5, ws6, ws7, ws8, ws9]
+    sheets.forEach((ws) => {
+      ws['!pageSetup'] = { orientation: 'landscape', paperSize: 9 }
+    })
+
     // Generate buffer
     const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
 

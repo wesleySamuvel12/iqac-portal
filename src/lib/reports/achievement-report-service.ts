@@ -1753,6 +1753,10 @@ export async function generateAchievementExcel(filters: FilterOptions): Promise<
     // Freeze panes on row 8
     ws.views = [{ state: 'frozen', ySplit: 8, xSplit: 0 }]
 
+    // Set landscape orientation for print / PDF export
+    ws.pageSetup.orientation = 'landscape'
+    ws.pageSetup.paperSize = 9
+
     // Auto filters
     const lastRowIndex = currentRowIdx - 1
     ws.autoFilter = `A8:${lastColLetter}${lastRowIndex}`

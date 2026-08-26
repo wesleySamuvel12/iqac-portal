@@ -17,7 +17,8 @@ import {
   Footer,
   PageNumber,
   VerticalAlign,
-  ImageRun
+  ImageRun,
+  PageOrientation
 } from 'docx'
 import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
@@ -194,6 +195,9 @@ export async function POST(request: NextRequest) {
         {
           properties: {
             page: {
+              size: {
+                orientation: PageOrientation.LANDSCAPE,
+              },
               margin: { top: 720, bottom: 720, left: 1080, right: 1080 },
             },
           },
