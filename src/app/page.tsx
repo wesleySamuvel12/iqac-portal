@@ -10485,15 +10485,15 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
               {!importResults ? (
                 <>
                   <div
-                    className={'border-2 border-dashed rounded-xl p-8 text-center transition-colors ' + 
-                      dragOver ? 'border-emerald-500 bg-emerald-50' : 'border-gray-300 hover:border-emerald-400'
-                     + ''}
+                    className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
+                      dragOver ? 'border-emerald-500 bg-emerald-50/70 shadow-sm' : 'border-gray-300 hover:border-emerald-400 bg-gray-50/30'
+                    }`}
                     onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
                     onDragLeave={() => setDragOver(false)}
                     onDrop={handleFileDrop}
                   >
-                    <Upload className={'w-12 h-12 mx-auto mb-4 ' + dragOver ? 'text-emerald-500' : 'text-gray-400' + ''} />
-                    <p className="text-lg font-medium text-gray-700 mb-2">
+                    <Upload className={`w-12 h-12 mx-auto mb-3 transition-colors ${dragOver ? 'text-emerald-600' : 'text-emerald-500'}`} />
+                    <p className="text-lg font-semibold text-gray-800 mb-1">
                       {dragOver ? 'Drop your CSV file here' : 'Drag & drop your CSV file here'}
                     </p>
                     <p className="text-sm text-gray-500 mb-4">or click to browse</p>
@@ -10504,18 +10504,18 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
                       className="hidden"
                       id="import-file-input"
                     />
-                    <label htmlFor="import-file-input" className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors">
+                    <label htmlFor="import-file-input" className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-xl text-sm cursor-pointer hover:bg-blue-700 transition-all shadow-sm">
                       <FolderOpen className="w-4 h-4" />
                       Select CSV File
                     </label>
                     {importFile && (
-                      <div className="mt-4 p-3 bg-emerald-50 rounded-lg flex items-center justify-between">
+                      <div className="mt-4 p-3 bg-emerald-50/90 border border-emerald-200 rounded-xl flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <FileText className="w-5 h-5 text-emerald-600" />
-                          <span className="text-sm font-medium text-emerald-700">{importFile.name}</span>
-                          <span className="text-xs text-emerald-600">({(importFile.size / 1024).toFixed(1)} KB)</span>
+                          <span className="text-sm font-medium text-emerald-800">{importFile.name}</span>
+                          <span className="text-xs text-emerald-600 font-mono">({(importFile.size / 1024).toFixed(1)} KB)</span>
                         </div>
-                        <button onClick={() => setImportFile(null)} className="text-red-500 hover:text-red-700">
+                        <button onClick={() => setImportFile(null)} className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors">
                           <X className="w-4 h-4" />
                         </button>
                       </div>
@@ -10523,16 +10523,16 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
                   </div>
 
                   {/* Sample Template Download */}
-                  <div className="bg-blue-50 rounded-lg p-4">
+                  <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-4.5">
                     <div className="flex items-start gap-3">
                       <Info className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-blue-800 mb-1">CSV Format Requirements</p>
-                        <p className="text-xs text-blue-600 mb-2">Your CSV should include these columns:</p>
-                        <code className="block text-xs bg-white px-3 py-2 rounded border border-blue-200 text-blue-700">
+                        <p className="text-sm font-bold text-blue-900 mb-1">CSV Format Requirements</p>
+                        <p className="text-xs text-blue-700 mb-2">Your CSV should include these columns:</p>
+                        <code className="block text-xs bg-white px-3.5 py-2 rounded-lg border border-blue-200/80 text-blue-800 font-mono">
                           registerNumber, name, email, phone, semester, section, cgpa
                         </code>
-                        <button onClick={downloadSampleCSV} className="mt-3 inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 font-medium">
+                        <button onClick={downloadSampleCSV} className="mt-3 inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-bold hover:underline">
                           <Download className="w-4 h-4" />
                           Download Sample CSV
                         </button>
@@ -10540,15 +10540,15 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
                     </div>
                   </div>
 
-                  {/* Import Button */}
-                  <div className="flex justify-end gap-3 pt-2">
-                    <Button variant="outline" onClick={closeImportModal} disabled={importing}>
+                  {/* Import Action Buttons */}
+                  <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 mt-6">
+                    <Button variant="outline" onClick={closeImportModal} disabled={importing} className="px-5 py-2.5 rounded-xl font-semibold text-gray-700 hover:bg-gray-100 transition-colors text-sm">
                       Cancel
                     </Button>
                     <Button 
                       onClick={handleBulkImport} 
                       disabled={!importFile || importing}
-                      className="bg-emerald-600 hover:bg-emerald-700 gap-2 min-w-[120px]"
+                      className="px-5 py-2.5 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white shadow-sm flex items-center justify-center gap-2 min-w-[150px] text-sm transition-all"
                     >
                       {importing ? (
                         <>
@@ -10567,24 +10567,24 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
               ) : (
                 /* Results View */
                 <div className="space-y-4">
-                  <div className={'p-4 rounded-lg ' + (importResults.created > 0 ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 border border-gray-200')}>
+                  <div className={`p-4 rounded-xl ${importResults.created > 0 ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 border border-gray-200'}`}>
                     <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                      <CheckCircle className={'w-5 h-5 ' + (importResults.created > 0 ? 'text-emerald-600' : 'text-gray-400')} />
+                      <CheckCircle className={`w-5 h-5 ${importResults.created > 0 ? 'text-emerald-600' : 'text-gray-400'}`} />
                       Import Complete
                     </h4>
                     
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center p-3 bg-white rounded-lg border">
+                      <div className="text-center p-3 bg-white rounded-xl border border-gray-200/80 shadow-xs">
                         <p className="text-2xl font-bold text-emerald-600">{importResults.created || 0}</p>
-                        <p className="text-xs text-gray-500">Created</p>
+                        <p className="text-xs text-gray-500 font-medium">Created</p>
                       </div>
-                      <div className="text-center p-3 bg-white rounded-lg border">
+                      <div className="text-center p-3 bg-white rounded-xl border border-gray-200/80 shadow-xs">
                         <p className="text-2xl font-bold text-amber-500">{importResults.skipped || 0}</p>
-                        <p className="text-xs text-gray-500">Skipped</p>
+                        <p className="text-xs text-gray-500 font-medium">Skipped</p>
                       </div>
-                      <div className="text-center p-3 bg-white rounded-lg border">
+                      <div className="text-center p-3 bg-white rounded-xl border border-gray-200/80 shadow-xs">
                         <p className="text-2xl font-bold text-red-500">{importResults.failed || 0}</p>
-                        <p className="text-xs text-gray-500">Failed</p>
+                        <p className="text-xs text-gray-500 font-medium">Failed</p>
                       </div>
                     </div>
 
@@ -10593,7 +10593,7 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
                         <p className="text-sm font-medium text-red-700 mb-2">Errors ({importResults.errors.length}):</p>
                         <div className="max-h-40 overflow-y-auto space-y-1">
                           {importResults.errors.map((err: any, idx: number) => (
-                            <div key={idx} className="text-xs bg-red-50 text-red-700 p-2 rounded border border-red-200">
+                            <div key={idx} className="text-xs bg-red-50 text-red-700 p-2 rounded-lg border border-red-200 font-medium">
                               Row {err?.row || idx + 1}: {typeof err === 'string' ? err : err?.error || err?.reason || err?.message || 'Row processing warning'}
                             </div>
                           ))}
@@ -10602,18 +10602,21 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
                     )}
                   </div>
 
-                  <div className="flex flex-wrap justify-end gap-3 pt-2">
+                  <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 mt-6">
                     <Button
                       onClick={() => {
                         closeImportModal()
                         setShowAddModal(true)
                       }}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 shadow-sm flex items-center gap-2"
+                      className="px-5 py-2.5 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center gap-2 text-sm transition-all"
                     >
-                      <Lock className="w-3.5 h-3.5" />
+                      <Lock className="w-4 h-4" />
                       Allocate Login Credentials
                     </Button>
-                    <Button onClick={closeImportModal} className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2">
+                    <Button 
+                      onClick={closeImportModal} 
+                      className="px-5 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm text-sm transition-all min-w-[90px]"
+                    >
                       Done
                     </Button>
                   </div>
