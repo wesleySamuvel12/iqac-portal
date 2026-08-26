@@ -12,6 +12,11 @@ export interface User {
   departmentName?: string
   avatar?: string
   phone?: string
+  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'
+  mustChangePassword?: boolean
+  createdBy?: string
+  createdByRole?: string
+  createdById?: string
 }
 
 interface AuthState {

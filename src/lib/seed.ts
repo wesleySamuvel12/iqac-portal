@@ -78,6 +78,7 @@ export async function seedDatabase() {
             role: 'ADMIN',
             phone: '+91-9876543210',
             isActive: true,
+            status: 'ACTIVE',
           },
         })
         results.users++
@@ -103,6 +104,7 @@ export async function seedDatabase() {
               role: 'HOD',
               departmentId: dept.id,
               isActive: true,
+            status: 'ACTIVE',
             },
           })
 
@@ -146,6 +148,7 @@ export async function seedDatabase() {
                   role: 'STAFF',
                   departmentId: dept.id,
                   isActive: true,
+            status: 'ACTIVE',
                 },
               })
 

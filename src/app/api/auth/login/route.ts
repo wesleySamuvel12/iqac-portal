@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { verifyPassword } from '@/lib/auth-helpers'
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,24 +13,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const normalizedEmail = email.trim().toLowerCase()
+
     const user = await db.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
       include: { department: true },
     })
 
-    if (!user || !user.isActive) {
+    if (!user) {
       return NextResponse.json(
-        { success: false, error: 'Invalid credentials or account inactive' },
+        { success: false, error: 'Invalid email or password' },
         { status: 401 }
       )
     }
 
-    // Simple password check (for seed data)
-    const isPasswordValid = user.password === password
+    // Check account status
+    if (!user.isActive || user.status !== 'ACTIVE') {
+      const statusReason = user.status ? user.status.toLowerCase() : 'inactive'
+      return NextResponse.json(
+        { success: false, error: `Account is ${statusReason}. Please contact your administrator.` },
+        { status: 403 }
+      )
+    }
+
+    // Password check (supports hashed password and legacy seed string)
+    const isPasswordValid = await verifyPassword(password, user.password)
 
     if (!isPasswordValid) {
       return NextResponse.json(
-        { success: false, error: 'Invalid credentials' },
+        { success: false, error: 'Invalid email or password' },
         { status: 401 }
       )
     }

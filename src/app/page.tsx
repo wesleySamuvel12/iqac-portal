@@ -5,12 +5,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { DuplicateAchievementModal } from '@/components/achievements/DuplicateAchievementModal'
 import { isSpecialCategory, getCanonicalCategoryLabel, normalizeTitle } from '@/lib/achievements-service'
+import { UserManagementSection } from '@/components/admin/UserManagementSection'
+import { DepartmentCredentialManager } from '@/components/common/DepartmentCredentialManager'
+import { FirstLoginModal } from '@/components/auth/FirstLoginModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { 
-  Building2, Mail, Lock, Eye, EyeOff, Loader2, 
+  Building2, Mail, Lock, Key, Eye, EyeOff, Loader2, 
   LayoutDashboard, Users, GraduationCap, FileText,
   BarChart3, Settings, Bell, LogOut, Menu, X,
   Home, UserCheck, BookOpen, Award, TrendingUp,
@@ -100,7 +103,7 @@ type TabType = 'dashboard' | 'departments' | 'faculty' | 'students' | 'activitie
   | 'approvals' | 'analytics' | 'documents' | 'settings' | 'achievements' | 'feedback'
   | 'staff_achievement' | 'student_achievement_view'
   | 'hod_student_approval' | 'hod_staff_approval' | 'my_achievement'
-  | 'report_generator' | 'achievement_report' | 'hod_monthly_report' | 'hod_management' | 'showcase' | 'database'
+  | 'report_generator' | 'achievement_report' | 'hod_monthly_report' | 'hod_management' | 'showcase' | 'database' | 'user_management'
   | 'staff_management'
   | 'hierarchy_dept' | 'hierarchy_year' | 'hierarchy_section' | 'hierarchy_students' | 'student_profile'
 
@@ -9928,6 +9931,7 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
 
 // ============ STAFF MANAGEMENT PAGE (Class Student Management) ============
 function StaffManagementPage({ user }: { user: User }) {
+  const [activeStaffTab, setActiveStaffTab] = useState<'students' | 'student_credentials'>('students')
   const [students, setStudents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -10158,20 +10162,50 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
             <Users className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Class Management</h1>
-            <p className="text-blue-100">{user.departmentName} • Your Class Students</p>
+            <h1 className="text-2xl font-bold">Class & Credential Management</h1>
+            <p className="text-blue-100">{user.departmentName} • Student Records & Login Allocation</p>
           </div>
+        </div>
+
+        {/* Tab Buttons */}
+        <div className="flex items-center gap-2 bg-white/10 p-1 rounded-xl backdrop-blur-md">
+          <button
+            onClick={() => setActiveStaffTab('students')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+              activeStaffTab === 'students' ? 'bg-white text-blue-900 shadow' : 'text-white hover:bg-white/10'
+            }`}
+          >
+            Class Roster
+          </button>
+          <button
+            onClick={() => setActiveStaffTab('student_credentials')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              activeStaffTab === 'student_credentials' ? 'bg-white text-blue-900 shadow' : 'text-white hover:bg-white/10'
+            }`}
+          >
+            <Lock className="w-3.5 h-3.5" />
+            Login Credentials
+          </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {activeStaffTab === 'student_credentials' ? (
+        <DepartmentCredentialManager
+          user={user}
+          targetRole="STUDENT"
+          title="Student Login Credentials"
+          subtitle="Allocate and manage student login credentials for your department/class"
+        />
+      ) : (
+        <>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {Object.entries(statsByYear).map(([year, count]) => (
           <Card key={year} className="border overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
                 onClick={() => setSelectedYear(selectedYear === year ? null : year)}>
@@ -10533,9 +10567,9 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
               ) : (
                 /* Results View */
                 <div className="space-y-4">
-                  <div className={'p-4 rounded-lg ' + importResults.created > 0 ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 border border-gray-200' + ''}>
+                  <div className={'p-4 rounded-lg ' + (importResults.created > 0 ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 border border-gray-200')}>
                     <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                      <CheckCircle className={'w-5 h-5 ' + importResults.created > 0 ? 'text-emerald-600' : 'text-gray-400' + ''} />
+                      <CheckCircle className={'w-5 h-5 ' + (importResults.created > 0 ? 'text-emerald-600' : 'text-gray-400')} />
                       Import Complete
                     </h4>
                     
@@ -10579,13 +10613,15 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
           </div>
         </div>
       )}
+      </>
+      )}
     </div>
   )
 }
 
 // ============ HOD MANAGEMENT PAGE (Full CRUD for Students/Staff/Batches) ============
 function HODManagementPage({ user }: { user: User }) {
-  const [activeTab, setActiveTab] = useState<'students' | 'staff' | 'batches'>('students')
+  const [activeTab, setActiveTab] = useState<'students' | 'student_credentials' | 'staff' | 'staff_credentials' | 'batches'>('students')
   const [loading, setLoading] = useState(true)
   
   // Common state
@@ -10613,7 +10649,7 @@ function HODManagementPage({ user }: { user: User }) {
             </motion.div>
             Department Management
           </h2>
-          <p className="text-blue-100 mt-1 text-sm font-medium">Manage Students, Staff & Batches efficiently</p>
+          <p className="text-blue-100 mt-1 text-sm font-medium">Manage Students, Staff, Batches & Login Credentials</p>
         </div>
         <Badge className="bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 px-4 py-1.5 text-xs font-bold">
           {user.departmentName}
@@ -10621,11 +10657,13 @@ function HODManagementPage({ user }: { user: User }) {
       </motion.div>
 
       {/* Tab Navigation */}
-      <div className="relative flex items-center gap-2 p-1.5 bg-slate-200/80 rounded-2xl border border-slate-300/70 w-fit shadow-inner">
+      <div className="relative flex flex-wrap items-center gap-2 p-1.5 bg-slate-200/80 rounded-2xl border border-slate-300/70 w-fit shadow-inner">
         {[
-          { id: 'students' as const, label: 'Students', icon: GraduationCap, activeIconColor: 'text-blue-600' },
-          { id: 'staff' as const, label: 'Staff', icon: Users, activeIconColor: 'text-blue-600' },
-          { id: 'batches' as const, label: 'Batches', icon: FolderOpen, activeIconColor: 'text-blue-600' },
+          { id: 'students' as const, label: 'Students', icon: GraduationCap },
+          { id: 'student_credentials' as const, label: 'Student Credentials', icon: Lock },
+          { id: 'staff' as const, label: 'Staff', icon: Users },
+          { id: 'staff_credentials' as const, label: 'Staff Credentials', icon: Key },
+          { id: 'batches' as const, label: 'Batches', icon: FolderOpen },
         ].map((tab) => {
           const isActive = activeTab === tab.id
           const Icon = tab.icon
@@ -10635,7 +10673,7 @@ function HODManagementPage({ user }: { user: User }) {
               onClick={() => { setActiveTab(tab.id); setShowForm(false); setEditingItem(null); }}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className={`relative z-10 flex items-center gap-2.5 px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 select-none ${
+              className={`relative z-10 flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 select-none ${
                 isActive 
                   ? 'text-blue-950 bg-white shadow-md border border-slate-200' 
                   : 'text-slate-600 hover:text-slate-900'
@@ -10666,6 +10704,14 @@ function HODManagementPage({ user }: { user: User }) {
           setLoading={setLoading}
         />
       )}
+      {activeTab === 'student_credentials' && (
+        <DepartmentCredentialManager
+          user={user}
+          targetRole="STUDENT"
+          title="Student Login Credentials Allocation"
+          subtitle="Create and allocate login accounts for students in your department"
+        />
+      )}
       {activeTab === 'staff' && (
         <StaffManagementSection 
           user={user} 
@@ -10681,6 +10727,14 @@ function HODManagementPage({ user }: { user: User }) {
           setDeleteConfirm={setDeleteConfirm}
           loading={loading}
           setLoading={setLoading}
+        />
+      )}
+      {activeTab === 'staff_credentials' && (
+        <DepartmentCredentialManager
+          user={user}
+          targetRole="STAFF"
+          title="Staff Login Credentials Allocation"
+          subtitle="Create and allocate login accounts for staff members in your department"
         />
       )}
       {activeTab === 'batches' && (
@@ -19206,6 +19260,7 @@ const ROLE_SIDEBAR_CONFIG = {
     roleIcon: Shield,
     menuItems: [
       { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'IQAC Overview' },
+      { id: 'user_management', icon: Lock, label: 'User Credentials', badge: 'Auth', description: 'Manage login credentials' },
       { id: 'feedback', icon: MessageSquare, label: 'Feedback Creator', badge: 'Creator', description: 'Create & manage feedback' },
       { id: 'report_generator', icon: FileSpreadsheet, label: 'Report Generator Hub', badge: 'All-in-1', description: 'All Report & Sheet Generators' },
       { id: 'achievement_report', icon: Trophy, label: 'Achievement Sheet Generator', badge: 'Excel', description: 'Achievement Sheet Export' },
@@ -19222,6 +19277,7 @@ const ROLE_SIDEBAR_CONFIG = {
     roleIcon: Crown,
     menuItems: [
       { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'IQAC Overview' },
+      { id: 'user_management', icon: Lock, label: 'User Credentials', badge: 'Auth', description: 'Manage login credentials' },
       { id: 'feedback', icon: MessageSquare, label: 'Feedback Creator', badge: 'Creator', description: 'Create & manage feedback' },
       { id: 'report_generator', icon: FileSpreadsheet, label: 'Report Generator Hub', badge: 'All-in-1', description: 'All Report & Sheet Generators' },
       { id: 'achievement_report', icon: Trophy, label: 'Achievement Sheet Generator', badge: 'Excel', description: 'Achievement Sheet Export' },
@@ -23468,13 +23524,14 @@ export default function IQACPortal() {
         return <StaffAchievementPage user={user} />
       }
     } else if (user?.role === 'STUDENT') {
-      if (['staff_achievement', 'my_achievement', 'hod_student_approval', 'hod_staff_approval', 'hod_management', 'staff_management', 'report_generator', 'database'].includes(activeTab)) {
+      if (['staff_achievement', 'my_achievement', 'hod_student_approval', 'hod_staff_approval', 'hod_management', 'staff_management', 'report_generator', 'database', 'user_management'].includes(activeTab)) {
         return <StudentAchievementsPage user={user} />
       }
     }
 
     switch (activeTab) {
       case 'dashboard': return <DashboardContent user={user} setActiveTab={setActiveTab} />
+      case 'user_management': return <UserManagementSection user={user} />
       case 'departments': return <DepartmentsPage />
       case 'faculty': return <FacultyPage />
       case 'students': return <StudentsPage />
@@ -23516,6 +23573,10 @@ export default function IQACPortal() {
 
   return (
     <div className={'min-h-screen ' + (darkMode ? 'dark-theme' : '')} suppressHydrationWarning>
+      {/* Mandatory First-Login Temporary Password Modal */}
+      {user?.mustChangePassword && (
+        <FirstLoginModal user={user} onSuccess={() => {}} />
+      )}
       {/* Sidebar - Fixed Position */}
       <Sidebar 
         activeTab={activeTab} 
