@@ -107,7 +107,8 @@ export async function POST(request: NextRequest) {
 function generatePdfWithPdfKit(reportData: any, department: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ margin: 36, size: 'A4', layout: 'landscape' })
+      // Explicit 841.89pt (width) x 595.28pt (height) for A4 Landscape
+      const doc = new PDFDocument({ margin: 36, size: [841.89, 595.28], layout: 'landscape' })
       const chunks: Buffer[] = []
 
       doc.on('data', (chunk: Buffer) => chunks.push(chunk))
@@ -268,7 +269,8 @@ async function generateWithPlaywright(htmlContent: string, outputPath: string): 
     
     await page.pdf({
       path: outputPath,
-      format: 'A4',
+      width: '297mm',
+      height: '210mm',
       landscape: true,
       printBackground: true,
       margin: {
@@ -395,7 +397,7 @@ function generateReportHTML(data: any, dept: string, nietLogoDataUrl: string = '
   <title>Monthly Department Report - ${dept}</title>
   <style>
     @page {
-      size: A4 landscape;
+      size: 297mm 210mm;
       margin: 10mm;
     }
     
