@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
         const email = student.email || `${student.registerNumber.toLowerCase()}@niet.ac.in`
         const name = student.name || `Student ${student.registerNumber}`
-        const tempPassword = generateTempPassword(8)
+        const tempPassword = generateTempPassword()
         const hashedPassword = await hashPassword(tempPassword)
 
         try {
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
 
         const email = faculty.email || `${faculty.employeeId.toLowerCase()}@niet.ac.in`
         const name = faculty.name || `Staff ${faculty.employeeId}`
-        const tempPassword = generateTempPassword(8)
+        const tempPassword = generateTempPassword()
         const hashedPassword = await hashPassword(tempPassword)
 
         try {

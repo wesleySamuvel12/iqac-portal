@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { 
   Upload, FileText, Info, Download, Loader2, XCircle, 
-  CheckCircle, Lock, AlertTriangle, ShieldCheck, UserPlus, FileSpreadsheet
+  CheckCircle, Lock, AlertTriangle, ShieldCheck, UserPlus, FileSpreadsheet, Table, Check, AlertCircle
 } from 'lucide-react'
 
 interface CSVImportModalProps {
@@ -35,13 +35,14 @@ export function CSVImportModal({
   const [validating, setValidating] = useState(false)
   const [importing, setImporting] = useState(false)
 
-  // Validation state
+  // Validation state with preview grid rows
   const [validationData, setValidationData] = useState<{
     totalRecords: number
     validCount: number
     invalidCount: number
     invalidRecords: any[]
     duplicateCount: number
+    validRecords: any[]
   } | null>(null)
 
   // Login Access choice - DEFAULT IS FALSE (NO)
@@ -73,7 +74,7 @@ export function CSVImportModal({
     onClose()
   }
 
-  // Step 1: Pre-Validate CSV
+  // Step 1: Pre-Validate CSV & Load Excel Data Grid Preview
   const handleValidate = async () => {
     if (!file) return
     setValidating(true)
@@ -98,10 +99,11 @@ export function CSVImportModal({
           invalidCount: data.invalidCount || 0,
           invalidRecords: data.invalidRecords || [],
           duplicateCount: data.duplicateCount || 0,
+          validRecords: data.validRecords || [],
         })
         setStep('validation')
       } else {
-        alert(data.error || 'Failed to validate CSV file')
+        alert(data.error || 'Failed to validate file')
       }
     } catch (err: any) {
       alert('Error validating file: ' + err.message)
@@ -192,13 +194,13 @@ export function CSVImportModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-100 animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-100 animate-in fade-in duration-200">
         
         {/* Header */}
         <div className="p-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 text-white flex items-center justify-between">
           <div>
             <h3 className="text-xl font-bold flex items-center gap-2.5">
-              <Upload className="w-5 h-5 text-cyan-400" />
+              <FileSpreadsheet className="w-5 h-5 text-cyan-400" />
               {title}
             </h3>
             <p className="text-xs text-blue-200 mt-1">{subtitle || `${departmentName} Department`}</p>
@@ -209,7 +211,7 @@ export function CSVImportModal({
         </div>
 
         {/* Modal Body */}
-        <div className="p-6">
+        <div className="p-6 max-h-[85vh] overflow-y-auto">
           
           {/* STEP 1: UPLOAD FILE */}
           {step === 'upload' && (
@@ -228,7 +230,7 @@ export function CSVImportModal({
               >
                 <Upload className={`w-12 h-12 mx-auto mb-3 transition-colors ${dragOver ? 'text-indigo-600' : 'text-indigo-500'}`} />
                 <p className="text-base font-bold text-gray-800 mb-1">
-                  {dragOver ? 'Drop your CSV file here' : 'Drag & drop your CSV file here'}
+                  {dragOver ? 'Drop your CSV/Excel file here' : 'Drag & drop your CSV or Excel file here'}
                 </p>
                 <p className="text-xs text-gray-500 mb-4">Select a valid .csv spreadsheet file</p>
                 
@@ -241,7 +243,7 @@ export function CSVImportModal({
                 />
                 <label htmlFor="csv-file-input" className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-xs cursor-pointer hover:bg-indigo-700 transition-all shadow-md">
                   <FileSpreadsheet className="w-4 h-4" />
-                  Browse CSV File
+                  Browse CSV / Excel File
                 </label>
 
                 {file && (
@@ -288,12 +290,12 @@ export function CSVImportModal({
                   {validating ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Validating CSV...
+                      Parsing & Previewing...
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="w-4 h-4" />
-                      Validate CSV
+                      <Table className="w-4 h-4" />
+                      Preview & Validate Data Grid
                     </>
                   )}
                 </Button>
@@ -301,43 +303,85 @@ export function CSVImportModal({
             </div>
           )}
 
-          {/* STEP 2: VALIDATION MATRIX & LOGIN ACCESS SELECTION */}
+          {/* STEP 2: EXCEL DATA GRID PREVIEW & LOGIN ACCESS SELECTION */}
           {step === 'validation' && validationData && (
             <div className="space-y-6">
               
-              {/* Validation Summary Card */}
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
-                <p className="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-3">CSV Validation Results</p>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-white p-3 rounded-xl border border-slate-200 text-center">
-                    <p className="text-xl font-black text-slate-800">{validationData.totalRecords}</p>
-                    <p className="text-[11px] text-gray-500 font-bold">Total Records</p>
-                  </div>
-                  <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-200 text-center">
-                    <p className="text-xl font-black text-emerald-600">{validationData.validCount}</p>
-                    <p className="text-[11px] text-emerald-700 font-bold">Valid Records</p>
-                  </div>
-                  <div className="bg-red-50 p-3 rounded-xl border border-red-200 text-center">
-                    <p className="text-xl font-black text-red-600">{validationData.invalidCount}</p>
-                    <p className="text-[11px] text-red-700 font-bold">Invalid Records</p>
-                  </div>
+              {/* Validation Summary Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900 text-white p-4 rounded-2xl shadow-md">
+                <div className="flex items-center gap-2">
+                  <Table className="w-5 h-5 text-cyan-400" />
+                  <span className="font-extrabold text-sm uppercase tracking-wider text-white">EXCEL DATA GRID PREVIEW</span>
+                </div>
+                <div className="flex items-center gap-3 text-xs">
+                  <span className="bg-white/10 px-3 py-1 rounded-lg font-mono font-bold">Total: {validationData.totalRecords}</span>
+                  <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1 rounded-lg font-mono font-bold">Valid: {validationData.validCount}</span>
+                  {validationData.invalidCount > 0 && (
+                    <span className="bg-red-500/20 text-red-300 border border-red-500/40 px-3 py-1 rounded-lg font-mono font-bold">Invalid: {validationData.invalidCount}</span>
+                  )}
+                </div>
+              </div>
+
+              {/* EXCEL SPREADSHEET PREVIEW GRID */}
+              <div className="border border-slate-300 rounded-2xl overflow-hidden bg-white shadow-inner">
+                <div className="bg-slate-100 border-b border-slate-300 px-4 py-2 flex items-center justify-between text-xs font-bold text-slate-700">
+                  <span className="flex items-center gap-1.5">
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                    Spreadsheet Data Rows ({validationData.validRecords.length + validationData.invalidRecords.length} rows loaded)
+                  </span>
+                  <span className="text-[11px] text-slate-500 font-mono">Live Validation Grid</span>
                 </div>
 
-                {validationData.invalidRecords.length > 0 && (
-                  <div className="mt-4 p-3 bg-red-50/80 border border-red-200 rounded-xl">
-                    <p className="text-xs font-bold text-red-800 mb-1 flex items-center gap-1.5">
-                      <AlertTriangle className="w-4 h-4 text-red-600" />
-                      Invalid Rows Found ({validationData.invalidRecords.length}):
-                    </p>
-                    <div className="max-h-28 overflow-y-auto space-y-1">
-                      {validationData.invalidRecords.map((err, idx) => (
-                        <div key={idx} className="text-[11px] text-red-700 bg-white p-1.5 rounded border border-red-100 font-medium">
-                          Row {err.row}: {err.error}
-                        </div>
+                <div className="max-h-60 overflow-auto">
+                  <table className="w-full text-left border-collapse font-mono text-xs">
+                    <thead>
+                      <tr className="bg-slate-800 text-slate-200 text-[11px] font-extrabold uppercase sticky top-0 border-b border-slate-700">
+                        <th className="py-2.5 px-3 border-r border-slate-700 w-12 text-center">Row</th>
+                        <th className="py-2.5 px-3 border-r border-slate-700">ID / Reg No</th>
+                        <th className="py-2.5 px-3 border-r border-slate-700">Name</th>
+                        <th className="py-2.5 px-3 border-r border-slate-700">Email</th>
+                        <th className="py-2.5 px-3 border-r border-slate-700 text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {/* Render Valid Rows */}
+                      {validationData.validRecords.map((row: any) => (
+                        <tr key={`valid-${row.row}`} className="hover:bg-indigo-50/50 bg-white">
+                          <td className="py-2 px-3 border-r border-slate-200 text-slate-500 text-center font-bold">{row.row}</td>
+                          <td className="py-2 px-3 border-r border-slate-200 font-bold text-indigo-700">{row.regNo || row.employeeId}</td>
+                          <td className="py-2 px-3 border-r border-slate-200 font-semibold text-slate-800">{row.name}</td>
+                          <td className="py-2 px-3 border-r border-slate-200 text-slate-600">{row.email}</td>
+                          <td className="py-2 px-3 border-r border-slate-200 text-center">
+                            {row.isDuplicate ? (
+                              <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 border border-amber-300 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                                <AlertCircle className="w-3 h-3" /> Existing
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                                <Check className="w-3 h-3 text-emerald-600" /> Valid
+                              </span>
+                            )}
+                          </td>
+                        </tr>
                       ))}
-                    </div>
-                  </div>
-                )}
+
+                      {/* Render Invalid Rows */}
+                      {validationData.invalidRecords.map((err: any, idx: number) => (
+                        <tr key={`invalid-${idx}`} className="bg-red-50/70 hover:bg-red-100/70">
+                          <td className="py-2 px-3 border-r border-slate-200 text-red-600 text-center font-bold">{err.row || idx + 1}</td>
+                          <td className="py-2 px-3 border-r border-slate-200 font-bold text-red-700">{err.regNo || err.employeeId || 'N/A'}</td>
+                          <td className="py-2 px-3 border-r border-slate-200 font-semibold text-red-800">{err.name || 'Invalid Row'}</td>
+                          <td className="py-2 px-3 border-r border-slate-200 text-red-600">{err.email || '-'}</td>
+                          <td className="py-2 px-3 border-r border-slate-200 text-center">
+                            <span className="inline-flex items-center gap-1 bg-red-100 text-red-800 border border-red-300 text-[10px] px-2 py-0.5 rounded-full font-bold" title={err.error}>
+                              <AlertTriangle className="w-3 h-3 text-red-600" /> {err.error}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               {/* LOGIN ACCESS SELECTION STEP (REQUIREMENT #2 & #15) */}
@@ -398,7 +442,7 @@ export function CSVImportModal({
                   </Button>
                   <Button
                     onClick={handleExecuteImport}
-                    disabled={importing}
+                    disabled={importing || validationData.validCount === 0}
                     className="px-6 py-2.5 rounded-xl font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md text-xs flex items-center gap-2"
                   >
                     {importing ? (
@@ -409,7 +453,7 @@ export function CSVImportModal({
                     ) : (
                       <>
                         <Upload className="w-4 h-4" />
-                        Continue Import
+                        Continue Import ({validationData.validCount} Valid Records)
                       </>
                     )}
                   </Button>

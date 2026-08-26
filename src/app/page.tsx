@@ -10474,6 +10474,8 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
         sampleCSVColumns="registerNumber, name, email, phone, semester, section, cgpa"
         onImportSuccess={() => fetchStudents()}
       />
+        </>
+      )}
     </div>
   )
 }
@@ -10815,55 +10817,6 @@ function StudentManagementSection({
     }
   }
 
-  const handleImport = async () => {
-    if (!importFile) return
-    setImporting(true)
-    try {
-      const formData = new FormData()
-      formData.append('file', importFile)
-      formData.append('departmentId', user.departmentId || '')
-      if (importBatchId) formData.append('batchId', importBatchId)
-
-      const res = await fetch('/api/students/bulk-import', {
-        method: 'POST',
-        body: formData,
-      })
-      const data = await res.json()
-      
-      if (data.success) {
-        setImportResults(data.results)
-        fetchStudents()
-      }
-    } catch (error) {
-      console.error('Error importing students:', error)
-    } finally {
-      setImporting(false)
-    }
-  }
-
-  const closeImportModal = () => {
-    setShowImportModal(false)
-    setImportResults(null)
-    setImportFile(null)
-    setImportBatchId('')
-  }
-
-  // Generate sample CSV for download
-  const downloadSampleCSV = () => {
-    const csvContent = `reg_no,name,email,password,department,batch,semester,cgpa
-CSE2024004,Student 4,student_cse4@niet.ac.in,Student@123,CSE,2024-2028,5,8.15
-CSE2024005,Student 5,student_cse5@niet.ac.in,Student@123,CSE,2024-2028,5,8.90`
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'students_sample.csv'
-    document.body.appendChild(a)
-    a.click()
-    window.URL.revokeObjectURL(url)
-    document.body.removeChild(a)
-  }
-
   return (
     <div className="space-y-4">
       {/* Toolbar */}
@@ -10990,130 +10943,6 @@ CSE2024005,Student 5,student_cse5@niet.ac.in,Student@123,CSE,2024-2028,5,8.90`
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Bulk Import Modal */}
-      {showImportModal && (
-        <Card className="border-2 border-blue-200 shadow-lg">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Upload className="w-5 h-5 text-blue-600" />
-                {importResults ? 'Import Results' : 'Bulk Import Students'}
-              </CardTitle>
-              <Button variant="ghost" size="sm" onClick={closeImportModal}>
-                <XCircle className="w-5 h-5" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {!importResults ? (
-              <div className="space-y-4">
-                {/* File Upload */}
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors">
-                  <input
-                    type="file"
-                    accept=".csv,.xlsx,.xls"
-                    onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                    className="hidden"
-                    id="student-import-file"
-                  />
-                  <label htmlFor="student-import-file" className="cursor-pointer">
-                    <Upload className="w-10 h-10 mx-auto text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
-                    <p className="text-xs text-gray-400 mt-1">CSV files only</p>
-                  </label>
-                  {importFile && (
-                    <p className="text-sm text-green-600 mt-2 font-medium">✓ {importFile.name}</p>
-                  )}
-                </div>
-
-                {/* Batch Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Assign to Batch (Optional)</label>
-                  <select
-                    value={importBatchId}
-                    onChange={(e) => setImportBatchId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
-                  >
-                    <option value="">No Batch</option>
-                    {batches.map((b: any) => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Sample Download */}
-                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium text-blue-800">Need a template?</p>
-                    <p className="text-xs text-blue-600">Download sample CSV format</p>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={downloadSampleCSV} className="text-blue-600 border-blue-300 hover:bg-blue-100">
-                    <Download className="w-4 h-4 mr-1" /> Download Template
-                  </Button>
-                </div>
-
-                {/* Import Button */}
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button variant="outline" onClick={closeImportModal}>Cancel</Button>
-                  <Button onClick={handleImport} disabled={!importFile || importing} className="bg-gradient-to-r from-blue-500 to-blue-600">
-                    {importing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                    {importing ? 'Importing...' : 'Import Students'}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              /* Results View */
-              <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-green-50 rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-green-600">{importResults.created}</p>
-                    <p className="text-xs text-green-700">Created</p>
-                  </div>
-                  <div className="bg-yellow-50 rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-yellow-600">{importResults.skipped}</p>
-                    <p className="text-xs text-yellow-700">Skipped</p>
-                  </div>
-                  <div className="bg-red-50 rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-red-600">{importResults.failed}</p>
-                    <p className="text-xs text-red-700">Failed</p>
-                  </div>
-                </div>
-
-                {importResults.errors.length > 0 && (
-                  <div className="max-h-48 overflow-y-auto border rounded-lg">
-                    <table className="w-full text-sm">
-                      <thead className="bg-red-50 sticky top-0">
-                        <tr>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-red-700">Row</th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-red-700">ID</th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-red-700">Reason</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-red-100">
-                        {importResults.errors.map((err: any, idx: number) => (
-                          <tr key={idx} className="text-red-600">
-                            <td className="px-3 py-1.5">{err.row}</td>
-                            <td className="px-3 py-1.5 font-mono">{err.registerNumber || err.employeeId}</td>
-                            <td className="px-3 py-1.5">{err.reason}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                <div className="flex flex-wrap justify-end gap-3 pt-2">
-                  <Button onClick={() => { closeImportModal(); setShowForm(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs gap-2 px-4 py-2 shadow-sm">
-                    <Lock className="w-3.5 h-3.5" /> Allocate Login Credentials
-                  </Button>
-                  <Button onClick={closeImportModal} className="bg-gradient-to-r from-blue-500 to-blue-600 font-bold text-xs px-4 py-2">Done</Button>
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
       )}
@@ -11476,54 +11305,6 @@ function StaffManagementSection({
     } finally {
       setSubmitting(false)
     }
-  }
-
-  const handleImport = async () => {
-    if (!importFile) return
-    setImporting(true)
-    try {
-      const formData = new FormData()
-      formData.append('file', importFile)
-      formData.append('departmentId', user.departmentId || '')
-
-      const res = await fetch('/api/faculty/bulk-import', {
-        method: 'POST',
-        body: formData,
-      })
-      const data = await res.json()
-      
-      if (data.success) {
-        setImportResults(data.results)
-        fetchStaff()
-      }
-    } catch (error) {
-      console.error('Error importing staff:', error)
-    } finally {
-      setImporting(false)
-    }
-  }
-
-  const closeImportModal = () => {
-    setShowImportModal(false)
-    setImportResults(null)
-    setImportFile(null)
-  }
-
-  // Generate sample CSV for download
-  const downloadSampleCSV = () => {
-    const csvContent = `employeeId,name,email,phone,designation,qualification,specialization,experience,researchArea,isHOD
-EMP1001,John Smith,john@niet.edu,9876543210,Assistant Professor,M.Tech,Computer Science,5,AI/ML,false
-EMP1002,Jane Doe,jane@niet.edu,9876543211,Senior Lecturer,M.Sc.,Data Science,8,Big Data,false
-EMP1003,Bob Wilson,bob@niet.edu,9876543212,Professor,Ph.D.,Machine Learning,15,Deep Learning,true`
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'staff_sample.csv'
-    document.body.appendChild(a)
-    a.click()
-    window.URL.revokeObjectURL(url)
-    document.body.removeChild(a)
   }
 
   return (

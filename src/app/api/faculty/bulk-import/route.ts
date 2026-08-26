@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
         let userId: string | null = null
 
         if (createLoginAccess) {
-          const passToUse = record.customPassword || generateTempPassword(8)
+          const passToUse = record.customPassword || generateTempPassword()
           const isTempPass = !record.customPassword
           const hashedPassword = await hashPassword(passToUse)
 
