@@ -10732,7 +10732,7 @@ function StudentManagementSection({
   const openCreateForm = () => {
     setEditingItem(null)
     setFormData({
-      registerNumber: '', name: '', email: '', password: '', phone: '',
+      registerNumber: '', name: '', email: '', password: '12345678', phone: '',
       semester: '', section: '', batchId: '', cgpa: '', admissionYear: '',
     })
     setShowForm(true)
@@ -10875,7 +10875,7 @@ function StudentManagementSection({
               {!editingItem && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
-                  <Input type="password" value={formData.password} onChange={(e) => setFormData(p => ({...p, password: e.target.value}))} placeholder="Student@123" required />
+                  <Input type="password" value={formData.password} onChange={(e) => setFormData(p => ({...p, password: e.target.value}))} placeholder="12345678" required />
                 </div>
               )}
               <div>

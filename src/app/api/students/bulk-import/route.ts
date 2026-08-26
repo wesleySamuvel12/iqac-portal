@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
 
         // IF USER SELECTED "YES, CREATE LOGIN ACCESS"
         if (createLoginAccess) {
-          const passToUse = record.customPassword || generateTempPassword()
+          const passToUse = record.customPassword || '12345678'
           const isTempPass = !record.customPassword
           const hashedPassword = await hashPassword(passToUse)
 

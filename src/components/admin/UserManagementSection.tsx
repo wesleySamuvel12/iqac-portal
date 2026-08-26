@@ -119,7 +119,7 @@ export function UserManagementSection({ user }: UserManagementSectionProps) {
     setFormData({
       name: '',
       email: '',
-      password: generateTempPassword(),
+      password: targetRole === 'STUDENT' ? '12345678' : generateTempPassword(),
       role: targetRole,
       departmentId: user.departmentId || DEPARTMENTS_LIST[0].id,
       phone: '',
