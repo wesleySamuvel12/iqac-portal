@@ -240,78 +240,167 @@ function generatePdfWithPdfKit(reportData: any, department: string): Promise<Buf
         y += 8
       }
 
-      // Section A: Academic Activities
-      drawSectionHeader('A. ACADEMIC ACTIVITIES', '#059669')
-      const academicHeaders = ['Particulars', 'Theory', 'Lab / Practical', 'Status / Remarks']
-      const academicRows = [
-        ['Syllabus Coverage', safeData.syllabusCoverageTheory || '-', safeData.syllabusCoverageLab || '-', 'Updated in LMS'],
-        ['Lesson Plan Update', safeData.lessonPlanTheory || '-', safeData.lessonPlanLab || '-', 'Verified by HoD'],
-        ['CIA Conducted & Submitted', safeData.ciaConducted || '-', 'N/A', 'Evaluated & Published'],
-        ['Attendance Report & Remedial', safeData.attendanceReport || '-', safeData.remedialClasses || '-', 'Remedial held for slow learners'],
-        ['Mentoring Sessions Conducted', safeData.mentoringSessions || '-', 'N/A', 'Student counseling completed']
-      ]
-      drawGridTable(academicHeaders, academicRows, [200, 140, 140, 305.89])
+      // Check if Admin Dashboard Executive Summary dataset
+      if (safeData.executiveSummary || safeData.departmentPerformance || safeData.placementStats) {
+        const exec = safeData.executiveSummary || {}
+        drawSectionHeader('1. EXECUTIVE SUMMARY & INSTITUTIONAL QUALITY METRICS', '#1e3a5f')
+        const execHeaders = ['Metric', 'Value', 'Details / Remarks']
+        const execRows = [
+          ['Total Students', String(exec.totalStudents || 0), 'Enrolled across all active programs'],
+          ['Total Faculty', String(exec.totalFaculty || 0), 'Full-time & Adjunct Teaching Staff'],
+          ['Active Departments', String(exec.totalDepartments || 0), 'Engineering & Science Disciplines'],
+          ['Total Achievements Verified', String(exec.totalAchievements || 0), 'IQAC Approved Records'],
+          ['Placements Recorded', String(exec.totalPlacements || 0), 'On-Campus & Off-Campus'],
+          ['Research Publications', String(exec.totalPublications || 0), 'Scopus, WoS & UGC Care'],
+          ['Verified Data Records', String(exec.verifiedRecords || 0), 'Passed Verification'],
+          ['Pending Approvals', String(exec.pendingApprovals || 0), 'Under Review'],
+          ['Overall Performance Score', `${exec.overallPerformance || 0}%`, 'Institutional Index Score']
+        ]
+        drawGridTable(execHeaders, execRows, [250, 150, 385.89])
 
-      // Section B: Student Development Activities
-      drawSectionHeader('B. STUDENT DEVELOPMENT ACTIVITIES', '#7c3aed')
-      const bHeaders = ['Category', 'Guest Lectures', 'Workshops', 'Ind. Visits', 'Value Added', 'Skill Enh.', 'Hands-on', 'Hackathons']
-      const guestL = studentDev.guestLectures || {}
-      const workS = studentDev.workshops || {}
-      const indV = studentDev.industrialVisits || {}
-      const valA = studentDev.valueAddedCourses || {}
-      const skillE = studentDev.skillEnhancement || {}
-      const handsO = studentDev.handsOnTraining || {}
-      const hackA = studentDev.hackathon || {}
+        if (Array.isArray(safeData.departmentPerformance) && safeData.departmentPerformance.length > 0) {
+          drawSectionHeader('2. DEPARTMENT-WISE PERFORMANCE ANALYSIS', '#059669')
+          const deptHeaders = ['Dept Name', 'Code', 'Students', 'Faculty', 'Achievements', 'Publications', 'Placements', 'Score']
+          const deptRows = safeData.departmentPerformance.map((d: any) => [
+            d?.name || 'Dept',
+            d?.code || 'DEPT',
+            String(d?.stats?.students || 0),
+            String(d?.stats?.faculty || 0),
+            String(d?.stats?.achievements || 0),
+            String(d?.stats?.publications || 0),
+            String(d?.stats?.placements || 0),
+            `${d?.performanceScore || 0}%`
+          ])
+          drawGridTable(deptHeaders, deptRows, [160, 60, 75, 75, 95, 95, 95, 130.89])
+        }
 
-      const bRows = [
-        ['Prev Months (Cumulative)', guestL.prev || '0', workS.prev || '0', indV.prev || '0', valA.prev || '0', skillE.prev || '0', handsO.prev || '0', hackA.prev || '0'],
-        ['Current Month', guestL.curr || '0', workS.curr || '0', indV.curr || '0', valA.curr || '0', skillE.curr || '0', handsO.curr || '0', hackA.curr || '0']
-      ]
-      drawGridTable(bHeaders, bRows, [155.89, 90, 90, 90, 90, 90, 90, 90])
+        if (safeData.placementStats) {
+          const ps = safeData.placementStats
+          drawSectionHeader('3. TRAINING & PLACEMENT CELL REPORT', '#7c3aed')
+          const psHeaders = ['Placement Metric', 'Stat Value', 'Remarks']
+          const psRows = [
+            ['Total Placed Students', String(ps.totalPlaced || 0), 'Offers Accepted'],
+            ['Overall Placement Rate', `${ps.placementRate || 0}%`, 'Eligible Batch Percent'],
+            ['Highest Package Offered', `${ps.highestPackage || 'N/A'} LPA`, 'Highest CTC'],
+            ['Average Package Offered', `${ps.averagePackage || 'N/A'} LPA`, 'Average Batch CTC'],
+            ['Companies Visited', String(ps.companiesVisited || 0), 'Recruiting Partners'],
+            ['Dream & Super Dream Offers', `${ps.dreamOffers || 0} / ${ps.superDreamOffers || 0}`, 'High Package Category']
+          ]
+          drawGridTable(psHeaders, psRows, [250, 160, 375.89])
+        }
 
-      // Section C: Research & Innovation
-      drawSectionHeader('C. RESEARCH & INNOVATION (FACULTY WISE)', '#d97706')
-      const cHeaders = ['Faculty Name', 'Journals', 'Conferences', 'Books', 'Book Chapters', 'Patents', 'Grants']
-      const cRows = (Array.isArray(researchFaculty) ? researchFaculty : []).map((f: any) => [
-        f?.name || 'Faculty',
-        f?.journalPub?.curr || '0',
-        f?.conferencePapers?.curr || '0',
-        f?.book?.curr || '0',
-        f?.bookChapters?.curr || '0',
-        f?.patents?.curr || '0',
-        f?.fundedProjects?.curr || '0'
-      ])
-      drawGridTable(cHeaders, cRows, [215.89, 95, 95, 95, 95, 95, 95])
+        if (safeData.researchStats) {
+          const rs = safeData.researchStats
+          drawSectionHeader('4. RESEARCH & DEVELOPMENT METRICS', '#d97706')
+          const rsHeaders = ['Research Indicator', 'Record Count', 'Indexing / Details']
+          const rsRows = [
+            ['Total Journal Publications', String(rs.totalPublications || 0), 'Scopus / WoS / UGC Care'],
+            ['Scopus Indexed Papers', String(rs.scopusIndexed || 0), 'International Journals'],
+            ['Web of Science Papers', String(rs.webOfScience || 0), 'High Impact Factor'],
+            ['Conference Papers', String(rs.conferencePapers || 0), 'IEEE / Springer / Elsevier'],
+            ['Book Chapters & Books', `${rs.bookChapters || 0} / ${rs.booksPublished || 0}`, 'Edited Books'],
+            ['Patents Filed & Granted', `${rs.patentsFiled || 0} / ${rs.patentsGranted || 0}`, 'IPR Applications']
+          ]
+          drawGridTable(rsHeaders, rsRows, [250, 160, 375.89])
+        }
+      } else {
+        // Section A: Academic Activities
+        drawSectionHeader('A. ACADEMIC ACTIVITIES', '#059669')
+        const academicHeaders = ['Particulars', 'Theory', 'Lab / Practical', 'Status / Remarks']
+        const academicRows = [
+          ['Syllabus Coverage', safeData.syllabusCoverageTheory || '-', safeData.syllabusCoverageLab || '-', 'Updated in LMS'],
+          ['Lesson Plan Update', safeData.lessonPlanTheory || '-', safeData.lessonPlanLab || '-', 'Verified by HoD'],
+          ['CIA Conducted & Submitted', safeData.ciaConducted || '-', 'N/A', 'Evaluated & Published'],
+          ['Attendance Report & Remedial', safeData.attendanceReport || '-', safeData.remedialClasses || '-', 'Remedial held for slow learners'],
+          ['Mentoring Sessions Conducted', safeData.mentoringSessions || '-', 'N/A', 'Student counseling completed']
+        ]
+        if (Array.isArray(safeData.customAcademicRows)) {
+          safeData.customAcademicRows.forEach((r: any) => {
+            academicRows.push([r?.particulars || 'Custom Academic', r?.theory || '-', r?.lab || '-', 'Custom Entry'])
+          })
+        }
+        drawGridTable(academicHeaders, academicRows, [200, 140, 140, 305.89])
 
-      // Section D: Faculty Development Programs
-      drawSectionHeader('D. FACULTY DEVELOPMENT PROGRAMS', '#0369a1')
-      const dHeaders = ['Faculty Name', 'FDPs Attended', 'FDPs Organized', 'NPTEL Completed', 'MOOCs', 'Resource Person']
-      const dRows = (Array.isArray(facultyDev) ? facultyDev : []).map((f: any) => [
-        f?.name || 'Faculty',
-        f?.fdpsAttended?.curr || '0',
-        f?.fdpsOrganized?.curr || '0',
-        f?.nptelCompleted?.curr || '0',
-        f?.moocsCompleted?.curr || '0',
-        f?.resourcePerson?.curr || '0'
-      ])
-      drawGridTable(dHeaders, dRows, [235.89, 110, 110, 110, 110, 110])
+        // Section B: Student Development Activities
+        drawSectionHeader('B. STUDENT DEVELOPMENT ACTIVITIES', '#7c3aed')
+        const bHeaders = ['Category', 'Guest Lectures', 'Workshops', 'Ind. Visits', 'Value Added', 'Skill Enh.', 'Hands-on', 'Hackathons']
+        const guestL = studentDev.guestLectures || {}
+        const workS = studentDev.workshops || {}
+        const indV = studentDev.industrialVisits || {}
+        const valA = studentDev.valueAddedCourses || {}
+        const skillE = studentDev.skillEnhancement || {}
+        const handsO = studentDev.handsOnTraining || {}
+        const hackA = studentDev.hackathon || {}
 
-      // Section E: Internship Details
-      drawSectionHeader('E. STUDENTS INTERNSHIP DETAILS', '#0f766e')
-      const eHeaders = ['Period', 'Paid Internships', 'Non-Paid Internships', 'Virtual Internships', 'Not Availed']
-      const prevInt = internship.previous || {}
-      const currInt = internship.current || {}
-      const eRows = [
-        ['Current Month', currInt.paid || '0', currInt.nonPaid || '0', currInt.virtual || '0', currInt.notAvailed || '0'],
-        ['Cumulative Total', prevInt.paid || '0', prevInt.nonPaid || '0', prevInt.virtual || '0', '-']
-      ]
-      drawGridTable(eHeaders, eRows, [185.89, 150, 150, 150, 150])
+        const bRows = [
+          ['Prev Months (Cumulative)', guestL.prev || '0', workS.prev || '0', indV.prev || '0', valA.prev || '0', skillE.prev || '0', handsO.prev || '0', hackA.prev || '0'],
+          ['Current Month', guestL.curr || '0', workS.curr || '0', indV.curr || '0', valA.curr || '0', skillE.curr || '0', handsO.curr || '0', hackA.curr || '0']
+        ]
+        drawGridTable(bHeaders, bRows, [155.89, 90, 90, 90, 90, 90, 90, 90])
 
-      // Section G: Quality Assurance Activities
-      drawSectionHeader('G. QUALITY ASSURANCE ACTIVITIES', '#65a30d')
-      const gHeaders = ['Particulars', 'Status', 'Remarks']
-      const gRows = (Array.isArray(qaActivities) ? qaActivities : []).map((qa: any) => [qa?.particular || '-', qa?.status || '-', qa?.remarks || '-'])
-      drawGridTable(gHeaders, gRows, [300, 180, 305.89])
+        // Section C: Research & Innovation
+        drawSectionHeader('C. RESEARCH & INNOVATION (FACULTY WISE)', '#d97706')
+        const cHeaders = ['Faculty Name', 'Journals', 'Conferences', 'Books', 'Book Chapters', 'Patents', 'Grants']
+        const cRows = (Array.isArray(researchFaculty) ? researchFaculty : []).map((f: any) => [
+          f?.name || 'Faculty',
+          f?.journalPub?.curr || '0',
+          f?.conferencePapers?.curr || '0',
+          f?.book?.curr || '0',
+          f?.bookChapters?.curr || '0',
+          f?.patents?.curr || '0',
+          f?.fundedProjects?.curr || '0'
+        ])
+        drawGridTable(cHeaders, cRows, [215.89, 95, 95, 95, 95, 95, 95])
+
+        // Section D: Faculty Development Programs
+        drawSectionHeader('D. FACULTY DEVELOPMENT PROGRAMS', '#0369a1')
+        const dHeaders = ['Faculty Name', 'FDPs Attended', 'FDPs Organized', 'NPTEL Completed', 'MOOCs', 'Resource Person']
+        const dRows = (Array.isArray(facultyDev) ? facultyDev : []).map((f: any) => [
+          f?.name || 'Faculty',
+          f?.fdpsAttended?.curr || '0',
+          f?.fdpsOrganized?.curr || '0',
+          f?.nptelCompleted?.curr || '0',
+          f?.moocsCompleted?.curr || '0',
+          f?.resourcePerson?.curr || '0'
+        ])
+        drawGridTable(dHeaders, dRows, [235.89, 110, 110, 110, 110, 110])
+
+        // Section E: Internship Details
+        drawSectionHeader('E. STUDENTS INTERNSHIP DETAILS', '#0f766e')
+        const eHeaders = ['Period', 'Paid Internships', 'Non-Paid Internships', 'Virtual Internships', 'Not Availed']
+        const prevInt = internship.previous || {}
+        const currInt = internship.current || {}
+        const eRows = [
+          ['Current Month', currInt.paid || '0', currInt.nonPaid || '0', currInt.virtual || '0', currInt.notAvailed || '0'],
+          ['Cumulative Total', prevInt.paid || '0', prevInt.nonPaid || '0', prevInt.virtual || '0', '-']
+        ]
+        if (Array.isArray(safeData.customInternshipRows)) {
+          safeData.customInternshipRows.forEach((r: any) => {
+            eRows.push([r?.period || 'Custom', r?.paid || '0', r?.nonPaid || '0', r?.virtual || '0', r?.notAvailed || '0'])
+          })
+        }
+        drawGridTable(eHeaders, eRows, [185.89, 150, 150, 150, 150])
+
+        // Section F: Faculty - Industry Interaction
+        drawSectionHeader('F. FACULTY - INDUSTRY INTERACTION', '#b91c1c')
+        const fHeaders = ['Faculty Name', 'MoUs Signed', 'Industry Visits', 'Experts Invited', 'Collaborative', 'Consultancy']
+        const indInt = Array.isArray(safeData.industryInteraction) ? safeData.industryInteraction : []
+        const fRows = indInt.map((item: any) => [
+          item?.name || 'Faculty',
+          item?.mousSigned?.curr || '0',
+          item?.industryVisits?.curr || '0',
+          item?.expertsInvited?.curr || '0',
+          item?.collaborativeActivities?.curr || '0',
+          item?.consultancyServices?.curr || '0'
+        ])
+        drawGridTable(fHeaders, fRows, [200, 115, 115, 115, 120, 120.89])
+
+        // Section G: Quality Assurance Activities
+        drawSectionHeader('G. QUALITY ASSURANCE ACTIVITIES', '#65a30d')
+        const gHeaders = ['Particulars', 'Status', 'Remarks']
+        const gRows = (Array.isArray(qaActivities) ? qaActivities : []).map((qa: any) => [qa?.particular || '-', qa?.status || '-', qa?.remarks || '-'])
+        drawGridTable(gHeaders, gRows, [300, 180, 305.89])
+      }
 
       // Signatures Block
       if (y > 520) {

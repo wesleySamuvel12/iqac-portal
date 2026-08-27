@@ -15189,21 +15189,29 @@ function ReportGeneratorPage({ user, initialView }: { user?: User; initialView?:
   }
 
   const exportAsPDF = async () => {
-    const response = await fetch('/api/generate-pdf', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        reportData,
-        department: departmentId !== 'all' ? departments.find(d => d.id === departmentId)?.name : 'All',
-        title: reportTitle,
-        subtitle: reportSubtitle,
-        showBranding
+    try {
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportData,
+          department: departmentId !== 'all' ? departments.find(d => d.id === departmentId)?.name : 'All',
+          title: reportTitle,
+          subtitle: reportSubtitle,
+          showBranding
+        })
       })
-    })
-    
-    if (response.ok) {
-      const blob = await response.blob()
-      downloadFile(blob, `NIERT-IQAC-Report-${new Date().toISOString().split('T')[0]}.pdf`, 'application/pdf')
+      
+      if (response.ok) {
+        const blob = await response.blob()
+        downloadFile(blob, `NIERT-IQAC-Report-${new Date().toISOString().split('T')[0]}.pdf`, 'application/pdf')
+      } else {
+        const err = await response.json().catch(() => ({ error: 'Unknown error' }))
+        alert('Error generating PDF: ' + (err.error || 'Server error'))
+      }
+    } catch (error: any) {
+      console.error('PDF export error:', error)
+      alert('Error generating PDF. Please try again.')
     }
   }
 
