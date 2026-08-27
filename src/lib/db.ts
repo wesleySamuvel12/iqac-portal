@@ -12,8 +12,13 @@ function getDatabaseUrl(): string {
   const devDbPath = path.resolve(process.cwd(), 'prisma/dev.db')
   const tmpDbPath = '/tmp/custom.db'
 
-  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+  if (process.env.VERCEL) {
     try {
+      const tmpDir = path.dirname(tmpDbPath)
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true })
+      }
+
       if (fs.existsSync(localDbPath)) {
         if (!fs.existsSync(tmpDbPath)) {
           fs.copyFileSync(localDbPath, tmpDbPath)
