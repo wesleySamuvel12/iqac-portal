@@ -7,9 +7,9 @@ const nextConfig: NextConfig = {
   },
   reactStrictMode: false,
   outputFileTracingIncludes: {
-    '/**': ['./db/custom.db', './prisma/**/*'],
+    '/**': ['./db/custom.db', './prisma/**/*', './node_modules/pdfkit/js/data/**/*'],
   },
-  serverExternalPackages: ['@prisma/client', 'prisma'],
+  serverExternalPackages: ['@prisma/client', 'prisma', '@sparticuz/chromium', 'playwright-core', 'pdfkit', 'fontkit', 'linebreak', 'png-js', 'fflate'],
 };
 
 export default nextConfig;
