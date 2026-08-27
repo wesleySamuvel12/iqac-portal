@@ -88,15 +88,19 @@ export function AchievementReportGenerator({ user }: { user: User }) {
   // Preview State
   const [loadingPreview, setLoadingPreview] = useState<boolean>(false)
   const [downloading, setDownloading] = useState<boolean>(false)
+  const [downloadingPdf, setDownloadingPdf] = useState<boolean>(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [previewData, setPreviewData] = useState<{
+    success: boolean
+    departmentName: string
+    datePeriod: string
+    roleLabel: string
+    generatedDateStr: string
     recordsFound: number
     columnCount: number
     columns: string[]
-    previewRows: any[][]
-    achievementCounts: Record<string, number>
-    departmentName: string
+    rows: any[][]
   } | null>(null)
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   // Fetch departments & users list on load or dept/userType change
   useEffect(() => {
@@ -158,9 +162,11 @@ export function AchievementReportGenerator({ user }: { user: User }) {
     handleFetchPreview()
   }, [handleFetchPreview])
 
-  // Download Excel
-  const handleDownloadExcel = async () => {
-    setDownloading(true)
+  // Download Excel / PDF
+  const handleDownloadReport = async (format: 'excel' | 'pdf') => {
+    if (format === 'pdf') setDownloadingPdf(true)
+    else setDownloading(true)
+
     setErrorMsg(null)
     try {
       const res = await fetch('/api/achievement-reports/download', {
@@ -176,6 +182,7 @@ export function AchievementReportGenerator({ user }: { user: User }) {
           achievementType,
           userRole: user.role,
           currentUserId: user.id,
+          format,
         }),
       })
 
@@ -186,7 +193,7 @@ export function AchievementReportGenerator({ user }: { user: User }) {
 
       // Extract filename from disposition header
       const contentDisposition = res.headers.get('Content-Disposition')
-      let filename = 'Achievement_Report.xlsx'
+      let filename = `Achievement_Report.${format === 'pdf' ? 'pdf' : 'xlsx'}`
       if (contentDisposition) {
         const match = contentDisposition.match(/filename="?([^"]+)"?/)
         if (match && match[1]) {
@@ -204,9 +211,10 @@ export function AchievementReportGenerator({ user }: { user: User }) {
       a.remove()
       window.URL.revokeObjectURL(url)
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to download Excel workbook')
+      setErrorMsg(err.message || `Failed to download ${format.toUpperCase()} report`)
     } finally {
       setDownloading(false)
+      setDownloadingPdf(false)
     }
   }
 
@@ -495,23 +503,43 @@ export function AchievementReportGenerator({ user }: { user: User }) {
               Update Preview
             </Button>
 
-            <Button
-              onClick={handleDownloadExcel}
-              disabled={downloading}
-              className="rounded-xl bg-gradient-to-r from-[#0B1F3A] via-[#123B72] to-[#1E3A5F] hover:from-[#0B1F3A] hover:to-[#0A2E6D] text-white font-bold shadow-lg shadow-blue-950/20 px-7 py-3"
-            >
-              {downloading ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Building Excel Workbook...
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4 mr-2 text-cyan-300" />
-                  Generate Official Excel Report (.xlsx)
-                </>
-              )}
-            </Button>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                onClick={() => handleDownloadReport('pdf')}
+                disabled={downloadingPdf || downloading}
+                className="rounded-xl bg-gradient-to-r from-emerald-700 via-teal-800 to-emerald-900 hover:from-emerald-800 hover:to-emerald-950 text-white font-bold shadow-lg shadow-emerald-950/20 px-6 py-3"
+              >
+                {downloadingPdf ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Generating PDF Document...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2 text-emerald-300" />
+                    Generate Official PDF Report (.pdf)
+                  </>
+                )}
+              </Button>
+
+              <Button
+                onClick={() => handleDownloadReport('excel')}
+                disabled={downloading || downloadingPdf}
+                className="rounded-xl bg-gradient-to-r from-[#0B1F3A] via-[#123B72] to-[#1E3A5F] hover:from-[#0B1F3A] hover:to-[#0A2E6D] text-white font-bold shadow-lg shadow-blue-950/20 px-6 py-3"
+              >
+                {downloading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Building Excel Workbook...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2 text-cyan-300" />
+                    Generate Official Excel Report (.xlsx)
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

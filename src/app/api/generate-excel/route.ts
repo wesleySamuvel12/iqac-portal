@@ -99,7 +99,8 @@ export async function POST(request: NextRequest) {
     const researchHeaders = ['C. RESEARCH & INNOVATION - Faculty Wise', '', '', '', '', '', '', '', '', '', '', '', '', '']
     const researchSubheaders = ['Faculty Name', 'Journal Pub (P)', '(C)', 'Conf Papers (P)', '(C)', 'Book (P)', '(C)', 'Book Ch (P)', '(C)', 'Patents (P)', '(C)', 'Funded Proj (P)', '(C)']
     const researchRows: any[] = []
-    researchFaculty.forEach((f: any, i: number) => {
+    const safeResearchFaculty = Array.isArray(researchFaculty) ? researchFaculty : []
+    safeResearchFaculty.forEach((f: any, i: number) => {
       if (!f) return
       const journalPub = f.journalPub || {}
       const conferencePapers = f.conferencePapers || {}
@@ -131,7 +132,8 @@ export async function POST(request: NextRequest) {
     const facultyDevHeaders = ['D. FACULTY DEVELOPMENT', '', '', '', '', '', '', '', '', '', '', '']
     const facultyDevSubheaders = ['Faculty Name', 'FDPs Attended (P)', '(C)', 'FDPs Organized (P)', '(C)', 'NPTEL (P)', '(C)', 'MOOCs (P)', '(C)', 'Resource Person (P)', '(C)']
     const facultyDevRows: any[] = []
-    facultyDev.forEach((f: any, i: number) => {
+    const safeFacultyDev = Array.isArray(facultyDev) ? facultyDev : []
+    safeFacultyDev.forEach((f: any, i: number) => {
       if (!f) return
       const fdpsAttended = f.fdpsAttended || {}
       const fdpsOrganized = f.fdpsOrganized || {}
@@ -179,7 +181,8 @@ export async function POST(request: NextRequest) {
       [''],
       ['Particulars', 'Status', 'Remarks'],
     ]
-    qaActivities.forEach((item: any) => {
+    const safeQaActivities = Array.isArray(qaActivities) ? qaActivities : []
+    safeQaActivities.forEach((item: any) => {
       if (item) {
         qaData.push([item.particular || '', item.status || '', item.remarks || ''])
       }

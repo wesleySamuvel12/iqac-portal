@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateAchievementExcel, FilterOptions } from '@/lib/reports/achievement-report-service'
+import { generateAchievementExcel, generateAchievementPdf, FilterOptions } from '@/lib/reports/achievement-report-service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
       achievementType = 'ALL',
       userRole = 'STAFF',
       currentUserId = '',
+      format = 'excel',
     } = body
 
     const filters: FilterOptions = {
@@ -28,6 +29,16 @@ export async function POST(request: NextRequest) {
       currentUserId,
     }
 
+    if (String(format).toLowerCase() === 'pdf') {
+      const { buffer, filename } = await generateAchievementPdf(filters)
+      return new NextResponse(new Uint8Array(buffer), {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="${filename}"`,
+        },
+      })
+    }
+
     const { buffer, filename } = await generateAchievementExcel(filters)
 
     return new NextResponse(new Uint8Array(buffer), {
@@ -37,9 +48,13 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error: any) {
-    console.error('Error downloading achievement report:', error)
+    console.error('[Achievement Report Download Error]', {
+      stage: 'API Download Route',
+      message: error.message,
+      stack: error.stack,
+    })
     return NextResponse.json(
-      { success: false, error: 'Failed to download Excel: ' + error.message },
+      { success: false, error: 'Failed to generate report: ' + error.message },
       { status: 500 }
     )
   }

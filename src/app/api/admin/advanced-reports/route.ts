@@ -655,9 +655,9 @@ function generateHODPerformance(hods: any[], awards: any[], certs: any[], allFac
 }
 
 function generatePlacementStats(placements: any[], students: any[]): any {
-  const totalStudents = students.length
-  const placedStudents = placements.length
-  const uniquePlaced = new Set(placements.map(p => p.studentId)).size
+  const totalStudents = Array.isArray(students) ? students.length : 0
+  const placedStudents = Array.isArray(placements) ? placements.length : 0
+  const uniquePlaced = Array.isArray(placements) ? new Set(placements.map(p => p.studentId)).size : 0
   
   return {
     totalPlacements: placedStudents,
@@ -665,7 +665,7 @@ function generatePlacementStats(placements: any[], students: any[]): any {
     placementRate: totalStudents > 0 ? ((uniquePlaced / totalStudents) * 100).toFixed(1) : '0',
     averagePackage: Math.floor(Math.random() * 10) + 4,
     highestPackage: Math.floor(Math.random() * 20) + 20,
-    companiesVisited: new Set(placements.map(p => p.company)).size,
+    companiesVisited: Array.isArray(placements) ? new Set(placements.map(p => p.company)).size : 0,
     topRecruiters: generateTopRecruiters(placements),
     byDepartment: generatePlacementByDepartment(placements),
     byBatch: generatePlacementByBatch(placements)
@@ -674,7 +674,7 @@ function generatePlacementStats(placements: any[], students: any[]): any {
 
 function generateTopRecruiters(placements: any[]): any[] {
   const companyMap = new Map()
-  placements.forEach(p => {
+  ;(placements || []).forEach(p => {
     if (p.company) {
       companyMap.set(p.company, (companyMap.get(p.company) || 0) + 1)
     }
@@ -687,7 +687,7 @@ function generateTopRecruiters(placements: any[]): any[] {
 
 function generatePlacementByDepartment(placements: any[]): any[] {
   const deptMap = new Map()
-  placements.forEach(p => {
+  ;(placements || []).forEach(p => {
     const dept = p.student?.department?.name || 'Unknown'
     deptMap.set(dept, (deptMap.get(dept) || 0) + 1)
   })
@@ -696,7 +696,7 @@ function generatePlacementByDepartment(placements: any[]): any[] {
 
 function generatePlacementByBatch(placements: any[]): any[] {
   const batchMap = new Map()
-  placements.forEach(p => {
+  ;(placements || []).forEach(p => {
     const batch = p.student?.batch || 'Unknown'
     batchMap.set(batch, (batchMap.get(batch) || 0) + 1)
   })
@@ -704,38 +704,41 @@ function generatePlacementByBatch(placements: any[]): any[] {
 }
 
 function generateResearchStats(research: any[], patents: any[], projects: any[]): any {
+  const safeResearch = research || []
+  const safePatents = patents || []
+  const safeProjects = projects || []
   return {
-    totalPublications: research.length,
-    totalPatents: patents.length,
-    totalProjects: projects.length,
-    fundedProjects: projects.filter(p => p.funded).length,
-    totalFunding: projects.reduce((sum, p) => sum + (p.amount || 0), 0),
-    scopusIndexed: research.filter(r => r.indexedIn?.includes('Scopus')).length,
-    sciIndexed: research.filter(r => r.indexedIn?.includes('SCI')).length,
-    ugcCare: research.filter(r => r.indexedIn?.includes('UGC')).length,
-    webOfScience: research.filter(r => r.indexedIn?.includes('Web of Science')).length,
-    patentsGranted: patents.filter(p => p.status === 'granted').length,
-    patentsFiled: patents.filter(p => p.status === 'filed').length,
+    totalPublications: safeResearch.length,
+    totalPatents: safePatents.length,
+    totalProjects: safeProjects.length,
+    fundedProjects: safeProjects.filter(p => p.funded).length,
+    totalFunding: safeProjects.reduce((sum, p) => sum + (p.amount || 0), 0),
+    scopusIndexed: safeResearch.filter(r => r.indexedIn?.includes('Scopus')).length,
+    sciIndexed: safeResearch.filter(r => r.indexedIn?.includes('SCI')).length,
+    ugcCare: safeResearch.filter(r => r.indexedIn?.includes('UGC')).length,
+    webOfScience: safeResearch.filter(r => r.indexedIn?.includes('Web of Science')).length,
+    patentsGranted: safePatents.filter(p => p.status === 'granted').length,
+    patentsFiled: safePatents.filter(p => p.status === 'filed').length,
     byType: {
-      journal: research.filter(r => r.type === 'journal').length,
-      conference: research.filter(r => r.type === 'conference').length,
-      bookChapter: research.filter(r => r.type === 'book_chapter').length,
-      book: research.filter(r => r.type === 'book').length
+      journal: safeResearch.filter(r => r.type === 'journal').length,
+      conference: safeResearch.filter(r => r.type === 'conference').length,
+      bookChapter: safeResearch.filter(r => r.type === 'book_chapter').length,
+      book: safeResearch.filter(r => r.type === 'book').length
     },
-    byDepartment: generateResearchByDepartment(research, patents)
+    byDepartment: generateResearchByDepartment(safeResearch, safePatents)
   }
 }
 
 function generateResearchByDepartment(research: any[], patents: any[]): any[] {
   const deptMap = new Map()
-  research.forEach(r => {
+  ;(research || []).forEach(r => {
     const dept = r.department?.name || 'Unknown'
     if (!deptMap.has(dept)) {
       deptMap.set(dept, { publications: 0, patents: 0 })
     }
     deptMap.get(dept).publications++
   })
-  patents.forEach(p => {
+  ;(patents || []).forEach(p => {
     const dept = p.faculty?.department?.name || 'Unknown'
     if (!deptMap.has(dept)) {
       deptMap.set(dept, { publications: 0, patents: 0 })
@@ -746,7 +749,7 @@ function generateResearchByDepartment(research: any[], patents: any[]): any[] {
 }
 
 function generateEventStats(activities: any[], events: any[]): any {
-  const allEvents = [...(activities || []), ...(events || [])]
+  const allEvents = [...(Array.isArray(activities) ? activities : []), ...(Array.isArray(events) ? events : [])]
   return {
     totalEvents: allEvents.length,
     byType: generateEventTypeBreakdown(allEvents),
@@ -758,7 +761,7 @@ function generateEventStats(activities: any[], events: any[]): any {
 
 function generateEventTypeBreakdown(events: any[]): any[] {
   const typeMap = new Map()
-  events.forEach(e => {
+  ;(events || []).forEach(e => {
     const type = e.type || 'Other'
     typeMap.set(type, (typeMap.get(type) || 0) + 1)
   })
@@ -768,7 +771,7 @@ function generateEventTypeBreakdown(events: any[]): any[] {
 
 function generateEventByDepartment(events: any[]): any[] {
   const deptMap = new Map()
-  events.forEach(e => {
+  ;(events || []).forEach(e => {
     const dept = e.department?.name || 'Unknown'
     deptMap.set(dept, (deptMap.get(dept) || 0) + 1)
   })

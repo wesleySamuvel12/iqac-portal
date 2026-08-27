@@ -22,14 +22,44 @@ function imageToBase64DataUrl(filename: string): string {
   return ''
 }
 
+import { generateAchievementPdf, FilterOptions } from '@/lib/reports/achievement-report-service'
+
 export async function POST(request: NextRequest) {
   let tempHtmlPath = ''
   let tempPdfPath = ''
   
   try {
     const body = await request.json()
-    const reportData = body.reportData || {}
-    const department = body.department || ''
+    const reportData = body.reportData || body.data || body || {}
+    const department = body.department || body.departmentName || reportData.department || 'NIET'
+
+    console.log('[PDF DEBUG] POST /api/generate-pdf payload keys:', Object.keys(body))
+    console.log('[PDF DEBUG] reportData keys:', Object.keys(reportData))
+
+    // If request contains achievement report filters, delegate directly to unified achievement report PDF engine
+    if (body.filters || body.departmentId || body.achievementType) {
+      const filters: FilterOptions = body.filters || {
+        departmentId: body.departmentId || 'ALL',
+        fromMonth: Number(body.fromMonth || 1),
+        toMonth: Number(body.toMonth || 12),
+        year: Number(body.year || 2026),
+        userType: body.userType || 'BOTH',
+        targetUserId: body.targetUserId || 'ALL',
+        achievementType: body.achievementType || 'ALL',
+        userRole: body.userRole || 'STAFF',
+        currentUserId: body.currentUserId || '',
+      }
+
+      console.log('[PDF DEBUG] Routing to generateAchievementPdf with filters:', filters)
+      const { buffer, filename } = await generateAchievementPdf(filters)
+      return new NextResponse(new Uint8Array(buffer), {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="${filename}"`,
+          'Content-Length': buffer.length.toString(),
+        },
+      })
+    }
 
     let pdfBuffer: Buffer | null = null
 
@@ -55,11 +85,12 @@ export async function POST(request: NextRequest) {
         pdfBuffer = readFileSync(tempPdfPath)
       }
     } catch (playwrightError) {
-      console.warn('Playwright unavailable in serverless environment, switching to PDFKit engine:', playwrightError)
+      console.warn('[PDF DEBUG] Playwright unavailable in serverless environment, switching to PDFKit engine:', playwrightError)
     }
 
     // Method 2: Fallback to PDFKit for guaranteed serverless PDF generation
     if (!pdfBuffer) {
+      console.log('[PDF DEBUG] Generating PDF with PDFKit engine for department:', department)
       pdfBuffer = await generatePdfWithPdfKit(reportData, department)
     }
 
@@ -72,7 +103,7 @@ export async function POST(request: NextRequest) {
     const filename = `Monthly_Department_Report_${department || 'NIET'}_${reportData?.reportingMonth || 'Report'}_${reportData?.reportingYear || new Date().getFullYear()}.pdf`
 
     // Return genuine PDF binary stream
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${filename}"`,
@@ -80,7 +111,7 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error: any) {
-    console.error('PDF generation error:', error)
+    console.error('[PDF DEBUG ERROR] PDF generation error:', error)
     
     // Cleanup on error
     try {
@@ -91,14 +122,15 @@ export async function POST(request: NextRequest) {
     // Generate emergency fallback PDF stream using PDFKit so browser never receives HTML/corrupt file
     try {
       const emergencyPdf = await generatePdfWithPdfKit({}, 'NIET')
-      return new NextResponse(emergencyPdf, {
+      return new NextResponse(new Uint8Array(emergencyPdf), {
         headers: {
           'Content-Type': 'application/pdf',
           'Content-Disposition': 'attachment; filename="Monthly_Department_Report.pdf"',
           'Content-Length': emergencyPdf.length.toString(),
         },
       })
-    } catch (fallbackErr) {
+    } catch (fallbackErr: any) {
+      console.error('[PDF DEBUG FALLBACK ERROR]', fallbackErr)
       return NextResponse.json({ error: 'Failed to generate PDF: ' + error.message }, { status: 500 })
     }
   }
@@ -107,8 +139,8 @@ export async function POST(request: NextRequest) {
 function generatePdfWithPdfKit(reportData: any, department: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
-      // Explicit 841.89pt (width) x 595.28pt (height) for A4 Landscape
-      const doc = new PDFDocument({ margin: 36, size: [841.89, 595.28], layout: 'landscape' })
+      // A4 Landscape layout: 841.89pt width x 595.28pt height
+      const doc = new PDFDocument({ margin: 28, size: 'A4', layout: 'landscape' })
       const chunks: Buffer[] = []
 
       doc.on('data', (chunk: Buffer) => chunks.push(chunk))
@@ -118,88 +150,184 @@ function generatePdfWithPdfKit(reportData: any, department: string): Promise<Buf
       const safeData = reportData || {}
       const studentDev = safeData.studentDev || {}
       const internship = safeData.internship || {}
-      const qaActivities = safeData.qaActivities || []
-      const researchFaculty = safeData.researchFaculty || []
-      const facultyDev = safeData.facultyDev || []
+      const qaActivities = Array.isArray(safeData.qaActivities) ? safeData.qaActivities : []
+      const researchFaculty = Array.isArray(safeData.researchFaculty) ? safeData.researchFaculty : []
+      const facultyDev = Array.isArray(safeData.facultyDev) ? safeData.facultyDev : []
 
-      // Header Banner - Landscape Mode (width ~770pt)
-      doc.fillColor('#1e40af').fontSize(16).text('NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY', { align: 'center' })
-      doc.fillColor('#4b5563').fontSize(9.5).text('(AUTONOMOUS) | ISO Certified | NAAC "A+" | NBA Accredited', { align: 'center' })
-      doc.moveDown(0.4)
-      doc.fillColor('#1e40af').fontSize(13).text('MONTHLY DEPARTMENT REPORT (LANDSCAPE FORMAT)', { align: 'center' })
-      doc.fillColor('#6b7280').fontSize(9).text(`Department: ${department || 'NIET'}  |  Academic Year: ${safeData.academicYear || '2025-2026'}  |  Reporting Period: ${safeData.reportingMonth || 'Current'} ${safeData.reportingYear || ''}`, { align: 'center' })
-      doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, { align: 'center' })
-      doc.moveDown(0.8)
+      const startX = 28
+      const pageWidth = 841.89 - 56 // 785.89pt
+
+      // Header Banner with Logos
+      const nietLogoPath = join(process.cwd(), 'public/images/niet-logo.png')
+      const nehruLogoPath = join(process.cwd(), 'public/images/nehrugroup-logo.png')
+
+      if (existsSync(nietLogoPath)) {
+        try { doc.image(nietLogoPath, startX, 22, { width: 45, height: 45 }) } catch (e) {}
+      }
+      if (existsSync(nehruLogoPath)) {
+        try { doc.image(nehruLogoPath, startX + pageWidth - 45, 22, { width: 45, height: 45 }) } catch (e) {}
+      }
+
+      doc.fillColor('#1e40af').fontSize(13).text('NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY', startX + 50, 22, { width: pageWidth - 100, align: 'center' })
+      doc.fillColor('#4b5563').fontSize(8).text('(AUTONOMOUS) | ISO Certified | NAAC "A+" | NBA Accredited', startX + 50, 38, { width: pageWidth - 100, align: 'center' })
+      
+      // Title Bar
+      doc.rect(startX, 52, pageWidth, 18).fill('#1e40af')
+      doc.fillColor('#ffffff').fontSize(10).text('MONTHLY DEPARTMENT REPORT', startX, 56, { width: pageWidth, align: 'center' })
+
+      let y = 74
+
+      // Meta Table Bar
+      doc.rect(startX, y, pageWidth, 18).fill('#f8fafc').stroke('#cbd5e1')
+      doc.fillColor('#1e293b').fontSize(8).text(`Department: ${department || safeData.department || 'NIET'}   |   Academic Year: ${safeData.academicYear || '2025-2026'}   |   Reporting Period: ${safeData.reportingMonth || 'Current'} ${safeData.reportingYear || ''}   |   Date: ${new Date().toLocaleDateString('en-IN')}`, startX + 8, y + 4)
+      
+      y += 24
+
+      // Helper for Section Banners
+      const drawSectionHeader = (title: string, colorHex: string) => {
+        if (y > 510) {
+          doc.addPage({ margin: 28, size: 'A4', layout: 'landscape' })
+          y = 28
+        }
+        doc.rect(startX, y, pageWidth, 16).fill(colorHex)
+        doc.fillColor('#ffffff').fontSize(9).text(title, startX + 6, y + 3)
+        y += 20
+      }
+
+      // Helper for Grid Tables
+      const drawGridTable = (headers: string[], rows: (string | number)[][], colWidths: number[]) => {
+        const safeHeaders = Array.isArray(headers) ? headers : []
+        const safeRows = Array.isArray(rows) ? rows : []
+        const rowHeight = 15
+
+        if (y + (safeRows.length + 1) * rowHeight > 540) {
+          doc.addPage({ margin: 28, size: 'A4', layout: 'landscape' })
+          y = 28
+        }
+
+        // Draw Table Header
+        let currentX = startX
+        doc.rect(startX, y, pageWidth, rowHeight).fill('#f1f5f9')
+        safeHeaders.forEach((h, i) => {
+          const w = (Array.isArray(colWidths) && colWidths[i]) ? colWidths[i] : 100
+          doc.rect(currentX, y, w, rowHeight).stroke('#cbd5e1')
+          doc.fillColor('#1e293b').fontSize(7.5).text(String(h ?? ''), currentX + 2, y + 3, { width: w - 4, align: 'center' })
+          currentX += w
+        })
+        y += rowHeight
+
+        // Draw Table Rows
+        if (safeRows.length === 0) {
+          doc.rect(startX, y, pageWidth, rowHeight).fill('#ffffff').stroke('#cbd5e1')
+          doc.fillColor('#94a3b8').fontSize(7.5).text('No entries recorded for this reporting period', startX + 4, y + 3, { width: pageWidth - 8, align: 'center' })
+          y += rowHeight
+        } else {
+          safeRows.forEach((r, rIdx) => {
+            currentX = startX
+            const bg = rIdx % 2 === 0 ? '#ffffff' : '#f8fafc'
+            doc.rect(startX, y, pageWidth, rowHeight).fill(bg)
+            const safeCells = Array.isArray(r) ? r : []
+            safeCells.forEach((cell, cIdx) => {
+              const w = (Array.isArray(colWidths) && colWidths[cIdx]) ? colWidths[cIdx] : 100
+              doc.rect(currentX, y, w, rowHeight).stroke('#cbd5e1')
+              const align = cIdx === 0 ? 'left' : 'center'
+              doc.fillColor('#334155').fontSize(7.5).text(String(cell ?? '-'), currentX + 2, y + 3, { width: w - 4, align })
+              currentX += w
+            })
+            y += rowHeight
+          })
+        }
+        y += 8
+      }
 
       // Section A: Academic Activities
-      doc.fillColor('#059669').fontSize(11).text('A. ACADEMIC ACTIVITIES')
-      doc.fillColor('#1f2937').fontSize(9)
-      doc.text(`  • Syllabus Coverage (Theory): ${safeData.syllabusCoverageTheory || '-'}    |    Syllabus Coverage (Lab): ${safeData.syllabusCoverageLab || '-'}    |    Lesson Plan Update: ${safeData.lessonPlanTheory || '-'}`)
-      doc.text(`  • CIA Conducted & Submitted: ${safeData.ciaConducted || '-'}    |    Attendance Report Prepared: ${safeData.attendanceReport || '-'}`)
-      doc.text(`  • Remedial Classes Conducted: ${safeData.remedialClasses || '-'}    |    Mentoring Sessions Conducted: ${safeData.mentoringSessions || '-'}`)
-      doc.moveDown(0.8)
+      drawSectionHeader('A. ACADEMIC ACTIVITIES', '#059669')
+      const academicHeaders = ['Particulars', 'Theory', 'Lab / Practical', 'Status / Remarks']
+      const academicRows = [
+        ['Syllabus Coverage', safeData.syllabusCoverageTheory || '-', safeData.syllabusCoverageLab || '-', 'Updated in LMS'],
+        ['Lesson Plan Update', safeData.lessonPlanTheory || '-', safeData.lessonPlanLab || '-', 'Verified by HoD'],
+        ['CIA Conducted & Submitted', safeData.ciaConducted || '-', 'N/A', 'Evaluated & Published'],
+        ['Attendance Report & Remedial', safeData.attendanceReport || '-', safeData.remedialClasses || '-', 'Remedial held for slow learners'],
+        ['Mentoring Sessions Conducted', safeData.mentoringSessions || '-', 'N/A', 'Student counseling completed']
+      ]
+      drawGridTable(academicHeaders, academicRows, [200, 140, 140, 305.89])
 
       // Section B: Student Development Activities
-      doc.fillColor('#7c3aed').fontSize(11).text('B. STUDENT DEVELOPMENT ACTIVITIES')
-      doc.fillColor('#1f2937').fontSize(9)
-      doc.text(`  • Guest Lectures: Current (${studentDev.guestLectures?.curr || 0}), Cumulative (${studentDev.guestLectures?.prev || 0})    |    Workshops: Current (${studentDev.workshops?.curr || 0}), Cumulative (${studentDev.workshops?.prev || 0})`)
-      doc.text(`  • Industrial Visits: Current (${studentDev.industrialVisits?.curr || 0}), Cumulative (${studentDev.industrialVisits?.prev || 0})    |    Value Added Courses: Current (${studentDev.valueAddedCourses?.curr || 0}), Cumulative (${studentDev.valueAddedCourses?.prev || 0})`)
-      doc.text(`  • Skill Enhancement: Current (${studentDev.skillEnhancement?.curr || 0}), Cumulative (${studentDev.skillEnhancement?.prev || 0})    |    Hands-on Training: Current (${studentDev.handsOnTraining?.curr || 0}), Cumulative (${studentDev.handsOnTraining?.prev || 0})`)
-      doc.text(`  • Hackathon / SIH: Current (${studentDev.hackathon?.curr || 0}), Cumulative (${studentDev.hackathon?.prev || 0})`)
-      doc.moveDown(0.8)
+      drawSectionHeader('B. STUDENT DEVELOPMENT ACTIVITIES', '#7c3aed')
+      const bHeaders = ['Category', 'Guest Lectures', 'Workshops', 'Ind. Visits', 'Value Added', 'Skill Enh.', 'Hands-on', 'Hackathons']
+      const guestL = studentDev.guestLectures || {}
+      const workS = studentDev.workshops || {}
+      const indV = studentDev.industrialVisits || {}
+      const valA = studentDev.valueAddedCourses || {}
+      const skillE = studentDev.skillEnhancement || {}
+      const handsO = studentDev.handsOnTraining || {}
+      const hackA = studentDev.hackathon || {}
+
+      const bRows = [
+        ['Prev Months (Cumulative)', guestL.prev || '0', workS.prev || '0', indV.prev || '0', valA.prev || '0', skillE.prev || '0', handsO.prev || '0', hackA.prev || '0'],
+        ['Current Month', guestL.curr || '0', workS.curr || '0', indV.curr || '0', valA.curr || '0', skillE.curr || '0', handsO.curr || '0', hackA.curr || '0']
+      ]
+      drawGridTable(bHeaders, bRows, [155.89, 90, 90, 90, 90, 90, 90, 90])
 
       // Section C: Research & Innovation
-      doc.fillColor('#d97706').fontSize(11).text('C. RESEARCH & INNOVATION (FACULTY WISE)')
-      doc.fillColor('#1f2937').fontSize(9)
-      if (researchFaculty.length > 0) {
-        researchFaculty.forEach((f: any, idx: number) => {
-          if (!f) return
-          doc.text(`  ${idx + 1}. ${f.name || 'Faculty'}: Journals (${f.journalPub?.curr || 0}), Conferences (${f.conferencePapers?.curr || 0}), Books (${f.book?.curr || 0}), Patents (${f.patents?.curr || 0}), Grants (${f.fundedProjects?.curr || 0})`)
-        })
-      } else {
-        doc.text('  • No research entries recorded for this reporting period')
-      }
-      doc.moveDown(0.8)
+      drawSectionHeader('C. RESEARCH & INNOVATION (FACULTY WISE)', '#d97706')
+      const cHeaders = ['Faculty Name', 'Journals', 'Conferences', 'Books', 'Book Chapters', 'Patents', 'Grants']
+      const cRows = researchFaculty.map((f: any) => [
+        f?.name || 'Faculty',
+        f?.journalPub?.curr || '0',
+        f?.conferencePapers?.curr || '0',
+        f?.book?.curr || '0',
+        f?.bookChapters?.curr || '0',
+        f?.patents?.curr || '0',
+        f?.fundedProjects?.curr || '0'
+      ])
+      drawGridTable(cHeaders, cRows, [215.89, 95, 95, 95, 95, 95, 95])
 
-      // Section D: Faculty Development
-      doc.fillColor('#0369a1').fontSize(11).text('D. FACULTY DEVELOPMENT PROGRAMS')
-      doc.fillColor('#1f2937').fontSize(9)
-      if (facultyDev.length > 0) {
-        facultyDev.forEach((f: any, idx: number) => {
-          if (!f) return
-          doc.text(`  ${idx + 1}. ${f.name || 'Faculty'}: FDPs Attended (${f.fdpsAttended?.curr || 0}), Organized (${f.fdpsOrganized?.curr || 0}), NPTEL (${f.nptelCompleted?.curr || 0}), Resource Person (${f.resourcePerson?.curr || 0})`)
-        })
-      } else {
-        doc.text('  • No faculty development entries recorded')
-      }
-      doc.moveDown(0.8)
+      // Section D: Faculty Development Programs
+      drawSectionHeader('D. FACULTY DEVELOPMENT PROGRAMS', '#0369a1')
+      const dHeaders = ['Faculty Name', 'FDPs Attended', 'FDPs Organized', 'NPTEL Completed', 'MOOCs', 'Resource Person']
+      const dRows = facultyDev.map((f: any) => [
+        f?.name || 'Faculty',
+        f?.fdpsAttended?.curr || '0',
+        f?.fdpsOrganized?.curr || '0',
+        f?.nptelCompleted?.curr || '0',
+        f?.moocsCompleted?.curr || '0',
+        f?.resourcePerson?.curr || '0'
+      ])
+      drawGridTable(dHeaders, dRows, [235.89, 110, 110, 110, 110, 110])
 
-      // Section E: Students Internship Details
-      doc.fillColor('#0f766e').fontSize(11).text('E. STUDENTS INTERNSHIP DETAILS')
-      doc.fillColor('#1f2937').fontSize(9)
+      // Section E: Internship Details
+      drawSectionHeader('E. STUDENTS INTERNSHIP DETAILS', '#0f766e')
+      const eHeaders = ['Period', 'Paid Internships', 'Non-Paid Internships', 'Virtual Internships', 'Not Availed']
       const prevInt = internship.previous || {}
       const currInt = internship.current || {}
-      doc.text(`  • Current Month: Paid (${currInt.paid || 0}), Non-Paid (${currInt.nonPaid || 0}), Virtual (${currInt.virtual || 0}), Not Availed (${currInt.notAvailed || 0})`)
-      doc.text(`  • Cumulative: Paid (${prevInt.paid || 0}), Non-Paid (${prevInt.nonPaid || 0}), Virtual (${prevInt.virtual || 0})`)
-      doc.moveDown(0.8)
+      const eRows = [
+        ['Current Month', currInt.paid || '0', currInt.nonPaid || '0', currInt.virtual || '0', currInt.notAvailed || '0'],
+        ['Cumulative Total', prevInt.paid || '0', prevInt.nonPaid || '0', prevInt.virtual || '0', '-']
+      ]
+      drawGridTable(eHeaders, eRows, [185.89, 150, 150, 150, 150])
 
       // Section G: Quality Assurance Activities
-      doc.fillColor('#65a30d').fontSize(11).text('G. QUALITY ASSURANCE ACTIVITIES')
-      doc.fillColor('#1f2937').fontSize(9)
-      if (qaActivities.length > 0) {
-        qaActivities.forEach((qa: any, idx: number) => {
-          if (!qa) return
-          doc.text(`  ${idx + 1}. ${qa.particular || 'Activity'}: Status (${qa.status || '-'}), Remarks: ${qa.remarks || '-'}`)
-        })
-      } else {
-        doc.text('  • Quality assurance activities verified and compliant')
-      }
-      doc.moveDown(1.5)
+      drawSectionHeader('G. QUALITY ASSURANCE ACTIVITIES', '#65a30d')
+      const gHeaders = ['Particulars', 'Status', 'Remarks']
+      const gRows = qaActivities.map((qa: any) => [qa?.particular || '-', qa?.status || '-', qa?.remarks || '-'])
+      drawGridTable(gHeaders, gRows, [300, 180, 305.89])
 
-      // Signatures
-      doc.fontSize(9).fillColor('#374151')
-      doc.text('_____________________________         _____________________________         _____________________________         _____________________________', { align: 'center' })
-      doc.text('            HoD                                School Dean                            Head-IQAC                            Vice Principal        ', { align: 'center' })
+      // Signatures Block
+      if (y > 520) {
+        doc.addPage({ margin: 28, size: 'A4', layout: 'landscape' })
+        y = 500
+      } else {
+        y = 525
+      }
+
+      doc.fontSize(8).fillColor('#475569')
+      const sigGap = pageWidth / 4
+      ['Head of Department (HoD)', 'School Dean', 'Head - IQAC', 'Vice Principal / Principal'].forEach((label, i) => {
+        const x = startX + i * sigGap
+        doc.text('________________________', x, y, { width: sigGap, align: 'center' })
+        doc.text(label, x, y + 10, { width: sigGap, align: 'center' })
+      })
 
       doc.end()
     } catch (err) {
@@ -209,57 +337,75 @@ function generatePdfWithPdfKit(reportData: any, department: string): Promise<Buf
 }
 
 async function generateWithPlaywright(htmlContent: string, outputPath: string): Promise<void> {
-  // Dynamic import for playwright
-  const { chromium } = await import('playwright')
-  
   let browser
-  const launchOptions: any = {
-    headless: true,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-extensions',
-      '--disable-component-extensions-with-background-pages',
-      '--disable-default-apps'
-    ]
+
+  // If running on Vercel / AWS Lambda serverless environment, use @sparticuz/chromium with playwright-core
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    try {
+      const sparticuzChromium = (await import('@sparticuz/chromium')).default
+      const { chromium: playwrightCore } = await import('playwright-core')
+
+      const executablePath = await sparticuzChromium.executablePath()
+      browser = await playwrightCore.launch({
+        args: sparticuzChromium.args,
+        executablePath,
+        headless: true,
+      })
+    } catch (sparticuzErr) {
+      console.warn('Sparticuz Chromium launch failed on serverless, falling back:', sparticuzErr)
+    }
   }
 
-  try {
-    browser = await chromium.launch(launchOptions)
-  } catch (err) {
-    console.warn('Default Playwright chromium launch failed, trying fallback channels/paths...', err)
-    
-    // Try system installed channels
-    const channels = ['chrome', 'msedge']
-    for (const channel of channels) {
-      try {
-        browser = await chromium.launch({ ...launchOptions, channel })
-        break
-      } catch (cErr) {}
+  // Fallback to standard playwright launch (for local environment)
+  if (!browser) {
+    const { chromium } = await import('playwright')
+
+    const launchOptions: any = {
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-extensions',
+        '--disable-component-extensions-with-background-pages',
+        '--disable-default-apps'
+      ]
     }
 
-    // If channel launch failed, try common Windows paths
-    if (!browser) {
-      const possiblePaths = [
-        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-        'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
-        'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-      ]
+    try {
+      browser = await chromium.launch(launchOptions)
+    } catch (err) {
+      console.warn('Default Playwright chromium launch failed, trying fallback channels/paths...', err)
 
-      for (const execPath of possiblePaths) {
-        if (existsSync(execPath)) {
-          try {
-            browser = await chromium.launch({ ...launchOptions, executablePath: execPath })
-            break
-          } catch (pErr) {}
+      const channels = ['chrome', 'msedge']
+      for (const channel of channels) {
+        try {
+          browser = await chromium.launch({ ...launchOptions, channel })
+          break
+        } catch (cErr) {}
+      }
+
+      if (!browser) {
+        const possiblePaths = [
+          'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+          'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+          'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+          'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+        ]
+
+        for (const execPath of possiblePaths) {
+          if (existsSync(execPath)) {
+            try {
+              browser = await chromium.launch({ ...launchOptions, executablePath: execPath })
+              break
+            } catch (pErr) {}
+          }
         }
       }
-    }
 
-    if (!browser) {
-      throw err
+      if (!browser) {
+        throw err
+      }
     }
   }
 
@@ -296,9 +442,9 @@ function generateReportHTML(data: any, dept: string, nietLogoDataUrl: string = '
   const studentDev = safeData.studentDev || {}
   const internship = safeData.internship || {}
   const documents = safeData.documents || {}
-  const qaActivities = safeData.qaActivities || []
-  const researchFaculty = safeData.researchFaculty || []
-  const facultyDev = safeData.facultyDev || []
+  const qaActivities = Array.isArray(safeData.qaActivities) ? safeData.qaActivities : []
+  const researchFaculty = Array.isArray(safeData.researchFaculty) ? safeData.researchFaculty : []
+  const facultyDev = Array.isArray(safeData.facultyDev) ? safeData.facultyDev : []
   
   const currentDate = new Date().toLocaleDateString('en-IN', {
     day: '2-digit',
@@ -720,8 +866,8 @@ function generateReportHTML(data: any, dept: string, nietLogoDataUrl: string = '
         <tr><td class="row-label">Attendance Report Prepared</td><td colspan="2">${safeData.attendanceReport || '-'}</td></tr>
         <tr><td class="row-label">Remedial Classes Conducted</td><td>${safeData.remedialClasses || '-'}</td><td>NA</td></tr>
         <tr><td class="row-label">Mentoring Sessions Conducted</td><td>${safeData.mentoringSessions || '-'}</td><td>NA</td></tr>
-        ${(safeData.customAcademicRows || []).map((row: any) => `
-          <tr><td class="row-label">${row.particulars || 'Custom Academic Activity'}</td><td>${row.theory || '-'}</td><td>${row.lab || '-'}</td></tr>
+        ${(Array.isArray(safeData.customAcademicRows) ? safeData.customAcademicRows : []).map((row: any) => `
+          <tr><td class="row-label">${row?.particulars || 'Custom Academic Activity'}</td><td>${row?.theory || '-'}</td><td>${row?.lab || '-'}</td></tr>
         `).join('')}
       </tbody>
     </table>
@@ -858,8 +1004,8 @@ function generateReportHTML(data: any, dept: string, nietLogoDataUrl: string = '
         <tr><td class="row-label">Previous Months</td><td>${prevIntern.paid || ''}</td><td>${prevIntern.nonPaid || ''}</td><td>${prevIntern.virtual || ''}</td><td>${prevIntern.notAvailed || ''}</td></tr>
         <tr><td class="row-label">Current Month</td><td>${currIntern.paid || ''}</td><td>${currIntern.nonPaid || ''}</td><td>${currIntern.virtual || ''}</td><td>${currIntern.notAvailed || ''}</td></tr>
         <tr><td class="row-label" style="background: #dbeafe;">Total (Cumulative)</td><td style="background: #dbeafe;">${totalIntern.paid || ''}</td><td style="background: #dbeafe;">${totalIntern.nonPaid || ''}</td><td style="background: #dbeafe;">${totalIntern.virtual || ''}</td><td style="background: #dbeafe;">${totalIntern.notAvailed || ''}</td></tr>
-        ${(safeData.customInternshipRows || []).map((row: any) => `
-          <tr><td class="row-label">${row.period || 'Custom Period'}</td><td>${row.paid || '-'}</td><td>${row.nonPaid || '-'}</td><td>${row.virtual || '-'}</td><td>${row.notAvailed || '-'}</td></tr>
+        ${(Array.isArray(safeData.customInternshipRows) ? safeData.customInternshipRows : []).map((row: any) => `
+          <tr><td class="row-label">${row?.period || 'Custom Period'}</td><td>${row?.paid || '-'}</td><td>${row?.nonPaid || '-'}</td><td>${row?.virtual || '-'}</td><td>${row?.notAvailed || '-'}</td></tr>
         `).join('')}
       </tbody>
     </table>

@@ -404,15 +404,18 @@ async function generateExcel(reportData: any, type: string | null, now: Date, pe
   
   // Sheet 4: Detailed Achievements (if any exist)
   const allAchievements: any[] = []
-  reportData.departmentReports.forEach((dept: any) => {
-    dept.achievements.student.items.forEach((item: any) => {
-      allAchievements.push(['Student', dept.name, item.studentName || '', item.title || item.name || '', item.type || '', item.status || ''])
+  (reportData.departmentReports || []).forEach((dept: any) => {
+    const studentItems = Array.isArray(dept?.achievements?.student?.items) ? dept.achievements.student.items : []
+    studentItems.forEach((item: any) => {
+      allAchievements.push(['Student', dept.name || 'N/A', item.studentName || '', item.title || item.name || '', item.type || '', item.status || ''])
     })
-    dept.achievements.staff.items.forEach((item: any) => {
-      allAchievements.push(['Staff', dept.name, item.staffName || '', item.title || item.name || '', item.achievementType || '', item.status || ''])
+    const staffItems = Array.isArray(dept?.achievements?.staff?.items) ? dept.achievements.staff.items : []
+    staffItems.forEach((item: any) => {
+      allAchievements.push(['Staff', dept.name || 'N/A', item.staffName || '', item.title || item.name || '', item.achievementType || '', item.status || ''])
     })
-    dept.achievements.hod.items.forEach((item: any) => {
-      allAchievements.push(['HOD', dept.name, item.staffName || '', item.title || item.name || '', item.achievementType || '', item.status || ''])
+    const hodItems = Array.isArray(dept?.achievements?.hod?.items) ? dept.achievements.hod.items : []
+    hodItems.forEach((item: any) => {
+      allAchievements.push(['HOD', dept.name || 'N/A', item.staffName || '', item.title || item.name || '', item.achievementType || '', item.status || ''])
     })
   })
   
