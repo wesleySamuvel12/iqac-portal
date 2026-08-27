@@ -404,18 +404,18 @@ async function generateExcel(reportData: any, type: string | null, now: Date, pe
   
   // Sheet 4: Detailed Achievements (if any exist)
   const allAchievements: any[] = []
-  (reportData.departmentReports || []).forEach((dept: any) => {
-    const studentItems = Array.isArray(dept?.achievements?.student?.items) ? dept.achievements.student.items : []
+  (Array.isArray(reportData?.departmentReports) ? reportData.departmentReports : []).forEach((dept: any) => {
+    const studentItems = Array.isArray(dept?.achievements?.student?.items) ? dept.achievements.student.items : (Array.isArray(dept?.studentItems) ? dept.studentItems : [])
     studentItems.forEach((item: any) => {
-      allAchievements.push(['Student', dept.name || 'N/A', item.studentName || '', item.title || item.name || '', item.type || '', item.status || ''])
+      allAchievements.push(['Student', dept?.name || 'N/A', item?.studentName || '', item?.title || item?.name || '', item?.type || '', item?.status || ''])
     })
-    const staffItems = Array.isArray(dept?.achievements?.staff?.items) ? dept.achievements.staff.items : []
+    const staffItems = Array.isArray(dept?.achievements?.staff?.items) ? dept.achievements.staff.items : (Array.isArray(dept?.staffItems) ? dept.staffItems : [])
     staffItems.forEach((item: any) => {
-      allAchievements.push(['Staff', dept.name || 'N/A', item.staffName || '', item.title || item.name || '', item.achievementType || '', item.status || ''])
+      allAchievements.push(['Staff', dept?.name || 'N/A', item?.staffName || '', item?.title || item?.name || '', item?.achievementType || '', item?.status || ''])
     })
-    const hodItems = Array.isArray(dept?.achievements?.hod?.items) ? dept.achievements.hod.items : []
+    const hodItems = Array.isArray(dept?.achievements?.hod?.items) ? dept.achievements.hod.items : (Array.isArray(dept?.hodItems) ? dept.hodItems : [])
     hodItems.forEach((item: any) => {
-      allAchievements.push(['HOD', dept.name || 'N/A', item.staffName || '', item.title || item.name || '', item.achievementType || '', item.status || ''])
+      allAchievements.push(['HOD', dept?.name || 'N/A', item?.staffName || '', item?.title || item?.name || '', item?.achievementType || '', item?.status || ''])
     })
   })
   

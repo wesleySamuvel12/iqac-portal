@@ -24,10 +24,10 @@ export async function GET(request: NextRequest) {
           orderBy: { registerNumber: 'asc' },
           take: 200,
         })
-        students.forEach(s => {
+        (students || []).forEach(s => {
           users.push({
             id: s.userId || s.id,
-            name: `${s.user.name} (${s.registerNumber || 'Student'})`,
+            name: `${s.user?.name || 'Student'} (${s.registerNumber || 'Student'})`,
             type: 'STUDENT',
           })
         })
@@ -40,10 +40,10 @@ export async function GET(request: NextRequest) {
           orderBy: { employeeId: 'asc' },
           take: 100,
         })
-        faculty.forEach(f => {
+        (faculty || []).forEach(f => {
           users.push({
             id: f.userId || f.id,
-            name: `${f.user.name} (${f.designation || 'Faculty'})`,
+            name: `${f.user?.name || 'Faculty'} (${f.designation || 'Faculty'})`,
             type: 'STAFF',
           })
         })

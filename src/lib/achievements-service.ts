@@ -104,7 +104,8 @@ export function computeCategorySerialNumbers<T extends { id?: string | number; t
   let counter = 1
 
   // Process records in order
-  records.forEach((rec, idx) => {
+  ;(Array.isArray(records) ? records : []).forEach((rec, idx) => {
+    if (!rec) return
     const norm = normalizeTitle(rec.title)
     if (!norm) return
 

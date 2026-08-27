@@ -1877,7 +1877,8 @@ export async function generateAchievementExcel(filters: FilterOptions): Promise<
       }
       currentRowIdx++
     } else {
-      records.forEach((rowValues) => {
+      (Array.isArray(records) ? records : []).forEach((rowValues) => {
+        if (!Array.isArray(rowValues)) return
         const row = ws.getRow(currentRowIdx)
         row.height = 22
 
@@ -1936,7 +1937,8 @@ export async function generateAchievementExcel(filters: FilterOptions): Promise<
     // Dynamic column widths calculation
     schema.columns.forEach((colName, cIdx) => {
       let maxLen = colName.length
-      records.forEach(r => {
+      ;(Array.isArray(records) ? records : []).forEach(r => {
+        if (!Array.isArray(r)) return
         const val = r[cIdx]
         if (val) {
           const l = String(val).length

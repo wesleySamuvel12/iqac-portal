@@ -272,7 +272,7 @@ function generatePdfWithPdfKit(reportData: any, department: string): Promise<Buf
       // Section C: Research & Innovation
       drawSectionHeader('C. RESEARCH & INNOVATION (FACULTY WISE)', '#d97706')
       const cHeaders = ['Faculty Name', 'Journals', 'Conferences', 'Books', 'Book Chapters', 'Patents', 'Grants']
-      const cRows = researchFaculty.map((f: any) => [
+      const cRows = (Array.isArray(researchFaculty) ? researchFaculty : []).map((f: any) => [
         f?.name || 'Faculty',
         f?.journalPub?.curr || '0',
         f?.conferencePapers?.curr || '0',
@@ -286,7 +286,7 @@ function generatePdfWithPdfKit(reportData: any, department: string): Promise<Buf
       // Section D: Faculty Development Programs
       drawSectionHeader('D. FACULTY DEVELOPMENT PROGRAMS', '#0369a1')
       const dHeaders = ['Faculty Name', 'FDPs Attended', 'FDPs Organized', 'NPTEL Completed', 'MOOCs', 'Resource Person']
-      const dRows = facultyDev.map((f: any) => [
+      const dRows = (Array.isArray(facultyDev) ? facultyDev : []).map((f: any) => [
         f?.name || 'Faculty',
         f?.fdpsAttended?.curr || '0',
         f?.fdpsOrganized?.curr || '0',
@@ -310,7 +310,7 @@ function generatePdfWithPdfKit(reportData: any, department: string): Promise<Buf
       // Section G: Quality Assurance Activities
       drawSectionHeader('G. QUALITY ASSURANCE ACTIVITIES', '#65a30d')
       const gHeaders = ['Particulars', 'Status', 'Remarks']
-      const gRows = qaActivities.map((qa: any) => [qa?.particular || '-', qa?.status || '-', qa?.remarks || '-'])
+      const gRows = (Array.isArray(qaActivities) ? qaActivities : []).map((qa: any) => [qa?.particular || '-', qa?.status || '-', qa?.remarks || '-'])
       drawGridTable(gHeaders, gRows, [300, 180, 305.89])
 
       // Signatures Block
