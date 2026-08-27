@@ -15297,7 +15297,7 @@ function ReportGeneratorPage({ user, initialView }: { user?: User; initialView?:
     csv += '=============================================================================\n\n'
     
     csv += '"Department Name","Dept Code","Students","Faculty","Achievements","Publications","Placements","Internships","Performance Score","Growth Rate"\n'
-    deptPerformance.forEach((dept: any) => {
+    (Array.isArray(deptPerformance) ? deptPerformance : []).forEach((dept: any) => {
       csv += '"' + (dept.name || 'N/A') + '",'
       csv += '"' + (dept.code || 'N/A') + '",'
       csv += (dept.stats?.students || 0) + ','
@@ -15332,7 +15332,7 @@ function ReportGeneratorPage({ user, initialView }: { user?: User; initialView?:
     csv += '"Sector-wise Placement (Startup),"' + (placementStats.sectorWise?.Startup || 0) + '"\n'
     csv += '\n'
     
-    if (placementStats.topRecruiters && placementStats.topRecruiters.length > 0) {
+    if (Array.isArray(placementStats.topRecruiters) && placementStats.topRecruiters.length > 0) {
       csv += 'Top Recruiting Companies:\n'
       csv += '"Company Name","Students Placed"\n'
       placementStats.topRecruiters.forEach((r: any) => {
@@ -15390,7 +15390,7 @@ function ReportGeneratorPage({ user, initialView }: { user?: User; initialView?:
     csv += 'SECTION 6: FACULTY CONTRIBUTION ANALYSIS\n'
     csv += '=============================================================================\n\n'
     
-    if (facultyAnalysis.length > 0) {
+    if (Array.isArray(facultyAnalysis) && facultyAnalysis.length > 0) {
       csv += '"Faculty Name","Department","Designation","Awards","Certifications","Patents","Projects","Publications","Performance Score"\n'
       facultyAnalysis.slice(0, 50).forEach((f: any) => {
         csv += '"' + (f.name || 'N/A') + '",'
@@ -15411,7 +15411,7 @@ function ReportGeneratorPage({ user, initialView }: { user?: User; initialView?:
     csv += 'SECTION 7: DISTINGUISHED STUDENTS (TOP ACHIEVERS)\n'
     csv += '=============================================================================\n\n'
     
-    if (topStudents.length > 0) {
+    if (Array.isArray(topStudents) && topStudents.length > 0) {
       csv += '"Register Number","Student Name","Department","Semester","Achievement Count","Achievement Category"\n'
       topStudents.slice(0, 50).forEach((s: any) => {
         csv += '"' + (s.registerNumber || 'N/A') + '",'
@@ -15429,7 +15429,7 @@ function ReportGeneratorPage({ user, initialView }: { user?: User; initialView?:
     csv += 'SECTION 8: NAAC CRITERIA-WISE DATA SUMMARY\n'
     csv += '=============================================================================\n\n'
     
-    if (naacCriteria.criteriaData) {
+    if (naacCriteria && naacCriteria.criteriaData) {
       csv += '"Criterion","Description","Key Metrics","Score/Status"\n'
       Object.entries(naacCriteria.criteriaData).forEach(([key, value]: [string, any]) => {
         const criterionNames: Record<string, string> = {
@@ -15442,9 +15442,9 @@ function ReportGeneratorPage({ user, initialView }: { user?: User; initialView?:
           'criteria7': 'Institutional Values & Social Responsibility'
         }
         csv += '"' + (criterionNames[key] || key) + '",'
-        csv += '"' + (value.description || 'N/A') + '",'
-        csv += '"' + (value.metrics || 'N/A') + '",'
-        csv += '"' + (value.score || value.status || 'N/A') + '"\n'
+        csv += '"' + (value?.description || 'N/A') + '",'
+        csv += '"' + (value?.metrics || 'N/A') + '",'
+        csv += '"' + (value?.score || value?.status || 'N/A') + '"\n'
       })
       csv += '\n'
     }
@@ -15455,7 +15455,7 @@ function ReportGeneratorPage({ user, initialView }: { user?: User; initialView?:
     csv += '=============================================================================\n\n'
     
     // Sample Student Records
-    if (rawData.students && rawData.students.length > 0) {
+    if (Array.isArray(rawData?.students) && rawData.students.length > 0) {
       csv += '--- Student Records (First 100) ---\n'
       csv += '"Reg No","Name","Department","Batch","Semester","Section","Gender","Status"\n'
       rawData.students.forEach((s: any) => {
@@ -15472,7 +15472,7 @@ function ReportGeneratorPage({ user, initialView }: { user?: User; initialView?:
     }
     
     // Sample Faculty Records
-    if (rawData.faculty && rawData.faculty.length > 0) {
+    if (Array.isArray(rawData?.faculty) && rawData.faculty.length > 0) {
       csv += '--- Faculty Records (First 100) ---\n'
       csv += '"Name","Department","Designation","Email","Phone","Is HOD","Qualification"\n'
       rawData.faculty.forEach((f: any) => {
@@ -15488,7 +15488,7 @@ function ReportGeneratorPage({ user, initialView }: { user?: User; initialView?:
     }
     
     // Sample Achievement Records
-    if (rawData.achievements && rawData.achievements.length > 0) {
+    if (Array.isArray(rawData?.achievements) && rawData.achievements.length > 0) {
       csv += '--- Achievement Records (First 100) ---\n'
       csv += '"Student Name","Department","Title","Category","Level","Status","Date"\n'
       rawData.achievements.forEach((a: any) => {

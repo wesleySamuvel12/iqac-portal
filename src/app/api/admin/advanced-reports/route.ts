@@ -555,8 +555,8 @@ function generateMonthlyTrend(startDate: Date, endDate: Date): any[] {
     current.setMonth(current.getMonth() + 1)
   }
   
-  trend.forEach(t => {
-    t.total = t.achievements + t.publications + t.placements + t.events
+  (Array.isArray(trend) ? trend : []).forEach(t => {
+    t.total = (t.achievements || 0) + (t.publications || 0) + (t.placements || 0) + (t.events || 0)
   })
   
   return trend
@@ -565,7 +565,7 @@ function generateMonthlyTrend(startDate: Date, endDate: Date): any[] {
 function generateClassWiseData(students: any[], achievements: any[]): any[] {
   const classMap = new Map()
   
-  students.forEach(student => {
+  ;(Array.isArray(students) ? students : []).forEach(student => {
     const classKey = `${student.semester || 'Unknown'}-${student.section || 'Default'}`
     if (!classMap.has(classKey)) {
       classMap.set(classKey, {

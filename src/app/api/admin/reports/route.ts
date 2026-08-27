@@ -386,18 +386,23 @@ async function generateExcel(reportData: any, type: string | null, now: Date, pe
   XLSX.utils.book_append_sheet(wb, wsDept, 'Departments')
   
   // Sheet 3: Rankings
+  const rankingsObj = reportData?.rankings || {}
+  const byTotalAch = Array.isArray(rankingsObj.byTotalAchievements) ? rankingsObj.byTotalAchievements : []
+  const byStudentAch = Array.isArray(rankingsObj.byStudentAchievements) ? rankingsObj.byStudentAchievements : []
+  const byPlacement = Array.isArray(rankingsObj.byPlacementRate) ? rankingsObj.byPlacementRate : []
+
   const rankingData = [
     ['TOP DEPARTMENTS BY TOTAL ACHIEVEMENTS'],
     ['Rank', 'Department', 'Total Achievements'],
-    ...reportData.rankings.byTotalAchievements.slice(0, 10).map((d: any, i: number) => [i + 1, d.name, d.total]),
+    ...byTotalAch.slice(0, 10).map((d: any, i: number) => [i + 1, d?.name || 'N/A', d?.total || 0]),
     [''],
     ['TOP BY STUDENT ACHIEVEMENTS'],
     ['Rank', 'Department', 'Count'],
-    ...reportData.rankings.byStudentAchievements.slice(0, 10).map((d: any, i: number) => [i + 1, d.name, d.count]),
+    ...byStudentAch.slice(0, 10).map((d: any, i: number) => [i + 1, d?.name || 'N/A', d?.count || 0]),
     [''],
     ['PLACEMENT RATE RANKING'],
     ['Rank', 'Department', 'Placement Rate (%)'],
-    ...reportData.rankings.byPlacementRate.slice(0, 10).map((d: any, i: number) => [i + 1, d.name, d.rate + '%']),
+    ...byPlacement.slice(0, 10).map((d: any, i: number) => [i + 1, d?.name || 'N/A', (d?.rate || 0) + '%']),
   ]
   const wsRanking = XLSX.utils.aoa_to_sheet(rankingData)
   XLSX.utils.book_append_sheet(wb, wsRanking, 'Rankings')
