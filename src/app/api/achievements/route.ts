@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' as const } },
         { description: { contains: search, mode: 'insensitive' as const } },
-        { student: { name: { contains: search, mode: 'insensitive' as const } } },
+        { student: { user: { name: { contains: search, mode: 'insensitive' as const } } } },
         { student: { registerNumber: { contains: search, mode: 'insensitive' as const } } },
       ]
     }
@@ -63,9 +63,29 @@ export async function GET(request: NextRequest) {
     const [achievements, total] = await Promise.all([
       db.studentAchievement.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          description: true,
+          achievedDate: true,
+          level: true,
+          position: true,
+          organizedBy: true,
+          studentId: true,
+          attachments: true,
+          approvalStatus: true,
+          createdAt: true,
+          updatedAt: true,
           student: {
-            include: {
+            select: {
+              id: true,
+              registerNumber: true,
+              rollNumber: true,
+              semester: true,
+              section: true,
+              batch: true,
+              departmentId: true,
               user: { select: { id: true, email: true, name: true, phone: true } },
               department: { select: { id: true, name: true, code: true } }
             }
@@ -193,9 +213,29 @@ export async function POST(request: NextRequest) {
           attachments: attachments || null,
           approvalStatus: 'PENDING',
         },
-        include: {
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          description: true,
+          achievedDate: true,
+          level: true,
+          position: true,
+          organizedBy: true,
+          studentId: true,
+          attachments: true,
+          approvalStatus: true,
+          createdAt: true,
+          updatedAt: true,
           student: {
-            include: {
+            select: {
+              id: true,
+              registerNumber: true,
+              rollNumber: true,
+              semester: true,
+              section: true,
+              batch: true,
+              departmentId: true,
               user: { select: { id: true, email: true, name: true } },
               department: { select: { id: true, name: true, code: true } }
             }

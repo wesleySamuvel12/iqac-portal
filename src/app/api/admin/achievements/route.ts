@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { studentSelectWithUser, facultySelectWithUser } from '@/lib/db-selects'
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,13 +25,21 @@ export async function GET(request: NextRequest) {
 
       studentAchievements = await db.studentAchievement.findMany({
         where: studentWhere,
-        include: {
-          student: {
-            include: {
-              user: { select: { name: true, email: true } },
-              department: { select: { name: true, code: true } }
-            }
-          }
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          description: true,
+          achievedDate: true,
+          level: true,
+          position: true,
+          organizedBy: true,
+          studentId: true,
+          attachments: true,
+          approvalStatus: true,
+          createdAt: true,
+          updatedAt: true,
+          student: studentSelectWithUser,
         },
         orderBy: { createdAt: 'desc' },
         take: limit,
@@ -51,13 +60,17 @@ export async function GET(request: NextRequest) {
       
       const awards = await db.award.findMany({
         where: awardWhere,
-        include: {
-          faculty: {
-            include: {
-              user: { select: { name: true, email: true } },
-              department: { select: { name: true, code: true } }
-            }
-          }
+        select: {
+          id: true,
+          title: true,
+          category: true,
+          awardedBy: true,
+          level: true,
+          awardDate: true,
+          attachments: true,
+          facultyId: true,
+          createdAt: true,
+          faculty: facultySelectWithUser,
         },
         orderBy: { createdAt: 'desc' }
       })
@@ -65,13 +78,16 @@ export async function GET(request: NextRequest) {
       // Get Certifications
       const certifications = await db.certification.findMany({
         where: awardWhere,
-        include: {
-          faculty: {
-            include: {
-              user: { select: { name: true, email: true } },
-              department: { select: { name: true, code: true } }
-            }
-          }
+        select: {
+          id: true,
+          title: true,
+          issuingOrganization: true,
+          issueDate: true,
+          credentialId: true,
+          attachments: true,
+          facultyId: true,
+          createdAt: true,
+          faculty: facultySelectWithUser,
         },
         orderBy: { createdAt: 'desc' }
       })
@@ -84,16 +100,22 @@ export async function GET(request: NextRequest) {
       
       const researchPapers = await db.research.findMany({
         where: researchWhere,
-        include: {
-          department: { select: { name: true, code: true } },
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          authors: true,
+          publication: true,
+          publisher: true,
+          publishDate: true,
+          doi: true,
+          url: true,
+          status: true,
+          createdAt: true,
+          department: true,
           publications: {
-            include: {
-              faculty: {
-                include: {
-                  user: { select: { name: true, email: true } },
-                  department: { select: { name: true, code: true } }
-                }
-              }
+            select: {
+              faculty: facultySelectWithUser,
             }
           }
         },
@@ -103,13 +125,17 @@ export async function GET(request: NextRequest) {
       // Get Patents
       const patents = await db.patent.findMany({
         where: awardWhere,
-        include: {
-          faculty: {
-            include: {
-              user: { select: { name: true, email: true } },
-              department: { select: { name: true, code: true } }
-            }
-          }
+        select: {
+          id: true,
+          title: true,
+          patentNumber: true,
+          inventors: true,
+          status: true,
+          filingDate: true,
+          publishDate: true,
+          attachments: true,
+          createdAt: true,
+          faculty: facultySelectWithUser,
         },
         orderBy: { createdAt: 'desc' }
       })
@@ -117,13 +143,16 @@ export async function GET(request: NextRequest) {
       // Get Projects
       const projects = await db.project.findMany({
         where: awardWhere,
-        include: {
-          faculty: {
-            include: {
-              user: { select: { name: true, email: true } },
-              department: { select: { name: true, code: true } }
-            }
-          }
+        select: {
+          id: true,
+          title: true,
+          fundingAgency: true,
+          amount: true,
+          status: true,
+          startDate: true,
+          attachments: true,
+          createdAt: true,
+          faculty: facultySelectWithUser,
         },
         orderBy: { createdAt: 'desc' }
       })
@@ -131,13 +160,15 @@ export async function GET(request: NextRequest) {
       // Get Books
       const books = await db.book.findMany({
         where: awardWhere,
-        include: {
-          faculty: {
-            include: {
-              user: { select: { name: true, email: true } },
-              department: { select: { name: true, code: true } }
-            }
-          }
+        select: {
+          id: true,
+          title: true,
+          publisher: true,
+          isbn: true,
+          publishYear: true,
+          attachments: true,
+          createdAt: true,
+          faculty: facultySelectWithUser,
         },
         orderBy: { createdAt: 'desc' }
       })
@@ -145,13 +176,16 @@ export async function GET(request: NextRequest) {
       // Get FDP Programs
       const fdps = await db.fDPProgram.findMany({
         where: awardWhere,
-        include: {
-          faculty: {
-            include: {
-              user: { select: { name: true, email: true } },
-              department: { select: { name: true, code: true } }
-            }
-          }
+        select: {
+          id: true,
+          title: true,
+          organizer: true,
+          startDate: true,
+          endDate: true,
+          durationDays: true,
+          attachments: true,
+          createdAt: true,
+          faculty: facultySelectWithUser,
         },
         orderBy: { createdAt: 'desc' }
       })
@@ -159,13 +193,15 @@ export async function GET(request: NextRequest) {
       // Get Consultancies
       const consultancies = await db.consultancy.findMany({
         where: awardWhere,
-        include: {
-          faculty: {
-            include: {
-              user: { select: { name: true, email: true } },
-              department: { select: { name: true, code: true } }
-            }
-          }
+        select: {
+          id: true,
+          title: true,
+          client: true,
+          amount: true,
+          startDate: true,
+          attachments: true,
+          createdAt: true,
+          faculty: facultySelectWithUser,
         },
         orderBy: { createdAt: 'desc' }
       })

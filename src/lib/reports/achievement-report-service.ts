@@ -3,6 +3,7 @@ import ExcelJS from 'exceljs'
 import fs from 'fs'
 import path from 'path'
 import { computeCategorySerialNumbers } from '@/lib/achievements-service'
+import { studentSelectWithUser, facultySelectWithUser } from '@/lib/db-selects'
 
 export interface FilterOptions {
   departmentId: string // Department ID or 'ALL'
@@ -522,6 +523,9 @@ export async function fetchAchievementData(filters: FilterOptions) {
     }
   }
 
+  const includeStaff = userType === 'STAFF' || userType === 'BOTH'
+  const includeStudent = userType === 'STUDENT' || userType === 'BOTH'
+
   const results: Record<string, any[]> = {
     ACADEMIC_ACTIVITIES: [],
     JOURNAL_PUBLICATION: [],
@@ -540,25 +544,47 @@ export async function fetchAchievementData(filters: FilterOptions) {
   }
 
   // Fetch all generic student achievement records for multi-source combination
-  const genericStudentAchievements = await db.studentAchievement.findMany({
+  const genericStudentAchievements = !includeStudent ? [] : await db.studentAchievement.findMany({
     where: departmentId !== 'ALL' ? { student: { departmentId } } : {},
-    include: {
-      student: {
-        include: { user: true, department: true }
-      }
+    select: {
+      id: true,
+      title: true,
+      type: true,
+      description: true,
+      achievedDate: true,
+      level: true,
+      position: true,
+      organizedBy: true,
+      studentId: true,
+      attachments: true,
+      approvalStatus: true,
+      createdAt: true,
+      student: studentSelectWithUser,
     },
     orderBy: { createdAt: 'asc' }
   })
 
   // 0. A. Academic Activities (Syllabus Coverage, Lesson Plan Progress & Teaching-Learning)
-  const academicActivities = await db.activity.findMany({
+  const academicActivities = !includeStaff ? [] : await db.activity.findMany({
     where: {
       ...(departmentId !== 'ALL' ? { departmentId } : {}),
       type: { in: ['EVENT', 'WORKSHOP', 'SEMINAR', 'OTHER'] }
     },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      type: true,
+      startDate: true,
+      endDate: true,
+      conductedBy: true,
+      attachments: true,
+      createdAt: true,
       department: true,
-      facultyActivities: { include: { faculty: { include: { user: true } } } }
+      facultyActivities: {
+        select: {
+          faculty: facultySelectWithUser
+        }
+      }
     },
     orderBy: { createdAt: 'desc' }
   })
@@ -629,18 +655,29 @@ export async function fetchAchievementData(filters: FilterOptions) {
     ])
 
   // 1. Journal Publications
-  const journalResearch = await db.research.findMany({
+  const journalResearch = !includeStaff ? [] : await db.research.findMany({
     where: {
       type: 'JOURNAL',
       ...(departmentId !== 'ALL' ? { departmentId } : {}),
     },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      authors: true,
+      publication: true,
+      publisher: true,
+      publishDate: true,
+      doi: true,
+      url: true,
+      issn: true,
+      indexedIn: true,
+      status: true,
+      approvedBy: true,
+      createdAt: true,
       department: true,
       publications: {
-        include: {
-          faculty: {
-            include: { user: true, department: true }
-          }
+        select: {
+          faculty: facultySelectWithUser
         }
       }
     },
@@ -653,7 +690,7 @@ export async function fetchAchievementData(filters: FilterOptions) {
   )
 
   const combinedJournalRaw: any[] = [
-    ...journalResearch.map(r => ({
+    ...(includeStaff ? journalResearch.map(r => ({
       id: r.id,
       name: r.publications[0]?.faculty?.user?.name || parseAuthorName(r.authors) || 'Faculty Author',
       regId: r.publications[0]?.faculty?.employeeId || 'N/A',
@@ -667,10 +704,10 @@ export async function fetchAchievementData(filters: FilterOptions) {
       date: r.publishDate || r.createdAt,
       status: r.status || 'PUBLISHED',
       supervisor: r.approvedBy || r.publications[0]?.faculty?.user?.name || 'HOD',
-      link: r.url || r.doi || '',
+      link: r.url || r.doi || '—',
       userId: r.publications[0]?.faculty?.userId || r.publications[0]?.faculty?.id,
-    })),
-    ...journalStudentAch.map(sa => ({
+    })) : []),
+    ...(includeStudent ? journalStudentAch.map(sa => ({
       id: sa.id,
       name: sa.student?.user?.name || 'Student Author',
       regId: sa.student?.registerNumber || 'N/A',
@@ -684,9 +721,9 @@ export async function fetchAchievementData(filters: FilterOptions) {
       date: sa.achievedDate || sa.createdAt,
       status: sa.approvalStatus || 'PUBLISHED',
       supervisor: sa.organizedBy || 'Faculty Guide',
-      link: sa.attachments || '',
+      link: sa.attachments || '—',
       userId: sa.student?.userId || sa.studentId,
-    }))
+    })) : [])
   ]
 
   const filteredJournal = combinedJournalRaw.filter(r => {
@@ -723,18 +760,28 @@ export async function fetchAchievementData(filters: FilterOptions) {
   })
 
   // 2. Conference Publications
-  const confResearch = await db.research.findMany({
+  const confResearch = !includeStaff ? [] : await db.research.findMany({
     where: {
       type: 'CONFERENCE',
       ...(departmentId !== 'ALL' ? { departmentId } : {}),
     },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      authors: true,
+      publication: true,
+      publisher: true,
+      publishDate: true,
+      isbn: true,
+      url: true,
+      indexedIn: true,
+      status: true,
+      approvedBy: true,
+      createdAt: true,
       department: true,
       publications: {
-        include: {
-          faculty: {
-            include: { user: true, department: true }
-          }
+        select: {
+          faculty: facultySelectWithUser
         }
       }
     },
@@ -747,7 +794,7 @@ export async function fetchAchievementData(filters: FilterOptions) {
   )
 
   const combinedConfRaw: any[] = [
-    ...confResearch.map(r => ({
+    ...(includeStaff ? confResearch.map(r => ({
       id: r.id,
       name: r.publications[0]?.faculty?.user?.name || parseAuthorName(r.authors) || 'Faculty Author',
       regId: r.publications[0]?.faculty?.employeeId || 'N/A',
@@ -759,11 +806,11 @@ export async function fetchAchievementData(filters: FilterOptions) {
       indexed: r.indexedIn || 'Scopus',
       date: r.publishDate || r.createdAt,
       status: r.status || 'PRESENTED',
-      isbn: r.isbn || r.url || '',
+      isbn: r.isbn || r.url || '—',
       supervisor: r.approvedBy || r.publications[0]?.faculty?.user?.name || 'HOD',
       userId: r.publications[0]?.faculty?.userId || r.publications[0]?.faculty?.id,
-    })),
-    ...confStudentAch.map(sa => ({
+    })) : []),
+    ...(includeStudent ? confStudentAch.map(sa => ({
       id: sa.id,
       name: sa.student?.user?.name || 'Student Presenter',
       regId: sa.student?.registerNumber || 'N/A',
@@ -775,10 +822,10 @@ export async function fetchAchievementData(filters: FilterOptions) {
       indexed: sa.level || 'Scopus',
       date: sa.achievedDate || sa.createdAt,
       status: sa.approvalStatus || 'PRESENTED',
-      isbn: sa.attachments || '',
+      isbn: sa.attachments || '—',
       supervisor: sa.organizedBy || 'Faculty Mentor',
       userId: sa.student?.userId || sa.studentId,
-    }))
+    })) : [])
   ]
 
   const filteredConf = combinedConfRaw.filter(r => {
@@ -813,12 +860,19 @@ export async function fetchAchievementData(filters: FilterOptions) {
   })
 
   // 3. Patents
-  const patents = await db.patent.findMany({
+  const patents = !includeStaff ? [] : await db.patent.findMany({
     where: departmentId !== 'ALL' ? { faculty: { departmentId } } : {},
-    include: {
-      faculty: {
-        include: { user: true, department: true }
-      }
+    select: {
+      id: true,
+      title: true,
+      patentNumber: true,
+      inventors: true,
+      status: true,
+      filingDate: true,
+      publishDate: true,
+      attachments: true,
+      createdAt: true,
+      faculty: facultySelectWithUser
     },
     orderBy: { createdAt: 'asc' }
   })
@@ -829,7 +883,7 @@ export async function fetchAchievementData(filters: FilterOptions) {
   )
 
   const combinedPatentsRaw: any[] = [
-    ...patents.map(p => ({
+    ...(includeStaff ? patents.map(p => ({
       id: p.id,
       name: p.faculty?.user?.name || parseAuthorName(p.inventors) || 'Faculty Inventor',
       regId: p.faculty?.employeeId || 'N/A',
@@ -842,8 +896,8 @@ export async function fetchAchievementData(filters: FilterOptions) {
       inventors: parseAuthorName(p.inventors) || p.faculty?.user?.name || 'Inventors',
       supervisor: p.faculty?.user?.name || 'HOD',
       userId: p.faculty?.userId || p.faculty?.id,
-    })),
-    ...patentStudentAch.map(sa => ({
+    })) : []),
+    ...(includeStudent ? patentStudentAch.map(sa => ({
       id: sa.id,
       name: sa.student?.user?.name || 'Student Inventor',
       regId: sa.student?.registerNumber || 'N/A',
@@ -856,7 +910,7 @@ export async function fetchAchievementData(filters: FilterOptions) {
       inventors: sa.student?.user?.name || 'Student Inventor',
       supervisor: sa.organizedBy || 'Faculty Mentor',
       userId: sa.student?.userId || sa.studentId,
-    }))
+    })) : [])
   ]
 
   const filteredPatents = combinedPatentsRaw.filter(p => {
@@ -889,20 +943,38 @@ export async function fetchAchievementData(filters: FilterOptions) {
   })
 
   // 4. NPTEL / MOOC & Certifications
-  const npCourses = await db.nPCourse.findMany({
+  const npCourses = !includeStudent ? [] : await db.nPCourse.findMany({
     where: departmentId !== 'ALL' ? { student: { departmentId } } : {},
-    include: {
-      student: {
-        include: { user: true, department: true }
-      }
+    select: {
+      id: true,
+      courseName: true,
+      courseId: true,
+      platform: true,
+      instructor: true,
+      score: true,
+      grade: true,
+      startDate: true,
+      endDate: true,
+      certificateUrl: true,
+      attachments: true,
+      createdAt: true,
+      student: studentSelectWithUser
     },
     orderBy: { createdAt: 'desc' }
   })
 
-  const studentCerts = await db.studentCertification.findMany({
+  const studentCerts = !includeStudent ? [] : await db.studentCertification.findMany({
     where: departmentId !== 'ALL' ? { student: { departmentId } } : {},
-    include: {
-      student: { include: { user: true, department: true } }
+    select: {
+      id: true,
+      title: true,
+      issuer: true,
+      certificateNumber: true,
+      issuedDate: true,
+      credentialUrl: true,
+      attachments: true,
+      createdAt: true,
+      student: studentSelectWithUser
     },
     orderBy: { createdAt: 'desc' }
   })
@@ -972,10 +1044,20 @@ export async function fetchAchievementData(filters: FilterOptions) {
       ...(departmentId !== 'ALL' ? { departmentId } : {}),
       type: { in: ['WORKSHOP', 'SEMINAR', 'CONFERENCE', 'GUEST_LECTURE', 'FDP'] }
     },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      type: true,
+      startDate: true,
+      endDate: true,
+      conductedBy: true,
+      organizer: true,
+      reportUrl: true,
+      attachments: true,
+      createdAt: true,
       department: true,
-      studentActivities: { include: { student: { include: { user: true } } } },
-      facultyActivities: { include: { faculty: { include: { user: true } } } }
+      studentActivities: { select: { student: studentSelectWithUser } },
+      facultyActivities: { select: { faculty: facultySelectWithUser } }
     },
     orderBy: { createdAt: 'desc' }
   })
@@ -1003,10 +1085,19 @@ export async function fetchAchievementData(filters: FilterOptions) {
     })
 
   // 6. Training Programme
-  const fdpPrograms = await db.fDPProgram.findMany({
+  const fdpPrograms = !includeStaff ? [] : await db.fDPProgram.findMany({
     where: departmentId !== 'ALL' ? { faculty: { departmentId } } : {},
-    include: {
-      faculty: { include: { user: true, department: true } }
+    select: {
+      id: true,
+      title: true,
+      organizer: true,
+      startDate: true,
+      endDate: true,
+      durationDays: true,
+      certificateUrl: true,
+      attachments: true,
+      createdAt: true,
+      faculty: facultySelectWithUser
     },
     orderBy: { createdAt: 'desc' }
   })
@@ -1015,7 +1106,7 @@ export async function fetchAchievementData(filters: FilterOptions) {
     .filter(p => {
       if (!isDateInRange(p.startDate || p.createdAt, fromMonth, toMonth, year)) return false
       if (targetUserId && targetUserId !== 'ALL') {
-        if (p.faculty.userId !== targetUserId && p.faculty.id !== targetUserId) return false
+        if (p.faculty?.userId !== targetUserId && p.faculty?.id !== targetUserId) return false
       }
       return true
     })
@@ -1035,10 +1126,23 @@ export async function fetchAchievementData(filters: FilterOptions) {
     ])
 
   // 7. Internship
-  const internships = await db.internship.findMany({
+  const internships = !includeStudent ? [] : await db.internship.findMany({
     where: departmentId !== 'ALL' ? { student: { departmentId } } : {},
-    include: {
-      student: { include: { user: true, department: true } }
+    select: {
+      id: true,
+      company: true,
+      location: true,
+      domain: true,
+      startDate: true,
+      endDate: true,
+      stipend: true,
+      offerLetter: true,
+      completionCert: true,
+      description: true,
+      supervisor: true,
+      attachments: true,
+      createdAt: true,
+      student: studentSelectWithUser
     },
     orderBy: { createdAt: 'desc' }
   })
@@ -1047,7 +1151,7 @@ export async function fetchAchievementData(filters: FilterOptions) {
     .filter(i => {
       if (!isDateInRange(i.startDate || i.createdAt, fromMonth, toMonth, year)) return false
       if (targetUserId && targetUserId !== 'ALL') {
-        if (i.student.userId !== targetUserId && i.student.id !== targetUserId) return false
+        if (i.student?.userId !== targetUserId && i.student?.id !== targetUserId) return false
       }
       return true
     })
@@ -1070,28 +1174,47 @@ export async function fetchAchievementData(filters: FilterOptions) {
     ])
 
   // 8. Awards & Recognition
-  const studentAwards = (userType === 'STAFF') ? [] : await db.studentAchievement.findMany({
+  const studentAwards = !includeStudent ? [] : await db.studentAchievement.findMany({
     where: {
       ...(departmentId !== 'ALL' ? { student: { departmentId } } : {}),
       type: { in: ['COMPETITION', 'ACADEMIC', 'TECHNICAL', 'SPORTS', 'CULTURAL'] }
     },
-    include: {
-      student: { include: { user: true, department: true } }
+    select: {
+      id: true,
+      title: true,
+      type: true,
+      organizedBy: true,
+      level: true,
+      position: true,
+      achievedDate: true,
+      attachments: true,
+      studentId: true,
+      createdAt: true,
+      student: studentSelectWithUser
     },
     orderBy: { createdAt: 'desc' }
   })
 
-  const facultyAwards = (userType === 'STUDENT') ? [] : await db.award.findMany({
+  const facultyAwards = !includeStaff ? [] : await db.award.findMany({
     where: departmentId !== 'ALL' ? { faculty: { departmentId } } : {},
-    include: {
-      faculty: { include: { user: true, department: true } }
+    select: {
+      id: true,
+      title: true,
+      category: true,
+      awardedBy: true,
+      level: true,
+      awardDate: true,
+      attachments: true,
+      facultyId: true,
+      createdAt: true,
+      faculty: facultySelectWithUser
     },
     orderBy: { createdAt: 'desc' }
   })
 
   const combinedAwards: any[] = [
     ...studentAwards.map(sa => ({
-      userId: sa.student.userId,
+      userId: sa.student?.userId,
       studentId: sa.studentId,
       name: sa.student?.user?.name || 'Student',
       reg: sa.student?.registerNumber || 'N/A',
@@ -1107,7 +1230,7 @@ export async function fetchAchievementData(filters: FilterOptions) {
       cert: sa.attachments || ''
     })),
     ...facultyAwards.map(fa => ({
-      userId: fa.faculty.userId,
+      userId: fa.faculty?.userId,
       facultyId: fa.facultyId,
       name: fa.faculty?.user?.name || 'Faculty',
       reg: fa.faculty?.employeeId || 'N/A',
@@ -1149,13 +1272,22 @@ export async function fetchAchievementData(filters: FilterOptions) {
     ])
 
   // 9. Co-Curricular Activities
-  const coCurriculars = (userType === 'STAFF') ? [] : await db.studentAchievement.findMany({
+  const coCurriculars = !includeStudent ? [] : await db.studentAchievement.findMany({
     where: {
       ...(departmentId !== 'ALL' ? { student: { departmentId } } : {}),
       type: { in: ['CO_CURRICULAR', 'EXTRA_CURRICULAR', 'COMMUNITY_SERVICE'] }
     },
-    include: {
-      student: { include: { user: true, department: true } }
+    select: {
+      id: true,
+      title: true,
+      type: true,
+      organizedBy: true,
+      level: true,
+      position: true,
+      achievedDate: true,
+      attachments: true,
+      createdAt: true,
+      student: studentSelectWithUser
     },
     orderBy: { createdAt: 'desc' }
   })
@@ -1164,7 +1296,7 @@ export async function fetchAchievementData(filters: FilterOptions) {
     .filter(sa => {
       if (!isDateInRange(sa.achievedDate || sa.createdAt, fromMonth, toMonth, year)) return false
       if (targetUserId && targetUserId !== 'ALL') {
-        if (sa.student.userId !== targetUserId && sa.student.id !== targetUserId) return false
+        if (sa.student?.userId !== targetUserId && sa.student?.id !== targetUserId) return false
       }
       return true
     })
@@ -1184,10 +1316,20 @@ export async function fetchAchievementData(filters: FilterOptions) {
     ])
 
   // 10. Placement
-  const placements = (userType === 'STAFF') ? [] : await db.placement.findMany({
+  const placements = !includeStudent ? [] : await db.placement.findMany({
     where: departmentId !== 'ALL' ? { student: { departmentId } } : {},
-    include: {
-      student: { include: { user: true, department: true } }
+    select: {
+      id: true,
+      company: true,
+      location: true,
+      designation: true,
+      packageLPA: true,
+      offerDate: true,
+      joiningDate: true,
+      accepted: true,
+      attachments: true,
+      createdAt: true,
+      student: studentSelectWithUser
     },
     orderBy: { createdAt: 'desc' }
   })
@@ -1196,7 +1338,7 @@ export async function fetchAchievementData(filters: FilterOptions) {
     .filter(p => {
       if (!isDateInRange(p.offerDate || p.createdAt, fromMonth, toMonth, year)) return false
       if (targetUserId && targetUserId !== 'ALL') {
-        if (p.student.userId !== targetUserId && p.student.id !== targetUserId) return false
+        if (p.student?.userId !== targetUserId && p.student?.id !== targetUserId) return false
       }
       return true
     })
@@ -1220,10 +1362,21 @@ export async function fetchAchievementData(filters: FilterOptions) {
     ])
 
   // 11. Startup
-  const startups = (userType === 'STAFF') ? [] : await db.startup.findMany({
+  const startups = !includeStudent ? [] : await db.startup.findMany({
     where: departmentId !== 'ALL' ? { student: { departmentId } } : {},
-    include: {
-      student: { include: { user: true, department: true } }
+    select: {
+      id: true,
+      name: true,
+      domain: true,
+      stage: true,
+      founderRole: true,
+      incubator: true,
+      description: true,
+      website: true,
+      attachments: true,
+      foundedDate: true,
+      createdAt: true,
+      student: studentSelectWithUser
     },
     orderBy: { createdAt: 'desc' }
   })
@@ -1232,7 +1385,7 @@ export async function fetchAchievementData(filters: FilterOptions) {
     .filter(s => {
       if (!isDateInRange(s.foundedDate || s.createdAt, fromMonth, toMonth, year)) return false
       if (targetUserId && targetUserId !== 'ALL') {
-        if (s.student.userId !== targetUserId && s.student.id !== targetUserId) return false
+        if (s.student?.userId !== targetUserId && s.student?.id !== targetUserId) return false
       }
       return true
     })
@@ -1256,10 +1409,20 @@ export async function fetchAchievementData(filters: FilterOptions) {
     ])
 
   // 12. Hackathons
-  const hackathons = (userType === 'STAFF') ? [] : await db.hackathonParticipation.findMany({
+  const hackathons = !includeStudent ? [] : await db.hackathonParticipation.findMany({
     where: departmentId !== 'ALL' ? { student: { departmentId } } : {},
-    include: {
-      student: { include: { user: true, department: true } }
+    select: {
+      id: true,
+      name: true,
+      projectTitle: true,
+      organizer: true,
+      level: true,
+      description: true,
+      position: true,
+      startDate: true,
+      attachments: true,
+      createdAt: true,
+      student: studentSelectWithUser
     },
     orderBy: { createdAt: 'desc' }
   })
@@ -1268,7 +1431,7 @@ export async function fetchAchievementData(filters: FilterOptions) {
     .filter(h => {
       if (!isDateInRange(h.startDate || h.createdAt, fromMonth, toMonth, year)) return false
       if (targetUserId && targetUserId !== 'ALL') {
-        if (h.student.userId !== targetUserId && h.student.id !== targetUserId) return false
+        if (h.student?.userId !== targetUserId && h.student?.id !== targetUserId) return false
       }
       return true
     })
@@ -1294,10 +1457,19 @@ export async function fetchAchievementData(filters: FilterOptions) {
     ])
 
   // 13. F. Faculty - Industry Interaction (Consultancy, Industry Mentorship & MoUs)
-  const consultancies = await db.consultancy.findMany({
+  const consultancies = !includeStaff ? [] : await db.consultancy.findMany({
     where: departmentId !== 'ALL' ? { faculty: { departmentId } } : {},
-    include: {
-      faculty: { include: { user: true, department: true } }
+    select: {
+      id: true,
+      title: true,
+      client: true,
+      amount: true,
+      startDate: true,
+      endDate: true,
+      description: true,
+      attachments: true,
+      createdAt: true,
+      faculty: facultySelectWithUser
     },
     orderBy: { createdAt: 'desc' }
   })
@@ -1324,7 +1496,7 @@ export async function fetchAchievementData(filters: FilterOptions) {
     empId: c.faculty?.employeeId || 'EMP1010',
     dept: c.faculty?.department?.name || departmentName,
     desig: c.faculty?.designation || 'Associate Professor',
-    company: c.clientCompany || 'Industry Partner',
+    company: c.client || 'Industry Partner',
     type: 'Consultancy & Industry Mentorship',
     projectTitle: c.title || 'Industrial Project',
     amount: c.amount ? `₹${c.amount}` : '₹1,50,000',
