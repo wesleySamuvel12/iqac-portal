@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { hashPassword, generateTempPassword } from '@/lib/auth-helpers'
+import { generateTempPassword } from '@/lib/auth-helpers'
+import { createOrUpdateUserAccount } from '@/lib/user-service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,33 +35,22 @@ export async function POST(request: NextRequest) {
         const email = student.email || `${student.registerNumber.toLowerCase()}@niet.ac.in`
         const name = student.name || `Student ${student.registerNumber}`
         const tempPassword = '12345678'
-        const hashedPassword = await hashPassword(tempPassword)
 
         try {
-          const user = await db.user.upsert({
-            where: { email },
-            update: {
-              name,
-              departmentId: student.departmentId,
-              role: 'STUDENT',
-              isActive: true,
-              status: 'ACTIVE',
-            },
-            create: {
-              email,
-              password: hashedPassword,
-              name,
-              role: 'STUDENT',
-              departmentId: student.departmentId,
-              isActive: true,
-              status: 'ACTIVE',
-              mustChangePassword: true,
-            }
-          })
-
-          await db.student.update({
-            where: { id: student.id },
-            data: { userId: user.id, email }
+          const res = await createOrUpdateUserAccount({
+            name,
+            email,
+            password: tempPassword,
+            role: 'STUDENT',
+            departmentId: student.departmentId,
+            phone: student.phone,
+            registerNumber: student.registerNumber,
+            semester: student.semester,
+            section: student.section,
+            batch: student.batch,
+            createLoginAccess: true,
+            mustChangePassword: true,
+            createdBy: 'Enable Login Action'
           })
 
           createdAccounts.push({
@@ -96,33 +86,21 @@ export async function POST(request: NextRequest) {
         const email = faculty.email || `${faculty.employeeId.toLowerCase()}@niet.ac.in`
         const name = faculty.name || `Staff ${faculty.employeeId}`
         const tempPassword = generateTempPassword()
-        const hashedPassword = await hashPassword(tempPassword)
 
         try {
-          const user = await db.user.upsert({
-            where: { email },
-            update: {
-              name,
-              departmentId: faculty.departmentId,
-              role: faculty.isHOD ? 'HOD' : 'STAFF',
-              isActive: true,
-              status: 'ACTIVE',
-            },
-            create: {
-              email,
-              password: hashedPassword,
-              name,
-              role: faculty.isHOD ? 'HOD' : 'STAFF',
-              departmentId: faculty.departmentId,
-              isActive: true,
-              status: 'ACTIVE',
-              mustChangePassword: true,
-            }
-          })
-
-          await db.faculty.update({
-            where: { id: faculty.id },
-            data: { userId: user.id, email }
+          const res = await createOrUpdateUserAccount({
+            name,
+            email,
+            password: tempPassword,
+            role: faculty.isHOD ? 'HOD' : 'STAFF',
+            departmentId: faculty.departmentId,
+            phone: faculty.phone,
+            employeeId: faculty.employeeId,
+            designation: faculty.designation,
+            qualification: faculty.qualification,
+            createLoginAccess: true,
+            mustChangePassword: true,
+            createdBy: 'Enable Login Action'
           })
 
           createdAccounts.push({
@@ -151,3 +129,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: error.message || 'Failed to enable login access' }, { status: 500 })
   }
 }
+

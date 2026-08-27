@@ -1,24 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { ApprovalStatus } from '@prisma/client'
 
+// GET /api/approvals - Fetch pending approval queue
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status') || 'PENDING'
+    const statusParam = searchParams.get('status') || 'PENDING'
+    const departmentId = searchParams.get('departmentId')
     const entityType = searchParams.get('entityType')
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const limit = parseInt(searchParams.get('limit') || '50')
 
-    const where: any = { status }
-    if (entityType) where.entityType = entityType
+    const statusUpper = statusParam.toUpperCase() as ApprovalStatus
+    const where: any = {}
+
+    if (statusUpper === 'PENDING' || statusUpper === 'APPROVED' || statusUpper === 'REJECTED') {
+      where.status = statusUpper
+    }
+
+    if (entityType) {
+      where.entityType = entityType
+    }
 
     const [approvals, total] = await Promise.all([
       db.approval.findMany({
         where,
-        include: {
-          requester: { select: { id: true, name: true, email: true, role: true } },
-          reviewer: { select: { id: true, name: true } },
-        },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { createdAt: 'desc' },
@@ -26,95 +33,160 @@ export async function GET(request: NextRequest) {
       db.approval.count({ where }),
     ])
 
+    // Enrich approval items with associated details (e.g. StudentAchievement + Student + User + Department)
+    const enrichedApprovals = await Promise.all(
+      approvals.map(async (app) => {
+        let requesterUser: any = null
+        let entityData: any = null
+
+        if (app.requestedBy) {
+          requesterUser = await db.user.findUnique({
+            where: { id: app.requestedBy },
+            select: { id: true, name: true, email: true, role: true, departmentId: true }
+          })
+        }
+
+        if (app.entityType === 'ACHIEVEMENT') {
+          entityData = await db.studentAchievement.findUnique({
+            where: { id: app.entityId },
+            include: {
+              student: {
+                include: {
+                  user: { select: { id: true, name: true, email: true } },
+                  department: { select: { id: true, name: true, code: true } }
+                }
+              }
+            }
+          })
+        }
+
+        const deptId = entityData?.student?.departmentId || requesterUser?.departmentId
+        const deptName = entityData?.student?.department?.name || 'Department'
+        const studentName = entityData?.student?.name || entityData?.student?.user?.name || requesterUser?.name || 'Student'
+        const registerNumber = entityData?.student?.registerNumber || 'N/A'
+
+        return {
+          ...app,
+          departmentId: deptId,
+          departmentName: deptName,
+          studentName,
+          registerNumber,
+          requester: requesterUser || { name: studentName },
+          achievement: entityData,
+        }
+      })
+    )
+
+    // Filter by departmentId if specified
+    let filteredItems = enrichedApprovals
+    if (departmentId) {
+      filteredItems = enrichedApprovals.filter(item => item.departmentId === departmentId)
+    }
+
     return NextResponse.json({
       success: true,
-      approvals,
-      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+      approvals: filteredItems,
+      pagination: { page, limit, total: filteredItems.length, pages: Math.ceil(filteredItems.length / limit) },
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching approvals:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch approvals' },
+      { success: false, error: error.message || 'Failed to fetch approvals' },
       { status: 500 }
     )
   }
 }
 
+// POST /api/approvals - Approve or Reject an item
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
-    const { approvalId, action, comments, reviewedBy } = data
+    const { approvalId, achievementId, action, comments, reviewedBy } = data
 
-    if (!approvalId || !action || !reviewedBy) {
+    if ((!approvalId && !achievementId) || !action) {
       return NextResponse.json(
-        { success: false, error: 'Approval ID, Action, and Reviewer are required' },
+        { success: false, error: 'Approval ID or Achievement ID, and Action are required' },
         { status: 400 }
       )
     }
 
-    // Get current approval
-    const existingApproval = await db.approval.findUnique({ where: { id: approvalId } })
-    if (!existingApproval) {
-      return NextResponse.json(
-        { success: false, error: 'Approval not found' },
-        { status: 404 }
-      )
+    let approval: any = null
+
+    if (approvalId) {
+      approval = await db.approval.findUnique({ where: { id: approvalId } })
     }
 
-    let newStatus
-    let newStage = existingApproval.currentStage
+    if (!approval && achievementId) {
+      approval = await db.approval.findFirst({
+        where: { entityType: 'ACHIEVEMENT', entityId: achievementId },
+        orderBy: { createdAt: 'desc' }
+      })
+    }
 
-    if (action === 'approve') {
-      // Move to next stage or approve
-      if (existingApproval.currentStage === 'STAFF_REVIEW') {
-        newStage = 'HOD_REVIEW'
-        newStatus = 'PENDING'
-      } else if (existingApproval.currentStage === 'HOD_REVIEW') {
-        newStage = 'ADMIN_REVIEW'
-        newStatus = 'PENDING'
-      } else if (existingApproval.currentStage === 'ADMIN_REVIEW') {
-        newStage = 'APPROVED'
-        newStatus = 'APPROVED'
-      } else {
-        newStatus = 'APPROVED'
-        newStage = 'APPROVED'
+    const actionUpper = action.toLowerCase()
+    let newStatus: ApprovalStatus = actionUpper === 'approve' ? 'APPROVED' : 'REJECTED'
+
+    const updatedResult = await db.$transaction(async (tx) => {
+      let updatedApproval = null
+
+      if (approval) {
+        updatedApproval = await tx.approval.update({
+          where: { id: approval.id },
+          data: {
+            status: newStatus,
+            currentStage: newStatus === 'APPROVED' ? 'APPROVED' : 'REJECTED',
+            reviewedBy: reviewedBy || 'Staff',
+            reviewedAt: new Date(),
+            comments: comments || (newStatus === 'APPROVED' ? 'Approved' : 'Rejected'),
+          }
+        })
       }
-    } else if (action === 'reject') {
-      newStatus = 'REJECTED'
-      newStage = 'REJECTED'
-    } else if (action === 'request_revision') {
-      newStatus = 'NEEDS_REVISION'
-      newStage = 'NEEDS_REVISION'
-    }
 
-    const approval = await db.approval.update({
-      where: { id: approvalId },
-      data: {
-        status: newStatus,
-        currentStage: newStage,
-        reviewedBy,
-        reviewedAt: new Date(),
-        comments,
-      },
+      // If achievementId or approval.entityType === 'ACHIEVEMENT', update StudentAchievement table
+      const targetAchievementId = achievementId || approval?.entityId
+      let updatedAchievement = null
+
+      if (targetAchievementId) {
+        updatedAchievement = await tx.studentAchievement.update({
+          where: { id: targetAchievementId },
+          data: {
+            approvalStatus: newStatus
+          },
+          include: {
+            student: {
+              include: { user: true }
+            }
+          }
+        })
+
+        // Create notification for student
+        if (updatedAchievement?.student?.userId) {
+          await tx.notification.create({
+            data: {
+              title: `Achievement Submission ${newStatus === 'APPROVED' ? 'Approved ✓' : 'Rejected ✕'}`,
+              message: `Your achievement '${updatedAchievement.title}' has been ${newStatus === 'APPROVED' ? 'approved' : 'rejected'}${comments ? ': ' + comments : ''}`,
+              type: newStatus === 'APPROVED' ? 'APPROVED' : 'REJECTED',
+              userId: updatedAchievement.student.userId,
+              relatedId: updatedAchievement.id,
+              entityType: 'ACHIEVEMENT'
+            }
+          })
+        }
+      }
+
+      return { approval: updatedApproval, achievement: updatedAchievement }
     })
 
-    // Create notification for the requester
-    await db.notification.create({
-      data: {
-        title: `Submission ${action === 'approve' ? 'Approved' : action === 'reject' ? 'Rejected' : 'Needs Revision'}`,
-        message: `Your submission has been ${action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'sent back for revision'}${comments ? ': ' + comments : ''}`,
-        type: action === 'approve' ? 'APPROVED' : 'REJECTED',
-        userId: existingApproval.requestedBy,
-        relatedId: approvalId,
-        entityType: existingApproval.entityType,
-      },
+    return NextResponse.json({
+      success: true,
+      message: `Achievement ${newStatus === 'APPROVED' ? 'approved' : 'rejected'} successfully`,
+      approval: updatedResult.approval,
+      achievement: updatedResult.achievement,
     })
-
-    return NextResponse.json({ success: true, approval })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating approval:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to update approval' },
+      { success: false, error: error.message || 'Failed to update approval' },
       { status: 500 }
     )
   }

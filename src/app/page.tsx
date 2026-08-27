@@ -3121,9 +3121,6 @@ function AchievementForm({ user, onBack }: { user: User; onBack: () => void }) {
     e.preventDefault()
     setIsSubmitting(true)
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
     // Merge form data with other values
     const finalData = { ...formData }
     Object.keys(otherValues).forEach(key => {
@@ -3131,17 +3128,38 @@ function AchievementForm({ user, onBack }: { user: User; onBack: () => void }) {
         finalData[key] = otherValues[key]
       }
     })
-    
-    console.log('Achievement submitted:', {
-      type: selectedType,
-      data: finalData,
-      description,
-      department: user.departmentName,
-      file: file?.name
-    })
-    
-    setSubmitSuccess(true)
-    setIsSubmitting(false)
+
+    const title = finalData.title || finalData.paper_title || finalData.invention_title || finalData.course || finalData.event_title || finalData.title_sem || 'New Achievement'
+
+    try {
+      const res = await fetch('/api/achievements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          type: selectedType,
+          description: description || finalData.description || '',
+          achievedDate: finalData.date || finalData.event_date || new Date().toISOString(),
+          level: finalData.level || 'Department',
+          position: finalData.position || '',
+          organizedBy: finalData.organizedBy || finalData.organizer || '',
+          userId: user.id,
+          attachments: file?.name || '',
+          ...finalData
+        })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setSubmitSuccess(true)
+      } else {
+        alert(data.error || 'Failed to submit achievement')
+      }
+    } catch (err: any) {
+      console.error('Error submitting achievement:', err)
+      alert('Error submitting achievement: ' + (err.message || 'Network error'))
+    } finally {
+      setIsSubmitting(false)
+    }
     
     setTimeout(() => {
       setSubmitSuccess(false)
@@ -4811,166 +4829,70 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
     }
   }
 
-  // Load achievements from localStorage on mount
-  useEffect(() => {
+  // Fetch department students from database
+  const fetchHodStudents = useCallback(async () => {
+    if (!user.departmentId) return
     try {
-      const savedStudent = localStorage.getItem('student_achievements')
-      if (savedStudent) {
-        const parsed = JSON.parse(savedStudent)
-        // Filter for current department only
-        const deptStudent = parsed.filter((a: any) => a.dept === user.departmentName || a.department === user.departmentName)
-        setStudentAchievements(deptStudent)
-      }
-      
-      const savedStaff = localStorage.getItem('staff_achievements')
-      if (savedStaff) {
-        const parsed = JSON.parse(savedStaff)
-        // Filter for current department only
-        const deptStaff = parsed.filter((a: any) => a.dept === user.departmentName || a.department === user.departmentName)
-        setStaffAchievements(deptStaff)
+      const res = await fetch(`/api/students?departmentId=${user.departmentId}&limit=200`)
+      const data = await res.json()
+      if (data.success && Array.isArray(data.students) && data.students.length > 0) {
+        const mapped = data.students.map((s: any) => ({
+          id: s.id,
+          name: s.name || s.user?.name || `Student ${s.registerNumber}`,
+          regNo: s.registerNumber,
+          year: s.semester ? `${Math.ceil(s.semester / 2)}th Year` : '1st Year',
+          section: s.section || 'A',
+          batch: s.batch || s.batchInfo?.name || '2024-2028',
+          email: s.user?.email || s.email || '',
+          status: s.user?.status || 'active',
+          loginAccess: Boolean(s.userId || s.user),
+          department: s.department?.name || user.departmentName
+        }))
+        setDepartmentStudents(mapped)
       }
     } catch (e) {
-      console.error('Failed to parse achievements:', e)
+      console.error('Failed to fetch department students from DB:', e)
     }
-  }, [user.departmentName])
+  }, [user.departmentId, user.departmentName])
 
-  // Load department users from localStorage or use defaults
-  useEffect(() => {
-    const storageKey = `hod_users_${user.departmentName}`
+  // Fetch pending approvals from database
+  const fetchHodApprovals = useCallback(async () => {
     try {
-      const saved = localStorage.getItem(storageKey)
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        if (parsed.students) setDepartmentStudents(parsed.students)
-        if (parsed.staff) setDepartmentStaff(parsed.staff)
-        return
+      const deptQuery = user.departmentId ? `&departmentId=${user.departmentId}` : ''
+      const res = await fetch(`/api/approvals?status=PENDING${deptQuery}`)
+      const data = await res.json()
+      if (data.success && Array.isArray(data.approvals)) {
+        const mapped = data.approvals.map((app: any) => ({
+          id: app.id,
+          achievementId: app.entityId || app.achievement?.id,
+          studentName: app.studentName || app.achievement?.student?.name || 'Student',
+          reg: app.registerNumber || app.achievement?.student?.registerNumber || 'N/A',
+          type: app.achievement?.type || 'Achievement',
+          typeName: app.achievement?.type || 'Achievement',
+          title: app.achievement?.title || app.comments || 'Achievement Submission',
+          description: app.achievement?.description || '',
+          date: app.achievement?.achievedDate ? new Date(app.achievement.achievedDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          status: 'pending_hod',
+          level: app.achievement?.level || 'Department',
+          dept: app.departmentName || user.departmentName,
+          submittedAt: app.createdAt,
+        }))
+        setStudentAchievements(mapped)
       }
     } catch (e) {
-      console.error('Failed to load department users:', e)
+      console.error('Failed to fetch HOD approvals:', e)
     }
+  }, [user.departmentId, user.departmentName])
 
-    // Default demo data - in real app this would come from API/database filtered by department
-    // Students organized with Year > Section > Batch Hierarchy
-    const demoStudents = [
-      // 4th Year Students (Batch 2021-2025)
-      { id: 1, name: 'Arun Kumar', regNo: 'CSE001', year: '4th Year', section: 'A', batch: '2021-2025', email: 'arun@niet.ac.in', status: 'active' },
-      { id: 2, name: 'Rahul V', regNo: 'CSE002', year: '4th Year', section: 'A', batch: '2021-2025', email: 'rahul@niet.ac.in', status: 'active' },
-      { id: 3, name: 'Bhavani S', regNo: 'CSE003', year: '4th Year', section: 'B', batch: '2021-2025', email: 'bhavani@niet.ac.in', status: 'active' },
-      // 3rd Year Students (Batch 2022-2026)
-      { id: 4, name: 'Deepa L', regNo: 'CSE004', year: '3rd Year', section: 'A', batch: '2022-2026', email: 'deepa@niet.ac.in', status: 'active' },
-      { id: 5, name: 'Priya R', regNo: 'CSE005', year: '3rd Year', section: 'A', batch: '2022-2026', email: 'priya@niet.ac.in', status: 'active' },
-      { id: 6, name: 'Sneha K', regNo: 'CSE006', year: '3rd Year', section: 'B', batch: '2022-2026', email: 'sneha@niet.ac.in', status: 'active' },
-      { id: 7, name: 'Karthik M', regNo: 'CSE007', year: '3rd Year', section: 'B', batch: '2022-2026', email: 'karthik@niet.ac.in', status: 'active' },
-      // 2nd Year Students (Batch 2023-2027)
-      { id: 8, name: 'Vijay S', regNo: 'CSE008', year: '2nd Year', section: 'A', batch: '2023-2027', email: 'vijay@niet.ac.in', status: 'active' },
-      { id: 9, name: 'Divya P', regNo: 'CSE009', year: '2nd Year', section: 'A', batch: '2023-2027', email: 'divya@niet.ac.in', status: 'active' },
-      { id: 10, name: 'Manoj T', regNo: 'CSE010', year: '2nd Year', section: 'B', batch: '2023-2027', email: 'manoj@niet.ac.in', status: 'active' },
-      { id: 11, name: 'Nisha R', regNo: 'CSE011', year: '2nd Year', section: 'B', batch: '2023-2027', email: 'nisha@niet.ac.in', status: 'active' },
-      // 1st Year Students (Batch 2024-2028)
-      { id: 12, name: 'Arjun K', regNo: 'CSE012', year: '1st Year', section: 'A', batch: '2024-2028', email: 'arjun@niet.ac.in', status: 'active' },
-      { id: 13, name: 'Kavya S', regNo: 'CSE013', year: '1st Year', section: 'A', batch: '2024-2028', email: 'kavya@niet.ac.in', status: 'active' },
-      { id: 14, name: 'Ramesh T', regNo: 'CSE014', year: '1st Year', section: 'B', batch: '2024-2028', email: 'ramesh@niet.ac.in', status: 'inactive' },
-      { id: 15, name: 'Lakshmi M', regNo: 'CSE015', year: '1st Year', section: 'B', batch: '2024-2028', email: 'lakshmi@niet.ac.in', status: 'active' },
-    ]
-    
-    const demoStaff = [
-      { id: 1, name: 'Dr. Ramesh Kumar', designation: 'Professor & HOD', email: 'ramesh@niet.ac.in', status: 'active', phone: '+91 98765 43210' },
-      { id: 2, name: 'Dr. Lakshmi Devi', designation: 'Associate Professor', email: 'lakshmi@niet.ac.in', status: 'active', phone: '+91 98765 43211' },
-      { id: 3, name: 'Mr. Suresh Babu', designation: 'Assistant Professor', email: 'suresh@niet.ac.in', status: 'active', phone: '+91 98765 43212' },
-      { id: 4, name: 'Ms. Anitha Reddy', designation: 'Assistant Professor', email: 'anitha@niet.ac.in', status: 'on_leave', phone: '+91 98765 43213' },
-      { id: 5, name: 'Dr. Venkat Rao', designation: 'Associate Professor', email: 'venkat@niet.ac.in', status: 'active', phone: '+91 98765 43214' },
-    ]
-    
-    setDepartmentStudents(demoStudents)
-    setDepartmentStaff(demoStaff)
-    
-    // Save to localStorage
-    localStorage.setItem(storageKey, JSON.stringify({ students: demoStudents, staff: demoStaff }))
-    
-    // Initialize sample achievement data if not exists
-    const studentAchievementsKey = 'student_achievements'
-    const staffAchievementsKey = 'staff_achievements'
-    
-    if (!localStorage.getItem(studentAchievementsKey)) {
-      // Sample Student Achievements
-      const sampleStudentAchievements = [
-        // Arun Kumar (4th Year) - Multiple achievements
-        { id: 1, studentName: 'Arun Kumar', reg: 'CSE001', type: 'Paper Presentation', typeName: 'Paper Presentation', title: 'AI in Healthcare', description: 'Presented a paper on "Machine Learning Applications in Healthcare Diagnosis" at IEEE International Conference', date: '2024-08-15', status: 'approved_hod', level: 'National', dept: user.departmentName, submittedAt: '2024-08-10' },
-        { id: 2, studentName: 'Arun Kumar', reg: 'CSE001', type: 'Hackathon', typeName: 'Hackathon', title: 'Smart India Hackathon 2024', description: 'Participated in Smart India Hackathon Grand Finale with project "AgriTech Solution"', date: '2024-12-20', status: 'approved', level: 'National', dept: user.departmentName, submittedAt: '2024-12-15' },
-        { id: 3, studentName: 'Arun Kumar', reg: 'CSE001', type: 'Certification', typeName: 'Certification', title: 'AWS Cloud Practitioner', description: 'Completed AWS Cloud Practitioner Certification with 85% score', date: '2024-10-05', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-10-01' },
-        // Rahul V (4th Year) - Achievements
-        { id: 4, studentName: 'Rahul V', reg: 'CSE002', type: 'Internship', typeName: 'Internship', title: 'Software Development Intern at TCS', description: 'Completed 6-month internship at Tata Consultancy Services working on Java Spring Boot applications', date: '2024-07-30', status: 'approved_hod', level: 'National', dept: user.departmentName, submittedAt: '2024-07-25' },
-        { id: 5, studentName: 'Rahul V', reg: 'CSE002', type: 'Competition', typeName: 'Technical Competition', title: 'CodeChef Challenge Winner', description: 'Won 2nd place in CodeChef Monthly Challenge - Division 2', date: '2024-11-10', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-11-08' },
-        // Bhavani S (4th Year) - Achievements
-        { id: 6, studentName: 'Bhavani S', reg: 'CSE003', type: 'Workshop', typeName: 'Workshop', title: 'Data Science Workshop', description: 'Attended 5-day intensive workshop on Data Science and Machine Learning at IIT Madras', date: '2024-09-20', status: 'approved', level: 'National', dept: user.departmentName, submittedAt: '2024-09-18' },
-        { id: 7, studentName: 'Bhavani S', reg: 'CSE003', type: 'Project', typeName: 'Project', title: 'Smart Campus Navigation App', description: 'Developed AR-based campus navigation app as final year project', date: '2025-01-15', status: 'pending_hod', level: 'Department', dept: user.departmentName, submittedAt: '2025-01-12' },
-        // Deepa L (3rd Year) - Achievements
-        { id: 8, studentName: 'Deepa L', reg: 'CSE004', type: 'Certification', typeName: 'Certification', title: 'Python Programming Certificate', description: 'Completed Python Specialization from Coursera with distinction', date: '2024-06-15', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-06-10' },
-        { id: 9, studentName: 'Deepa L', reg: 'CSE004', type: 'Symposium', typeName: 'Symposium', title: 'Tech Symposium Coordinator', description: 'Coordinated National Level Technical Symposium "Technovate 2k24" with 500+ participants', date: '2024-03-25', status: 'approved_hod', level: 'National', dept: user.departmentName, submittedAt: '2024-03-20' },
-        // Priya R (3rd Year) - Achievements
-        { id: 10, studentName: 'Priya R', reg: 'CSE005', type: 'Paper Publication', typeName: 'Paper Publication', title: 'IoT Research Paper Published', description: 'Research paper published in Springer Journal on IoT-based Smart Agriculture Systems', date: '2024-11-05', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-11-01' },
-        // Sneha K (3rd Year) - Achievements
-        { id: 11, studentName: 'Sneha K', reg: 'CSE006', type: 'Event Participation', typeName: 'Event Participation', title: 'Cultural Fest Volunteer Lead', description: 'Led team of 50 volunteers for annual college cultural fest "Utsav 2k24"', date: '2024-04-10', status: 'approved', level: 'Department', dept: user.departmentName, submittedAt: '2024-04-05' },
-        // Karthik M (3rd Year) - Achievements
-        { id: 12, studentName: 'Karthik M', reg: 'CSE007', type: 'Competition', typeName: 'Coding Competition', title: 'Google Kickstart Qualifier', description: 'Qualified for Google Kickstart Round C by solving 3/4 problems', date: '2024-09-28', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-09-25' },
-        { id: 13, studentName: 'Karthik M', reg: 'CSE007', type: 'Certification', typeName: 'Certification', title: 'Google Data Analytics Certificate', description: 'Completed Google Data Analytics Professional Certificate on Coursera', date: '2024-08-20', status: 'approved_hod', level: 'International', dept: user.departmentName, submittedAt: '2024-08-15' },
-        // Vijay S (2nd Year) - Achievements
-        { id: 14, studentName: 'Vijay S', reg: 'CSE008', type: 'Workshop', typeName: 'Workshop', title: 'Web Development Bootcamp', description: 'Completed 2-week full-stack web development bootcamp covering React, Node.js, MongoDB', date: '2024-12-01', status: 'pending_hod', level: 'State', dept: user.departmentName, submittedAt: '2024-11-28' },
-        // Divya P (2nd Year) - Achievements
-        { id: 15, studentName: 'Divya P', reg: 'CSE009', type: 'Competition', typeName: 'Quiz Competition', title: 'Inter-College Quiz Winner', description: 'Won 1st place in Inter-college Technical Quiz Competition organized by Anna University', date: '2024-10-18', status: 'approved', level: 'State', dept: user.departmentName, submittedAt: '2024-10-15' },
-        // Manoj T (2nd Year) - Achievements
-        { id: 16, studentName: 'Manoj T', reg: 'CSE010', type: 'Internship', typeName: 'Virtual Internship', title: 'AI/ML Virtual Internship', description: 'Completed 8-week virtual AI/ML internship from AICTE SPICE board', date: '2024-07-31', status: 'approved', level: 'National', dept: user.departmentName, submittedAt: '2024-07-28' },
-        // Nisha R (2nd Year) - Achievements
-        { id: 17, studentName: 'Nisha R', reg: 'CSE011', type: 'Certification', typeName: 'Certification', title: 'Microsoft Azure Fundamentals', description: 'Passed AZ-900 Microsoft Azure Fundamentals certification exam', date: '2024-09-10', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-09-05' },
-        // Lakshmi M (1st Year) - Achievement
-        { id: 18, studentName: 'Lakshmi M', reg: 'CSE015', type: 'Event Participation', typeName: 'Event Participation', title: 'Freshers Day Event Organizer', description: 'Organized freshers day welcome event for batch of 2024-2028', date: '2024-09-01', status: 'approved', level: 'Department', dept: user.departmentName, submittedAt: '2024-08-28' },
-      ]
-      localStorage.setItem(studentAchievementsKey, JSON.stringify(sampleStudentAchievements))
-      // Set to state
-      const deptStudentAch = sampleStudentAchievements.filter(a => a.dept === user.departmentName || a.department === user.departmentName)
-      setStudentAchievements(deptStudentAch)
-    }
-    
-    if (!localStorage.getItem(staffAchievementsKey)) {
-      // Sample Staff Achievements
-      const sampleStaffAchievements = [
-        // Dr. Ramesh Kumar (HOD) - Achievements
-        { id: 101, submittedBy: 'Dr. Ramesh Kumar', type: 'Research Paper', typeName: 'Research Paper', title: 'Published paper in IEEE Transactions', description: 'Research publication on "Deep Learning Approaches for Natural Language Processing" in IEEE Transactions journal with Impact Factor 8.0', date: '2024-10-15', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-10-10' },
-        { id: 102, submittedBy: 'Dr. Ramesh Kumar', type: 'FDP', typeName: 'Faculty Development Program', title: 'Attended AICTE FDP at IIT Bombay', description: 'Completed 2-week Faculty Development Program on Advanced Machine Learning Techniques at IIT Bombay', date: '2024-07-20', status: 'approved', level: 'National', dept: user.departmentName, submittedAt: '2024-07-15' },
-        { id: 103, submittedBy: 'Dr. Ramesh Kumar', type: 'Conference', typeName: 'Conference Organization', title: 'Organized International Conference', description: 'Chief organizer for ICICC 2024 - International Conference on Intelligent Computing and Communication', date: '2024-03-22', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-02-28' },
-        // Dr. Lakshmi Devi - Achievements
-        { id: 104, submittedBy: 'Dr. Lakshmi Devi', type: 'Research Paper', typeName: 'Research Paper', title: 'Springer Publication on Cloud Computing', description: 'Published research paper on "Secure Cloud Storage using Homomorphic Encryption" in Springer Nature journal', date: '2024-09-05', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-09-01' },
-        { id: 105, submittedBy: 'Dr. Lakshmi Devi', type: 'Patent', typeName: 'Patent Filed', title: 'Patent filed for IoT Device', description: 'Filed patent for "Smart Energy Monitoring System using IoT and Edge Computing"', date: '2024-11-30', status: 'pending_hod', level: 'National', dept: user.departmentName, submittedAt: '2024-11-25' },
-        { id: 106, submittedBy: 'Dr. Lakshmi Devi', type: 'Workshop', typeName: 'Workshop Conducted', title: 'Conducted Workshop on Cybersecurity', description: 'Conducted 3-day hands-on workshop on Ethical Hacking and Cybersecurity for students', date: '2024-08-15', status: 'approved', level: 'Department', dept: user.departmentName, submittedAt: '2024-08-10' },
-        // Mr. Suresh Babu - Achievements
-        { id: 107, submittedBy: 'Mr. Suresh Babu', type: 'Certification', typeName: 'Professional Certification', title: 'Oracle Certified Professional', description: 'Achieved Oracle Certified Professional: Java SE 11 Developer certification', date: '2024-06-10', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-06-05' },
-        { id: 108, submittedBy: 'Mr. Suresh Babu', type: 'Project Mentor', typeName: 'Project Mentoring', title: 'Mentored 5 Final Year Projects', description: 'Successfully mentored 5 final year projects, 2 of which won awards at national competitions', date: '2024-12-20', status: 'approved', level: 'Department', dept: user.departmentName, submittedAt: '2024-12-18' },
-        // Ms. Anitha Reddy - Achievements
-        { id: 109, submittedBy: 'Ms. Anitha Reddy', type: 'Online Course', typeName: 'Online Course Completion', title: 'Stanford Machine Learning Course', description: 'Completed Stanford Machine Learning specialization course on Coursera with 95% score', date: '2024-08-25', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-08-20' },
-        // Dr. Venkat Rao - Achievements
-        { id: 110, submittedBy: 'Dr. Venkat Rao', type: 'Book Chapter', typeName: 'Book Chapter Published', title: 'Chapter in CRC Press Book', description: 'Authored chapter on "Blockchain Applications in Supply Chain Management" in CRC Press publication', date: '2024-12-01', status: 'approved', level: 'International', dept: user.departmentName, submittedAt: '2024-11-28' },
-        { id: 111, submittedBy: 'Dr. Venkat Rao', type: 'Funding', typeName: 'Research Funding Received', title: 'SERB Project Funding Approved', description: 'Received SERB Core Research Grant worth Rs. 25 Lakhs for research on Quantum Computing', date: '2024-10-01', status: 'approved', level: 'National', dept: user.departmentName, submittedAt: '2024-09-25' },
-        { id: 112, submittedBy: 'Dr. Venkat Rao', type: 'Invited Talk', typeName: 'Invited Lecture', title: 'Invited Speaker at NIT Trichy', description: 'Delivered invited talk on "Future of AI in Education" at NIT Trichy technical symposium', date: '2024-04-15', status: 'approved', level: 'National', dept: user.departmentName, submittedAt: '2024-04-10' },
-      ]
-      localStorage.setItem(staffAchievementsKey, JSON.stringify(sampleStaffAchievements))
-      // Set to state
-      const deptStaffAch = sampleStaffAchievements.filter(a => a.dept === user.departmentName || a.department === user.departmentName)
-      setStaffAchievements(deptStaffAch)
-    }
-  }, [user.departmentName])
-
-  // Save department users to localStorage whenever they change
   useEffect(() => {
-    if (departmentStudents.length > 0 || departmentStaff.length > 0) {
-      const storageKey = `hod_users_${user.departmentName}`
-      localStorage.setItem(storageKey, JSON.stringify({ students: departmentStudents, staff: departmentStaff }))
-    }
-  }, [departmentStudents, departmentStaff, user.departmentName])
+    fetchHodStudents()
+    fetchHodApprovals()
+  }, [fetchHodStudents, fetchHodApprovals])
 
   // ==================== STUDENT CRUD OPERATIONS ====================
   const handleAddStudent = () => {
     setEditingStudent(null)
-    setStudentForm({ name: '', regNo: '', year: '1st Year', section: 'A', batch: '2024-2028', email: '', status: 'active' })
+    setStudentForm({ name: '', regNo: '', year: '1st Year', section: 'A', batch: '2024-2028', email: '', status: 'active', password: '' })
     setShowStudentModal(true)
   }
 
@@ -4983,30 +4905,53 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
       section: student.section || 'A',
       batch: student.batch || '2024-2028',
       email: student.email, 
-      status: student.status 
+      status: student.status,
+      password: ''
     })
     setShowStudentModal(true)
   }
 
-  const handleSaveStudent = () => {
+  const handleSaveStudent = async () => {
     if (!studentForm.name.trim() || !studentForm.regNo.trim()) {
       alert('Please fill in all required fields')
       return
     }
 
-    if (editingStudent) {
-      // Update existing student
-      setDepartmentStudents(prev => prev.map(s => 
-        s.id === editingStudent.id ? { ...s, ...studentForm } : s
-      ))
-    } else {
-      // Add new student
-      const newId = Math.max(...departmentStudents.map(s => s.id), 0) + 1
-      setDepartmentStudents(prev => [...prev, { id: newId, ...studentForm }])
+    const yearToSemester: Record<string, number> = {
+      '1st Year': 1,
+      '2nd Year': 3,
+      '3rd Year': 5,
+      '4th Year': 7,
     }
-    
-    setShowStudentModal(false)
-    setEditingStudent(null)
+
+    try {
+      const res = await fetch('/api/students', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: studentForm.name,
+          registerNumber: studentForm.regNo,
+          email: studentForm.email || `${studentForm.regNo.toLowerCase()}@niet.ac.in`,
+          password: 'student123',
+          departmentId: user.departmentId,
+          semester: yearToSemester[studentForm.year] || 1,
+          section: studentForm.section || 'A',
+          batch: studentForm.batch || '2024-2028',
+          createLoginAccess: true,
+        })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        await fetchHodStudents()
+        setShowStudentModal(false)
+        setEditingStudent(null)
+      } else {
+        alert(data.error || 'Failed to save student to database')
+      }
+    } catch (err: any) {
+      console.error('Error saving student:', err)
+      alert(err.message || 'Failed to save student')
+    }
   }
 
   const handleDeleteStudent = (id: number) => {
@@ -7214,17 +7159,36 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
   const [staffAchievements, setStaffAchievements] = useState<any[]>([])
   const [selectedDashboardType, setSelectedDashboardType] = useState<string | null>(null)
   
-  // Load achievements from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('staff_achievements')
-    if (saved) {
-      try {
-        setStaffAchievements(JSON.parse(saved))
-      } catch (e) {
-        console.error('Failed to parse staff achievements:', e)
+  const fetchStaffApprovals = useCallback(async () => {
+    try {
+      const deptQuery = user.departmentId ? `&departmentId=${user.departmentId}` : ''
+      const res = await fetch(`/api/approvals?status=PENDING${deptQuery}`)
+      const data = await res.json()
+      if (data.success && Array.isArray(data.approvals)) {
+        const mapped = data.approvals.map((app: any) => ({
+          id: app.id,
+          achievementId: app.entityId || app.achievement?.id,
+          title: app.achievement?.title || app.comments || 'Achievement Submission',
+          type: app.achievement?.type || 'TECHNICAL',
+          status: 'pending_staff',
+          submittedBy: app.studentName || app.achievement?.student?.name || 'Student',
+          regNo: app.registerNumber || app.achievement?.student?.registerNumber || 'N/A',
+          dept: app.departmentName || user.departmentName,
+          date: app.achievement?.achievedDate ? new Date(app.achievement.achievedDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        }))
+        setStaffAchievements(mapped)
+      } else {
+        const saved = localStorage.getItem('staff_achievements')
+        if (saved) setStaffAchievements(JSON.parse(saved))
       }
+    } catch (e) {
+      console.error('Failed to fetch staff approvals:', e)
     }
-  }, [user.departmentName])
+  }, [user.departmentId, user.departmentName])
+
+  useEffect(() => {
+    fetchStaffApprovals()
+  }, [fetchStaffApprovals])
   
   // Calculate stats from actual data
   const totalRecords = staffAchievements.length
@@ -8737,39 +8701,162 @@ function ResearchPage() {
 }
 
 // ============ APPROVALS PAGE ============
-function ApprovalsPage() {
+function ApprovalsPage({ user }: { user?: User }) {
+  const [approvals, setApprovals] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [counts, setCounts] = useState({ pending: 0, approved: 0, rejected: 0 })
+
+  const fetchApprovalsData = useCallback(async () => {
+    setLoading(true)
+    try {
+      const deptQuery = user?.departmentId ? `&departmentId=${user.departmentId}` : ''
+      
+      const [pendingRes, approvedRes, rejectedRes] = await Promise.all([
+        fetch(`/api/approvals?status=PENDING${deptQuery}`),
+        fetch(`/api/approvals?status=APPROVED${deptQuery}`),
+        fetch(`/api/approvals?status=REJECTED${deptQuery}`),
+      ])
+
+      const [pData, aData, rData] = await Promise.all([
+        pendingRes.json(),
+        approvedRes.json(),
+        rejectedRes.json(),
+      ])
+
+      if (pData.success && Array.isArray(pData.approvals)) {
+        setApprovals(pData.approvals)
+      }
+      setCounts({
+        pending: pData.approvals?.length || 0,
+        approved: aData.approvals?.length || 0,
+        rejected: rData.approvals?.length || 0,
+      })
+    } catch (err) {
+      console.error('Error fetching approvals data:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [user?.departmentId])
+
+  useEffect(() => {
+    fetchApprovalsData()
+  }, [fetchApprovalsData])
+
+  const handleAction = async (approvalId: string, achievementId: string, action: 'approve' | 'reject') => {
+    let comments = ''
+    if (action === 'reject') {
+      const input = prompt('Please enter rejection reason:')
+      if (input === null) return
+      comments = input || 'Rejected'
+    }
+
+    try {
+      const res = await fetch('/api/approvals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          approvalId,
+          achievementId,
+          action,
+          comments,
+          reviewedBy: user?.id || 'Reviewer'
+        })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        await fetchApprovalsData()
+      } else {
+        alert(data.error || 'Action failed')
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error processing request')
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Approval Requests</h2>
-        <p className="text-gray-500">Review and manage pending approvals</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Approval Requests</h2>
+          <p className="text-gray-500">Review and manage pending achievement submissions</p>
+        </div>
+        <Button onClick={fetchApprovalsData} variant="outline" size="sm" className="gap-2">
+          <Clock className="w-4 h-4" /> Refresh Queue
+        </Button>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="p-4 border-l-4 border-l-amber-500 bg-amber-50/50">
-          <p className="text-sm text-gray-500">Pending</p>
-          <p className="text-3xl font-bold text-amber-600">12</p>
+          <p className="text-sm text-gray-500 font-medium">Pending Review</p>
+          <p className="text-3xl font-bold text-amber-600">{counts.pending}</p>
         </Card>
         <Card className="p-4 border-l-4 border-l-green-500 bg-green-50/50">
-          <p className="text-sm text-gray-500">Approved Today</p>
-          <p className="text-3xl font-bold text-green-600">8</p>
+          <p className="text-sm text-gray-500 font-medium">Approved Items</p>
+          <p className="text-3xl font-bold text-green-600">{counts.approved}</p>
         </Card>
         <Card className="p-4 border-l-4 border-l-red-500 bg-red-50/50">
-          <p className="text-sm text-gray-500">Rejected</p>
-          <p className="text-3xl font-bold text-red-600">2</p>
+          <p className="text-sm text-gray-500 font-medium">Rejected Submissions</p>
+          <p className="text-3xl font-bold text-red-600">{counts.rejected}</p>
         </Card>
       </div>
       
       <Card className="p-6 border border-gray-200">
-        <DataTable 
-          data={[
-            { id: 'REQ001', type: 'Achievement', requestedBy: 'Arun Prakash', department: 'CSE', date: '2024-01-15', status: 'Pending' },
-            { id: 'REQ002', type: 'Leave', requestedBy: 'Dr. R. Kumar', department: 'CSE', date: '2024-01-14', status: 'Pending' },
-            { id: 'REQ003', type: 'Reimbursement', requestedBy: 'Bhavani S.', department: 'ECE', date: '2024-01-13', status: 'Approved' },
-            { id: 'REQ004', type: 'Achievement', requestedBy: 'Chandru K.', department: 'EEE', date: '2024-01-12', status: 'Rejected' },
-          ]}
-          columns={[{ key: 'id', label: 'Request ID' }, { key: 'type', label: 'Type' }, { key: 'requestedBy', label: 'Requested By' }, { key: 'department', label: 'Department' }, { key: 'date', label: 'Date' }, { key: 'status', label: 'Status' }]}
-        />
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm text-gray-600">
+            <thead className="bg-gray-50 text-xs uppercase text-gray-700">
+              <tr>
+                <th className="px-4 py-3">Student Name</th>
+                <th className="px-4 py-3">Reg No</th>
+                <th className="px-4 py-3">Department</th>
+                <th className="px-4 py-3">Achievement Title</th>
+                <th className="px-4 py-3">Type</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-gray-400">Loading pending requests...</td>
+                </tr>
+              ) : approvals.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-gray-400">No pending approval requests found</td>
+                </tr>
+              ) : (
+                approvals.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50/50">
+                    <td className="px-4 py-3 font-semibold text-gray-900">{item.studentName}</td>
+                    <td className="px-4 py-3">{item.registerNumber}</td>
+                    <td className="px-4 py-3">{item.departmentName}</td>
+                    <td className="px-4 py-3">{item.achievement?.title || item.comments || 'Achievement Submission'}</td>
+                    <td className="px-4 py-3"><Badge variant="outline">{item.achievement?.type || 'TECHNICAL'}</Badge></td>
+                    <td className="px-4 py-3">
+                      <Badge className="bg-amber-100 text-amber-800 border-amber-300 font-medium">Pending Approval 🟠</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-right space-x-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleAction(item.id, item.entityId || item.achievement?.id, 'approve')}
+                        className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 rounded-lg"
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleAction(item.id, item.entityId || item.achievement?.id, 'reject')}
+                        className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded-lg"
+                      >
+                        Reject
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </Card>
     </div>
   )
@@ -19342,22 +19429,43 @@ function StudentAchievementsPage({ user }: { user: User }) {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [isDragOver, setIsDragOver] = useState(false)
 
-  // Load achievements from localStorage on mount (filtered for current student)
-  useEffect(() => {
-    const saved = localStorage.getItem('student_achievements')
-    if (saved) {
-      try {
-        const allAchievements = JSON.parse(saved)
-        // Only load current student's own records
-        const myAchievements = allAchievements.filter((a: any) => 
-          a.studentId === user.id || a.studentEmail === user.email || a.studentName === user.name
-        )
-        setAchievements(myAchievements)
-      } catch (e) {
-        console.error('Failed to parse achievements:', e)
+  // Load achievements from API on mount
+  const fetchStudentAchievements = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/achievements?userId=${user.id}`)
+      const data = await res.json()
+      if (data.success && Array.isArray(data.achievements)) {
+        const mapped = data.achievements.map((a: any) => ({
+          id: a.id,
+          type: a.type,
+          typeName: a.type,
+          title: a.title,
+          dept: user.departmentName,
+          studentName: user.name,
+          studentEmail: user.email,
+          studentId: user.id,
+          date: a.achievedDate ? new Date(a.achievedDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          status: a.approvalStatus === 'PENDING' ? 'pending_staff' : a.approvalStatus === 'APPROVED' ? 'approved' : 'rejected',
+          submittedAt: a.createdAt,
+          data: { title: a.title, description: a.description, level: a.level, position: a.position }
+        }))
+        setAchievements(mapped)
+      } else {
+        // Fallback to localStorage
+        const saved = localStorage.getItem('student_achievements')
+        if (saved) {
+          const all = JSON.parse(saved)
+          setAchievements(all.filter((a: any) => a.studentId === user.id || a.studentEmail === user.email))
+        }
       }
+    } catch (e) {
+      console.error('Failed to fetch achievements from DB:', e)
     }
-  }, [user.id, user.email, user.name])
+  }, [user.id, user.email, user.departmentName])
+
+  useEffect(() => {
+    fetchStudentAchievements()
+  }, [fetchStudentAchievements])
 
   // Initialize form with user data when type changes
   useEffect(() => {
@@ -19437,38 +19545,37 @@ function StudentAchievementsPage({ user }: { user: User }) {
 
     setIsSubmitting(true)
     
-    // Simulate submission
-    await new Promise(resolve => setTimeout(resolve, 800))
-    
-    const newAchievement = {
-      id: Date.now(),
-      type: selectedType,
-      typeName: ACHIEVEMENT_TYPES[selectedType]?.label || selectedType,
-      title: title,
-      dept: user.departmentName,
-      studentName: user.name,
-      studentEmail: user.email,
-      studentId: user.id,
-      date: new Date().toISOString().split('T')[0],
-      status: 'pending_staff',
-      submittedAt: new Date().toISOString(),
-      data: formData,
-      reviewRoute: {
-        current: 'staff',
-        next: 'hod',
-        department: user.departmentName
+    try {
+      const res = await fetch('/api/achievements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          type: selectedType,
+          description: formData.description || formData.abstract || '',
+          achievedDate: targetDate,
+          level: formData.level || 'Department',
+          position: formData.position || '',
+          organizedBy: formData.organizedBy || formData.organizer || '',
+          userId: user.id,
+          attachments: uploadedFiles[0]?.name || '',
+          ...formData
+        })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setShowSuccess(true)
+        await fetchStudentAchievements()
+      } else {
+        alert(data.error || 'Failed to submit achievement')
       }
+    } catch (err: any) {
+      console.error('Error submitting achievement:', err)
+      alert('Error submitting achievement: ' + (err.message || 'Network error'))
+    } finally {
+      setIsSubmitting(false)
     }
-    
-    setAchievements(prev => {
-      const updatedAchievements = [newAchievement, ...prev]
-      localStorage.setItem('student_achievements', JSON.stringify(updatedAchievements))
-      return updatedAchievements
-    })
-    
-    setShowSuccess(true)
-    setIsSubmitting(false)
-    
+
     setTimeout(() => {
       setShowSuccess(false)
       setSelectedType('')
@@ -23328,7 +23435,7 @@ export default function IQACPortal() {
       case 'students': return <StudentsPage />
       case 'activities': return <ActivitiesPage />
       case 'research': return <ResearchPage />
-      case 'approvals': return <ApprovalsPage />
+      case 'approvals': return <ApprovalsPage user={user} />
       case 'analytics': return user?.role === 'ADMIN' 
         ? <AdminAnalyticsPage /> 
         : user?.role === 'HOD' 
@@ -23343,7 +23450,7 @@ export default function IQACPortal() {
           ? <StudentAchievementsPage user={user} />
           : <AchievementForm user={user} onBack={() => setActiveTab('dashboard')} />
       case 'report_generator': return <ReportGeneratorPage user={user} />
-      case 'hod_monthly_report': return <HODReportGeneratorPage user={user || { id: 'hod-1', role: 'HOD', name: 'HOD User', email: 'hod@niet.edu', departmentName: user?.departmentName || 'Computer Science and Engineering' }} />
+      case 'hod_monthly_report': return <HODReportGeneratorPage user={user || { id: 'hod-1', role: 'HOD', name: 'HOD User', email: 'hod@niet.edu', departmentName: (user as any)?.departmentName || 'Computer Science and Engineering' }} />
       case 'achievement_report': return <AchievementReportGenerator user={user || { id: 'staff-1', role: 'STAFF', name: 'Staff User', email: 'staff@niet.edu' }} />
       case 'staff_achievement': return <StaffAchievementPage user={user} />
       case 'student_achievement_view': return user?.role === 'STUDENT' 

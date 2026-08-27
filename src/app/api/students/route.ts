@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { hashPassword } from '@/lib/auth-helpers'
+import { createOrUpdateUserAccount } from '@/lib/user-service'
 
 // GET all students or filter by department/batch
 export async function GET(request: NextRequest) {
@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const departmentId = searchParams.get('departmentId')
     const batchId = searchParams.get('batchId')
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '50')
+    const limit = parseInt(searchParams.get('limit') || '100')
     const search = searchParams.get('search') || ''
     const semester = searchParams.get('semester')
 
@@ -20,6 +20,8 @@ export async function GET(request: NextRequest) {
     if (search) {
       where.OR = [
         { registerNumber: { contains: search, mode: 'insensitive' as const } },
+        { name: { contains: search, mode: 'insensitive' as const } },
+        { email: { contains: search, mode: 'insensitive' as const } },
         { user: { name: { contains: search, mode: 'insensitive' as const } } },
         { user: { email: { contains: search, mode: 'insensitive' as const } } },
       ]
@@ -29,7 +31,7 @@ export async function GET(request: NextRequest) {
       db.student.findMany({
         where,
         include: {
-          user: { select: { id: true, email: true, name: true, role: true, phone: true } },
+          user: { select: { id: true, email: true, name: true, role: true, phone: true, status: true, isActive: true } },
           department: { select: { id: true, name: true, code: true } },
           batchInfo: { select: { id: true, name: true, year: true, section: true } },
         },
@@ -75,7 +77,8 @@ export async function POST(request: NextRequest) {
       batch, 
       cgpa, 
       admissionYear,
-      password
+      password,
+      createLoginAccess = true
     } = data
 
     if (!registerNumber || !departmentId) {
@@ -97,53 +100,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if email already exists
-    const existingUser = await db.user.findUnique({ where: { email: userEmail } })
-    if (existingUser) {
-      return NextResponse.json(
-        { success: false, error: `Email '${userEmail}' already exists` },
-        { status: 409 }
-      )
+    // If createLoginAccess is true, check existing user email
+    if (createLoginAccess) {
+      const existingUser = await db.user.findUnique({ where: { email: userEmail } })
+      if (existingUser) {
+        return NextResponse.json(
+          { success: false, error: `Email '${userEmail}' already exists` },
+          { status: 409 }
+        )
+      }
     }
 
-    // Hash initial password securely
-    const rawPassword = password && password.trim() ? password.trim() : '12345678'
-    const hashedPassword = await hashPassword(rawPassword)
     const userName = name ? name.trim() : `Student ${trimmedRegNo}`
-    
-    const student = await db.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          email: userEmail,
-          password: hashedPassword,
-          name: userName,
-          role: 'STUDENT',
-          phone: phone || null,
-          departmentId,
-        }
-      })
 
-      return await tx.student.create({
-        data: {
-          registerNumber: trimmedRegNo,
-          userId: user.id,
-          departmentId,
-          batchId: batchId || null,
-          semester: semester ? parseInt(semester) : null,
-          section: section || null,
-          batch: batch || null,
-          cgpa: cgpa ? parseFloat(cgpa) : null,
-          admissionYear: admissionYear ? parseInt(admissionYear) : null,
-        },
-        include: {
-          user: { select: { id: true, email: true, name: true, role: true } },
-          department: true,
-          batchInfo: true,
-        },
-      })
+    const result = await createOrUpdateUserAccount({
+      name: userName,
+      email: userEmail,
+      password,
+      role: 'STUDENT',
+      departmentId,
+      phone,
+      registerNumber: trimmedRegNo,
+      semester: semester ? parseInt(String(semester)) : 1,
+      section: section || 'A',
+      batch: batch || null,
+      createLoginAccess: createLoginAccess !== false,
+      createdBy: 'API'
     })
 
-    return NextResponse.json({ success: true, student })
+    return NextResponse.json({
+      success: true,
+      student: result.profile,
+      user: result.user,
+      loginAccess: result.loginAccess
+    }, { status: 201 })
   } catch (error: any) {
     console.error('Error creating student:', error)
     return NextResponse.json(
@@ -152,3 +142,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { hashPassword } from '@/lib/auth-helpers'
-import { UserRole, UserStatus } from '@prisma/client'
+import { UserRole } from '@prisma/client'
+import { createOrUpdateUserAccount } from '@/lib/user-service'
 
 // GET /api/users - List users with role & department filters & security checks
 export async function GET(request: NextRequest) {
@@ -145,24 +145,20 @@ export async function POST(request: NextRequest) {
     let targetDeptId: string | null = departmentId || null
 
     if (callerRole === 'HOD') {
-      // HOD can only create STAFF or STUDENT for their own department
       if (targetRole !== 'STAFF' && targetRole !== 'STUDENT') {
         return NextResponse.json(
           { success: false, error: 'HOD can only allocate Staff or Student credentials' },
           { status: 403 }
         )
       }
-      // Force department to HOD's department
       targetDeptId = callerDeptId || targetDeptId
     } else if (callerRole === 'STAFF') {
-      // Staff can only create STUDENT for their own department
       if (targetRole !== 'STUDENT') {
         return NextResponse.json(
           { success: false, error: 'Staff can only allocate Student credentials' },
           { status: 403 }
         )
       }
-      // Force department to Staff's department
       targetDeptId = callerDeptId || targetDeptId
     }
 
@@ -198,123 +194,44 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. Hash Password
-    const hashedPassword = await hashPassword(password)
-
-    // Creator Metadata
     const createdByLabel = callerName || (callerRole === 'ADMIN' ? 'Admin' : callerRole === 'HOD' ? 'HOD' : 'Staff')
 
-    // 5. Create Central User & Link Existing / New Profiles inside transaction
-    const result = await db.$transaction(async (tx) => {
-      // Create user in central authentication table
-      const newUser = await tx.user.create({
-        data: {
-          name: name.trim(),
-          email: normalizedEmail,
-          password: hashedPassword,
-          role: targetRole,
-          departmentId: targetDeptId,
-          phone: phone || null,
-          isActive: true,
-          status: 'ACTIVE',
-          mustChangePassword: !!mustChangePassword,
-          createdBy: createdByLabel,
-          createdByRole: callerRole,
-          createdById: callerId || null,
-        },
-        include: {
-          department: true
-        }
-      })
-
-      // Link or Create Profile (Faculty / Student)
-      if (targetRole === 'HOD' || targetRole === 'STAFF') {
-        const empId = employeeId ? employeeId.trim() : `EMP${Date.now().toString().slice(-6)}`
-        // Check if Faculty profile already exists with this employeeId or email
-        const existingFaculty = await tx.faculty.findUnique({
-          where: { employeeId: empId }
-        })
-
-        if (existingFaculty) {
-          // Allocate credentials to existing profile
-          await tx.faculty.update({
-            where: { id: existingFaculty.id },
-            data: { userId: newUser.id, isHOD: targetRole === 'HOD' }
-          })
-        } else {
-          // Create new Faculty profile
-          await tx.faculty.create({
-            data: {
-              employeeId: empId,
-              userId: newUser.id,
-              departmentId: targetDeptId!,
-              designation: designation || (targetRole === 'HOD' ? 'Head of Department' : 'Assistant Professor'),
-              qualification: qualification || null,
-              isHOD: targetRole === 'HOD'
-            }
-          })
-        }
-      } else if (targetRole === 'STUDENT') {
-        const regNo = registerNumber ? registerNumber.trim() : `REG${Date.now().toString().slice(-6)}`
-        // Check if Student profile already exists
-        const existingStudent = await tx.student.findUnique({
-          where: { registerNumber: regNo }
-        })
-
-        if (existingStudent) {
-          // Allocate credentials to existing student profile
-          await tx.student.update({
-            where: { id: existingStudent.id },
-            data: { userId: newUser.id }
-          })
-        } else {
-          // Create new Student profile
-          await tx.student.create({
-            data: {
-              registerNumber: regNo,
-              userId: newUser.id,
-              departmentId: targetDeptId!,
-              semester: semester ? parseInt(semester) : 1,
-              section: section || 'A',
-              batch: batch || null
-            }
-          })
-        }
-      }
-
-      // Audit log
-      await tx.auditLog.create({
-        data: {
-          userId: newUser.id,
-          action: 'CREATE_USER_CREDENTIALS',
-          entityType: 'USER',
-          entityId: newUser.id,
-          newValue: JSON.stringify({
-            role: newUser.role,
-            email: newUser.email,
-            createdBy: createdByLabel,
-            createdById: callerId
-          })
-        }
-      })
-
-      return newUser
+    const result = await createOrUpdateUserAccount({
+      name,
+      email: normalizedEmail,
+      password,
+      role: targetRole,
+      departmentId: targetDeptId,
+      phone,
+      registerNumber,
+      employeeId,
+      designation,
+      qualification,
+      semester,
+      section,
+      batch,
+      createLoginAccess: true,
+      mustChangePassword: !!mustChangePassword,
+      createdBy: createdByLabel,
+      createdByRole: callerRole,
+      createdById: callerId,
     })
 
     return NextResponse.json({
       success: true,
       message: 'Login credentials allocated successfully',
       user: {
-        id: result.id,
-        name: result.name,
-        email: result.email,
-        role: result.role,
-        departmentId: result.departmentId,
-        departmentName: result.department?.name,
-        status: result.status,
-        createdBy: result.createdBy,
-        createdAt: result.createdAt
-      }
+        id: result.user.id,
+        name: result.user.name,
+        email: result.user.email,
+        role: result.user.role,
+        departmentId: result.user.departmentId,
+        departmentName: result.user.department?.name,
+        status: result.user.status,
+        createdBy: result.user.createdBy,
+        createdAt: result.user.createdAt
+      },
+      profile: result.profile
     }, { status: 201 })
   } catch (error: any) {
     console.error('Error creating user credentials:', error)
@@ -324,3 +241,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+

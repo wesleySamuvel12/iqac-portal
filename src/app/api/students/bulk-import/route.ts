@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { hashPassword, generateTempPassword } from '@/lib/auth-helpers'
+import { createOrUpdateUserAccount } from '@/lib/user-service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -174,83 +175,36 @@ export async function POST(request: NextRequest) {
 
     for (const record of validRecords) {
       try {
-        let userId: string | null = null
+        const passToUse = record.customPassword || '12345678'
+        
+        const res = await createOrUpdateUserAccount({
+          name: record.name,
+          email: record.email,
+          password: passToUse,
+          role: 'STUDENT',
+          departmentId: record.departmentId,
+          phone: record.phone,
+          registerNumber: record.regNo,
+          semester: record.semester,
+          section: record.section,
+          batch: record.batch,
+          createLoginAccess,
+          mustChangePassword: !record.customPassword,
+          createdBy: 'CSV Import'
+        })
 
-        // IF USER SELECTED "YES, CREATE LOGIN ACCESS"
-        if (createLoginAccess) {
-          const passToUse = record.customPassword || '12345678'
-          const isTempPass = !record.customPassword
-          const hashedPassword = await hashPassword(passToUse)
-
-          try {
-            const user = await db.user.upsert({
-              where: { email: record.email },
-              update: {
-                name: record.name,
-                phone: record.phone || undefined,
-                departmentId: record.departmentId || undefined,
-                role: 'STUDENT',
-                isActive: true,
-                status: 'ACTIVE',
-              },
-              create: {
-                email: record.email,
-                password: hashedPassword,
-                name: record.name,
-                role: 'STUDENT',
-                phone: record.phone || null,
-                departmentId: record.departmentId || undefined,
-                isActive: true,
-                status: 'ACTIVE',
-                mustChangePassword: isTempPass,
-              }
-            })
-            userId = user.id
-            loginAccountsCreated++
-          } catch (userErr: any) {
-            console.error(`Login account creation failed for ${record.email}:`, userErr)
-            failedLoginAccounts++
-          }
+        if (res.user) {
+          loginAccountsCreated++
         }
 
-        // UPSERT STUDENT PROFILE
-        const student = await db.student.upsert({
-          where: { registerNumber: record.regNo },
-          update: {
-            name: record.name,
-            email: record.email,
-            phone: record.phone || undefined,
-            ...(userId ? { userId } : {}),
-            departmentId: record.departmentId || undefined,
-            semester: record.semester,
-            section: record.section,
-            batch: record.batch,
-            cgpa: record.cgpa,
-          },
-          create: {
-            registerNumber: record.regNo,
-            name: record.name,
-            email: record.email,
-            phone: record.phone || null,
-            userId: userId || null,
-            departmentId: record.departmentId || undefined,
-            semester: record.semester,
-            section: record.section,
-            batch: record.batch,
-            cgpa: record.cgpa,
-          },
-          include: {
-            user: { select: { id: true, email: true, name: true, role: true, status: true } },
-            department: { select: { id: true, name: true, code: true } },
-          }
-        })
+        const student = res.profile
 
         importedStudents.push({
           id: student.id,
           registerNumber: student.registerNumber,
-          name: record.name,
-          email: record.email,
-          loginAccess: Boolean(student.userId || userId),
+          name: student.name || record.name,
+          email: student.email || record.email,
+          loginAccess: Boolean(student.userId || res.user?.id),
           department: student.department?.name || 'Assigned Department',
           semester: student.semester,
           section: student.section,
@@ -258,8 +212,10 @@ export async function POST(request: NextRequest) {
       } catch (err: any) {
         console.error(`Error importing student ${record.regNo}:`, err)
         importErrors.push(`Row ${record.row} (${record.regNo}): ${err.message || 'Import failed'}`)
+        if (createLoginAccess) failedLoginAccounts++
       }
     }
+
 
     return NextResponse.json({
       success: true,
