@@ -63,35 +63,39 @@ export async function POST(request: NextRequest) {
 
     let pdfBuffer: Buffer | null = null
 
-    // Method 1: Try Playwright first if available
+    // Serverless-first approach: PDFKit is guaranteed to work on Vercel Node runtime with zero binary dependencies
     try {
-      const nietLogoDataUrl = imageToBase64DataUrl('niet-logo.png')
-      const nehrugroupLogoDataUrl = imageToBase64DataUrl('nehrugroup-logo.png')
-      const htmlContent = generateReportHTML(reportData, department, nietLogoDataUrl, nehrugroupLogoDataUrl)
-
-      const tempDir = process.env.VERCEL || process.env.NODE_ENV === 'production' ? '/tmp' : tmpdir()
-      if (!existsSync(tempDir)) {
-        try { mkdirSync(tempDir, { recursive: true }) } catch (e) {}
-      }
-
-      const timestamp = Date.now()
-      tempHtmlPath = join(tempDir, `report_${timestamp}.html`)
-      tempPdfPath = join(tempDir, `report_${timestamp}.pdf`)
-      
-      try { writeFileSync(tempHtmlPath, htmlContent) } catch (e) {}
-
-      await generateWithPlaywright(htmlContent, tempPdfPath)
-      if (existsSync(tempPdfPath)) {
-        pdfBuffer = readFileSync(tempPdfPath)
-      }
-    } catch (playwrightError) {
-      console.warn('[PDF DEBUG] Playwright unavailable in serverless environment, switching to PDFKit engine:', playwrightError)
-    }
-
-    // Method 2: Fallback to PDFKit for guaranteed serverless PDF generation
-    if (!pdfBuffer) {
       console.log('[PDF DEBUG] Generating PDF with PDFKit engine for department:', department)
       pdfBuffer = await generatePdfWithPdfKit(reportData, department)
+    } catch (pdfkitError: any) {
+      console.warn('[PDF DEBUG] PDFKit engine warning, attempting Playwright fallback:', pdfkitError)
+    }
+
+    // Secondary fallback: Try Playwright if PDFKit fails
+    if (!pdfBuffer) {
+      try {
+        const nietLogoDataUrl = imageToBase64DataUrl('niet-logo.png')
+        const nehrugroupLogoDataUrl = imageToBase64DataUrl('nehrugroup-logo.png')
+        const htmlContent = generateReportHTML(reportData, department, nietLogoDataUrl, nehrugroupLogoDataUrl)
+
+        const tempDir = process.env.VERCEL || process.env.NODE_ENV === 'production' ? '/tmp' : tmpdir()
+        if (!existsSync(tempDir)) {
+          try { mkdirSync(tempDir, { recursive: true }) } catch (e) {}
+        }
+
+        const timestamp = Date.now()
+        tempHtmlPath = join(tempDir, `report_${timestamp}.html`)
+        tempPdfPath = join(tempDir, `report_${timestamp}.pdf`)
+        
+        try { writeFileSync(tempHtmlPath, htmlContent) } catch (e) {}
+
+        await generateWithPlaywright(htmlContent, tempPdfPath)
+        if (existsSync(tempPdfPath)) {
+          pdfBuffer = readFileSync(tempPdfPath)
+        }
+      } catch (playwrightError: any) {
+        console.error('[PDF DEBUG] Playwright fallback also failed:', playwrightError)
+      }
     }
 
     // Clean up temp files
@@ -99,6 +103,10 @@ export async function POST(request: NextRequest) {
       if (tempHtmlPath && existsSync(tempHtmlPath)) unlinkSync(tempHtmlPath)
       if (tempPdfPath && existsSync(tempPdfPath)) unlinkSync(tempPdfPath)
     } catch (e) {}
+
+    if (!pdfBuffer) {
+      throw new Error('PDF generation produced an empty binary buffer')
+    }
 
     const filename = `Monthly_Department_Report_${department || 'NIET'}_${reportData?.reportingMonth || 'Report'}_${reportData?.reportingYear || new Date().getFullYear()}.pdf`
 
@@ -111,7 +119,10 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error: any) {
-    console.error('[PDF DEBUG ERROR] PDF generation error:', error)
+    console.error('[PDF DEBUG ERROR] PDF generation stage error details:', {
+      message: error?.message || 'Unknown error',
+      stack: error?.stack || 'No stack trace available'
+    })
     
     // Cleanup on error
     try {
@@ -131,7 +142,7 @@ export async function POST(request: NextRequest) {
       })
     } catch (fallbackErr: any) {
       console.error('[PDF DEBUG FALLBACK ERROR]', fallbackErr)
-      return NextResponse.json({ error: 'Failed to generate PDF: ' + error.message }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to generate PDF: ' + (error?.message || 'Internal error') }, { status: 500 })
     }
   }
 }
@@ -411,7 +422,7 @@ function generatePdfWithPdfKit(reportData: any, department: string): Promise<Buf
       }
 
       doc.fontSize(8).fillColor('#475569')
-      const sigGap = pageWidth / 4
+      const sigGap = pageWidth / 4;
       ['Head of Department (HoD)', 'School Dean', 'Head - IQAC', 'Vice Principal / Principal'].forEach((label, i) => {
         const x = startX + i * sigGap
         doc.text('________________________', x, y, { width: sigGap, align: 'center' })

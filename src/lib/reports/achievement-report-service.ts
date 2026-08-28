@@ -1837,13 +1837,15 @@ export async function generateAchievementExcel(filters: FilterOptions): Promise<
 
     // Table Header Row 8
     const headerRow = ws.getRow(8)
-    schema.columns.forEach((colName, cIdx) => {
+    const safeColumns = schema && Array.isArray(schema.columns) ? schema.columns : []
+    const safeAlignments = schema && Array.isArray(schema.alignments) ? schema.alignments : []
+    safeColumns.forEach((colName, cIdx) => {
       const cell = headerRow.getCell(cIdx + 1)
       cell.value = colName
       cell.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF123B72' } }
       cell.alignment = {
-        horizontal: schema.alignments[cIdx] || 'left',
+        horizontal: safeAlignments[cIdx] || 'left',
         vertical: 'middle',
         wrapText: true
       }
@@ -1884,8 +1886,8 @@ export async function generateAchievementExcel(filters: FilterOptions): Promise<
 
         rowValues.forEach((cellVal: any, colIdx: number) => {
           const cell = row.getCell(colIdx + 1)
-          const colName = schema.columns[colIdx] || ''
-          const isAlign = schema.alignments[colIdx] || 'left'
+          const colName = safeColumns[colIdx] || ''
+          const isAlign = safeAlignments[colIdx] || 'left'
           const isUrlCol = colName.toLowerCase().includes('link') || colName.toLowerCase().includes('proof') || colName.toLowerCase().includes('report')
 
           cell.font = { name: 'Times New Roman', size: 10, color: { argb: 'FF0F172A' } }
@@ -1935,7 +1937,7 @@ export async function generateAchievementExcel(filters: FilterOptions): Promise<
     }
 
     // Dynamic column widths calculation
-    schema.columns.forEach((colName, cIdx) => {
+    safeColumns.forEach((colName, cIdx) => {
       let maxLen = colName.length
       ;(Array.isArray(records) ? records : []).forEach(r => {
         if (!Array.isArray(r)) return

@@ -100,6 +100,8 @@ export function AchievementReportGenerator({ user }: { user: User }) {
     columnCount: number
     columns: string[]
     rows: any[][]
+    achievementCounts?: Record<string, number>
+    previewRows?: any[][]
   } | null>(null)
 
   // Fetch departments & users list on load or dept/userType change
@@ -304,7 +306,7 @@ export function AchievementReportGenerator({ user }: { user: User }) {
             return (
               <button
                 key={sec.code}
-                onClick={() => setAchievementType(sec.code === 'ALL' ? 'ALL' : sec.type)}
+                onClick={() => setAchievementType(sec.code === 'ALL' ? 'ALL' : (sec.type || 'ALL'))}
                 className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-xs ${
                   isSelected
                     ? 'bg-gradient-to-r from-[#0B1F3A] to-[#123B72] text-white ring-2 ring-[#123B72]/30 shadow-md'
@@ -587,13 +589,13 @@ export function AchievementReportGenerator({ user }: { user: User }) {
           ) : previewData ? (
             <div className="space-y-4">
               {/* Summary Counts Grid if All Achievements is selected */}
-              {achievementType === 'ALL' && (
+              {achievementType === 'ALL' && previewData.achievementCounts && (
                 <div className="p-6 bg-slate-50/80 border-b border-slate-200">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
                     Institutional Achievement Distribution
                   </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                    {Object.entries(previewData.achievementCounts).map(([key, count]) => (
+                    {Object.entries(previewData.achievementCounts || {}).map(([key, count]) => (
                       <div
                         key={key}
                         className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col justify-between"
@@ -626,7 +628,7 @@ export function AchievementReportGenerator({ user }: { user: User }) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {previewData.previewRows.length === 0 ? (
+                    {(previewData.previewRows || []).length === 0 ? (
                       <tr>
                         <td
                           colSpan={previewData.columns.length}
@@ -636,7 +638,7 @@ export function AchievementReportGenerator({ user }: { user: User }) {
                         </td>
                       </tr>
                     ) : (
-                      previewData.previewRows.map((row, rIdx) => (
+                      (previewData.previewRows || []).map((row, rIdx) => (
                         <tr
                           key={rIdx}
                           className={rIdx % 2 === 0 ? 'bg-white hover:bg-slate-50' : 'bg-slate-50/70 hover:bg-slate-100/70'}
@@ -654,9 +656,9 @@ export function AchievementReportGenerator({ user }: { user: User }) {
               </div>
 
               {/* Preview Footer note */}
-              {previewData.previewRows.length > 0 && achievementType !== 'ALL' && (
+              {previewData.previewRows && previewData.previewRows.length > 0 && achievementType !== 'ALL' && (
                 <div className="p-4 bg-slate-50 border-t border-slate-100 text-center text-xs text-slate-500 font-medium">
-                  Showing first {Math.min(10, previewData.previewRows.length)} of {previewData.recordsFound} records in preview.
+                  Showing first {Math.min(10, (previewData.previewRows || []).length)} of {previewData.recordsFound} records in preview.
                   Click <strong className="text-slate-800">Generate Official Excel Report</strong> to download all records with full NIET formatting.
                 </div>
               )}
