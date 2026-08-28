@@ -142,12 +142,13 @@ export async function POST(request: NextRequest) {
           const hashedPassword = await hashPassword(passToUse)
 
           try {
+            const validDeptId = departmentId || null
             const user = await db.user.upsert({
               where: { email: record.email },
               update: {
                 name: record.name,
                 phone: record.phone || undefined,
-                departmentId,
+                departmentId: validDeptId || undefined,
                 role: record.isHOD ? 'HOD' : 'STAFF',
                 isActive: true,
                 status: 'ACTIVE',
@@ -158,7 +159,7 @@ export async function POST(request: NextRequest) {
                 name: record.name,
                 role: record.isHOD ? 'HOD' : 'STAFF',
                 phone: record.phone || null,
-                departmentId,
+                departmentId: validDeptId,
                 isActive: true,
                 status: 'ACTIVE',
                 mustChangePassword: isTempPass,

@@ -57,6 +57,31 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
     let userId: string | null = null
     let user: any = null
 
+    // 1. Resolve departmentId safely to a valid Department primary key cuid (supports cuid and code like 'CSE')
+    let validDeptId: string | null = null
+    if (departmentId && departmentId !== 'ALL' && departmentId !== 'none' && departmentId !== 'null') {
+      const existingDept = await tx.department.findFirst({
+        where: {
+          OR: [
+            { id: departmentId },
+            { code: departmentId }
+          ]
+        },
+        select: { id: true }
+      })
+      if (existingDept) {
+        validDeptId = existingDept.id
+      }
+    }
+
+    // Fallback for Student/Staff/HOD roles if no valid departmentId was passed
+    if (!validDeptId && (targetRole === 'STUDENT' || targetRole === 'STAFF' || targetRole === 'HOD')) {
+      const firstDept = await tx.department.findFirst({ select: { id: true } })
+      if (firstDept) {
+        validDeptId = firstDept.id
+      }
+    }
+
     // If login access is requested, create or update central User record
     if (createLoginAccess) {
       const rawPassword = password && password.trim() ? password.trim() : '12345678'
@@ -69,7 +94,7 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
           name: normalizedName,
           phone: phone || undefined,
           role: targetRole,
-          departmentId: departmentId || undefined,
+          departmentId: validDeptId || undefined,
           isActive: true,
           status: 'ACTIVE',
           ...(password ? { password: hashedPassword } : {}),
@@ -79,7 +104,7 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
           email: normalizedEmail,
           password: hashedPassword,
           role: targetRole,
-          departmentId: departmentId || undefined,
+          departmentId: validDeptId || null,
           phone: phone || null,
           isActive: true,
           status: 'ACTIVE',
@@ -118,7 +143,7 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
             email: normalizedEmail,
             phone: phone || undefined,
             ...(userId ? { userId } : {}),
-            departmentId: departmentId || existingStudent.departmentId,
+            departmentId: validDeptId || existingStudent.departmentId,
             semester: semester ? parseInt(String(semester)) : existingStudent.semester,
             section: section || existingStudent.section,
             batch: batch || existingStudent.batch,
@@ -129,7 +154,7 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
           }
         })
       } else {
-        if (!departmentId) {
+        if (!validDeptId) {
           throw new Error('Department is required for Student creation')
         }
         profile = await tx.student.create({
@@ -139,7 +164,7 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
             email: normalizedEmail,
             phone: phone || null,
             userId: userId || null,
-            departmentId,
+            departmentId: validDeptId,
             semester: semester ? parseInt(String(semester)) : 1,
             section: section || 'A',
             batch: batch || null,
@@ -151,7 +176,7 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
         })
       }
     } else if (targetRole === 'STAFF' || targetRole === 'HOD' || targetRole === 'ADMIN' || targetRole === 'SUPER_ADMIN') {
-      if (departmentId || targetRole === 'STAFF' || targetRole === 'HOD') {
+      if (validDeptId || targetRole === 'STAFF' || targetRole === 'HOD') {
         const empId = employeeId
           ? employeeId.trim()
           : `EMP${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 100)}`
@@ -173,7 +198,7 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
               email: normalizedEmail,
               phone: phone || undefined,
               ...(userId ? { userId } : {}),
-              departmentId: departmentId || existingFaculty.departmentId,
+              departmentId: validDeptId || existingFaculty.departmentId,
               designation: designation || existingFaculty.designation,
               qualification: qualification || existingFaculty.qualification,
               isHOD: targetRole === 'HOD',
@@ -183,7 +208,7 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
               department: { select: { id: true, name: true, code: true } }
             }
           })
-        } else if (departmentId) {
+        } else if (validDeptId) {
           profile = await tx.faculty.create({
             data: {
               employeeId: empId,
@@ -191,7 +216,7 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
               email: normalizedEmail,
               phone: phone || null,
               userId: userId || null,
-              departmentId,
+              departmentId: validDeptId,
               designation: designation || (targetRole === 'HOD' ? 'Head of Department' : 'Assistant Professor'),
               qualification: qualification || null,
               isHOD: targetRole === 'HOD',
