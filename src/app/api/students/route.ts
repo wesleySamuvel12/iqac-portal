@@ -14,7 +14,25 @@ export async function GET(request: NextRequest) {
     const semester = searchParams.get('semester')
 
     const where: any = {}
-    if (departmentId) where.departmentId = departmentId
+
+    // Resolve valid departmentId (supports department code, ID cuid, or ignore if 'ALL'/'undefined'/'null')
+    if (departmentId && departmentId !== 'undefined' && departmentId !== 'null' && departmentId !== 'ALL' && departmentId !== 'all') {
+      const dept = await db.department.findFirst({
+        where: {
+          OR: [
+            { id: departmentId },
+            { code: departmentId }
+          ]
+        },
+        select: { id: true }
+      })
+      if (dept) {
+        where.departmentId = dept.id
+      } else {
+        where.departmentId = departmentId
+      }
+    }
+
     if (batchId) where.batchId = batchId
     if (semester) where.semester = parseInt(semester)
     if (search) {

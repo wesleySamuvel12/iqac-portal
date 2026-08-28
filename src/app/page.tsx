@@ -10043,7 +10043,10 @@ function StaffManagementPage({ user }: { user: User }) {
   const fetchStudents = async () => {
     try {
       setLoading(true)
-      const res = await fetch(`/api/students?departmentId=${user.departmentId}&limit=200`)
+      const deptQuery = user?.departmentId && user.departmentId !== 'undefined' && user.departmentId !== 'null' && user.departmentId !== 'ALL'
+        ? `departmentId=${user.departmentId}&`
+        : ''
+      const res = await fetch(`/api/students?${deptQuery}limit=500`)
       const data = await res.json()
       if (data.success) {
         setStudents(data.students || [])
@@ -10057,10 +10060,12 @@ function StaffManagementPage({ user }: { user: User }) {
   
   // Filter students by search and optionally by year
   const filteredStudents = students.filter(s => {
-    const matchesSearch = s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          s.registerNumber?.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesYear = !selectedYear || s.semester === selectedYear || 
-                        `${s.semester}${getYearSuffix(s.semester)}`.toLowerCase() === selectedYear.toLowerCase() ||
+    const q = searchQuery.trim().toLowerCase()
+    const matchesSearch = !q ||
+                          (s.name || '').toLowerCase().includes(q) ||
+                          (s.registerNumber || '').toLowerCase().includes(q) ||
+                          (s.user?.email || s.email || '').toLowerCase().includes(q)
+    const matchesYear = !selectedYear || 
                         getYearFromSemester(s.semester) === selectedYear
     return matchesSearch && matchesYear
   })
