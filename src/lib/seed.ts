@@ -192,6 +192,8 @@ export async function seedDatabase() {
                 await db.student.create({
                   data: {
                     registerNumber: `${dept.code}${String(2024000 + i).padStart(7, '0')}`,
+                    name: `${dept.code} Student ${i}`,
+                    email: studentEmail,
                     userId: studentUser.id,
                     departmentId: dept.id,
                     semester: (i % 8) + 1,

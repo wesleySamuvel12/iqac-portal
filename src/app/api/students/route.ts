@@ -60,9 +60,16 @@ export async function GET(request: NextRequest) {
       db.student.count({ where }),
     ])
 
+    const formattedStudents = students.map(s => ({
+      ...s,
+      name: s.name || s.user?.name || `Student (${s.registerNumber})`,
+      email: s.email || s.user?.email || '',
+      phone: s.phone || s.user?.phone || null,
+    }))
+
     return NextResponse.json({
       success: true,
-      students,
+      students: formattedStudents,
       pagination: {
         page,
         limit,
