@@ -53,6 +53,13 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
   const normalizedName = name.trim()
   const targetRole = (role as string).toUpperCase() as UserRole
 
+  // Hash password outside of transaction to prevent CPU-heavy bcrypt operations from causing Prisma transaction timeouts
+  let hashedPassword = ''
+  if (createLoginAccess) {
+    const rawPassword = password && password.trim() ? password.trim() : '12345678'
+    hashedPassword = await hashPassword(rawPassword)
+  }
+
   return await db.$transaction(async (tx) => {
     let userId: string | null = null
     let user: any = null
@@ -84,9 +91,6 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
 
     // If login access is requested, create or update central User record
     if (createLoginAccess) {
-      const rawPassword = password && password.trim() ? password.trim() : '12345678'
-      const hashedPassword = await hashPassword(rawPassword)
-
       // Upsert User
       user = await tx.user.upsert({
         where: { email: normalizedEmail },
@@ -230,22 +234,26 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
       }
     }
 
-    // Audit log
+    // Audit log safely inside transaction
     if (user) {
-      await tx.auditLog.create({
-        data: {
-          userId: user.id,
-          action: 'CREATE_OR_UPDATE_USER',
-          entityType: 'USER',
-          entityId: user.id,
-          newValue: JSON.stringify({
-            role: user.role,
-            email: user.email,
-            createLoginAccess,
-            createdBy: createdBy || 'System'
-          })
-        }
-      })
+      try {
+        await tx.auditLog.create({
+          data: {
+            userId: user.id,
+            action: 'CREATE_OR_UPDATE_USER',
+            entityType: 'USER',
+            entityId: user.id,
+            newValue: JSON.stringify({
+              role: user.role,
+              email: user.email,
+              createLoginAccess,
+              createdBy: createdBy || 'System'
+            })
+          }
+        })
+      } catch (auditErr) {
+        console.warn('Non-critical audit log creation skipped:', auditErr)
+      }
     }
 
     return {
@@ -253,5 +261,8 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
       profile,
       loginAccess: Boolean(userId),
     }
+  }, {
+    timeout: 15000,
+    maxWait: 10000,
   })
 }

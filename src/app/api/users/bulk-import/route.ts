@@ -133,6 +133,9 @@ export async function POST(request: NextRequest) {
           }
 
           createdUsers.push({ id: newUser.id, email: newUser.email, name: newUser.name, role: newUser.role })
+        }, {
+          timeout: 15000,
+          maxWait: 10000,
         })
       } catch (err: any) {
         skippedRows.push({ row: i + 1, email, reason: err.message || 'Database creation error' })

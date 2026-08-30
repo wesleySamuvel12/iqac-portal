@@ -66,8 +66,15 @@ export async function POST(request: NextRequest) {
     const validRecords: any[] = []
     const invalidRecords: { row: number; employeeId?: string; name?: string; error: string }[] = []
 
-    const existingUsers = await db.user.findMany({ select: { email: true } })
-    const existingEmailsInDb = new Set(existingUsers.map(u => u.email.toLowerCase()))
+    const [existingUsers, existingFaculty] = await Promise.all([
+      db.user.findMany({ select: { email: true } }),
+      db.faculty.findMany({ select: { email: true, employeeId: true } })
+    ])
+    const existingEmailsInDb = new Set([
+      ...existingUsers.map(u => u.email.toLowerCase()),
+      ...existingFaculty.map(f => f.email?.toLowerCase()).filter((e): e is string => Boolean(e))
+    ])
+    const existingEmpIdsInDb = new Set(existingFaculty.map(f => f.employeeId.toLowerCase()))
 
     for (let i = 1; i < lines.length; i++) {
       const rowNum = i + 1
@@ -96,7 +103,7 @@ export async function POST(request: NextRequest) {
         isHOD = hodValue === 'true' || hodValue === 'yes' || hodValue === '1' || hodValue === 'hod'
       }
 
-      const isDuplicate = existingEmailsInDb.has(email)
+      const isDuplicate = existingEmailsInDb.has(email) || existingEmpIdsInDb.has(employeeId.toLowerCase())
 
       validRecords.push({
         row: rowNum,

@@ -45,8 +45,8 @@ export function CSVImportModal({
     validRecords: any[]
   } | null>(null)
 
-  // Login Access choice - DEFAULT IS FALSE (NO)
-  const [createLoginAccess, setCreateLoginAccess] = useState<boolean>(false)
+  // Login Access choice - DEFAULT IS TRUE (YES)
+  const [createLoginAccess, setCreateLoginAccess] = useState<boolean>(true)
 
   // Final Results state
   const [resultsData, setResultsData] = useState<{
@@ -65,7 +65,7 @@ export function CSVImportModal({
     setStep('upload')
     setFile(null)
     setValidationData(null)
-    setCreateLoginAccess(false)
+    setCreateLoginAccess(true)
     setResultsData(null)
   }
 
@@ -404,9 +404,9 @@ export function CSVImportModal({
                       className="mt-1 w-4 h-4 text-indigo-500 accent-indigo-500 cursor-pointer"
                     />
                     <div>
-                      <span className="font-bold text-sm text-white block">Yes, create login access</span>
+                      <span className="font-bold text-sm text-cyan-300 block">Yes, create login access (Recommended)</span>
                       <span className="text-[11px] text-indigo-200 block">
-                        Creates user accounts in central database with temporary passwords. Users can immediately log in.
+                        Creates user accounts in central database with login passwords. Users can immediately log in and will appear in user management.
                       </span>
                     </div>
                   </label>
@@ -422,7 +422,7 @@ export function CSVImportModal({
                       className="mt-1 w-4 h-4 text-indigo-500 accent-indigo-500 cursor-pointer"
                     />
                     <div>
-                      <span className="font-bold text-sm text-cyan-300 block">No, import records without login access (Recommended)</span>
+                      <span className="font-bold text-sm text-white block">No, import records without login access</span>
                       <span className="text-[11px] text-gray-300 block">
                         Imports student/staff database profiles only. No login accounts are created now. Login access can be allocated later.
                       </span>

@@ -71,11 +71,15 @@ export async function POST(request: NextRequest) {
     // STEP 1: PRE-VALIDATION PHASE
     const validRecords: any[] = []
     const invalidRecords: { row: number; regNo?: string; name?: string; email?: string; error: string }[] = []
-    const existingEmailsInDb = new Set<string>()
-
-    // Fetch existing users/students to detect duplicates
-    const existingUsers = await db.user.findMany({ select: { email: true } })
-    existingUsers.forEach(u => existingEmailsInDb.add(u.email.toLowerCase()))
+    const [existingUsers, existingStudents] = await Promise.all([
+      db.user.findMany({ select: { email: true } }),
+      db.student.findMany({ select: { email: true, registerNumber: true } })
+    ])
+    const existingEmailsInDb = new Set([
+      ...existingUsers.map(u => u.email.toLowerCase()),
+      ...existingStudents.map(s => s.email?.toLowerCase()).filter((e): e is string => Boolean(e))
+    ])
+    const existingRegNosInDb = new Set(existingStudents.map(s => s.registerNumber.toLowerCase()))
 
     for (const record of records) {
       const rowNum = record._rowNumber || validRecords.length + invalidRecords.length + 2
@@ -129,7 +133,7 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      const isDuplicate = existingEmailsInDb.has(email)
+      const isDuplicate = existingEmailsInDb.has(email) || existingRegNosInDb.has(regNo.toLowerCase())
 
       validRecords.push({
         row: rowNum,
