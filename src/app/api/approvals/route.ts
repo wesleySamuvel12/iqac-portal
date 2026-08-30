@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/approvals - Process Multi-Stage Approval (Staff -> HOD -> Approved)
+// POST /api/approvals - Direct Authorization (Staff approves Students, HOD approves Staff)
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
@@ -189,22 +189,15 @@ export async function POST(request: NextRequest) {
     const roleUpper = (reviewerRole || 'STAFF').toUpperCase()
 
     const updatedResult = await db.$transaction(async (tx) => {
-      let nextStage = approval?.currentStage || 'STAFF_REVIEW'
-      let finalStatus: ApprovalStatus = 'PENDING'
+      let nextStage = 'APPROVED'
+      let finalStatus: ApprovalStatus = 'APPROVED'
 
       if (actionLower === 'reject') {
         finalStatus = 'REJECTED'
         nextStage = 'REJECTED'
-      } else if (actionLower === 'approve') {
-        if (roleUpper === 'STAFF' || approval?.currentStage === 'STAFF_REVIEW') {
-          // Staff approval -> Move to HOD Review stage!
-          nextStage = 'HOD_REVIEW'
-          finalStatus = 'PENDING' // Awaiting HOD review
-        } else if (roleUpper === 'HOD' || roleUpper === 'ADMIN' || roleUpper === 'SUPER_ADMIN' || approval?.currentStage === 'HOD_REVIEW') {
-          // HOD approval -> Final Approval!
-          nextStage = 'APPROVED'
-          finalStatus = 'APPROVED'
-        }
+      } else {
+        finalStatus = 'APPROVED'
+        nextStage = 'APPROVED'
       }
 
       let updatedApproval = null
@@ -216,7 +209,7 @@ export async function POST(request: NextRequest) {
             currentStage: nextStage,
             reviewedBy: reviewerName || reviewedBy || roleUpper,
             reviewedAt: new Date(),
-            comments: comments || (finalStatus === 'APPROVED' ? 'Approved by HOD' : nextStage === 'HOD_REVIEW' ? 'Approved by Staff - Sent to HOD' : 'Rejected'),
+            comments: comments || (finalStatus === 'APPROVED' ? `Approved by ${roleUpper}` : 'Rejected'),
           }
         })
       }
@@ -237,8 +230,22 @@ export async function POST(request: NextRequest) {
           }
         })
 
-        // Notify HOD if approved by Staff
-        if (nextStage === 'HOD_REVIEW' && updatedAchievement?.student?.departmentId) {
+        // Notify Student when approved or rejected
+        if (updatedAchievement?.student?.userId) {
+          await tx.notification.create({
+            data: {
+              title: `Achievement Submission ${finalStatus === 'APPROVED' ? 'Approved ✓' : 'Rejected ✕'}`,
+              message: `Your achievement '${updatedAchievement.title}' has been ${finalStatus === 'APPROVED' ? 'approved by ' + (reviewerName || roleUpper) : 'rejected'}${comments ? ': ' + comments : ''}`,
+              type: finalStatus === 'APPROVED' ? 'APPROVED' : 'REJECTED',
+              userId: updatedAchievement.student.userId,
+              relatedId: updatedAchievement.id,
+              entityType: 'ACHIEVEMENT'
+            }
+          })
+        }
+
+        // Notify HOD when a student achievement is approved by staff so HOD is updated
+        if (finalStatus === 'APPROVED' && roleUpper === 'STAFF' && updatedAchievement?.student?.departmentId) {
           const hodUsers = await tx.user.findMany({
             where: {
               departmentId: updatedAchievement.student.departmentId,
@@ -249,29 +256,15 @@ export async function POST(request: NextRequest) {
           for (const hod of hodUsers) {
             await tx.notification.create({
               data: {
-                title: 'Staff Approved - Pending HOD Review',
-                message: `Staff approved submission '${updatedAchievement.title}' by ${updatedAchievement.student.name || 'Student'}. Awaiting your final HOD review.`,
-                type: 'APPROVAL_REQUIRED',
+                title: 'Student Achievement Approved',
+                message: `Staff ${reviewerName || 'Staff'} approved student achievement '${updatedAchievement.title}' by ${updatedAchievement.student.name || 'Student'}.`,
+                type: 'SYSTEM',
                 userId: hod.id,
-                relatedId: approval?.id || updatedAchievement.id,
+                relatedId: updatedAchievement.id,
                 entityType: 'ACHIEVEMENT'
               }
             })
           }
-        }
-
-        // Notify Student when approved by HOD or rejected
-        if ((finalStatus === 'APPROVED' || finalStatus === 'REJECTED') && updatedAchievement?.student?.userId) {
-          await tx.notification.create({
-            data: {
-              title: `Achievement Submission ${finalStatus === 'APPROVED' ? 'Approved ✓' : 'Rejected ✕'}`,
-              message: `Your achievement '${updatedAchievement.title}' has been ${finalStatus === 'APPROVED' ? 'approved by HOD' : 'rejected'}${comments ? ': ' + comments : ''}`,
-              type: finalStatus === 'APPROVED' ? 'APPROVED' : 'REJECTED',
-              userId: updatedAchievement.student.userId,
-              relatedId: updatedAchievement.id,
-              entityType: 'ACHIEVEMENT'
-            }
-          })
         }
       }
 
@@ -280,9 +273,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: updatedResult.nextStage === 'HOD_REVIEW' 
-        ? 'Approved by Staff! Submission forwarded to HOD for final review.' 
-        : `Achievement ${updatedResult.finalStatus === 'APPROVED' ? 'approved by HOD' : 'rejected'} successfully`,
+      message: `Submission ${updatedResult.finalStatus === 'APPROVED' ? 'approved successfully' : 'rejected'}`,
       approval: updatedResult.approval,
       achievement: updatedResult.achievement,
       stage: updatedResult.nextStage,

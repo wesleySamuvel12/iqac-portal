@@ -4855,32 +4855,61 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
     }
   }, [user.departmentId, user.departmentName])
 
-  // Fetch pending approvals from database
+  // Fetch pending approvals & student achievements from database for HOD tab
   const fetchHodApprovals = useCallback(async () => {
     try {
       const deptQuery = user.departmentId ? `&departmentId=${user.departmentId}` : ''
-      const res = await fetch(`/api/approvals?status=PENDING&stage=HOD_REVIEW${deptQuery}`, {
-        headers: { 'x-user-role': 'HOD' }
-      })
-      const data = await res.json()
-      if (data.success && Array.isArray(data.approvals)) {
-        const mapped = data.approvals.map((app: any) => ({
-          id: app.id,
-          achievementId: app.entityId || app.achievement?.id,
-          studentName: app.studentName || app.achievement?.student?.name || 'Student',
-          reg: app.registerNumber || app.achievement?.student?.registerNumber || 'N/A',
-          type: app.achievement?.type || 'Achievement',
-          typeName: app.achievement?.type || 'Achievement',
-          title: app.achievement?.title || app.comments || 'Achievement Submission',
-          description: app.achievement?.description || '',
-          date: app.achievement?.achievedDate ? new Date(app.achievement.achievedDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-          status: 'pending_hod',
-          level: app.achievement?.level || 'Department',
-          dept: app.departmentName || user.departmentName,
-          submittedAt: app.createdAt,
+      const [approvalsRes, achievementsRes] = await Promise.all([
+        fetch(`/api/approvals?status=PENDING${deptQuery}`, { headers: { 'x-user-role': 'HOD' } }),
+        fetch(`/api/achievements?departmentId=${user.departmentId || ''}`)
+      ])
+      const data = await approvalsRes.json()
+      const achData = await achievementsRes.json()
+
+      let combined: any[] = []
+
+      if (achData.success && Array.isArray(achData.achievements)) {
+        combined = achData.achievements.map((ach: any) => ({
+          id: ach.id,
+          achievementId: ach.id,
+          studentName: ach.student?.name || ach.student?.user?.name || 'Student',
+          reg: ach.student?.registerNumber || 'N/A',
+          type: ach.type || 'Achievement',
+          typeName: ach.type || 'Achievement',
+          title: ach.title || 'Achievement Submission',
+          description: ach.description || '',
+          date: ach.achievedDate ? new Date(ach.achievedDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          status: ach.approvalStatus?.toLowerCase() === 'approved' ? 'approved' : ach.approvalStatus?.toLowerCase() === 'rejected' ? 'rejected' : 'pending_staff',
+          level: ach.level || 'Department',
+          dept: ach.student?.department?.name || user.departmentName,
+          submittedAt: ach.createdAt,
         }))
-        setStudentAchievements(mapped)
       }
+
+      if (data.success && Array.isArray(data.approvals)) {
+        const approvalMap = new Set(combined.map(c => c.id))
+        data.approvals.forEach((app: any) => {
+          if (!approvalMap.has(app.entityId || app.id)) {
+            combined.push({
+              id: app.id,
+              achievementId: app.entityId || app.achievement?.id,
+              studentName: app.studentName || app.achievement?.student?.name || 'Student',
+              reg: app.registerNumber || app.achievement?.student?.registerNumber || 'N/A',
+              type: app.achievement?.type || 'Achievement',
+              typeName: app.achievement?.type || 'Achievement',
+              title: app.achievement?.title || app.comments || 'Achievement Submission',
+              description: app.achievement?.description || '',
+              date: app.achievement?.achievedDate ? new Date(app.achievement.achievedDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+              status: app.status === 'APPROVED' ? 'approved' : 'pending_staff',
+              level: app.achievement?.level || 'Department',
+              dept: app.departmentName || user.departmentName,
+              submittedAt: app.createdAt,
+            })
+          }
+        })
+      }
+
+      setStudentAchievements(combined)
     } catch (e) {
       console.error('Failed to fetch HOD approvals:', e)
     }
