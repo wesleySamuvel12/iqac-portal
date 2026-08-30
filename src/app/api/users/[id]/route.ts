@@ -102,6 +102,8 @@ export async function PUT(
 
     if (password && password.trim().length > 0) {
       updateData.password = await hashPassword(password.trim())
+      updateData.isActive = true
+      updateData.status = 'ACTIVE'
     }
 
     const updatedUser = await db.user.update({
