@@ -284,14 +284,6 @@ export function DepartmentCredentialManager({
             <UserPlus className="w-4 h-4" />
             Create {targetRole} Login Account
           </Button>
-          <Button
-            onClick={() => { setShowImportModal(true); setImportResults(null); setImportFile(null); }}
-            variant="outline"
-            className="bg-slate-50 hover:bg-slate-100 border-slate-200 font-bold rounded-xl text-xs px-3.5 py-2 flex items-center gap-1.5"
-          >
-            <Upload className="w-3.5 h-3.5 text-indigo-600" />
-            Import CSV
-          </Button>
         </div>
       </div>
 

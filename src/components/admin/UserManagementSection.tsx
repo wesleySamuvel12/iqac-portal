@@ -406,14 +406,6 @@ export function UserManagementSection({ user }: UserManagementSectionProps) {
             <UserPlus className="w-4 h-4" />
             Add {activeRoleTab} User
           </Button>
-          <Button
-            onClick={() => { setShowImportModal(true); setImportResults(null); setImportFile(null); }}
-            variant="outline"
-            className="bg-white/10 hover:bg-white/20 text-white border-white/20 font-bold rounded-xl flex items-center gap-2 px-4 py-2.5 text-sm"
-          >
-            <Upload className="w-4 h-4 text-cyan-300" />
-            Import CSV
-          </Button>
         </div>
       </motion.div>
 
