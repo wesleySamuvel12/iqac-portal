@@ -8736,29 +8736,41 @@ function ResearchPage() {
 // ============ APPROVALS PAGE ============
 function ApprovalsPage({ user }: { user?: User }) {
   const [approvals, setApprovals] = useState<any[]>([])
+  const [monitoringItems, setMonitoringItems] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState<'actionable' | 'monitoring'>('actionable')
   const [counts, setCounts] = useState({ pending: 0, approved: 0, rejected: 0 })
+
+  const isHod = user?.role === 'HOD'
+  const isStaff = user?.role === 'STAFF'
 
   const fetchApprovalsData = useCallback(async () => {
     setLoading(true)
     try {
       const deptQuery = user?.departmentId ? `&departmentId=${user.departmentId}` : ''
+      const roleQuery = `&role=${user?.role || 'STAFF'}`
       
-      const [pendingRes, approvedRes, rejectedRes] = await Promise.all([
-        fetch(`/api/approvals?status=PENDING${deptQuery}`),
-        fetch(`/api/approvals?status=APPROVED${deptQuery}`),
-        fetch(`/api/approvals?status=REJECTED${deptQuery}`),
+      const [pendingRes, approvedRes, rejectedRes, monitoringRes] = await Promise.all([
+        fetch(`/api/approvals?status=PENDING&mode=actionable${deptQuery}${roleQuery}`),
+        fetch(`/api/approvals?status=APPROVED&mode=actionable${deptQuery}${roleQuery}`),
+        fetch(`/api/approvals?status=REJECTED&mode=actionable${deptQuery}${roleQuery}`),
+        fetch(`/api/approvals?mode=monitoring${deptQuery}`)
       ])
 
-      const [pData, aData, rData] = await Promise.all([
+      const [pData, aData, rData, mData] = await Promise.all([
         pendingRes.json(),
         approvedRes.json(),
         rejectedRes.json(),
+        monitoringRes.json()
       ])
 
       if (pData.success && Array.isArray(pData.approvals)) {
         setApprovals(pData.approvals)
       }
+      if (mData.success && Array.isArray(mData.approvals)) {
+        setMonitoringItems(mData.approvals)
+      }
+
       setCounts({
         pending: pData.approvals?.length || 0,
         approved: aData.approvals?.length || 0,
@@ -8769,7 +8781,7 @@ function ApprovalsPage({ user }: { user?: User }) {
     } finally {
       setLoading(false)
     }
-  }, [user?.departmentId])
+  }, [user?.departmentId, user?.role])
 
   useEffect(() => {
     fetchApprovalsData()
@@ -8786,7 +8798,10 @@ function ApprovalsPage({ user }: { user?: User }) {
     try {
       const res = await fetch('/api/approvals', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-role': user?.role || 'STAFF'
+        },
         body: JSON.stringify({
           approvalId,
           achievementId,
@@ -8794,7 +8809,8 @@ function ApprovalsPage({ user }: { user?: User }) {
           comments,
           reviewedBy: user?.id || 'Reviewer',
           reviewerRole: user?.role || 'STAFF',
-          reviewerName: user?.name || 'Reviewer'
+          reviewerName: user?.name || 'Reviewer',
+          reviewerDeptId: user?.departmentId
         })
       })
       const data = await res.json()
@@ -8808,43 +8824,88 @@ function ApprovalsPage({ user }: { user?: User }) {
     }
   }
 
+  const displayedList = activeTab === 'actionable' ? approvals : monitoringItems
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Approval Requests</h2>
-          <p className="text-gray-500">Review and manage pending achievement submissions</p>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {isHod ? 'HOD Approval & Monitoring Desk' : 'Student Approval Requests'}
+          </h2>
+          <p className="text-gray-500">
+            {isHod 
+              ? 'Approve staff achievements and monitor student achievements read-only' 
+              : 'Review and approve pending student achievement submissions'}
+          </p>
         </div>
-        <Button onClick={fetchApprovalsData} variant="outline" size="sm" className="gap-2">
-          <Clock className="w-4 h-4" /> Refresh Queue
-        </Button>
+        <div className="flex items-center gap-2">
+          {isHod && (
+            <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+              <button
+                onClick={() => setActiveTab('actionable')}
+                className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  activeTab === 'actionable' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Staff Approvals ({counts.pending})
+              </button>
+              <button
+                onClick={() => setActiveTab('monitoring')}
+                className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  activeTab === 'monitoring' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Student Achievement Monitoring (Read-Only)
+              </button>
+            </div>
+          )}
+          <Button onClick={fetchApprovalsData} variant="outline" size="sm" className="gap-2">
+            <Clock className="w-4 h-4" /> Refresh
+          </Button>
+        </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4 border-l-4 border-l-amber-500 bg-amber-50/50">
-          <p className="text-sm text-gray-500 font-medium">Pending Review</p>
-          <p className="text-3xl font-bold text-amber-600">{counts.pending}</p>
-        </Card>
-        <Card className="p-4 border-l-4 border-l-green-500 bg-green-50/50">
-          <p className="text-sm text-gray-500 font-medium">Approved Items</p>
-          <p className="text-3xl font-bold text-green-600">{counts.approved}</p>
-        </Card>
-        <Card className="p-4 border-l-4 border-l-red-500 bg-red-50/50">
-          <p className="text-sm text-gray-500 font-medium">Rejected Submissions</p>
-          <p className="text-3xl font-bold text-red-600">{counts.rejected}</p>
-        </Card>
-      </div>
+      {activeTab === 'actionable' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="p-4 border-l-4 border-l-amber-500 bg-amber-50/50">
+            <p className="text-sm text-gray-500 font-medium">Pending Review</p>
+            <p className="text-3xl font-bold text-amber-600">{counts.pending}</p>
+          </Card>
+          <Card className="p-4 border-l-4 border-l-green-500 bg-green-50/50">
+            <p className="text-sm text-gray-500 font-medium">Approved Items</p>
+            <p className="text-3xl font-bold text-green-600">{counts.approved}</p>
+          </Card>
+          <Card className="p-4 border-l-4 border-l-red-500 bg-red-50/50">
+            <p className="text-sm text-gray-500 font-medium">Rejected Submissions</p>
+            <p className="text-3xl font-bold text-red-600">{counts.rejected}</p>
+          </Card>
+        </div>
+      )}
       
       <Card className="p-6 border border-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-bold text-slate-800">
+            {activeTab === 'actionable' 
+              ? (isHod ? 'Staff Submissions Requiring Your Approval' : 'Student Submissions Requiring Your Approval')
+              : 'Department Student Achievement Monitoring (Read-Only)'}
+          </h3>
+          {activeTab === 'monitoring' && (
+            <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-300">
+              <ShieldCheck className="w-3.5 h-3.5 mr-1 text-slate-500" /> Read-Only View (No Approval Rights)
+            </Badge>
+          )}
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-gray-600">
             <thead className="bg-gray-50 text-xs uppercase text-gray-700">
               <tr>
-                <th className="px-4 py-3">Student Name</th>
-                <th className="px-4 py-3">Reg No</th>
+                <th className="px-4 py-3">Submitter Name</th>
+                <th className="px-4 py-3">Reg No / Emp ID</th>
                 <th className="px-4 py-3">Department</th>
                 <th className="px-4 py-3">Achievement Title</th>
-                <th className="px-4 py-3">Type</th>
+                <th className="px-4 py-3">Role</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
@@ -8852,39 +8913,51 @@ function ApprovalsPage({ user }: { user?: User }) {
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-400">Loading pending requests...</td>
+                  <td colSpan={7} className="px-4 py-8 text-center text-gray-400">Loading approval records...</td>
                 </tr>
-              ) : approvals.length === 0 ? (
+              ) : displayedList.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-400">No pending approval requests found</td>
+                  <td colSpan={7} className="px-4 py-8 text-center text-gray-400">No records found</td>
                 </tr>
               ) : (
-                approvals.map((item) => (
+                displayedList.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50/50">
                     <td className="px-4 py-3 font-semibold text-gray-900">{item.studentName}</td>
                     <td className="px-4 py-3">{item.registerNumber}</td>
                     <td className="px-4 py-3">{item.departmentName}</td>
                     <td className="px-4 py-3">{item.achievement?.title || item.comments || 'Achievement Submission'}</td>
-                    <td className="px-4 py-3"><Badge variant="outline">{item.achievement?.type || 'TECHNICAL'}</Badge></td>
+                    <td className="px-4 py-3"><Badge variant="outline">{item.submitterRole || 'STUDENT'}</Badge></td>
                     <td className="px-4 py-3">
-                      <Badge className="bg-amber-100 text-amber-800 border-amber-300 font-medium">Pending Approval 🟠</Badge>
+                      <Badge className={
+                        item.status === 'APPROVED' ? 'bg-green-100 text-green-800 border-green-300 font-medium'
+                        : item.status === 'REJECTED' ? 'bg-red-100 text-red-800 border-red-300 font-medium'
+                        : 'bg-amber-100 text-amber-800 border-amber-300 font-medium'
+                      }>
+                        {item.displayStatus || item.status}
+                      </Badge>
                     </td>
                     <td className="px-4 py-3 text-right space-x-2">
-                      <Button
-                        size="sm"
-                        onClick={() => handleAction(item.id, item.entityId || item.achievement?.id, 'approve')}
-                        className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 rounded-lg"
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleAction(item.id, item.entityId || item.achievement?.id, 'reject')}
-                        className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded-lg"
-                      >
-                        Reject
-                      </Button>
+                      {activeTab === 'actionable' ? (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => handleAction(item.id, item.entityId || item.achievement?.id, 'approve')}
+                            className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 rounded-lg"
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleAction(item.id, item.entityId || item.achievement?.id, 'reject')}
+                            className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded-lg"
+                          >
+                            Reject
+                          </Button>
+                        </>
+                      ) : (
+                        <span className="text-xs text-slate-400 italic">Read-Only View</span>
+                      )}
                     </td>
                   </tr>
                 ))
