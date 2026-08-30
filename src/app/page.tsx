@@ -4859,7 +4859,9 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
   const fetchHodApprovals = useCallback(async () => {
     try {
       const deptQuery = user.departmentId ? `&departmentId=${user.departmentId}` : ''
-      const res = await fetch(`/api/approvals?status=PENDING${deptQuery}`)
+      const res = await fetch(`/api/approvals?status=PENDING&stage=HOD_REVIEW${deptQuery}`, {
+        headers: { 'x-user-role': 'HOD' }
+      })
       const data = await res.json()
       if (data.success && Array.isArray(data.approvals)) {
         const mapped = data.approvals.map((app: any) => ({
@@ -7162,7 +7164,9 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
   const fetchStaffApprovals = useCallback(async () => {
     try {
       const deptQuery = user.departmentId ? `&departmentId=${user.departmentId}` : ''
-      const res = await fetch(`/api/approvals?status=PENDING${deptQuery}`)
+      const res = await fetch(`/api/approvals?status=PENDING&stage=STAFF_REVIEW${deptQuery}`, {
+        headers: { 'x-user-role': 'STAFF' }
+      })
       const data = await res.json()
       if (data.success && Array.isArray(data.approvals)) {
         const mapped = data.approvals.map((app: any) => ({
@@ -8759,7 +8763,9 @@ function ApprovalsPage({ user }: { user?: User }) {
           achievementId,
           action,
           comments,
-          reviewedBy: user?.id || 'Reviewer'
+          reviewedBy: user?.id || 'Reviewer',
+          reviewerRole: user?.role || 'STAFF',
+          reviewerName: user?.name || 'Reviewer'
         })
       })
       const data = await res.json()

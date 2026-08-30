@@ -2,15 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { ApprovalStatus } from '@prisma/client'
 
-// GET /api/approvals - Fetch pending approval queue
+// GET /api/approvals - Fetch approval queue for Staff / HOD / Admin
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const statusParam = searchParams.get('status') || 'PENDING'
+    const stageParam = searchParams.get('stage')
     const departmentId = searchParams.get('departmentId')
     const entityType = searchParams.get('entityType')
+    const callerRole = request.headers.get('x-user-role') || searchParams.get('role') || ''
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '50')
+    const limit = parseInt(searchParams.get('limit') || '100')
 
     const statusUpper = statusParam.toUpperCase() as ApprovalStatus
     const where: any = {}
@@ -19,24 +21,68 @@ export async function GET(request: NextRequest) {
       where.status = statusUpper
     }
 
+    if (stageParam) {
+      where.currentStage = stageParam
+    } else if (callerRole === 'STAFF') {
+      where.currentStage = 'STAFF_REVIEW'
+    } else if (callerRole === 'HOD' && statusUpper === 'PENDING') {
+      where.currentStage = 'HOD_REVIEW'
+    }
+
     if (entityType) {
       where.entityType = entityType
     }
 
-    const [approvals, total] = await Promise.all([
-      db.approval.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-      }),
-      db.approval.count({ where }),
-    ])
+    // 1. Fetch existing Approval records
+    const approvals = await db.approval.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    })
 
-    // Enrich approval items with associated details (e.g. StudentAchievement + Student + User + Department)
+    // 2. Auto-fetch pending StudentAchievements that may lack an Approval entry
+    const pendingAchievements = await db.studentAchievement.findMany({
+      where: {
+        approvalStatus: statusUpper === 'PENDING' ? 'PENDING' : statusUpper === 'APPROVED' ? 'APPROVED' : statusUpper === 'REJECTED' ? 'REJECTED' : undefined,
+        ...(departmentId && departmentId !== 'ALL' && departmentId !== 'all' ? { student: { departmentId } } : {})
+      },
+      include: {
+        student: {
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+            department: { select: { id: true, name: true, code: true } }
+          }
+        }
+      }
+    })
+
+    const approvalEntityIds = new Set(approvals.map(a => a.entityId))
+
+    // Auto-create missing Approval records for pending student achievements
+    for (const ach of pendingAchievements) {
+      if (!approvalEntityIds.has(ach.id)) {
+        try {
+          const newApp = await db.approval.create({
+            data: {
+              entityType: 'ACHIEVEMENT',
+              entityId: ach.id,
+              requestedBy: ach.student?.userId || ach.studentId,
+              currentStage: ach.approvalStatus === 'APPROVED' ? 'APPROVED' : 'STAFF_REVIEW',
+              status: ach.approvalStatus,
+              comments: `Auto-registered submission for ${ach.student?.name || 'Student'}`
+            }
+          })
+          approvals.push(newApp)
+        } catch (e) {
+          // Ignore duplicate creation race
+        }
+      }
+    }
+
+    // 3. Enrich approval items with complete student, department, and achievement details
     const enrichedApprovals = await Promise.all(
       approvals.map(async (app) => {
         let requesterUser: any = null
+        let studentObj: any = null
         let entityData: any = null
 
         if (app.requestedBy) {
@@ -44,6 +90,21 @@ export async function GET(request: NextRequest) {
             where: { id: app.requestedBy },
             select: { id: true, name: true, email: true, role: true, departmentId: true }
           })
+
+          if (!requesterUser) {
+            studentObj = await db.student.findFirst({
+              where: {
+                OR: [
+                  { id: app.requestedBy },
+                  { userId: app.requestedBy }
+                ]
+              },
+              include: {
+                user: { select: { id: true, name: true, email: true } },
+                department: { select: { id: true, name: true, code: true } }
+              }
+            })
+          }
         }
 
         if (app.entityType === 'ACHIEVEMENT') {
@@ -60,18 +121,19 @@ export async function GET(request: NextRequest) {
           })
         }
 
-        const deptId = entityData?.student?.departmentId || requesterUser?.departmentId
-        const deptName = entityData?.student?.department?.name || 'Department'
-        const studentName = entityData?.student?.name || entityData?.student?.user?.name || requesterUser?.name || 'Student'
-        const registerNumber = entityData?.student?.registerNumber || 'N/A'
+        const studentMeta = entityData?.student || studentObj
+        const resolvedDeptId = studentMeta?.departmentId || requesterUser?.departmentId
+        const resolvedDeptName = studentMeta?.department?.name || 'Department'
+        const studentName = studentMeta?.name || studentMeta?.user?.name || requesterUser?.name || 'Student'
+        const registerNumber = studentMeta?.registerNumber || 'N/A'
 
         return {
           ...app,
-          departmentId: deptId,
-          departmentName: deptName,
+          departmentId: resolvedDeptId,
+          departmentName: resolvedDeptName,
           studentName,
           registerNumber,
-          requester: requesterUser || { name: studentName },
+          requester: requesterUser || { name: studentName, email: studentMeta?.email },
           achievement: entityData,
         }
       })
@@ -79,8 +141,8 @@ export async function GET(request: NextRequest) {
 
     // Filter by departmentId if specified
     let filteredItems = enrichedApprovals
-    if (departmentId) {
-      filteredItems = enrichedApprovals.filter(item => item.departmentId === departmentId)
+    if (departmentId && departmentId !== 'ALL' && departmentId !== 'all') {
+      filteredItems = enrichedApprovals.filter(item => item.departmentId === departmentId || !item.departmentId)
     }
 
     return NextResponse.json({
@@ -97,11 +159,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/approvals - Approve or Reject an item
+// POST /api/approvals - Process Multi-Stage Approval (Staff -> HOD -> Approved)
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
-    const { approvalId, achievementId, action, comments, reviewedBy } = data
+    const { approvalId, achievementId, action, comments, reviewedBy, reviewerRole, reviewerName } = data
 
     if ((!approvalId && !achievementId) || !action) {
       return NextResponse.json(
@@ -123,26 +185,42 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const actionUpper = action.toLowerCase()
-    let newStatus: ApprovalStatus = actionUpper === 'approve' ? 'APPROVED' : 'REJECTED'
+    const actionLower = action.toLowerCase()
+    const roleUpper = (reviewerRole || 'STAFF').toUpperCase()
 
     const updatedResult = await db.$transaction(async (tx) => {
-      let updatedApproval = null
+      let nextStage = approval?.currentStage || 'STAFF_REVIEW'
+      let finalStatus: ApprovalStatus = 'PENDING'
 
+      if (actionLower === 'reject') {
+        finalStatus = 'REJECTED'
+        nextStage = 'REJECTED'
+      } else if (actionLower === 'approve') {
+        if (roleUpper === 'STAFF' || approval?.currentStage === 'STAFF_REVIEW') {
+          // Staff approval -> Move to HOD Review stage!
+          nextStage = 'HOD_REVIEW'
+          finalStatus = 'PENDING' // Awaiting HOD review
+        } else if (roleUpper === 'HOD' || roleUpper === 'ADMIN' || roleUpper === 'SUPER_ADMIN' || approval?.currentStage === 'HOD_REVIEW') {
+          // HOD approval -> Final Approval!
+          nextStage = 'APPROVED'
+          finalStatus = 'APPROVED'
+        }
+      }
+
+      let updatedApproval = null
       if (approval) {
         updatedApproval = await tx.approval.update({
           where: { id: approval.id },
           data: {
-            status: newStatus,
-            currentStage: newStatus === 'APPROVED' ? 'APPROVED' : 'REJECTED',
-            reviewedBy: reviewedBy || 'Staff',
+            status: finalStatus,
+            currentStage: nextStage,
+            reviewedBy: reviewerName || reviewedBy || roleUpper,
             reviewedAt: new Date(),
-            comments: comments || (newStatus === 'APPROVED' ? 'Approved' : 'Rejected'),
+            comments: comments || (finalStatus === 'APPROVED' ? 'Approved by HOD' : nextStage === 'HOD_REVIEW' ? 'Approved by Staff - Sent to HOD' : 'Rejected'),
           }
         })
       }
 
-      // If achievementId or approval.entityType === 'ACHIEVEMENT', update StudentAchievement table
       const targetAchievementId = achievementId || approval?.entityId
       let updatedAchievement = null
 
@@ -150,22 +228,45 @@ export async function POST(request: NextRequest) {
         updatedAchievement = await tx.studentAchievement.update({
           where: { id: targetAchievementId },
           data: {
-            approvalStatus: newStatus
+            approvalStatus: finalStatus
           },
           include: {
             student: {
-              include: { user: true }
+              include: { user: true, department: true }
             }
           }
         })
 
-        // Create notification for student
-        if (updatedAchievement?.student?.userId) {
+        // Notify HOD if approved by Staff
+        if (nextStage === 'HOD_REVIEW' && updatedAchievement?.student?.departmentId) {
+          const hodUsers = await tx.user.findMany({
+            where: {
+              departmentId: updatedAchievement.student.departmentId,
+              role: 'HOD'
+            },
+            select: { id: true }
+          })
+          for (const hod of hodUsers) {
+            await tx.notification.create({
+              data: {
+                title: 'Staff Approved - Pending HOD Review',
+                message: `Staff approved submission '${updatedAchievement.title}' by ${updatedAchievement.student.name || 'Student'}. Awaiting your final HOD review.`,
+                type: 'APPROVAL_REQUIRED',
+                userId: hod.id,
+                relatedId: approval?.id || updatedAchievement.id,
+                entityType: 'ACHIEVEMENT'
+              }
+            })
+          }
+        }
+
+        // Notify Student when approved by HOD or rejected
+        if ((finalStatus === 'APPROVED' || finalStatus === 'REJECTED') && updatedAchievement?.student?.userId) {
           await tx.notification.create({
             data: {
-              title: `Achievement Submission ${newStatus === 'APPROVED' ? 'Approved ✓' : 'Rejected ✕'}`,
-              message: `Your achievement '${updatedAchievement.title}' has been ${newStatus === 'APPROVED' ? 'approved' : 'rejected'}${comments ? ': ' + comments : ''}`,
-              type: newStatus === 'APPROVED' ? 'APPROVED' : 'REJECTED',
+              title: `Achievement Submission ${finalStatus === 'APPROVED' ? 'Approved ✓' : 'Rejected ✕'}`,
+              message: `Your achievement '${updatedAchievement.title}' has been ${finalStatus === 'APPROVED' ? 'approved by HOD' : 'rejected'}${comments ? ': ' + comments : ''}`,
+              type: finalStatus === 'APPROVED' ? 'APPROVED' : 'REJECTED',
               userId: updatedAchievement.student.userId,
               relatedId: updatedAchievement.id,
               entityType: 'ACHIEVEMENT'
@@ -174,14 +275,18 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      return { approval: updatedApproval, achievement: updatedAchievement }
+      return { approval: updatedApproval, achievement: updatedAchievement, nextStage, finalStatus }
     })
 
     return NextResponse.json({
       success: true,
-      message: `Achievement ${newStatus === 'APPROVED' ? 'approved' : 'rejected'} successfully`,
+      message: updatedResult.nextStage === 'HOD_REVIEW' 
+        ? 'Approved by Staff! Submission forwarded to HOD for final review.' 
+        : `Achievement ${updatedResult.finalStatus === 'APPROVED' ? 'approved by HOD' : 'rejected'} successfully`,
       approval: updatedResult.approval,
       achievement: updatedResult.achievement,
+      stage: updatedResult.nextStage,
+      status: updatedResult.finalStatus
     })
   } catch (error: any) {
     console.error('Error updating approval:', error)
