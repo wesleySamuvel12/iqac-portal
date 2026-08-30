@@ -353,12 +353,12 @@ export function CSVImportModal({
                           <td className="py-2 px-3 border-r border-slate-200 text-slate-600">{row.email}</td>
                           <td className="py-2 px-3 border-r border-slate-200 text-center">
                             {row.isDuplicate ? (
-                              <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 border border-amber-300 text-[10px] px-2 py-0.5 rounded-full font-bold">
-                                <AlertCircle className="w-3 h-3" /> Existing
+                              <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 border border-blue-300 text-[10px] px-2 py-0.5 rounded-full font-bold" title="Already exists in database — will update profile & department on import">
+                                <RefreshCw className="w-3 h-3 text-blue-600" /> Existing (Will Update)
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] px-2 py-0.5 rounded-full font-bold">
-                                <Check className="w-3 h-3 text-emerald-600" /> Valid
+                                <Check className="w-3 h-3 text-emerald-600" /> New Record
                               </span>
                             )}
                           </td>
@@ -453,7 +453,7 @@ export function CSVImportModal({
                     ) : (
                       <>
                         <Upload className="w-4 h-4" />
-                        Continue Import ({validationData.validCount} Valid Records)
+                        Continue Import ({validationData.validCount} Records Ready)
                       </>
                     )}
                   </Button>
