@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { 
   Upload, FileText, Info, Download, Loader2, XCircle, 
-  CheckCircle, Lock, AlertTriangle, ShieldCheck, UserPlus, FileSpreadsheet, Table, Check, AlertCircle
+  CheckCircle, Lock, AlertTriangle, ShieldCheck, UserPlus, FileSpreadsheet, Table, Check, AlertCircle, RefreshCw
 } from 'lucide-react'
 
 interface CSVImportModalProps {

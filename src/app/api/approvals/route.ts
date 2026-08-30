@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
       }
 
       const targetAchievementId = achievementId || approval?.entityId
-      let updatedAchievement = null
+      let updatedAchievement: any = null
 
       if (targetAchievementId) {
         updatedAchievement = await tx.studentAchievement.update({
