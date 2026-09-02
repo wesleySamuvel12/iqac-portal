@@ -17,37 +17,41 @@ export async function GET(request: NextRequest) {
     let users: Array<{ id: string; name: string; type: 'STUDENT' | 'STAFF' }> = []
 
     if (departmentId && departmentId !== 'ALL') {
-      if (userType === 'STUDENT' || userType === 'BOTH') {
-        const students = await db.student.findMany({
-          where: { departmentId },
-          include: { user: { select: { name: true, email: true } } },
-          orderBy: { registerNumber: 'asc' },
-          take: 200,
-        })
-        (students || []).forEach(s => {
-          users.push({
-            id: s.userId || s.id,
-            name: `${s.user?.name || 'Student'} (${s.registerNumber || 'Student'})`,
-            type: 'STUDENT',
+      const fetchStudents = (userType === 'STUDENT' || userType === 'BOTH')
+        ? db.student.findMany({
+            where: { departmentId },
+            include: { user: { select: { name: true, email: true } } },
+            orderBy: { registerNumber: 'asc' },
+            take: 200,
           })
-        })
-      }
+        : Promise.resolve([])
 
-      if (userType === 'STAFF' || userType === 'BOTH') {
-        const faculty = await db.faculty.findMany({
-          where: { departmentId },
-          include: { user: { select: { name: true, email: true } } },
-          orderBy: { employeeId: 'asc' },
-          take: 100,
-        })
-        (faculty || []).forEach(f => {
-          users.push({
-            id: f.userId || f.id,
-            name: `${f.user?.name || 'Faculty'} (${f.designation || 'Faculty'})`,
-            type: 'STAFF',
+      const fetchFaculty = (userType === 'STAFF' || userType === 'BOTH')
+        ? db.faculty.findMany({
+            where: { departmentId },
+            include: { user: { select: { name: true, email: true } } },
+            orderBy: { employeeId: 'asc' },
+            take: 100,
           })
+        : Promise.resolve([])
+
+      const [students, faculty] = await Promise.all([fetchStudents, fetchFaculty])
+
+      ;(students || []).forEach(s => {
+        users.push({
+          id: s.userId || s.id,
+          name: `${s.user?.name || 'Student'} (${s.registerNumber || 'Student'})`,
+          type: 'STUDENT',
         })
-      }
+      })
+
+      ;(faculty || []).forEach(f => {
+        users.push({
+          id: f.userId || f.id,
+          name: `${f.user?.name || 'Faculty'} (${f.designation || 'Faculty'})`,
+          type: 'STAFF',
+        })
+      })
     }
 
     return NextResponse.json({

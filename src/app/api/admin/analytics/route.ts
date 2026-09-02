@@ -197,7 +197,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Monthly trend data (for charts)
-    const monthlyTrend = []
+    const monthlyTrend: Array<{
+      month: string;
+      studentAchievements: number;
+      staffAwards: number;
+      researchPapers: number;
+      total: number;
+    }> = []
     for (let i = 11; i >= 0; i--) {
       const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1)
       const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 1)

@@ -7,7 +7,10 @@ export async function GET(request: NextRequest) {
     const role = searchParams.get('role')
     const departmentId = searchParams.get('departmentId')
 
-    // Get counts for different entities
+    const sixMonthsAgo = new Date()
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+
+    // Execute all dashboard database queries concurrently for maximum performance
     const [
       totalDepartments,
       totalFaculty,
@@ -16,6 +19,10 @@ export async function GET(request: NextRequest) {
       totalResearch,
       pendingApprovals,
       departments,
+      recentActivities,
+      researchByType,
+      activitiesByType,
+      monthlyActivities,
     ] = await Promise.all([
       db.department.count({ where: { isActive: true } }),
       db.faculty.count(),
@@ -25,45 +32,37 @@ export async function GET(request: NextRequest) {
       db.approval.count({ where: { status: 'PENDING' } }),
       db.department.findMany({
         where: { isActive: true },
-        include: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
           _count: {
             select: { faculty: true, students: true, activities: true },
           },
         },
         take: 20,
       }),
+      db.activity.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, title: true, type: true, createdAt: true, department: { select: { name: true } } },
+      }),
+      db.research.groupBy({
+        by: ['type'],
+        _count: { id: true },
+      }),
+      db.activity.groupBy({
+        by: ['type'],
+        _count: { id: true },
+      }),
+      db.activity.groupBy({
+        by: ['createdAt'],
+        where: {
+          createdAt: { gte: sixMonthsAgo },
+        },
+        _count: { id: true },
+      }),
     ])
-
-    // Get recent activities
-    const recentActivities = await db.activity.findMany({
-      take: 5,
-      orderBy: { createdAt: 'desc' },
-      include: { department: { select: { name: true } } },
-    })
-
-    // Get research by type
-    const researchByType = await db.research.groupBy({
-      by: ['type'],
-      _count: { id: true },
-    })
-
-    // Get activities by type
-    const activitiesByType = await db.activity.groupBy({
-      by: ['type'],
-      _count: { id: true },
-    })
-
-    // Monthly statistics (last 6 months)
-    const sixMonthsAgo = new Date()
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
-
-    const monthlyActivities = await db.activity.groupBy({
-      by: ['createdAt'],
-      where: {
-        createdAt: { gte: sixMonthsAgo },
-      },
-      _count: { id: true },
-    })
 
     const dashboardData = {
       stats: {

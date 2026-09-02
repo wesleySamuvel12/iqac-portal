@@ -115,11 +115,11 @@ export async function GET(
           projects: faculty.projects,
           fdpPrograms: faculty.fdpPrograms,
           consultations: faculty.consultations,
-          researchPublications: faculty.researchPublications?.map(rp => ({
+          researchPublications: Array.isArray(faculty.researchPublications) ? faculty.researchPublications.map((rp: any) => ({
             ...rp,
             research: rp.research
-          })),
-          activities: faculty.activities?.map(fa => fa.activity)
+          })) : [],
+          activities: Array.isArray(faculty.activities) ? faculty.activities.map((fa: any) => fa.activity) : []
         },
         achievementCounts: {
           awards: faculty.awards?.length || 0,
@@ -192,7 +192,7 @@ export async function GET(
           placements: student.placements,
           internships: student.internships,
           npCourses: student.npCourses,
-          activities: student.activities?.map(sa => sa.activity)
+          activities: Array.isArray(student.activities) ? student.activities.map((sa: any) => sa.activity) : []
         },
         achievementCounts: {
           studentAchievements: student.achievements?.length || 0,

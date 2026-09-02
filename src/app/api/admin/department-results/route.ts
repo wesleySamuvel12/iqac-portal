@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
         const associateProfessors = dept.faculty.filter((f) => 
           f.designation?.includes('Associate')
         ).length
-        assistantProfessors = dept.faculty.filter((f) => 
+        const assistantProfessors = dept.faculty.filter((f) => 
           f.designation?.includes('Assistant')
         ).length
 

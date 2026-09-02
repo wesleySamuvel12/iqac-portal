@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
         where: { batchId },
         select: { userId: true },
       })
-      targetUsers = students.map((s) => ({ id: s.userId }))
+      targetUsers = students.filter((s) => s.userId).map((s) => ({ id: s.userId! }))
     } else if (targetAudience === 'INDIVIDUAL' || targetAudience === 'MULTIPLE_USERS') {
       const parsedIds: string[] = Array.isArray(targetUserIds)
         ? targetUserIds

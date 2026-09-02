@@ -494,7 +494,7 @@ async function generateWithPlaywright(htmlContent: string, outputPath: string): 
         ]
 
         for (const execPath of possiblePaths) {
-          if (existsSync(execPath)) {
+          if (existsSync(/*turbopackIgnore: true*/ execPath)) {
             try {
               browser = await chromium.launch({ ...launchOptions, executablePath: execPath })
               break

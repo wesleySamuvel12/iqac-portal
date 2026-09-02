@@ -300,13 +300,13 @@ export async function POST(request: NextRequest) {
         statusText = submitterRole === 'STUDENT' ? 'APPROVED_BY_STAFF' : 'APPROVED_BY_HOD'
       }
 
-      let updatedApproval = null
+      let updatedApproval: any = null
       if (approval) {
         updatedApproval = await tx.approval.update({
           where: { id: approval.id },
           data: {
             status: finalStatus,
-            currentStage: nextStage,
+            currentStage: nextStage as any,
             reviewedBy: reviewerName || reviewedBy || callerRoleUpper,
             reviewedAt: new Date(),
             comments: comments || (finalStatus === 'APPROVED' ? `Approved by ${callerRoleUpper}` : `Rejected by ${callerRoleUpper}`),

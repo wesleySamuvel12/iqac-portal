@@ -536,7 +536,17 @@ function calculateDeptPerformance(achievements: any[], awards: any[], placements
 }
 
 function generateMonthlyTrend(startDate: Date, endDate: Date): any[] {
-  const trend = []
+  const trend: Array<{
+    month: string;
+    monthKey: string;
+    year: number;
+    monthNum: number;
+    achievements: number;
+    publications: number;
+    placements: number;
+    events: number;
+    total: number;
+  }> = []
   const current = new Date(startDate)
   
   while (current <= endDate) {
@@ -553,9 +563,9 @@ function generateMonthlyTrend(startDate: Date, endDate: Date): any[] {
       total: 0
     })
     current.setMonth(current.getMonth() + 1)
-  }
+  };
   
-  (Array.isArray(trend) ? trend : []).forEach(t => {
+  trend.forEach(t => {
     t.total = (t.achievements || 0) + (t.publications || 0) + (t.placements || 0) + (t.events || 0)
   })
   

@@ -103,10 +103,12 @@ export async function PUT(
       if (data.phone !== undefined) userData.phone = data.phone
       if (data.role) userData.role = data.role
       
-      await db.user.update({
-        where: { id: faculty.userId },
-        data: userData,
-      })
+      if (faculty.userId) {
+        await db.user.update({
+          where: { id: faculty.userId },
+          data: userData,
+        })
+      }
       
       // Re-fetch to get updated user data
       const updatedFaculty = await db.faculty.findUnique({
@@ -165,7 +167,9 @@ export async function DELETE(
 
     // Delete faculty and associated user
     await db.faculty.delete({ where: { id } })
-    await db.user.delete({ where: { id: faculty.userId } })
+    if (faculty.userId) {
+      await db.user.delete({ where: { id: faculty.userId } })
+    }
 
     return NextResponse.json({ 
       success: true, 

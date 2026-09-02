@@ -22,8 +22,9 @@ export async function verifyPassword(password: string, hashedPassword: string): 
   // 3. Bcrypt hash match if hashedPassword is a bcrypt hash ($2a$, $2b$, $2y$)
   if (hashTrim.startsWith('$2a$') || hashTrim.startsWith('$2b$') || hashTrim.startsWith('$2y$')) {
     try {
-      const bcrypt = require('bcryptjs')
-      if (bcrypt.compareSync(inputTrim, hashTrim)) return true
+      const req = eval('require')
+      const bcrypt = req('bcryptjs')
+      if (bcrypt && bcrypt.compareSync(inputTrim, hashTrim)) return true
     } catch (e) {
       // Ignore if bcryptjs is not loaded
     }

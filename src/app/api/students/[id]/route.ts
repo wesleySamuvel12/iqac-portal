@@ -102,10 +102,12 @@ export async function PUT(
       if (data.email) userData.email = data.email
       if (data.phone !== undefined) userData.phone = data.phone
       
-      await db.user.update({
-        where: { id: student.userId },
-        data: userData,
-      })
+      if (student.userId) {
+        await db.user.update({
+          where: { id: student.userId },
+          data: userData,
+        })
+      }
       
       // Re-fetch to get updated user data
       const updatedStudent = await db.student.findUnique({
@@ -153,7 +155,9 @@ export async function DELETE(
 
     // Delete student and associated user
     await db.student.delete({ where: { id } })
-    await db.user.delete({ where: { id: student.userId } })
+    if (student.userId) {
+      await db.user.delete({ where: { id: student.userId } })
+    }
 
     return NextResponse.json({ 
       success: true, 

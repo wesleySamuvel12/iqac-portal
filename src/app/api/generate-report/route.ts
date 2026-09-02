@@ -116,7 +116,7 @@ function createCell(
     rowSpan,
     columnSpan: colSpan,
     shading: shading ? { type: ShadingType.SOLID, color: shading, fill: shading } : undefined,
-    verticalAlign,
+    verticalAlign: verticalAlign as any,
     borders: {
       top: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
       bottom: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
@@ -412,7 +412,7 @@ export async function POST(request: NextRequest) {
                 // Row 1: Faculty counts
                 new TableRow({
                   children: [
-                    createHeaderCell('Number of Faculty', { width: 1800, color: 'E0F2F1', color: 'FFF3E0' }),
+                    createHeaderCell('Number of Faculty', { width: 1800, color: 'FFF3E0' }),
                     createCell(`: ${data.facultyCount || '_'}`, { width: 1200, alignment: AlignmentType.CENTER }),
                     createHeaderCell('No. of Prof:', { width: 1200, color: 'FFF3E0' }),
                     createCell(data.profCount || '_', { width: 900, alignment: AlignmentType.CENTER }),

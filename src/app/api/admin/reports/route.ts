@@ -129,14 +129,17 @@ export async function GET(request: NextRequest) {
         totalFaculty: departments.reduce((sum, d) => sum + d.faculty.length, 0),
         totalHODs: departments.reduce((sum, d) => sum + d.faculty.filter(f => f.isHOD).length, 0),
         totalActivities: departments.reduce((sum, d) => sum + d.activities.length, 0),
-        totalResearch: departments.reduce((sum, d) => sum + d.research.length, 0)
+        totalResearch: departments.reduce((sum, d) => sum + d.research.length, 0),
+        totalAchievements: 0,
+        totalPlacements: 0,
+        totalInternships: 0
       },
       departmentReports: departments.map(dept => {
         // Student achievements for this department
         const studentAchievements = dept.students.flatMap(s => 
           s.achievements.map(a => ({
             ...a,
-            studentName: s.user.name,
+            studentName: s.user?.name || 'Student',
             studentRegNumber: s.registerNumber,
             department: dept.name
           }))
@@ -146,30 +149,30 @@ export async function GET(request: NextRequest) {
         const staffAchievements = dept.faculty
           .filter(f => !f.isHOD)
           .flatMap(f => [
-            ...f.awards.map(a => ({ ...a, achievementType: 'award', staffName: f.user.name, designation: f.designation, department: dept.name })),
-            ...f.certifications.map(c => ({ ...c, achievementType: 'certification', staffName: f.user.name, designation: f.designation, department: dept.name })),
-            ...f.patents.map(p => ({ ...p, achievementType: 'patent', staffName: f.user.name, designation: f.designation, department: dept.name })),
-            ...f.projects.map(p => ({ ...p, achievementType: 'project', staffName: f.user.name, designation: f.designation, department: dept.name })),
-            ...f.books.map(b => ({ ...b, achievementType: 'book', staffName: f.user.name, designation: f.designation, department: dept.name })),
-            ...f.fdpPrograms.map(fdp => ({ ...fdp, achievementType: 'fdp', staffName: f.user.name, designation: f.designation, department: dept.name })),
-            ...f.consultations.map(c => ({ ...c, achievementType: 'consultancy', staffName: f.user.name, designation: f.designation, department: dept.name }))
+            ...f.awards.map(a => ({ ...a, achievementType: 'award', staffName: f.user?.name || 'Faculty', designation: f.designation, department: dept.name })),
+            ...f.certifications.map(c => ({ ...c, achievementType: 'certification', staffName: f.user?.name || 'Faculty', designation: f.designation, department: dept.name })),
+            ...f.patents.map(p => ({ ...p, achievementType: 'patent', staffName: f.user?.name || 'Faculty', designation: f.designation, department: dept.name })),
+            ...f.projects.map(p => ({ ...p, achievementType: 'project', staffName: f.user?.name || 'Faculty', designation: f.designation, department: dept.name })),
+            ...f.books.map(b => ({ ...b, achievementType: 'book', staffName: f.user?.name || 'Faculty', designation: f.designation, department: dept.name })),
+            ...f.fdpPrograms.map(fdp => ({ ...fdp, achievementType: 'fdp', staffName: f.user?.name || 'Faculty', designation: f.designation, department: dept.name })),
+            ...f.consultations.map(c => ({ ...c, achievementType: 'consultancy', staffName: f.user?.name || 'Faculty', designation: f.designation, department: dept.name }))
           ])
 
         // HOD achievements for this department
         const hodAchievements = dept.faculty
           .filter(f => f.isHOD)
           .flatMap(f => [
-            ...f.awards.map(a => ({ ...a, achievementType: 'award', staffName: f.user.name, role: 'HOD', department: dept.name })),
-            ...f.certifications.map(c => ({ ...c, achievementType: 'certification', staffName: f.user.name, role: 'HOD', department: dept.name })),
-            ...f.patents.map(p => ({ ...p, achievementType: 'patent', staffName: f.user.name, role: 'HOD', department: dept.name }))
+            ...f.awards.map(a => ({ ...a, achievementType: 'award', staffName: f.user?.name || 'HOD', role: 'HOD', department: dept.name })),
+            ...f.certifications.map(c => ({ ...c, achievementType: 'certification', staffName: f.user?.name || 'HOD', role: 'HOD', department: dept.name })),
+            ...f.patents.map(p => ({ ...p, achievementType: 'patent', staffName: f.user?.name || 'HOD', role: 'HOD', department: dept.name }))
           ])
 
         // Placements and Internships
         const placements = dept.students.flatMap(s =>
-          s.placements.map(p => ({ ...p, studentName: s.user.name, registerNumber: s.registerNumber, department: dept.name }))
+          s.placements.map(p => ({ ...p, studentName: s.user?.name || 'Student', registerNumber: s.registerNumber, department: dept.name }))
         )
         const internshipsData = dept.students.flatMap(s =>
-          s.internships.map(i => ({ ...i, studentName: s.user.name, registerNumber: s.registerNumber, department: dept.name }))
+          s.internships.map(i => ({ ...i, studentName: s.user?.name || 'Student', registerNumber: s.registerNumber, department: dept.name }))
         )
 
         return {
@@ -408,7 +411,7 @@ async function generateExcel(reportData: any, type: string | null, now: Date, pe
   XLSX.utils.book_append_sheet(wb, wsRanking, 'Rankings')
   
   // Sheet 4: Detailed Achievements (if any exist)
-  const allAchievements: any[] = []
+  const allAchievements: any[] = [];
   (Array.isArray(reportData?.departmentReports) ? reportData.departmentReports : []).forEach((dept: any) => {
     const studentItems = Array.isArray(dept?.achievements?.student?.items) ? dept.achievements.student.items : (Array.isArray(dept?.studentItems) ? dept.studentItems : [])
     studentItems.forEach((item: any) => {

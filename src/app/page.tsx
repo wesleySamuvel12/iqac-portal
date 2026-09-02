@@ -37,7 +37,7 @@ import {
   UserCircle, School, CalendarDays,
   LineChart,
   Camera, FileBadge,
-  Timeline, ArrowUpDown, Maximize2,
+  Clock as Timeline, ShieldCheck, ArrowUpDown, Maximize2,
   // CMS Portal icons
   Megaphone, HardDrive, AlertTriangle, UserPlus,
   // Login icon
@@ -46,7 +46,7 @@ import {
   FileCheck,
   // Additional icons for HOD student features
   Check, Hash, User, UserRound, ExternalLink, ArrowLeftRight,
-  ListChecks, Grid3X3
+  ListChecks, Grid3X3, Copy
 } from 'lucide-react'
 
 // Premium Components (only ones that export correctly)
@@ -55,6 +55,7 @@ import {
 } from '@/components/premium'
 import { FeedbackModuleContainer } from '@/components/feedback/FeedbackModuleContainer'
 import { AchievementReportGenerator } from '@/components/reports/AchievementReportGenerator'
+import { generateTempPassword } from '@/lib/auth-helpers'
 import { 
   isPeriodClosed, 
   checkAchievementDateLock, 
@@ -183,6 +184,7 @@ const ACHIEVEMENT_TYPES: Record<string, {
     locked?: boolean
     full?: boolean
     options?: string[]
+    value?: string
   }>
 }> = {
   journal: {
@@ -3291,7 +3293,7 @@ function AchievementForm({ user, onBack }: { user: User; onBack: () => void }) {
                 <div className={'w-14 h-14 rounded-2xl bg-gradient-to-br ' + type.color + ' flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-lg'}>
                   <type.icon className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{type.name}</h3>
+                <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{(type as any).name || (type as any).label}</h3>
               </CardContent>
             </Card>
           ))}
@@ -3450,7 +3452,7 @@ function FeedbackModule({ user, feedbackEnabled, setFeedbackEnabled }: {
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <StatCard title="Total Feedback" value={feedbacks.length} icon={MessageSquare} color="blue" />
-        <StatCard title="Average Rating" value={(feedbacks.reduce((acc, f) => acc + f.rating, 0) / feedbacks.length).toFixed(1)} icon={Star} color="amber" />
+        <StatCard title="Average Rating" value={(feedbacks.reduce((acc, f) => acc + f.rating, 0) / feedbacks.length).toFixed(1)} icon={Star} color="orange" />
         <StatCard title="Anonymous" value={feedbacks.filter(f => f.anonymous).length} icon={Shield} color="purple" />
         <StatCard title="This Week" value={feedbacks.filter(f => {
           const diff = Date.now() - new Date(f.date).getTime()
@@ -3498,7 +3500,7 @@ function FeedbackModule({ user, feedbackEnabled, setFeedbackEnabled }: {
                           key={star}
                           type="button"
                           onClick={() => setNewFeedback(prev => ({ ...prev, rating: star }))}
-                          className={'p-1 rounded transition-colors ' + star <= newFeedback.rating ? 'text-yellow-400' : 'text-gray-300' + ''}
+                          className={'p-1 rounded transition-colors ' + (star <= newFeedback.rating ? 'text-yellow-400' : 'text-gray-300')}
                         >
                           <Star className="w-6 h-6 fill-current" />
                         </button>
@@ -3565,7 +3567,7 @@ function FeedbackModule({ user, feedbackEnabled, setFeedbackEnabled }: {
                     <Badge variant="secondary">{feedback.category}</Badge>
                     <div className="flex items-center gap-1">
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} className={'w-4 h-4 ' + i < feedback.rating ? 'text-yellow-400 fill-current' : 'text-gray-300' + ''} />
+                        <Star key={i} className={'w-4 h-4 ' + (i < feedback.rating ? 'text-yellow-400 fill-current' : 'text-gray-300')} />
                       ))}
                     </div>
                   </div>
@@ -3741,8 +3743,10 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
     )
   }
 
+  const currentRole = String(user?.role || '').trim().toUpperCase()
+
   // Admin Dashboard - With Departments Overview
-  if (user.role === 'ADMIN') {
+  if (currentRole === 'ADMIN' || currentRole === 'SUPER_ADMIN') {
     return <AdminDashboardContent user={user} setActiveTab={setActiveTab} stats={stats} />
   }
 
@@ -4227,13 +4231,15 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
     )
   }
 
+  const userRole = String(user?.role || '').trim().toUpperCase()
+
   // HOD Dashboard - Use separate component for hooks compliance
-  if (user.role === 'HOD') {
+  if (userRole === 'HOD') {
     return <HodDashboardContent user={user} setActiveTab={setActiveTab} />
   }
 
   // Staff Dashboard - Use separate component for hooks compliance
-  if (user.role === 'STAFF') {
+  if (userRole === 'STAFF' || userRole === 'FACULTY') {
     return <StaffDashboardContent user={user} setActiveTab={setActiveTab} />
   }
 
@@ -6001,7 +6007,7 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
                   <div className="pt-3 border-t border-gray-200">
                     <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Students by Year</p>
                     <div className="space-y-2">
-                      {Object.entries(studentsByYear).map(([year, count]) => (
+                      {Object.entries(studentsByYear).map(([year, count]: [string, any]) => (
                         <div key={year} className="flex items-center justify-between">
                           <span className="text-sm text-gray-600">{year}</span>
                           <div className="flex items-center gap-2">
@@ -6128,14 +6134,14 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
                 }
 
                 // Group achievements by type
-                const groupedByType = studentAchievementsList.reduce((acc, achievement) => {
+                const groupedAchievements: Record<string, any[]> = studentAchievementsList.reduce((acc, achievement) => {
                   const type = achievement.typeName || achievement.type || 'Other'
                   if (!acc[type]) acc[type] = []
                   acc[type].push(achievement)
                   return acc
-                }, {} as Record<string, typeof studentAchievementsList>)
+                }, {} as Record<string, any[]>)
 
-                return Object.entries(groupedByType).map(([type, achievements]) => (
+                return Object.entries(groupedAchievements).map(([type, achievements]: [string, any]) => (
                   <div key={type} className="mb-6 last:mb-0">
                     <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-2">
                       <FolderOpen className="w-4 h-4 text-violet-500" />
@@ -6143,7 +6149,7 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
                       <Badge variant="outline" className="text-xs ml-auto">{achievements.length}</Badge>
                     </h3>
                     <div className="space-y-3">
-                      {achievements.map((achievement, idx) => {
+                      {achievements.map((achievement: any, idx: number) => {
                         // Get icon based on type
                         const typeInfo = Object.values(ACHIEVEMENT_TYPES).find(t => t.label === type)
                         const Icon = typeInfo?.icon || Trophy
@@ -6241,7 +6247,7 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
                 onClick={() => {
                   setShowStudentAchievementModal(false)
                   // Navigate to analytics tab for this student's department
-                  setActiveTabLocal('analytics')
+                  setActiveTabLocal('overview')
                 }}
                 className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
               >
@@ -6639,14 +6645,14 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
                 }
 
                 // Group achievements by type
-                const groupedByType = staffAchievementsList.reduce((acc, achievement) => {
+                const groupedByType: Record<string, any[]> = staffAchievementsList.reduce((acc, achievement) => {
                   const type = achievement.typeName || achievement.type || 'Other'
                   if (!acc[type]) acc[type] = []
                   acc[type].push(achievement)
                   return acc
-                }, {} as Record<string, typeof staffAchievementsList>)
+                }, {} as Record<string, any[]>)
 
-                return Object.entries(groupedByType).map(([type, achievements]) => (
+                return Object.entries(groupedByType).map(([type, achievements]: [string, any]) => (
                   <div key={type} className="mb-6 last:mb-0">
                     <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-2">
                       <FolderOpen className="w-4 h-4 text-emerald-500" />
@@ -6654,7 +6660,7 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
                       <Badge variant="outline" className="text-xs ml-auto">{achievements.length}</Badge>
                     </h3>
                     <div className="space-y-3">
-                      {achievements.map((achievement, idx) => {
+                      {achievements.map((achievement: any, idx: number) => {
                         // Get icon based on type
                         const typeInfo = Object.values(ACHIEVEMENT_TYPES).find(t => t.label === type)
                         const Icon = typeInfo?.icon || Trophy
@@ -6751,7 +6757,7 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
               <Button
                 onClick={() => {
                   setShowStaffAchievementModal(false)
-                  setActiveTabLocal('analytics')
+                  setActiveTabLocal('overview')
                 }}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
               >
@@ -8174,7 +8180,7 @@ CSE2024005,Student 5,student_cse5@niet.ac.in,Student@123,CSE,2024-2028,5,8.90`
             <CardContent className="p-6">
               {importResults ? (
                 <div className="space-y-4">
-                  <div className={'p-4 rounded-lg ' + importResults.errors?.length > 0 ? 'bg-yellow-50' : 'bg-green-50' + ''}>
+                  <div className={'p-4 rounded-lg ' + (importResults.errors?.length > 0 ? 'bg-yellow-50' : 'bg-green-50')}>
                     <p className="font-semibold text-gray-900">
                       ✓ Import Completed!
                     </p>
@@ -8256,7 +8262,7 @@ CSE2024005,Student 5,student_cse5@niet.ac.in,Student@123,CSE,2024-2028,5,8.90`
             <CardContent className="p-6">
               {importResults ? (
                 <div className="space-y-4">
-                  <div className={'p-4 rounded-lg ' + importResults.errors?.length > 0 ? 'bg-yellow-50' : 'bg-green-50' + ''}>
+                  <div className={'p-4 rounded-lg ' + (importResults.errors?.length > 0 ? 'bg-yellow-50' : 'bg-green-50')}>
                     <p className="font-semibold text-gray-900">
                       ✓ Import Completed!
                     </p>
@@ -8716,7 +8722,7 @@ function ResearchPage() {
         <StatCard title="Journal Papers" value="45" icon={FileText} color="blue" />
         <StatCard title="Conferences" value="32" icon={Globe} color="green" />
         <StatCard title="Patents" value="8" icon={Award} color="purple" />
-        <StatCard title="Funded Projects" value="12" icon={Trophy} color="amber" />
+        <StatCard title="Funded Projects" value="12" icon={Trophy} color="orange" />
       </div>
       
       <Card className="p-6 border border-gray-200">
@@ -10125,6 +10131,68 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
   )
 }
 
+// Helper Modal for Displaying Newly Generated Login Credentials
+function CreatedCredentialsModal({ 
+  data, 
+  onClose 
+}: { 
+  data: { name: string; email: string; password: string; role: string } | null
+  onClose: () => void 
+}) {
+  if (!data) return null
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 border-2 border-emerald-500 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+        <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+          <CheckCircle className="w-7 h-7" />
+        </div>
+        <div className="text-center">
+          <h3 className="text-xl font-bold text-gray-900">Login Access Created!</h3>
+          <p className="text-sm text-gray-500 mt-1">Credentials successfully generated for {data.role}</p>
+        </div>
+
+        <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-2.5 text-sm font-mono">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-500 font-sans text-xs">Name:</span>
+            <span className="font-bold text-gray-900 font-sans">{data.name}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-500 font-sans text-xs">Role:</span>
+            <span className="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded text-xs">{data.role}</span>
+          </div>
+          <div className="flex justify-between items-center border-t border-slate-200 pt-2">
+            <span className="text-gray-500 font-sans text-xs">Login Email / ID:</span>
+            <span className="font-bold text-blue-700">{data.email}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-500 font-sans text-xs">Initial Password:</span>
+            <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">{data.password}</span>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => {
+              navigator.clipboard.writeText(`Name: ${data.name}\nRole: ${data.role}\nEmail: ${data.email}\nPassword: ${data.password}`)
+              alert('Credentials copied to clipboard!')
+            }}
+            variant="outline" 
+            className="flex-1 border-emerald-300 text-emerald-800 hover:bg-emerald-50 text-xs font-bold gap-1.5 rounded-xl"
+          >
+            <Copy className="w-4 h-4" /> Copy Credentials
+          </Button>
+          <Button 
+            onClick={onClose}
+            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl"
+          >
+            Done
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ============ STAFF MANAGEMENT PAGE (Class Student Management) ============
 function StaffManagementPage({ user }: { user: User }) {
   const [activeStaffTab, setActiveStaffTab] = useState<'students' | 'student_credentials'>('students')
@@ -10133,8 +10201,17 @@ function StaffManagementPage({ user }: { user: User }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingStudent, setEditingStudent] = useState<any>(null)
-  const [studentForm, setStudentForm] = useState({ name: '', registerNumber: '', email: '', year: '1st Year', section: 'A' })
+  const [studentForm, setStudentForm] = useState({ 
+    name: '', 
+    registerNumber: '', 
+    email: '', 
+    year: '1st Year', 
+    section: 'A',
+    createLoginAccess: true,
+    password: 'student123' 
+  })
   const [selectedYear, setSelectedYear] = useState<string | null>(null)
+  const [createdCredentialsModal, setCreatedCredentialsModal] = useState<{ name: string; email: string; password: string; role: string } | null>(null)
   
   // Bulk Import State
   const [showImportModal, setShowImportModal] = useState(false)
@@ -10203,7 +10280,15 @@ function StaffManagementPage({ user }: { user: User }) {
   
   const handleAddStudent = () => {
     setEditingStudent(null)
-    setStudentForm({ name: '', registerNumber: '', email: '', year: '1st Year', section: 'A' })
+    setStudentForm({ 
+      name: '', 
+      registerNumber: '', 
+      email: '', 
+      year: '1st Year', 
+      section: 'A',
+      createLoginAccess: true,
+      password: 'student123'
+    })
     setShowAddModal(true)
   }
   
@@ -10212,11 +10297,42 @@ function StaffManagementPage({ user }: { user: User }) {
     setStudentForm({
       name: student.name || '',
       registerNumber: student.registerNumber || '',
-      email: student.user?.email || '',
+      email: student.user?.email || student.email || '',
       year: getYearFromSemester(student.semester),
       section: student.section || 'A',
+      createLoginAccess: Boolean(student.userId || student.user),
+      password: '',
     })
     setShowAddModal(true)
+  }
+
+  const enableLoginForStudent = async (studentId: string) => {
+    try {
+      const res = await fetch('/api/users/enable-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileType: 'STUDENT', ids: [studentId] })
+      })
+      const data = await res.json()
+      if (data.success) {
+        const created = data.createdAccounts?.[0]
+        if (created?.tempPassword) {
+          setCreatedCredentialsModal({
+            name: created.name || 'Student',
+            email: created.email,
+            password: created.tempPassword,
+            role: 'STUDENT'
+          })
+        } else {
+          alert('Login access enabled for student!')
+        }
+        fetchStudents()
+      } else {
+        alert(data.error || 'Failed to enable login access')
+      }
+    } catch (err: any) {
+      alert('Error enabling login: ' + err.message)
+    }
   }
   
   const handleSaveStudent = async () => {
@@ -10251,22 +10367,39 @@ function StaffManagementPage({ user }: { user: User }) {
         }
       } else {
         // Create new student
+        const targetEmail = studentForm.email || `${studentForm.registerNumber.toLowerCase()}@niet.ac.in`
+        const targetPassword = studentForm.password || 'student123'
+
         const res = await fetch('/api/students', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: studentForm.name,
             registerNumber: studentForm.registerNumber,
-            email: studentForm.email || `${studentForm.registerNumber.toLowerCase()}@niet.ac.in`,
-            password: 'student123',
+            email: targetEmail,
+            password: targetPassword,
+            createLoginAccess: studentForm.createLoginAccess !== false,
             departmentId: user.departmentId,
             semester: yearToSemester[studentForm.year],
             section: studentForm.section,
             admissionYear: new Date().getFullYear(),
           }),
         })
-        if (res.ok) {
+
+        const data = await res.json()
+
+        if (res.ok && data.success) {
+          if (studentForm.createLoginAccess) {
+            setCreatedCredentialsModal({
+              name: studentForm.name,
+              email: targetEmail,
+              password: targetPassword,
+              role: 'STUDENT'
+            })
+          }
           await fetchStudents()
+        } else {
+          alert(data.error || 'Failed to save student')
         }
       }
       
@@ -10499,7 +10632,7 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
                     <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Email</th>
                     <th className="text-center py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Year</th>
                     <th className="text-center py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Section</th>
-                    <th className="text-center py-3 px-4 text-xs font-semibold text-gray-500 uppercase">CGPA</th>
+                    <th className="text-center py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Login Access</th>
                     <th className="text-center py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Actions</th>
                   </tr>
                 </thead>
@@ -10513,7 +10646,7 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
                         <p className="font-medium text-gray-800">{student.name}</p>
                       </td>
                       <td className="py-3 px-4">
-                        <span className="text-sm text-gray-500">{student.user?.email || '-'}</span>
+                        <span className="text-sm text-gray-500">{student.user?.email || student.email || '-'}</span>
                       </td>
                       <td className="py-3 px-4 text-center">
                         <Badge variant="outline" className={
@@ -10529,7 +10662,20 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
                         <span className="text-sm text-gray-600">{student.section || 'A'}</span>
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <span className="text-sm font-medium text-gray-700">{student.cgpa || '-'}</span>
+                        {student.userId || student.user ? (
+                          <Badge className="bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200">
+                            <CheckCircle className="w-3 h-3 mr-1 inline" /> Active
+                          </Badge>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => enableLoginForStudent(student.id)}
+                            className="border-blue-300 text-blue-700 hover:bg-blue-50 text-xs font-bold py-1 h-7"
+                          >
+                            <Lock className="w-3 h-3 mr-1" /> Enable Login
+                          </Button>
+                        )}
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex justify-center gap-1">
@@ -10641,6 +10787,57 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
                   </select>
                 </div>
               </div>
+
+              {!editingStudent && (
+                <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-2 cursor-pointer font-semibold text-blue-900 text-sm">
+                      <input 
+                        type="checkbox" 
+                        checked={studentForm.createLoginAccess} 
+                        onChange={(e) => setStudentForm({...studentForm, createLoginAccess: e.target.checked})} 
+                        className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4" 
+                      />
+                      <Lock className="w-4 h-4 text-blue-600" />
+                      Enable Login Access for Student
+                    </label>
+                    {studentForm.createLoginAccess && (
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                        Active Account
+                      </span>
+                    )}
+                  </div>
+                  {studentForm.createLoginAccess && (
+                    <div className="space-y-2 pt-1">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Initial Password *</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={studentForm.password}
+                            onChange={(e) => setStudentForm({...studentForm, password: e.target.value})}
+                            placeholder="Set password (default: student123)"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                          />
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setStudentForm({...studentForm, password: generateTempPassword()})}
+                            className="shrink-0 text-xs text-blue-700 border-blue-300 hover:bg-blue-100"
+                          >
+                            Generate
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-600 bg-white p-2.5 rounded-lg border border-blue-100">
+                        <p><strong className="text-gray-800">Login ID / Email:</strong> {studentForm.email || (studentForm.registerNumber ? `${studentForm.registerNumber.toLowerCase()}@niet.ac.in` : 'Email or Reg No')}</p>
+                        <p><strong className="text-gray-800">Initial Password:</strong> <code className="bg-blue-100 px-1 rounded text-blue-800 font-bold">{studentForm.password || 'student123'}</code></p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             
             <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
@@ -10676,6 +10873,11 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
       />
         </>
       )}
+
+      <CreatedCredentialsModal 
+        data={createdCredentialsModal} 
+        onClose={() => setCreatedCredentialsModal(null)} 
+      />
     </div>
   )
 }
@@ -11397,7 +11599,10 @@ function StaffManagementSection({
     experience: '',
     researchArea: '',
     isHOD: false,
+    createLoginAccess: true,
+    password: 'faculty123',
   })
+  const [createdCredentialsModal, setCreatedCredentialsModal] = useState<{ name: string; email: string; password: string; role: string } | null>(null)
 
   const fetchStaff = useCallback(async () => {
     setLoading(true)
@@ -11429,6 +11634,8 @@ function StaffManagementSection({
       employeeId: '', name: '', email: '', phone: '',
       designation: '', qualification: '', specialization: '',
       experience: '', researchArea: '', isHOD: false,
+      createLoginAccess: true,
+      password: 'faculty123',
     })
     setShowForm(true)
   }
@@ -11437,15 +11644,17 @@ function StaffManagementSection({
     setEditingItem(member)
     setFormData({
       employeeId: member.employeeId,
-      name: member.user?.name || '',
-      email: member.user?.email || '',
-      phone: member.user?.phone || '',
+      name: member.user?.name || member.name || '',
+      email: member.user?.email || member.email || '',
+      phone: member.user?.phone || member.phone || '',
       designation: member.designation || '',
       qualification: member.qualification || '',
       specialization: member.specialization || '',
       experience: member.experience?.toString() || '',
       researchArea: member.researchArea || '',
       isHOD: member.isHOD || false,
+      createLoginAccess: Boolean(member.userId || member.user),
+      password: '',
     })
     setShowForm(true)
   }
@@ -11469,22 +11678,39 @@ function StaffManagementSection({
           fetchStaff()
         }
       } else {
+        const targetEmail = formData.email || `${formData.employeeId.toLowerCase()}@niet.edu`
+        const targetPassword = formData.password || 'faculty123'
+
         const res = await fetch('/api/faculty', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             ...formData,
+            email: targetEmail,
+            password: targetPassword,
+            createLoginAccess: formData.createLoginAccess !== false,
             departmentId: user.departmentId,
           }),
         })
         const data = await res.json()
-        if (data.success) {
+        if (res.ok && data.success) {
+          if (formData.createLoginAccess) {
+            setCreatedCredentialsModal({
+              name: data.faculty?.user?.name || formData.name,
+              email: data.faculty?.user?.email || targetEmail,
+              password: targetPassword,
+              role: formData.isHOD ? 'HOD' : 'STAFF',
+            })
+          }
           setShowForm(false)
           fetchStaff()
+        } else {
+          alert(data.error || 'Failed to save staff member')
         }
       }
     } catch (error) {
       console.error('Error saving staff:', error)
+      alert('Failed to save staff member')
     } finally {
       setSubmitting(false)
     }
@@ -11575,6 +11801,58 @@ function StaffManagementSection({
                   <span className="text-sm font-medium text-gray-700">Is HOD?</span>
                 </label>
               </div>
+
+              {!editingItem && (
+                <div className="md:col-span-2 lg:col-span-3 p-4 bg-purple-50/70 border border-purple-200 rounded-xl space-y-3 mt-2">
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-2 cursor-pointer font-semibold text-purple-900 text-sm">
+                      <input 
+                        type="checkbox" 
+                        checked={formData.createLoginAccess} 
+                        onChange={(e) => setFormData(p => ({...p, createLoginAccess: e.target.checked}))} 
+                        className="rounded text-purple-600 focus:ring-purple-500 w-4 h-4" 
+                      />
+                      <Lock className="w-4 h-4 text-purple-600" />
+                      Enable Login Access for Staff Member
+                    </label>
+                    {formData.createLoginAccess && (
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                        Active Account
+                      </span>
+                    )}
+                  </div>
+                  {formData.createLoginAccess && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Initial Password *</label>
+                        <div className="flex gap-2">
+                          <Input 
+                            type="text" 
+                            value={formData.password} 
+                            onChange={(e) => setFormData(p => ({...p, password: e.target.value}))} 
+                            placeholder="Set initial password"
+                            className="font-mono text-sm"
+                          />
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setFormData(p => ({...p, password: generateTempPassword()}))}
+                            className="shrink-0 text-xs text-purple-700 border-purple-300 hover:bg-purple-100"
+                          >
+                            Generate
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-600 flex flex-col justify-center bg-white p-2.5 rounded-lg border border-purple-100">
+                        <p><strong className="text-gray-800">Login Username / Email:</strong> {formData.email || (formData.employeeId ? `${formData.employeeId.toLowerCase()}@niet.edu` : 'Email or Emp ID')}</p>
+                        <p><strong className="text-gray-800">Initial Password:</strong> <code className="bg-purple-100 px-1 rounded text-purple-800 font-bold">{formData.password || 'faculty123'}</code></p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="md:col-span-2 lg:col-span-3 flex justify-end gap-3 mt-2">
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
                 <Button type="submit" disabled={submitting} className="bg-gradient-to-r from-purple-500 to-purple-600">
@@ -11796,6 +12074,11 @@ function StaffManagementSection({
           Allocate Login Credentials
         </Button>
       </div>
+
+      <CreatedCredentialsModal 
+        data={createdCredentialsModal} 
+        onClose={() => setCreatedCredentialsModal(null)} 
+      />
     </div>
   )
 }
@@ -11834,7 +12117,7 @@ function BatchManagementSection({
   const [faculty, setFaculty] = useState<any[]>([])
   const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 0 })
   const [expandedBatch, setExpandedBatch] = useState<string | null>(null)
-  const [batchStudents, setBatchStudents] = useState<any[]>({})
+  const [batchStudents, setBatchStudents] = useState<Record<string, any[]>>({})
   const [formData, setFormData] = useState({
     name: '',
     year: new Date().getFullYear().toString(),
@@ -12385,7 +12668,7 @@ function HODReportGeneratorPage({ user }: { user: User }) {
       if (subKey && value !== undefined) {
         newFaculty[index] = {
           ...newFaculty[index],
-          [field]: { ...newFaculty[index][field as keyof typeof newFaculty[0]], [subKey]: value }
+          [field]: { ...(newFaculty[index][field as keyof typeof newFaculty[0]] as object), [subKey]: value }
         }
       } else {
         newFaculty[index] = { ...newFaculty[index], [field]: value || '' }
@@ -12399,7 +12682,7 @@ function HODReportGeneratorPage({ user }: { user: User }) {
       const newFaculty = [...prev.facultyDev]
       newFaculty[index] = {
         ...newFaculty[index],
-        [field]: { ...newFaculty[index][field as keyof typeof newFaculty[0]], [subKey]: value }
+        [field]: { ...(newFaculty[index][field as keyof typeof newFaculty[0]] as object), [subKey]: value }
       }
       return { ...prev, facultyDev: newFaculty }
     })
@@ -12420,7 +12703,7 @@ function HODReportGeneratorPage({ user }: { user: User }) {
       const newData = [...prev.industryInteraction]
       newData[index] = {
         ...newData[index],
-        [field]: { ...newData[index][field as keyof typeof newData[0]], [subKey]: value }
+        [field]: { ...(newData[index][field as keyof typeof newData[0]] as object), [subKey]: value }
       }
       return { ...prev, industryInteraction: newData }
     })
@@ -12727,7 +13010,7 @@ function HODReportGeneratorPage({ user }: { user: User }) {
     setFetchingData(true)
     try {
       // Fetch department data
-      const response = await fetch(`/api/departments?name=${encodeURIComponent(user.departmentName)}`)
+      const response = await fetch(`/api/departments?name=${encodeURIComponent(user.departmentName || '')}`)
       const result = await response.json()
       
       if (result.success && result.departments && result.departments.length > 0) {
@@ -14688,7 +14971,7 @@ function AdminAnalyticsPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {data.departments.map((dept: any, idx: number) => (
-                    <tr key={dept.id} className={'hover:bg-gray-50 ' + idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50' + ''}>
+                    <tr key={dept.id} className={'hover:bg-gray-50 ' + (idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50')}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-white text-xs font-bold">
@@ -14756,11 +15039,10 @@ function AdminAnalyticsPage() {
             {data.topDepartments.map((dept: any, idx: number) => (
               <div key={dept.id} className="flex items-center gap-4">
                 <div className={'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ' + 
-                  idx === 0 ? 'bg-amber-500 text-white' :
+                  (idx === 0 ? 'bg-amber-500 text-white' :
                   idx === 1 ? 'bg-gray-400 text-white' :
                   idx === 2 ? 'bg-amber-700 text-white' :
-                  'bg-gray-200 text-gray-600'
-                 + ''}>
+                  'bg-gray-200 text-gray-600')}>
                   {idx + 1}
                 </div>
                 <div className="flex-1">
@@ -15409,7 +15691,7 @@ function ReportGeneratorPage({ user, initialView }: { user?: User; initialView?:
     csv += 'SECTION 2: DEPARTMENT-WISE PERFORMANCE ANALYSIS\n'
     csv += '=============================================================================\n\n'
     
-    csv += '"Department Name","Dept Code","Students","Faculty","Achievements","Publications","Placements","Internships","Performance Score","Growth Rate"\n'
+    csv += '"Department Name","Dept Code","Students","Faculty","Achievements","Publications","Placements","Internships","Performance Score","Growth Rate"\n';
     (Array.isArray(deptPerformance) ? deptPerformance : []).forEach((dept: any) => {
       csv += '"' + (dept.name || 'N/A') + '",'
       csv += '"' + (dept.code || 'N/A') + '",'
@@ -16565,8 +16847,7 @@ function EnterpriseReportPreview({
                     <tr key={dept.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3">
                         <span className={'w-7 h-7 rounded-full inline-flex items-center justify-center text-xs font-bold text-white ' + 
-                          idx === 0 ? 'bg-amber-500' : idx === 1 ? 'bg-gray-500' : idx === 2 ? 'bg-amber-700' : 'bg-gray-400'
-                         + ''}>
+                          (idx === 0 ? 'bg-amber-500' : idx === 1 ? 'bg-gray-500' : idx === 2 ? 'bg-amber-700' : 'bg-gray-400')}>
                           {idx + 1}
                         </span>
                       </td>
@@ -16601,8 +16882,7 @@ function EnterpriseReportPreview({
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span className={'inline-flex items-center gap-1 text-sm font-medium ' + 
-                          dept.growthRate > 0 ? 'text-green-600' : 'text-red-600'
-                         + ''}>
+                          (dept.growthRate > 0 ? 'text-green-600' : 'text-red-600')}>
                           {dept.growthRate > 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingUp className="w-4 h-4 rotate-180" />}
                           {dept.growthRate > 0 ? '+' : ''}{dept.growthRate.toFixed(1)}%
                         </span>
@@ -16625,7 +16905,7 @@ function EnterpriseReportPreview({
           <h2 className="text-lg font-semibold text-white flex items-center gap-2">
             <LineChart className="w-5 h-5" /> Performance Trends
           </h2>
-          <ChevronDown className={'w-5 h-5 text-white transition-transform ' + expandedSection === 'trends' ? 'rotate-180' : '' + ''} />
+          <ChevronDown className={'w-5 h-5 text-white transition-transform ' + (expandedSection === 'trends' ? 'rotate-180' : '')} />
         </div>
         
         {expandedSection === 'trends' && (
@@ -16697,8 +16977,7 @@ function EnterpriseReportPreview({
                 <div key={student.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
                   <div className="flex items-center gap-3">
                     <span className={'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white ' + 
-                      idx === 0 ? 'bg-amber-500' : idx === 1 ? 'bg-gray-500' : idx === 2 ? 'bg-amber-700' : 'bg-[#0A2E6D]'
-                     + ''}>
+                      (idx === 0 ? 'bg-amber-500' : idx === 1 ? 'bg-gray-500' : idx === 2 ? 'bg-amber-700' : 'bg-[#0A2E6D]')}>
                       {idx + 1}
                     </span>
                     <div>
@@ -16729,8 +17008,7 @@ function EnterpriseReportPreview({
                 <div key={faculty.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
                   <div className="flex items-center gap-3">
                     <span className={'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white bg-gradient-to-br ' + 
-                      idx < 3 ? 'from-violet-500 to-purple-600' : 'from-gray-400 to-gray-500'
-                     + ''}>
+                      (idx < 3 ? 'from-violet-500 to-purple-600' : 'from-gray-400 to-gray-500')}>
                       {idx + 1}
                     </span>
                     <div>
@@ -16758,7 +17036,7 @@ function EnterpriseReportPreview({
           <h2 className="text-lg font-semibold text-white flex items-center gap-2">
             <Award className="w-5 h-5" /> NAAC Criteria Analysis
           </h2>
-          <ChevronDown className={'w-5 h-5 text-white transition-transform ' + expandedSection === 'naac' ? 'rotate-180' : '' + ''} />
+          <ChevronDown className={'w-5 h-5 text-white transition-transform ' + (expandedSection === 'naac' ? 'rotate-180' : '')} />
         </div>
         
         {expandedSection === 'naac' && (
@@ -16769,10 +17047,9 @@ function EnterpriseReportPreview({
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-bold text-gray-500 uppercase">Criteria {idx + 1}</span>
                     <span className={'px-2 py-0.5 rounded-full text-xs font-bold ' + 
-                      criteria.score > 75 ? 'bg-green-100 text-green-700' :
+                      (criteria.score > 75 ? 'bg-green-100 text-green-700' :
                       criteria.score > 50 ? 'bg-amber-100 text-amber-700' :
-                      'bg-red-100 text-red-700'
-                     + ''}>
+                      'bg-red-100 text-red-700')}>
                       {criteria.score?.toFixed(0) || 0}
                     </span>
                   </div>
@@ -18026,11 +18303,10 @@ function AdminShowcasePage() {
             {data?.departments?.slice(0, 5).map((dept: any, idx: number) => (
               <div key={dept.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
                 <span className={'w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ' + 
-                  idx === 0 ? 'bg-yellow-400 text-yellow-900' :
+                  (idx === 0 ? 'bg-yellow-400 text-yellow-900' :
                   idx === 1 ? 'bg-gray-300 text-gray-700' :
                   idx === 2 ? 'bg-amber-600 text-white' :
-                  'bg-gray-200 text-gray-600'
-                 + ''}>
+                  'bg-gray-200 text-gray-600')}>
                   {idx + 1}
                 </span>
                 <div className="flex-1">
@@ -19299,7 +19575,8 @@ function Sidebar({
   open: boolean;
   onToggle: () => void;
 }) {
-  const roleConfig = ROLE_SIDEBAR_CONFIG[user.role as keyof typeof ROLE_SIDEBAR_CONFIG] || ROLE_SIDEBAR_CONFIG.ADMIN
+  const roleKey = String(user.role || '').trim().toUpperCase() as keyof typeof ROLE_SIDEBAR_CONFIG
+  const roleConfig = ROLE_SIDEBAR_CONFIG[roleKey] || ROLE_SIDEBAR_CONFIG.STUDENT
   const menuItems = roleConfig.menuItems
   const RoleIcon = roleConfig.roleIcon
 
@@ -20334,8 +20611,7 @@ function StudentFeedbackPage({ user, feedbackEnabled }: { user: User; feedbackEn
                   >
                     <Star 
                       className={'w-8 h-8 transition-colors ' + 
-                        star <= rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'
-                       + ''} 
+                        (star <= rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300')} 
                     />
                   </button>
                 ))}
@@ -23533,16 +23809,18 @@ export default function IQACPortal() {
   }
 
   const renderContent = () => {
+    const userRole = String(user?.role || '').trim().toUpperCase()
+
     // Role-specific safety mapping & guard
-    if (user?.role === 'HOD') {
+    if (userRole === 'HOD') {
       if (activeTab === 'staff_achievement' || activeTab === 'achievements') {
         return <MyAchievementPage user={user} />
       }
-    } else if (user?.role === 'STAFF') {
+    } else if (userRole === 'STAFF' || userRole === 'FACULTY') {
       if (activeTab === 'my_achievement' || activeTab === 'achievements') {
         return <StaffAchievementPage user={user} />
       }
-    } else if (user?.role === 'STUDENT') {
+    } else if (userRole === 'STUDENT') {
       if (['staff_achievement', 'my_achievement', 'hod_student_approval', 'hod_staff_approval', 'hod_management', 'staff_management', 'report_generator', 'database', 'user_management'].includes(activeTab)) {
         return <StudentAchievementsPage user={user} />
       }
@@ -23557,24 +23835,24 @@ export default function IQACPortal() {
       case 'activities': return <ActivitiesPage />
       case 'research': return <ResearchPage />
       case 'approvals': return <ApprovalsPage user={user} />
-      case 'analytics': return user?.role === 'ADMIN' 
+      case 'analytics': return (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN')
         ? <AdminAnalyticsPage /> 
-        : user?.role === 'HOD' 
+        : userRole === 'HOD' 
           ? <HODDepartmentAnalyticsPage user={user} /> 
           : <AnalyticsPage />
       case 'documents': return <DocumentsPage />
       case 'settings': return <SettingsPage user={user} />
       case 'database': return <DatabaseManagementPage />
-      case 'achievements': return user?.role === 'ADMIN'
+      case 'achievements': return (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN')
         ? <AdminAchievementsPage />
-        : user?.role === 'STUDENT' 
+        : userRole === 'STUDENT' 
           ? <StudentAchievementsPage user={user} />
           : <AchievementForm user={user} onBack={() => setActiveTab('dashboard')} />
       case 'report_generator': return <ReportGeneratorPage user={user} />
       case 'hod_monthly_report': return <HODReportGeneratorPage user={user || { id: 'hod-1', role: 'HOD', name: 'HOD User', email: 'hod@niet.edu', departmentName: (user as any)?.departmentName || 'Computer Science and Engineering' }} />
       case 'achievement_report': return <AchievementReportGenerator user={user || { id: 'staff-1', role: 'STAFF', name: 'Staff User', email: 'staff@niet.edu' }} />
       case 'staff_achievement': return <StaffAchievementPage user={user} />
-      case 'student_achievement_view': return user?.role === 'STUDENT' 
+      case 'student_achievement_view': return userRole === 'STUDENT' 
         ? <StudentAchievementsPage user={user} />
         : <StudentAchievementViewPage user={user} />
       case 'my_achievement': return <MyAchievementPage user={user} />

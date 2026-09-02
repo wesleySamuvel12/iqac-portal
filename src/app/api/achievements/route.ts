@@ -251,7 +251,7 @@ export async function POST(request: NextRequest) {
           requestedBy: targetUserId || targetStudentId,
           currentStage: 'STAFF_REVIEW',
           status: 'PENDING',
-          comments: `Submission created by ${achievement.student.name || 'Student'}`,
+          comments: `Submission created by ${achievement.student.user?.name || 'Student'}`,
         }
       })
 
@@ -269,7 +269,7 @@ export async function POST(request: NextRequest) {
           await tx.notification.create({
             data: {
               title: 'New Achievement Submission',
-              message: `${achievement.student.name || 'A student'} submitted '${achievement.title}' for approval`,
+              message: `${achievement.student.user?.name || 'A student'} submitted '${achievement.title}' for approval`,
               type: 'APPROVAL_REQUIRED',
               userId: staffUser.id,
               relatedId: approval.id,

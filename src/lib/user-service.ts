@@ -51,7 +51,15 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
 
   const normalizedEmail = email.trim().toLowerCase()
   const normalizedName = name.trim()
-  const targetRole = (role as string).toUpperCase() as UserRole
+
+  let targetRole: UserRole
+  if (role) {
+    targetRole = (role as string).toUpperCase() as UserRole
+  } else if (employeeId || designation) {
+    targetRole = 'STAFF'
+  } else {
+    targetRole = 'STUDENT'
+  }
 
   // Hash password outside of transaction to prevent CPU-heavy bcrypt operations from causing Prisma transaction timeouts
   let hashedPassword = ''

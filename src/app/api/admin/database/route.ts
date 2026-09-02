@@ -470,8 +470,8 @@ async function handleCleanup() {
     const orphanedFacultyActivities = await db.facultyActivity.findMany({
       where: {
         OR: [
-          { faculty: null },
-          { activity: null },
+          { faculty: null as any },
+          { activity: null as any },
         ],
       },
       select: { id: true },
@@ -491,8 +491,8 @@ async function handleCleanup() {
     const orphanedStudentActivities = await db.studentActivity.findMany({
       where: {
         OR: [
-          { student: null },
-          { activity: null },
+          { student: null as any },
+          { activity: null as any },
         ],
       },
       select: { id: true },
@@ -512,8 +512,8 @@ async function handleCleanup() {
     const orphanedResearchPublications = await db.researchPublication.findMany({
       where: {
         OR: [
-          { research: null },
-          { faculty: null },
+          { research: null as any },
+          { faculty: null as any },
         ],
       },
       select: { id: true },
@@ -531,7 +531,7 @@ async function handleCleanup() {
 
     // Clean up orphaned Notification records (user doesn't exist)
     const orphanedNotifications = await db.notification.findMany({
-      where: { user: null },
+      where: { user: null as any },
       select: { id: true },
     })
     
@@ -547,7 +547,7 @@ async function handleCleanup() {
 
     // Clean up orphaned AuditLog records (user doesn't exist)
     const orphanedAuditLogs = await db.auditLog.findMany({
-      where: { user: null },
+      where: { user: null as any },
       select: { id: true },
     })
     

@@ -54,11 +54,11 @@ export async function POST(request: NextRequest) {
     const achievements = generateSampleAchievements(students)
     
     // Insert achievements in batches
-    const createdAchievements = []
+    const createdAchievements: any[] = []
     for (const achievement of achievements) {
       try {
         const created = await prisma.studentAchievement.create({
-          data: achievement
+          data: achievement as any
         })
         createdAchievements.push(created)
       } catch (e) {
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     const placements = generateSamplePlacements(students)
     for (const placement of placements) {
       try {
-        await prisma.placement.create({ data: placement })
+        await prisma.placement.create({ data: placement as any })
       } catch (e) {}
     }
 
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     const internships = generateSampleInternships(students)
     for (const internship of internships) {
       try {
-        await prisma.internship.create({ data: internship })
+        await prisma.internship.create({ data: internship as any })
       } catch (e) {}
     }
 
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     const certifications = generateSampleCertifications(students)
     for (const cert of certifications) {
       try {
-        await prisma.studentCertification.create({ data: cert })
+        await prisma.studentCertification.create({ data: cert as any })
       } catch (e) {}
     }
 
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     const activities = generateSampleActivities(departments)
     for (const activity of activities) {
       try {
-        await prisma.activity.create({ data: activity })
+        await prisma.activity.create({ data: activity as any })
       } catch (e) {}
     }
 
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     const researchPapers = generateSampleResearch(departments)
     for (const paper of researchPapers) {
       try {
-        await prisma.research.create({ data: paper })
+        await prisma.research.create({ data: paper as any })
       } catch (e) {}
     }
 
@@ -218,7 +218,7 @@ function generateSampleAchievements(students: any[]) {
   ]
 
   // Distribute achievements among students
-  const result = []
+  const result: any[] = []
   let achievementIndex = 0
   
   for (let i = 0; i < Math.min(students.length, 25); i++) {

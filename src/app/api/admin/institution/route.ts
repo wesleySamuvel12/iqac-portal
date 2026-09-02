@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
 
     if (section === 'settings') {
       // Update multiple settings at once
-      const results = []
+      const results: any[] = []
       for (const [key, value] of Object.entries(updates)) {
         const setting = await db.setting.upsert({
           where: { key },

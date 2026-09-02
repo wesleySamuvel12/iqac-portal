@@ -242,8 +242,8 @@ async function handleRegistration(body: Record<string, unknown>) {
 
   // Validate role
   const validRoles: UserRole[] = ['ADMIN', 'HOD', 'STAFF', 'STUDENT'];
-  const userRole = (role as UserRole)?.toUpperCase() || 'STAFF';
-  if (!validRoles.includes(userRole)) {
+  const userRole = ((role as string)?.toUpperCase() || 'STAFF') as UserRole;
+  if (!validRoles.includes(userRole as UserRole)) {
     return NextResponse.json(
       { success: false, error: 'Invalid role specified' },
       { status: 400 }
@@ -259,7 +259,7 @@ async function handleRegistration(body: Record<string, unknown>) {
       name: name as string,
       email: (email as string).toLowerCase(),
       password: hashedPassword,
-      role: userRole,
+      role: userRole as any,
       departmentId: departmentId as string | undefined,
       phone: phone as string | undefined,
     },
@@ -293,7 +293,7 @@ async function handleRegistration(body: Record<string, unknown>) {
       email: newUser.email,
       role: newUser.role,
       departmentId: newUser.departmentId,
-      departmentName: newUser.department?.name,
+      departmentName: (newUser as any).department?.name,
       isAuthenticated: true
     },
     message: 'User registered successfully'

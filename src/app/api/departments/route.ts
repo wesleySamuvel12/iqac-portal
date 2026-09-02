@@ -11,7 +11,13 @@ export async function GET(request: NextRequest) {
     const departments = await db.department.findMany({
       where,
       orderBy: { name: 'asc' },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        description: true,
+        isActive: true,
+        establishedYear: true,
         _count: {
           select: {
             faculty: true,

@@ -142,12 +142,12 @@ export async function POST() {
       if (!department) {
         // Try to find by name (case insensitive)
         const allDepts = await db.department.findMany()
-        department = allDepts.find(d => 
+        department = (allDepts.find(d => 
           d.code === dept.code || 
           d.name.toLowerCase().includes(dept.name.toLowerCase()) ||
           dept.name.toLowerCase().includes(d.name.toLowerCase()) ||
           d.code?.toLowerCase() === dept.code.toLowerCase()
-        )
+        ) || null) as any
       }
       
       // If still not found and it's AER (Aeronautical), try alternative codes
@@ -308,7 +308,7 @@ export async function POST() {
           await db.activity.create({
             data: {
               title,
-              type,
+              type: type as any,
               description: `A comprehensive ${type.toLowerCase()} organized by the Department of ${deptInfo.name}. This event focuses on latest trends and technologies.`,
               startDate,
               endDate: new Date(startDate.getTime() + randomInt(1, 3) * 24 * 60 * 60 * 1000),
@@ -342,7 +342,7 @@ export async function POST() {
           await db.research.create({
             data: {
               title: `${topic}: A Comprehensive Study`,
-              type,
+              type: type as any,
               description: `Research publication on ${topic} from Department of ${deptInfo.name}`,
               authors: JSON.stringify([getRandomFacultyName(), getRandomFacultyName(false)].filter(Boolean)),
               publication: type === 'JOURNAL' ? 'International Journal of Engineering' : (type === 'CONFERENCE' ? 'IEEE International Conference' : 'Springer Book Series'),
@@ -388,7 +388,6 @@ export async function POST() {
                 status: ['FILED', 'PUBLISHED', 'GRANTED'][i % 3] as any,
                 country: 'India',
                 category: 'Product Patent',
-                description: `A novel invention related to ${topic}`,
                 facultyId: faculty.id,
               }
             })
@@ -412,7 +411,7 @@ export async function POST() {
             await db.project.create({
               data: {
                 title: `${topic} Based System`,
-                type: Math.random() > 0.5 ? 'SPONSORED' : 'SELF_FINANCED',
+                type: (Math.random() > 0.5 ? 'SPONSORED' : 'RESEARCH') as any,
                 description: `Development of an innovative system for ${topic.toLowerCase()}`,
                 principalInvestigator: getRandomFacultyName(),
                 coInvestigators: JSON.stringify([getRandomFacultyName(false)]),
@@ -420,7 +419,7 @@ export async function POST() {
                 amount: Math.random() > 0.5 ? randomInt(500000, 5000000) : null,
                 startDate: randomDate(new Date(2023, 0, 1), new Date(2024, 6, 1)),
                 endDate: randomDate(new Date(2024, 6, 1), new Date(2026, 0, 1)),
-                status: ['ONGOING', 'COMPLETED'][i % 2],
+                status: (['ONGOING', 'COMPLETED'][i % 2]) as any,
                 outcomes: `Expected outcomes include publications and prototypes`,
                 facultyId: faculties[i % faculties.length].id,
               }

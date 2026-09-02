@@ -112,15 +112,36 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null, isAuthenticated: false, isCmsMode: false })
       },
 
-      setUser: (user) => set({ user, isAuthenticated: !!user }),
+      setUser: (user) => {
+        if (user && user.role) {
+          const normalizedRole = String(user.role).trim().toUpperCase() as any
+          user = { ...user, role: normalizedRole }
+        }
+        set({ user, isAuthenticated: !!user })
+      },
       setLoading: (loading) => set({ isLoading: loading }),
       setCmsMode: (mode) => set({ isCmsMode: mode }),
 
-      isAdmin: () => get().user?.role === 'ADMIN',
-      isSuperAdmin: () => get().user?.role === 'SUPER_ADMIN',
-      isHOD: () => get().user?.role === 'HOD',
-      isStaff: () => get().user?.role === 'STAFF',
-      isStudent: () => get().user?.role === 'STUDENT',
+      isAdmin: () => {
+        const role = get().user?.role
+        return role === 'ADMIN' || (typeof role === 'string' && role.toUpperCase() === 'ADMIN')
+      },
+      isSuperAdmin: () => {
+        const role = get().user?.role
+        return role === 'SUPER_ADMIN' || (typeof role === 'string' && role.toUpperCase() === 'SUPER_ADMIN')
+      },
+      isHOD: () => {
+        const role = get().user?.role
+        return role === 'HOD' || (typeof role === 'string' && role.toUpperCase() === 'HOD')
+      },
+      isStaff: () => {
+        const role = get().user?.role
+        return role === 'STAFF' || (typeof role === 'string' && (role.toUpperCase() === 'STAFF' || role.toUpperCase() === 'FACULTY'))
+      },
+      isStudent: () => {
+        const role = get().user?.role
+        return role === 'STUDENT' || (typeof role === 'string' && role.toUpperCase() === 'STUDENT')
+      },
     }),
     {
       name: 'iqac-auth-storage',

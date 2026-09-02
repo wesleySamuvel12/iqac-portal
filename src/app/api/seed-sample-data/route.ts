@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
 // Sample Data Seeding API for IQAC Portal
@@ -397,7 +397,7 @@ export async function POST(request: NextRequest) {
     // ========== PLACEMENTS ==========
     if (students.length > 0) {
       const finalYearStudents = students.filter(s => 
-        s.year === 4 || s.semester >= 7 || Math.random() > 0.7
+        (s as any).year === 4 || (s.semester ?? 0) >= 7 || Math.random() > 0.7
       )
 
       for (const student of finalYearStudents.slice(0, Math.min(finalYearStudents.length, 25))) {
