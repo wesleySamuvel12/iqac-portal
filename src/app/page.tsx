@@ -4921,10 +4921,38 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
     }
   }, [user.departmentId, user.departmentName])
 
+  // Fetch department staff from database
+  const fetchHodStaff = useCallback(async () => {
+    if (!user.departmentId) return
+    try {
+      const res = await fetch(`/api/faculty?departmentId=${user.departmentId}&limit=200`)
+      const data = await res.json()
+      if (data.success && Array.isArray(data.faculty)) {
+        const mapped = data.faculty.map((f: any) => ({
+          id: f.id,
+          name: f.name || f.user?.name || `Faculty ${f.employeeId}`,
+          employeeId: f.employeeId,
+          empId: f.employeeId,
+          designation: f.designation || 'Faculty Member',
+          email: f.user?.email || f.email || '',
+          phone: f.user?.phone || f.phone || '',
+          status: f.user?.status || 'active',
+          loginAccess: Boolean(f.userId || f.user),
+          department: f.department?.name || user.departmentName,
+          isHOD: f.isHOD || false
+        }))
+        setDepartmentStaff(mapped)
+      }
+    } catch (e) {
+      console.error('Failed to fetch department staff from DB:', e)
+    }
+  }, [user.departmentId, user.departmentName])
+
   useEffect(() => {
     fetchHodStudents()
+    fetchHodStaff()
     fetchHodApprovals()
-  }, [fetchHodStudents, fetchHodApprovals])
+  }, [fetchHodStudents, fetchHodStaff, fetchHodApprovals])
 
   // ==================== STUDENT CRUD OPERATIONS ====================
   const handleAddStudent = () => {
@@ -7225,9 +7253,33 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
     }
   }, [user.departmentId, user.departmentName])
 
+  const [departmentFaculty, setDepartmentFaculty] = useState<any[]>([])
+  const [loadingFaculty, setLoadingFaculty] = useState(true)
+  const [facultyProfile, setFacultyProfile] = useState<any>(null)
+
   useEffect(() => {
     fetchStaffApprovals()
-  }, [fetchStaffApprovals])
+
+    if (user.departmentId) {
+      fetch(`/api/faculty?departmentId=${user.departmentId}&limit=50`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.faculty) {
+            setDepartmentFaculty(data.faculty)
+            const currentProfile = data.faculty.find((f: any) => 
+              f.userId === user.id || (f.email && f.email.toLowerCase() === user.email.toLowerCase())
+            )
+            if (currentProfile) {
+              setFacultyProfile(currentProfile)
+            }
+          }
+        })
+        .catch(err => console.error('Error fetching staff details:', err))
+        .finally(() => setLoadingFaculty(false))
+    } else {
+      setLoadingFaculty(false)
+    }
+  }, [fetchStaffApprovals, user.departmentId, user.id, user.email])
   
   // Calculate stats from actual data
   const totalRecords = staffAchievements.length
@@ -7259,10 +7311,119 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
 
   return (
     <div className="w-full space-y-6">
-      {/* Stats Cards Row - With Real Data */}
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-white">
-        <h2 className="text-2xl font-bold mb-2">Staff Portal</h2>
-        <p className="text-emerald-100">Welcome, {user.name} • {user.departmentName}</p>
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-[#0B1F3A] via-[#0F284B] to-[#155EEF] rounded-2xl p-6 sm:p-8 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-bold uppercase tracking-wider border border-emerald-400/30">
+              Staff & Faculty Portal
+            </span>
+            <span className="px-3 py-1 bg-white/10 text-slate-200 rounded-full text-xs font-bold">
+              {user.departmentName || 'Department Staff'}
+            </span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-white">Welcome, {user.name}</h2>
+          <p className="text-slate-200 text-xs sm:text-sm mt-1">Access your staff identity, department faculty details, and achievement submissions.</p>
+        </div>
+      </div>
+
+      {/* Staff Identity & Credentials Details Card */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <UserCheck className="w-5 h-5 text-[#155EEF]" /> Staff Identity Details
+          </h3>
+          <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg border border-emerald-200">
+            ACTIVE STAFF MEMBER
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Employee ID</p>
+            <p className="text-base font-extrabold text-slate-900 mt-1">
+              {facultyProfile?.employeeId || (user as any).employeeId || 'EMP-STAFF'}
+            </p>
+          </div>
+
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Official Email</p>
+            <p className="text-base font-extrabold text-slate-900 mt-1 truncate" title={user.email}>
+              {user.email}
+            </p>
+          </div>
+
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Designation</p>
+            <p className="text-base font-extrabold text-slate-900 mt-1">
+              {facultyProfile?.designation || 'Assistant Professor'}
+            </p>
+          </div>
+
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Department</p>
+            <p className="text-base font-extrabold text-slate-900 mt-1 truncate">
+              {user.departmentName || (user as any).department?.name || 'Computer Science'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Staff Roster / Department Staff Details Table */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Users className="w-5 h-5 text-[#155EEF]" /> Department Faculty & Staff Details
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Roster of faculty members in {user.departmentName || 'your department'}
+            </p>
+          </div>
+          <span className="px-3 py-1 bg-blue-50 text-[#155EEF] font-bold text-xs rounded-xl border border-blue-100">
+            {departmentFaculty.length} Staff Members
+          </span>
+        </div>
+
+        {loadingFaculty ? (
+          <div className="py-6 text-center text-slate-500 text-sm">Loading staff details...</div>
+        ) : departmentFaculty.length === 0 ? (
+          <div className="py-6 text-center text-slate-500 text-sm">No staff members found for this department.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200">
+                  <th className="p-3">Staff Name</th>
+                  <th className="p-3">Emp ID</th>
+                  <th className="p-3">Designation</th>
+                  <th className="p-3">Email</th>
+                  <th className="p-3">Phone</th>
+                  <th className="p-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                {departmentFaculty.map((member: any) => (
+                  <tr key={member.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="p-3 font-bold text-slate-900 flex items-center gap-2">
+                      {member.name || member.user?.name}
+                      {member.isHOD && <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 font-extrabold text-[10px] rounded">HOD</span>}
+                    </td>
+                    <td className="p-3 font-mono font-semibold text-slate-600">{member.employeeId}</td>
+                    <td className="p-3 font-medium">{member.designation || 'Faculty'}</td>
+                    <td className="p-3 font-mono text-slate-600">{member.email || member.user?.email}</td>
+                    <td className="p-3 text-slate-500">{member.phone || member.user?.phone || 'N/A'}</td>
+                    <td className="p-3">
+                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200">
+                        Active
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
