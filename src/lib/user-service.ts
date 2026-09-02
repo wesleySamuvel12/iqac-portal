@@ -254,28 +254,6 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
       }
     }
 
-    // Audit log safely inside transaction
-    if (user) {
-      try {
-        await tx.auditLog.create({
-          data: {
-            userId: user.id,
-            action: 'CREATE_OR_UPDATE_USER',
-            entityType: 'USER',
-            entityId: user.id,
-            newValue: JSON.stringify({
-              role: user.role,
-              email: user.email,
-              createLoginAccess,
-              createdBy: createdBy || 'System'
-            })
-          }
-        })
-      } catch (auditErr) {
-        console.warn('Non-critical audit log creation skipped:', auditErr)
-      }
-    }
-
     return {
       user,
       profile,
@@ -286,4 +264,28 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
     timeout: 15000,
     maxWait: 10000,
   })
+
+  // Audit Log outside transaction using standalone db client (Pattern B)
+  if (result.user) {
+    try {
+      await db.auditLog.create({
+        data: {
+          userId: result.user.id,
+          action: 'CREATE_OR_UPDATE_USER',
+          entityType: 'USER',
+          entityId: result.user.id,
+          newValue: JSON.stringify({
+            role: result.user.role,
+            email: result.user.email,
+            createLoginAccess,
+            createdBy: createdBy || 'System'
+          })
+        }
+      })
+    } catch (auditErr) {
+      console.warn('Non-critical audit log creation skipped:', auditErr)
+    }
+  }
+
+  return result
 }

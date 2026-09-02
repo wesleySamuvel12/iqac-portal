@@ -327,32 +327,39 @@ export async function POST(request: NextRequest) {
             }
           }
         })
-
-        // Notify Submitter when approved or rejected
-        if (updatedAchievement?.student?.userId) {
-          await tx.notification.create({
-            data: {
-              title: `Achievement Submission ${finalStatus === 'APPROVED' ? 'Approved ✓' : 'Rejected ✕'}`,
-              message: `Your achievement '${updatedAchievement.title}' has been ${finalStatus === 'APPROVED' ? 'approved by Staff' : 'rejected'}${comments ? ': ' + comments : ''}`,
-              type: finalStatus === 'APPROVED' ? 'APPROVED' : 'REJECTED',
-              userId: updatedAchievement.student.userId,
-              relatedId: updatedAchievement.id,
-              entityType: 'ACHIEVEMENT'
-            }
-          })
-        }
       }
 
-      // 4. Create Audit Log (REQUIREMENT #14)
-      await tx.auditLog.create({
+      return { approval: updatedApproval, achievement: updatedAchievement, nextStage, finalStatus, statusText }
+    })
+
+    // 4. Notify Submitter & Create Audit Log OUTSIDE transaction using shared db client (Pattern B)
+    if (updatedResult.achievement?.student?.userId) {
+      try {
+        await db.notification.create({
+          data: {
+            title: `Achievement Submission ${updatedResult.finalStatus === 'APPROVED' ? 'Approved ✓' : 'Rejected ✕'}`,
+            message: `Your achievement '${updatedResult.achievement.title}' has been ${updatedResult.finalStatus === 'APPROVED' ? 'approved by Staff' : 'rejected'}${comments ? ': ' + comments : ''}`,
+            type: updatedResult.finalStatus === 'APPROVED' ? 'APPROVED' : 'REJECTED',
+            userId: updatedResult.achievement.student.userId,
+            relatedId: updatedResult.achievement.id,
+            entityType: 'ACHIEVEMENT'
+          }
+        })
+      } catch (notifError) {
+        console.error('Non-critical notification error:', notifError)
+      }
+    }
+
+    try {
+      await db.auditLog.create({
         data: {
           userId: reviewedBy || 'SYSTEM',
-          action: finalStatus === 'APPROVED' ? 'APPROVE_ACHIEVEMENT' : 'REJECT_ACHIEVEMENT',
+          action: updatedResult.finalStatus === 'APPROVED' ? 'APPROVE_ACHIEVEMENT' : 'REJECT_ACHIEVEMENT',
           entityType: 'ACHIEVEMENT',
           entityId: targetAchievementId || approval?.id || 'UNKNOWN',
           newValue: JSON.stringify({
-            action: finalStatus,
-            statusText,
+            action: updatedResult.finalStatus,
+            statusText: updatedResult.statusText,
             reviewerRole: callerRoleUpper,
             reviewerName: reviewerName || 'Reviewer',
             submitterRole,
@@ -362,9 +369,9 @@ export async function POST(request: NextRequest) {
           })
         }
       })
-
-      return { approval: updatedApproval, achievement: updatedAchievement, nextStage, finalStatus, statusText }
-    })
+    } catch (auditError) {
+      console.error('Non-critical audit log error:', auditError)
+    }
 
     return NextResponse.json({
       success: true,

@@ -255,32 +255,36 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      // 3. Create Notification for HOD/Staff if user exists
-      if (achievement.student.departmentId) {
-        const deptStaff = await tx.user.findMany({
+      return { achievement, approval }
+    })
+
+    // Dispatch Notifications for HOD/Staff outside the transaction using shared db client (Pattern B)
+    if (result.achievement.student.departmentId) {
+      try {
+        const deptStaff = await db.user.findMany({
           where: {
-            departmentId: achievement.student.departmentId,
+            departmentId: result.achievement.student.departmentId,
             role: { in: ['STAFF', 'HOD'] }
           },
           select: { id: true }
         })
 
-        for (const staffUser of deptStaff) {
-          await tx.notification.create({
-            data: {
+        if (deptStaff.length > 0) {
+          await db.notification.createMany({
+            data: deptStaff.map(staffUser => ({
               title: 'New Achievement Submission',
-              message: `${achievement.student.user?.name || 'A student'} submitted '${achievement.title}' for approval`,
+              message: `${result.achievement.student.user?.name || 'A student'} submitted '${result.achievement.title}' for approval`,
               type: 'APPROVAL_REQUIRED',
               userId: staffUser.id,
-              relatedId: approval.id,
+              relatedId: result.approval.id,
               entityType: 'ACHIEVEMENT'
-            }
+            }))
           })
         }
+      } catch (notifError) {
+        console.error('Non-critical notification dispatch error:', notifError)
       }
-
-      return { achievement, approval }
-    })
+    }
 
     return NextResponse.json({
       success: true,
