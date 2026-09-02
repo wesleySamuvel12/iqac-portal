@@ -63,9 +63,20 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
 
   // Hash password outside of transaction to prevent CPU-heavy bcrypt operations from causing Prisma transaction timeouts
   let hashedPassword = ''
+  let finalRawPassword = ''
   if (createLoginAccess) {
-    const rawPassword = password && password.trim() ? password.trim() : '12345678'
-    hashedPassword = await hashPassword(rawPassword)
+    if (password && password.trim().length > 0) {
+      finalRawPassword = password.trim()
+    } else {
+      switch (targetRole) {
+        case 'HOD': finalRawPassword = 'hod123'; break
+        case 'STAFF': finalRawPassword = 'staff123'; break
+        case 'STUDENT': finalRawPassword = 'student123'; break
+        case 'ADMIN': finalRawPassword = 'admin123'; break
+        default: finalRawPassword = '12345678'; break
+      }
+    }
+    hashedPassword = await hashPassword(finalRawPassword)
   }
 
   return await db.$transaction(async (tx) => {
@@ -109,7 +120,8 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
           departmentId: validDeptId || undefined,
           isActive: true,
           status: 'ACTIVE',
-          ...(password ? { password: hashedPassword } : {}),
+          password: hashedPassword,
+          ...(mustChangePassword !== undefined ? { mustChangePassword: !!mustChangePassword } : {}),
         },
         create: {
           name: normalizedName,
@@ -120,7 +132,7 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
           phone: phone || null,
           isActive: true,
           status: 'ACTIVE',
-          mustChangePassword: !!mustChangePassword,
+          mustChangePassword: mustChangePassword !== undefined ? !!mustChangePassword : true,
           createdBy: createdBy || null,
           createdByRole: createdByRole || null,
           createdById: createdById || null,
@@ -268,6 +280,7 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
       user,
       profile,
       loginAccess: Boolean(userId),
+      rawPassword: finalRawPassword
     }
   }, {
     timeout: 15000,

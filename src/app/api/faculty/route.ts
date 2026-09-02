@@ -160,7 +160,8 @@ export async function POST(request: NextRequest) {
       success: true,
       faculty,
       user: result.user,
-      loginAccess: result.loginAccess
+      loginAccess: result.loginAccess,
+      rawPassword: result.rawPassword
     }, { status: 201 })
   } catch (error: any) {
     console.error('Error creating faculty:', error)

@@ -157,7 +157,8 @@ export async function POST(request: NextRequest) {
       success: true,
       student: result.profile,
       user: result.user,
-      loginAccess: result.loginAccess
+      loginAccess: result.loginAccess,
+      rawPassword: result.rawPassword
     }, { status: 201 })
   } catch (error: any) {
     console.error('Error creating student:', error)
