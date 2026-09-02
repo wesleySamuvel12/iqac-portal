@@ -5238,7 +5238,7 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
               className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15 min-w-[140px] text-center"
             >
               <p className="text-cyan-200 text-xs font-semibold uppercase tracking-wider">Dept Code</p>
-              <p className="text-2xl font-black mt-0.5 tracking-tight text-white">{user.departmentName?.substring(0, 3).toUpperCase() || 'CSE'}</p>
+              <p className="text-2xl font-black mt-0.5 tracking-tight text-white">{getDeptShortCode(user.departmentName || '') || 'MCT'}</p>
             </motion.div>
             <motion.div 
               whileHover={{ y: -3 }}
