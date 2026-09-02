@@ -156,18 +156,22 @@ export async function POST(request: NextRequest) {
       data: { lastLogin: new Date() }
     });
 
-    // Create audit log
-    await db.auditLog.create({
-      data: {
-        userId: user.id,
-        action: 'LOGIN',
-        entityType: 'USER',
-        entityId: user.id,
-        newValue: JSON.stringify({ loginTime: new Date().toISOString() }),
-        ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
-        userAgent: request.headers.get('user-agent') || 'unknown'
-      }
-    });
+    // Create audit log safely without blocking primary login response
+    try {
+      await db.auditLog.create({
+        data: {
+          userId: user.id,
+          action: 'LOGIN',
+          entityType: 'USER',
+          entityId: user.id,
+          newValue: JSON.stringify({ loginTime: new Date().toISOString() }),
+          ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+          userAgent: request.headers.get('user-agent') || 'unknown'
+        }
+      });
+    } catch (auditErr) {
+      console.warn('Non-critical audit log creation skipped during login:', auditErr);
+    }
 
     const response = NextResponse.json({
       success: true,
@@ -270,20 +274,24 @@ async function handleRegistration(body: Record<string, unknown>) {
     }
   });
 
-  // Create audit log
-  await db.auditLog.create({
-    data: {
-      userId: newUser.id,
-      action: 'REGISTER',
-      entityType: 'USER',
-      entityId: newUser.id,
-      newValue: JSON.stringify({ 
-        name: newUser.name, 
-        email: newUser.email, 
-        role: newUser.role 
-      })
-    }
-  });
+  // Create audit log safely
+  try {
+    await db.auditLog.create({
+      data: {
+        userId: newUser.id,
+        action: 'REGISTER',
+        entityType: 'USER',
+        entityId: newUser.id,
+        newValue: JSON.stringify({ 
+          name: newUser.name, 
+          email: newUser.email, 
+          role: newUser.role 
+        })
+      }
+    });
+  } catch (auditErr) {
+    console.warn('Non-critical audit log creation skipped during registration:', auditErr);
+  }
 
   return NextResponse.json({
     success: true,
