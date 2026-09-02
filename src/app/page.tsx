@@ -19825,6 +19825,9 @@ function Sidebar({
             onClick={(e) => {
               e.stopPropagation()
               setActiveTab(item.id)
+              if (typeof window !== 'undefined' && window.innerWidth < 1024 && open) {
+                onToggle()
+              }
             }}
             className={'w-full flex items-center ' + (open ? 'gap-3 px-3' : 'justify-center px-0') + ' py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative group ' + itemClass}
             title={!open ? item.label : undefined}
@@ -23913,7 +23916,7 @@ export default function IQACPortal() {
   const [mounted, setMounted] = useState(false)
   const [feedbackEnabled, setFeedbackEnabled] = useState(true)
   const [darkMode, setDarkMode] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(true) // Sidebar open by default
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   
   // Hierarchy Navigation State
   const [hierarchyState, setHierarchyState] = useState<HierarchyState>({
@@ -23922,6 +23925,9 @@ export default function IQACPortal() {
 
   useEffect(() => {
     setMounted(true)
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+      setSidebarOpen(true)
+    }
     // Load settings from localStorage
     const savedFeedback = localStorage.getItem('iqac-feedback-enabled')
     if (savedFeedback !== null) {
@@ -23967,6 +23973,13 @@ export default function IQACPortal() {
 
   if (!isAuthenticated || !user) {
     return <LoginPage />
+  }
+
+  // Mandatory First-Login Route Guard:
+  // If user must change password, return ONLY the standalone Change Password Page.
+  // DO NOT render Sidebar, Header, Mobile Drawer, or Dashboard Layout!
+  if (user?.mustChangePassword) {
+    return <FirstLoginModal user={user} onSuccess={() => {}} />
   }
 
   const renderContent = () => {
@@ -24031,10 +24044,6 @@ export default function IQACPortal() {
 
   return (
     <div className={'min-h-screen ' + (darkMode ? 'dark-theme' : '')} suppressHydrationWarning>
-      {/* Mandatory First-Login Temporary Password Modal */}
-      {user?.mustChangePassword && (
-        <FirstLoginModal user={user} onSuccess={() => {}} />
-      )}
       {/* Sidebar - Fixed Position */}
       <Sidebar 
         activeTab={activeTab} 
