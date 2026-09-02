@@ -351,7 +351,11 @@ export function DepartmentCredentialManager({
                         <td className="py-3.5 px-5">
                           <Badge className="bg-indigo-50 text-indigo-700 font-bold text-xs">{u.role}</Badge>
                         </td>
-                        <td className="py-3.5 px-5 text-xs font-semibold text-slate-700">{u.department?.name || user.departmentName}</td>
+                        <td className="py-3.5 px-5">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 font-bold border border-blue-200 text-xs">
+                            {u.department?.name || u.department?.code || user.departmentName || 'N/A'}
+                          </span>
+                        </td>
                         <td className="py-3.5 px-5">
                           <Badge className={statusStr === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800 text-xs font-bold' : 'bg-red-100 text-red-800 text-xs font-bold'}>
                             {statusStr}

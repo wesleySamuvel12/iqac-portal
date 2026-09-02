@@ -17,6 +17,10 @@ export async function GET(request: NextRequest) {
 
     const where: any = {}
 
+    if (statusParam && statusParam !== 'ALL' && statusParam !== 'all') {
+      where.status = statusParam
+    }
+
     // Stage & Role Filter
     if (stageParam) {
       where.currentStage = stageParam
@@ -37,7 +41,7 @@ export async function GET(request: NextRequest) {
     })
 
     // 2. Auto-fetch pending StudentAchievements that may lack an Approval entry
-    if (mode !== 'monitoring') {
+    if (mode !== 'monitoring' && (statusParam === 'PENDING' || statusParam === 'ALL')) {
       const pendingAchievements = await db.studentAchievement.findMany({
         where: {
           approvalStatus: 'PENDING',
@@ -153,17 +157,23 @@ export async function GET(request: NextRequest) {
       })
     )
 
-    // Filter by role & department
+    // Filter by status, role & department
     let filteredItems = enrichedApprovals
 
+    if (statusParam && statusParam !== 'ALL' && statusParam !== 'all') {
+      filteredItems = filteredItems.filter(item => item.status === statusParam)
+    }
+
     if (callerRole === 'STAFF' && mode === 'actionable') {
-      filteredItems = enrichedApprovals.filter(item => item.submitterRole === 'STUDENT')
+      filteredItems = filteredItems.filter(item => item.submitterRole === 'STUDENT')
     } else if (callerRole === 'HOD' && mode === 'actionable') {
-      filteredItems = enrichedApprovals.filter(item => item.submitterRole === 'STAFF' || item.currentStage === 'HOD_REVIEW')
+      filteredItems = filteredItems.filter(item => item.submitterRole === 'STAFF' || item.submitterRole === 'FACULTY' || item.currentStage === 'HOD_REVIEW')
+    } else if (callerRole === 'HOD' && mode === 'monitoring') {
+      filteredItems = filteredItems.filter(item => item.submitterRole === 'STUDENT')
     }
 
     if (departmentId && departmentId !== 'ALL' && departmentId !== 'all') {
-      filteredItems = filteredItems.filter(item => item.departmentId === departmentId || !item.departmentId)
+      filteredItems = filteredItems.filter(item => item.departmentId === departmentId)
     }
 
     return NextResponse.json({

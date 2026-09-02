@@ -13,6 +13,7 @@ const DEPARTMENTS = [
   'Electrical & Electronics Engineering',
   'Information Technology',
   'Mechanical Engineering',
+  'Mechatronics Engineering',
   'Mechatronics',
   'MBA',
   'Science & Humanities'

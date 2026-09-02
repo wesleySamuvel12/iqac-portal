@@ -29,7 +29,10 @@ const DEPARTMENTS_LIST = [
   { id: 'cm7a1b2c30004abc123456789', name: 'Mechanical Engineering', code: 'MECH' },
   { id: 'cm7a1b2c30005abc123456789', name: 'Aeronautical Engineering', code: 'AERO' },
   { id: 'cm7a1b2c30006abc123456789', name: 'Mechatronics Engineering', code: 'MCT' },
-  { id: 'cm7a1b2c30007abc123456789', name: 'Science and Humanities', code: 'S&H' },
+  { id: 'cm7a1b2c30007abc123456789', name: 'Artificial Intelligence and Data Science', code: 'AI&DS' },
+  { id: 'cm7a1b2c30008abc123456789', name: 'Computer Science and Business Systems', code: 'CSBS' },
+  { id: 'cm7a1b2c30009abc123456789', name: 'Master of Business Administration', code: 'MBA' },
+  { id: 'cm7a1b2c30010abc123456789', name: 'Science and Humanities', code: 'S&H' },
 ]
 
 export function UserManagementSection({ user }: UserManagementSectionProps) {
@@ -553,8 +556,8 @@ export function UserManagementSection({ user }: UserManagementSectionProps) {
                           </Badge>
                         </td>
                         <td className="py-4 px-6">
-                          <span className="font-semibold text-slate-800">
-                            {u.department?.code || u.department?.name || 'N/A'}
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 font-bold border border-blue-200 text-xs">
+                            {u.department?.name || u.department?.code || (u.departmentId ? 'Dept' : 'N/A')}
                           </span>
                         </td>
                         <td className="py-4 px-6">

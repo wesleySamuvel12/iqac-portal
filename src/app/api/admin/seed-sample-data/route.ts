@@ -10,7 +10,7 @@ const IQAC_DEPARTMENTS = [
   { name: 'Electronics & Communication Engineering', code: 'ECE', shortName: 'ECE' },
   { name: 'Electrical & Electronics Engineering', code: 'EEE', shortName: 'EEE' },
   { name: 'Information Technology', code: 'IT', shortName: 'IT' },
-  { name: 'Mechatronics', code: 'MCT', shortName: 'MCT' },
+  { name: 'Mechatronics Engineering', code: 'MCT', shortName: 'MCT' },
   { name: 'Mechanical Engineering', code: 'MECH', shortName: 'MECH' },
   { name: 'MBA', code: 'MBA', shortName: 'MBA' },
   { name: 'Science & Humanities', code: 'S&H', shortName: 'S&H' },

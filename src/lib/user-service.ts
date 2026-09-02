@@ -79,7 +79,7 @@ export async function createOrUpdateUserAccount(options: CreateUserOptions) {
     hashedPassword = await hashPassword(finalRawPassword)
   }
 
-  return await db.$transaction(async (tx) => {
+  const result = await db.$transaction(async (tx) => {
     let userId: string | null = null
     let user: any = null
 

@@ -3764,7 +3764,9 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
     const ALLOWED_DEPARTMENTS = [
       'Aeronautical Engineering',
       'AER',
+      'AERO',
       'Artificial Intelligence & Data Science',
+      'Artificial Intelligence and Data Science',
       'AI&DS',
       'AI & DS',
       'Computer Science and Business Systems',
@@ -3772,17 +3774,22 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
       'Computer Science and Engineering',
       'CSE',
       'Electronics & Communication Engineering',
+      'Electronics and Communication Engineering',
       'ECE',
       'Electrical & Electronics Engineering',
+      'Electrical and Electronics Engineering',
       'EEE',
       'Information Technology',
       'IT',
+      'Mechatronics Engineering',
       'Mechatronics',
       'MCT',
       'Mechanical Engineering',
       'MECH',
       'MBA',
+      'Master of Business Administration',
       'Science & Humanities',
+      'Science and Humanities',
       'S&H'
     ]
 
@@ -3807,14 +3814,45 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
       fetch('/api/departments')
         .then(res => res.json())
         .then(data => {
-          if (data.success) {
-            const allDepts = data.departments || data.data || []
-            // Filter to ONLY allowed departments
-            const filteredDepts = allDepts.filter((d: any) => 
-              ALLOWED_DEPARTMENTS.includes(d.name)
+          const apiDepts = (data.success && (data.departments || data.data)) ? (data.departments || data.data) : []
+          
+          const deptMap = new Map<string, any>()
+          DEPARTMENTS_LIST.forEach(d => {
+            deptMap.set(d.name, {
+              id: `dept-${d.code.toLowerCase()}`,
+              name: d.name,
+              code: d.code,
+              _count: { faculty: 0, students: 0, activities: 0 }
+            })
+          })
+
+          apiDepts.forEach((d: any) => {
+            const canonicalName = Array.from(deptMap.keys()).find(k => 
+              k.toLowerCase() === d.name.toLowerCase() ||
+              (d.code && d.code.toLowerCase() === deptMap.get(k)?.code?.toLowerCase()) ||
+              (d.name && (d.name.includes('Mechatronics') && k.includes('Mechatronics')))
             )
-            setDepartments(filteredDepts)
-          }
+            if (canonicalName) {
+              deptMap.set(canonicalName, {
+                ...deptMap.get(canonicalName),
+                ...d,
+                name: canonicalName
+              })
+            } else if (ALLOWED_DEPARTMENTS.includes(d.name) || ALLOWED_DEPARTMENTS.includes(d.code)) {
+              deptMap.set(d.name, d)
+            }
+          })
+
+          setDepartments(Array.from(deptMap.values()))
+        })
+        .catch(err => {
+          console.error('Error loading departments for admin dashboard:', err)
+          setDepartments(DEPARTMENTS_LIST.map(d => ({
+            id: `dept-${d.code.toLowerCase()}`,
+            name: d.name,
+            code: d.code,
+            _count: { faculty: 0, students: 0, activities: 0 }
+          })))
         })
         .finally(() => setLoadingDepts(false))
     }, [])
@@ -3909,6 +3947,7 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
         'EEE': 'EEE',
         'Information Technology': 'IT',
         'IT': 'IT',
+        'Mechatronics Engineering': 'MCT',
         'Mechatronics': 'MCT',
         'MCT': 'MCT',
         'Mechanical Engineering': 'MECH',
@@ -4209,17 +4248,20 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
                   key={dept.id}
                   whileHover={{ y: -3, scale: 1.05 }}
                   onClick={() => setSelectedDept(isSelected ? 'ALL' : dept.name)}
-                  className={`bg-white rounded-2xl border p-3 text-center transition-all cursor-pointer shadow-sm ${
+                  className={`bg-white rounded-2xl border p-2.5 text-center transition-all cursor-pointer shadow-sm min-w-[85px] ${
                     isSelected
                       ? 'border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-500/20 font-bold'
                       : 'border-slate-200 hover:border-indigo-300'
                   }`}
                   title={dept.name}
                 >
-                  <h4 className="font-bold text-xs text-slate-800 truncate mb-1">
+                  <span className="inline-block px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-extrabold text-[10px] uppercase mb-1">
                     {getDeptShortCode(dept.name)}
+                  </span>
+                  <h4 className="font-bold text-[11px] text-slate-800 truncate leading-tight mb-1" title={dept.name}>
+                    {dept.name.replace(/ Engineering|Department of |Master of /gi, '').trim()}
                   </h4>
-                  <p className={`text-lg font-extrabold ${count > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                  <p className={`text-base font-extrabold ${count > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
                     {count}
                   </p>
                 </motion.div>
@@ -7222,9 +7264,12 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
 // ============ STAFF DASHBOARD COMPONENT (Separate for Hooks Compliance) ============
 function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (tab: TabType) => void }) {
   const [staffAchievements, setStaffAchievements] = useState<any[]>([])
+  const [pendingStudentApprovals, setPendingStudentApprovals] = useState<any[]>([])
   const [selectedDashboardType, setSelectedDashboardType] = useState<string | null>(null)
+  const [facultyProfile, setFacultyProfile] = useState<any>(null)
+  const [loadingProfile, setLoadingProfile] = useState(true)
   
-  const fetchStaffApprovals = useCallback(async () => {
+  const fetchStaffDashboardData = useCallback(async () => {
     try {
       const deptQuery = user.departmentId ? `&departmentId=${user.departmentId}` : ''
       const res = await fetch(`/api/approvals?status=PENDING&stage=STAFF_REVIEW${deptQuery}`, {
@@ -7243,54 +7288,41 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
           dept: app.departmentName || user.departmentName,
           date: app.achievement?.achievedDate ? new Date(app.achievement.achievedDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         }))
-        setStaffAchievements(mapped)
-      } else {
-        const saved = localStorage.getItem('staff_achievements')
-        if (saved) setStaffAchievements(JSON.parse(saved))
+        setPendingStudentApprovals(mapped)
       }
     } catch (e) {
       console.error('Failed to fetch staff approvals:', e)
     }
-  }, [user.departmentId, user.departmentName])
 
-  const [departmentFaculty, setDepartmentFaculty] = useState<any[]>([])
-  const [loadingFaculty, setLoadingFaculty] = useState(true)
-  const [facultyProfile, setFacultyProfile] = useState<any>(null)
+    if (user.id) {
+      try {
+        const profileRes = await fetch(`/api/faculty?userId=${user.id}`)
+        const profileData = await profileRes.json()
+        if (profileData.success && Array.isArray(profileData.faculty) && profileData.faculty.length > 0) {
+          setFacultyProfile(profileData.faculty[0])
+        }
+      } catch (err) {
+        console.error('Error fetching staff profile:', err)
+      } finally {
+        setLoadingProfile(false)
+      }
+    } else {
+      setLoadingProfile(false)
+    }
+  }, [user.departmentId, user.departmentName, user.id])
 
   useEffect(() => {
-    fetchStaffApprovals()
-
-    if (user.departmentId) {
-      fetch(`/api/faculty?departmentId=${user.departmentId}&limit=50`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success && data.faculty) {
-            setDepartmentFaculty(data.faculty)
-            const currentProfile = data.faculty.find((f: any) => 
-              f.userId === user.id || (f.email && f.email.toLowerCase() === user.email.toLowerCase())
-            )
-            if (currentProfile) {
-              setFacultyProfile(currentProfile)
-            }
-          }
-        })
-        .catch(err => console.error('Error fetching staff details:', err))
-        .finally(() => setLoadingFaculty(false))
-    } else {
-      setLoadingFaculty(false)
-    }
-  }, [fetchStaffApprovals, user.departmentId, user.id, user.email])
+    fetchStaffDashboardData()
+  }, [fetchStaffDashboardData])
   
   // Calculate stats from actual data
   const totalRecords = staffAchievements.length
-  const pendingCount = staffAchievements.filter((a: any) => 
-    a.status === 'pending_staff' || a.status === 'pending_hod'
-  ).length
+  const pendingCount = pendingStudentApprovals.length
   const approvedCount = staffAchievements.filter((a: any) => 
-    a.status === 'hod_approved' || a.status === 'staff_approved'
+    a.status === 'hod_approved' || a.status === 'staff_approved' || a.status === 'APPROVED'
   ).length
   const rejectedCount = staffAchievements.filter((a: any) => 
-    a.status === 'rejected'
+    a.status === 'rejected' || a.status === 'REJECTED'
   ).length
   
   // Calculate counts per achievement type
@@ -7323,7 +7355,7 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
             </span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-white">Welcome, {user.name}</h2>
-          <p className="text-slate-200 text-xs sm:text-sm mt-1">Access your staff identity, department faculty details, and achievement submissions.</p>
+          <p className="text-slate-200 text-xs sm:text-sm mt-1">Access your staff identity, pending approvals, and achievement submissions.</p>
         </div>
       </div>
 
@@ -7367,63 +7399,6 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
             </p>
           </div>
         </div>
-      </div>
-
-      {/* Staff Roster / Department Staff Details Table */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <div>
-            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Users className="w-5 h-5 text-[#155EEF]" /> Department Faculty & Staff Details
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Roster of faculty members in {user.departmentName || 'your department'}
-            </p>
-          </div>
-          <span className="px-3 py-1 bg-blue-50 text-[#155EEF] font-bold text-xs rounded-xl border border-blue-100">
-            {departmentFaculty.length} Staff Members
-          </span>
-        </div>
-
-        {loadingFaculty ? (
-          <div className="py-6 text-center text-slate-500 text-sm">Loading staff details...</div>
-        ) : departmentFaculty.length === 0 ? (
-          <div className="py-6 text-center text-slate-500 text-sm">No staff members found for this department.</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200">
-                  <th className="p-3">Staff Name</th>
-                  <th className="p-3">Emp ID</th>
-                  <th className="p-3">Designation</th>
-                  <th className="p-3">Email</th>
-                  <th className="p-3">Phone</th>
-                  <th className="p-3">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
-                {departmentFaculty.map((member: any) => (
-                  <tr key={member.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="p-3 font-bold text-slate-900 flex items-center gap-2">
-                      {member.name || member.user?.name}
-                      {member.isHOD && <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 font-extrabold text-[10px] rounded">HOD</span>}
-                    </td>
-                    <td className="p-3 font-mono font-semibold text-slate-600">{member.employeeId}</td>
-                    <td className="p-3 font-medium">{member.designation || 'Faculty'}</td>
-                    <td className="p-3 font-mono text-slate-600">{member.email || member.user?.email}</td>
-                    <td className="p-3 text-slate-500">{member.phone || member.user?.phone || 'N/A'}</td>
-                    <td className="p-3">
-                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200">
-                        Active
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -15598,6 +15573,7 @@ function ReportGeneratorPage({ user, initialView }: { user?: User; initialView?:
     'EEE',
     'Information Technology',
     'IT',
+    'Mechatronics Engineering',
     'Mechatronics',
     'MCT',
     'Mechanical Engineering',
@@ -24248,6 +24224,7 @@ function AcademicHierarchyPage({
       'Electronics & Communication Engineering',
       'Electrical & Electronics Engineering',
       'Information Technology',
+      'Mechatronics Engineering',
       'Mechatronics',
       'Mechanical Engineering',
       'MBA',

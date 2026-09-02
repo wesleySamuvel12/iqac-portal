@@ -18,6 +18,7 @@ const ALLOWED_DEPARTMENTS = [
   'EEE',
   'Information Technology',
   'IT',
+  'Mechatronics Engineering',
   'Mechatronics',
   'MCT',
   'Mechanical Engineering',
