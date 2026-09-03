@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createOrUpdateUserAccount } from '@/lib/user-service'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 // GET all students or filter by department/batch
 export async function GET(request: NextRequest) {
   try {

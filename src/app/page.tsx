@@ -22165,7 +22165,7 @@ function StaffAchievementPage({ user }: { user: User }) {
         onCancel={() => setDuplicateModal(prev => ({ ...prev, isOpen: false }))}
         onContinue={() => {
           setDuplicateModal(prev => ({ ...prev, isOpen: false }))
-          handleSubmit(true)
+          handleOpenConfirmModal(true)
         }}
       />
     </div>
@@ -22177,64 +22177,178 @@ function StudentAchievementViewPage({ user }: { user: User }) {
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterType, setFilterType] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
-  const [studentAchievements, setStudentAchievements] = useState<any[]>([
-    // Demo data - student submissions pending approval
-    {
-      id: 1,
-      studentName: 'Bhavani S',
-      regNo: 'CSE001',
-      department: 'CSE',
-      type: 'journal',
-      typeName: 'Journal Publication',
-      title: 'Research on Machine Learning Algorithms',
-      submittedAt: '2024-01-15T10:30:00Z',
-      status: 'pending_staff',
-      data: { name: 'Bhavani S', dept: 'CSE', reg: 'CSE001', year: 'III' }
-    },
-    {
-      id: 2,
-      studentName: 'Arun Kumar',
-      regNo: 'CSE002',
-      department: 'CSE',
-      type: 'hackathon',
-      typeName: 'Hackathon Participation',
-      title: 'Smart India Hackathon 2024',
-      submittedAt: '2024-01-14T09:15:00Z',
-      status: 'pending_staff',
-      data: { name: 'Arun Kumar', dept: 'CSE', reg: 'CSE002', year: 'IV' }
-    },
-    {
-      id: 3,
-      studentName: 'Priya Devi',
-      regNo: 'ECE001',
-      department: 'ECE',
-      type: 'internship',
-      typeName: 'Internship Completion',
-      title: 'Internship at TCS',
-      submittedAt: '2024-01-13T14:20:00Z',
-      status: 'staff_approved',
-      data: { name: 'Priya Devi', dept: 'ECE', reg: 'ECE001', year: 'III' }
-    },
-    {
-      id: 4,
-      studentName: 'Rahul R',
-      regNo: 'CSE003',
-      department: 'CSE',
-      type: 'award',
-      typeName: 'Award Received',
-      title: 'Best Project Award at Symposium',
-      submittedAt: '2024-01-12T11:45:00Z',
-      status: 'hod_approved',
-      data: { name: 'Rahul R', dept: 'CSE', reg: 'CSE003', year: 'II' }
-    }
-  ])
+  const [approvals, setApprovals] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [selectedEntry, setSelectedEntry] = useState<any>(null)
   const [processingAction, setProcessingAction] = useState<string | null>(null)
 
-  const getStudentName = (entry: any) => entry?.studentName || entry?.submittedBy || entry?.data?.name || entry?.data?.studentName || 'Student'
-  const getRegNo = (entry: any) => entry?.regNo || entry?.reg || entry?.data?.reg || entry?.data?.regNo || 'N/A'
+  // Rejection modal state
+  const [showRejectModal, setShowRejectModal] = useState(false)
+  const [rejectingId, setRejectingId] = useState<string | null>(null)
+  const [rejectingAchievementId, setRejectingAchievementId] = useState<string | null>(null)
+  const [rejectReason, setRejectReason] = useState('')
 
-  const filteredAchievements = studentAchievements.filter(a => {
+  const targetDeptId = user.departmentId || (user as any)?.faculty?.departmentId
+
+  const fetchApprovals = useCallback(async () => {
+    try {
+      setLoading(true)
+      setErrorMessage(null)
+      const deptParam = targetDeptId ? `&departmentId=${targetDeptId}` : ''
+      const statusQuery = filterStatus === 'all' ? 'status=ALL' : filterStatus === 'pending_staff' ? 'status=PENDING' : filterStatus === 'staff_approved' ? 'status=APPROVED' : filterStatus === 'rejected' ? 'status=REJECTED' : 'status=ALL'
+      
+      const res = await fetch(`/api/approvals?${statusQuery}&mode=actionable${deptParam}&role=STAFF`, {
+        headers: { 'x-user-role': 'STAFF' },
+        cache: 'no-store',
+      })
+      
+      if (!res.ok) {
+        setErrorMessage('Unable to load student approvals. Please try again.')
+        setApprovals([])
+        return
+      }
+      
+      const data = await res.json()
+      if (data.success && Array.isArray(data.approvals)) {
+        const mapped = data.approvals.map((app: any) => {
+          const ach = app.achievement || {}
+          const studentMeta = app.studentMeta || ach.student || {}
+          const userMeta = studentMeta.user || {}
+          
+          return {
+            id: app.id,
+            approvalId: app.id,
+            achievementId: app.entityId || ach.id,
+            studentName: app.studentName || studentMeta.name || userMeta.name || 'Student',
+            regNo: app.registerNumber || studentMeta.registerNumber || 'N/A',
+            department: app.departmentName || studentMeta.department?.name || user.departmentName,
+            departmentId: app.departmentId || studentMeta.departmentId || user.departmentId,
+            type: ach.type || app.entityType || 'general',
+            typeName: ach.type ? (ACHIEVEMENT_TYPES[ach.type]?.label || ach.type) : 'Achievement',
+            title: ach.title || app.comments || 'Achievement Submission',
+            submittedAt: app.createdAt || ach.createdAt || new Date().toISOString(),
+            status: app.status === 'PENDING' ? 'pending_staff' : app.status === 'APPROVED' ? 'staff_approved' : 'rejected',
+            rawStatus: app.status,
+            currentStage: app.currentStage,
+            attachments: ach.attachments,
+            description: ach.description,
+            level: ach.level,
+            position: ach.position,
+            organizedBy: ach.organizedBy,
+            achievedDate: ach.achievedDate,
+            data: {
+              title: ach.title,
+              type: ach.type,
+              level: ach.level,
+              position: ach.position,
+              organizedBy: ach.organizedBy,
+              achievedDate: ach.achievedDate,
+              description: ach.description,
+            }
+          }
+        })
+        setApprovals(mapped)
+      } else {
+        setErrorMessage(data.error || 'Unable to load student approvals. Please try again.')
+        setApprovals([])
+      }
+    } catch (err) {
+      console.error('Error loading student approvals:', err)
+      setErrorMessage('Unable to load student approvals. Please try again.')
+      setApprovals([])
+    } finally {
+      setLoading(false)
+    }
+  }, [targetDeptId, filterStatus, user.departmentName, user.departmentId])
+
+  useEffect(() => {
+    fetchApprovals()
+  }, [fetchApprovals])
+
+  const handleApprove = async (approvalId: string, achievementId?: string) => {
+    try {
+      setProcessingAction(approvalId)
+      const res = await fetch('/api/approvals', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-role': 'STAFF' 
+        },
+        body: JSON.stringify({
+          approvalId,
+          achievementId,
+          action: 'approve',
+          reviewerRole: 'STAFF',
+          reviewerName: user.name,
+          reviewerDeptId: targetDeptId
+        })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        await fetchApprovals()
+        setSelectedEntry(null)
+      } else {
+        alert(data.error || 'Failed to approve submission')
+      }
+    } catch (err: any) {
+      console.error('Error approving submission:', err)
+      alert('Error processing approval: ' + (err.message || 'Network error'))
+    } finally {
+      setProcessingAction(null)
+    }
+  }
+
+  const openRejectModal = (approvalId: string, achievementId?: string) => {
+    setRejectingId(approvalId)
+    setRejectingAchievementId(achievementId || null)
+    setRejectReason('')
+    setShowRejectModal(true)
+  }
+
+  const handleConfirmReject = async () => {
+    if (!rejectingId) return
+    try {
+      setProcessingAction(rejectingId)
+      const res = await fetch('/api/approvals', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-role': 'STAFF' 
+        },
+        body: JSON.stringify({
+          approvalId: rejectingId,
+          achievementId: rejectingAchievementId,
+          action: 'reject',
+          comments: rejectReason || 'Rejected by Staff',
+          reviewerRole: 'STAFF',
+          reviewerName: user.name,
+          reviewerDeptId: targetDeptId
+        })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setShowRejectModal(false)
+        setRejectingId(null)
+        setRejectingAchievementId(null)
+        setRejectReason('')
+        await fetchApprovals()
+        setSelectedEntry(null)
+      } else {
+        alert(data.error || 'Failed to reject submission')
+      }
+    } catch (err: any) {
+      console.error('Error rejecting submission:', err)
+      alert('Error processing rejection: ' + (err.message || 'Network error'))
+    } finally {
+      setProcessingAction(null)
+    }
+  }
+
+  const getStudentName = (entry: any) => entry?.studentName || 'Student'
+  const getRegNo = (entry: any) => entry?.regNo || 'N/A'
+
+  const filteredAchievements = approvals.filter(a => {
     const matchesStatus = filterStatus === 'all' || a.status === filterStatus
     const matchesType = filterType === 'all' || a.type === filterType
     const matchesSearch = searchTerm === '' || 
@@ -22246,116 +22360,27 @@ function StudentAchievementViewPage({ user }: { user: User }) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending_staff': return 'bg-yellow-100 text-yellow-700 border-yellow-200'
-      case 'staff_approved': return 'bg-blue-100 text-blue-700 border-blue-200'
-      case 'pending_hod': return 'bg-purple-100 text-purple-700 border-purple-200'
-      case 'hod_approved': return 'bg-green-100 text-green-700 border-green-200'
-      case 'rejected': return 'bg-red-100 text-red-700 border-red-200'
-      default: return 'bg-gray-100 text-gray-700 border-gray-200'
+      case 'pending_staff': return 'bg-amber-100 text-amber-800 border-amber-300 font-semibold'
+      case 'staff_approved': return 'bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold'
+      case 'rejected': return 'bg-rose-100 text-rose-800 border-rose-300 font-semibold'
+      default: return 'bg-slate-100 text-slate-700 border-slate-300 font-semibold'
     }
   }
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'pending_staff': return '⏳ Pending Your Review'
-      case 'staff_approved': return '✓ Approved by You'
-      case 'pending_hod': return '📤 Sent to HOD'
-      case 'hod_approved': return '✅ HOD Approved'
+      case 'pending_staff': return '⏳ Pending Staff Review'
+      case 'staff_approved': return '✓ Approved by Staff'
       case 'rejected': return '❌ Rejected'
       default: return status
     }
   }
 
-  // Load saved student achievements from localStorage on mount
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('student_achievements')
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setStudentAchievements(prev => {
-            const map = new Map(prev.map(item => [item.id, item]))
-            parsed.forEach((item: any) => map.set(item.id, item))
-            return Array.from(map.values())
-          })
-        }
-      }
-    } catch (e) {
-      console.error('Failed to load student achievements:', e)
-    }
-  }, [])
-
-  const handleApprove = async (id: string) => {
-    setProcessingAction(id)
-    await new Promise(resolve => setTimeout(resolve, 800))
-    
-    setStudentAchievements(prev => {
-      const updated = prev.map(a => 
-        a.id.toString() === id
-          ? { ...a, status: 'pending_hod', approvedBy: user.name, approvedAt: new Date().toISOString() }
-          : a
-      )
-      try { localStorage.setItem('student_achievements', JSON.stringify(updated)) } catch (e) {}
-      return updated
-    })
-    setProcessingAction(null)
-    setSelectedEntry(null)
-  }
-
-  const handleReject = async (id: string) => {
-    setProcessingAction(id)
-    await new Promise(resolve => setTimeout(resolve, 800))
-    
-    setStudentAchievements(prev => {
-      const updated = prev.map(a => 
-        a.id.toString() === id
-          ? { ...a, status: 'rejected', rejectedBy: user.name, rejectedAt: new Date().toISOString() }
-          : a
-      )
-      try { localStorage.setItem('student_achievements', JSON.stringify(updated)) } catch (e) {}
-      return updated
-    })
-    setProcessingAction(null)
-    setSelectedEntry(null)
-  }
-
-  const handleApproveAll = async () => {
-    setProcessingAction('all_approve')
-    await new Promise(resolve => setTimeout(resolve, 800))
-    setStudentAchievements(prev => {
-      const updated = prev.map(a => 
-        a.status === 'pending_staff'
-          ? { ...a, status: 'pending_hod', approvedBy: user.name, approvedAt: new Date().toISOString() }
-          : a
-      )
-      try { localStorage.setItem('student_achievements', JSON.stringify(updated)) } catch (e) {}
-      return updated
-    })
-    setProcessingAction(null)
-    setSelectedEntry(null)
-  }
-
-  const handleRejectAll = async () => {
-    setProcessingAction('all_reject')
-    await new Promise(resolve => setTimeout(resolve, 800))
-    setStudentAchievements(prev => {
-      const updated = prev.map(a => 
-        a.status === 'pending_staff'
-          ? { ...a, status: 'rejected', rejectedBy: user.name, rejectedAt: new Date().toISOString() }
-          : a
-      )
-      try { localStorage.setItem('student_achievements', JSON.stringify(updated)) } catch (e) {}
-      return updated
-    })
-    setProcessingAction(null)
-    setSelectedEntry(null)
-  }
-
   const stats = {
-    total: studentAchievements.length,
-    pending_staff: studentAchievements.filter(a => a.status === 'pending_staff').length,
-    approved: studentAchievements.filter(a => a.status === 'staff_approved' || a.status === 'pending_hod').length,
-    hod_approved: studentAchievements.filter(a => a.status === 'hod_approved').length
+    total: approvals.length,
+    pending_staff: approvals.filter(a => a.status === 'pending_staff').length,
+    approved: approvals.filter(a => a.status === 'staff_approved').length,
+    rejected: approvals.filter(a => a.status === 'rejected').length
   }
 
   return (
@@ -22363,76 +22388,84 @@ function StudentAchievementViewPage({ user }: { user: User }) {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Student Approval</h2>
-          <p className="text-gray-500 mt-1">Review and approve student submissions before sending to HOD</p>
+          <h2 className="text-2xl font-bold text-gray-900">Student Approval Queue</h2>
+          <p className="text-gray-500 mt-1">Review and verify student achievement submissions for {user.departmentName}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <Button
-            onClick={handleApproveAll}
-            disabled={stats.pending_staff === 0 || processingAction !== null}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm flex items-center gap-2"
+            onClick={fetchApprovals}
+            disabled={loading}
+            variant="outline"
+            className="flex items-center gap-2 font-semibold"
           >
-            <CheckCircle className="w-4 h-4" />
-            {processingAction === 'all_approve' ? 'Approving All...' : `Approve All (${stats.pending_staff})`}
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh Queue
           </Button>
-          <Button
-            onClick={handleRejectAll}
-            disabled={stats.pending_staff === 0 || processingAction !== null}
-            variant="destructive"
-            className="font-medium shadow-sm flex items-center gap-2"
-          >
-            <XCircle className="w-4 h-4" />
-            {processingAction === 'all_reject' ? 'Rejecting All...' : `Reject All (${stats.pending_staff})`}
-          </Button>
-          <Badge variant="outline" className="px-4 py-2 text-sm bg-purple-50 text-purple-700 border-purple-200">
-            {user.departmentName} • Staff Reviewer
+          <Badge variant="outline" className="px-4 py-2 text-sm bg-blue-50 text-blue-700 border-blue-200 font-bold">
+            {user.departmentName || 'Department'} • Staff Reviewer
           </Badge>
         </div>
       </div>
+
+      {/* Error State Notice */}
+      {errorMessage && (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-sm font-semibold flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-rose-600" />
+            <span>{errorMessage}</span>
+          </div>
+          <button 
+            onClick={fetchApprovals}
+            className="px-3 py-1 bg-rose-600 text-white rounded-lg text-xs font-bold hover:bg-rose-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
               <FileText className="w-5 h-5 text-white" />
             </div>
             <div>
               <p className="text-2xl font-bold text-blue-900">{stats.total}</p>
-              <p className="text-xs text-blue-600">Total Submissions</p>
+              <p className="text-xs text-blue-700 font-medium">Total Achievements</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
+        <Card className="p-4 bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-yellow-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-amber-600 flex items-center justify-center">
               <Clock className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-yellow-900">{stats.pending_staff}</p>
-              <p className="text-xs text-yellow-600">Pending Review</p>
+              <p className="text-2xl font-bold text-amber-900">{stats.pending_staff}</p>
+              <p className="text-xs text-amber-700 font-medium">Pending Review</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+        <Card className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-green-900">{stats.approved}</p>
-              <p className="text-xs text-green-600">Approved by You</p>
+              <p className="text-2xl font-bold text-emerald-900">{stats.approved}</p>
+              <p className="text-xs text-emerald-700 font-medium">Approved</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+        <Card className="p-4 bg-gradient-to-br from-rose-50 to-rose-100 border-rose-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-rose-600 flex items-center justify-center">
+              <XCircle className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-purple-900">{stats.hod_approved}</p>
-              <p className="text-xs text-purple-600">HOD Finalized</p>
+              <p className="text-2xl font-bold text-rose-900">{stats.rejected}</p>
+              <p className="text-xs text-rose-700 font-medium">Rejected</p>
             </div>
           </div>
         </Card>
@@ -22445,7 +22478,7 @@ function StudentAchievementViewPage({ user }: { user: User }) {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by name, reg no, or title..."
+              placeholder="Search by student name, reg no, or achievement title..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
@@ -22454,121 +22487,101 @@ function StudentAchievementViewPage({ user }: { user: User }) {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm"
+            className="px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
           >
-            <option value="all">All Status</option>
-            <option value="pending_staff">Pending Your Review</option>
-            <option value="staff_approved">Approved by You</option>
-            <option value="pending_hod">Sent to HOD</option>
-            <option value="hod_approved">HOD Approved</option>
+            <option value="all">All Statuses</option>
+            <option value="pending_staff">Pending Review</option>
+            <option value="staff_approved">Approved</option>
             <option value="rejected">Rejected</option>
-          </select>
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm"
-          >
-            <option value="all">All Types</option>
-            <option value="journal">Journal</option>
-            <option value="conference">Conference</option>
-            <option value="hackathon">Hackathon</option>
-            <option value="internship">Internship</option>
-            <option value="award">Award</option>
-            <option value="placement">Placement</option>
           </select>
         </div>
       </Card>
 
       {/* Submissions List */}
       <div className="space-y-3">
-        {filteredAchievements.length === 0 ? (
+        {loading ? (
+          <Card className="p-12 text-center">
+            <Loader2 className="w-10 h-10 mx-auto text-blue-600 animate-spin mb-3" />
+            <p className="font-semibold text-gray-700">Loading student achievement approvals...</p>
+          </Card>
+        ) : filteredAchievements.length === 0 ? (
           <Card className="p-12 text-center">
             <Inbox className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-700">No submissions found</h3>
-            <p className="text-gray-500 mt-2">Try adjusting your filters or search terms</p>
+            <h3 className="text-lg font-bold text-gray-700">No student approval records found</h3>
+            <p className="text-gray-500 mt-1">There are no pending achievement submissions for your department at this time.</p>
           </Card>
         ) : (
           filteredAchievements.map(entry => (
-            <Card key={entry.id} className="overflow-hidden hover:shadow-md transition-shadow">
-              <div className={'h-1 ' + 
-                (entry.status === 'pending_staff' ? 'bg-yellow-500' :
-                entry.status === 'staff_approved' ? 'bg-blue-500' :
-                entry.status === 'pending_hod' ? 'bg-purple-500' :
-                entry.status === 'hod_approved' ? 'bg-green-500' :
-                'bg-red-500')
+            <Card key={entry.id} className="overflow-hidden hover:shadow-md transition-shadow border border-gray-200">
+              <div className={'h-1.5 ' + 
+                (entry.status === 'pending_staff' ? 'bg-amber-500' :
+                entry.status === 'staff_approved' ? 'bg-emerald-500' :
+                'bg-rose-500')
                }></div>
               <CardContent className="p-4">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   <div className="flex items-start gap-4 flex-1">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-md">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-extrabold text-lg flex-shrink-0 shadow-md">
                       {(getStudentName(entry)).charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-gray-900">{getStudentName(entry)}</h3>
-                        <span className="text-sm text-gray-500">•</span>
-                        <span className="text-sm text-gray-600">{getRegNo(entry)}</span>
-                        <span className={'px-2 py-0.5 text-xs rounded-full border ' + getStatusColor(entry.status)}>
+                        <h3 className="font-extrabold text-gray-900 text-base">{getStudentName(entry)}</h3>
+                        <span className="text-sm text-gray-400">•</span>
+                        <span className="text-sm font-bold text-gray-600">{getRegNo(entry)}</span>
+                        <span className={'px-2.5 py-0.5 text-xs rounded-full border ' + getStatusColor(entry.status)}>
                           {getStatusLabel(entry.status)}
                         </span>
                       </div>
-                      <p className="text-sm font-medium text-gray-800 mb-1">{entry.title}</p>
+                      <p className="text-sm font-bold text-gray-800 mb-1">{entry.title}</p>
                       <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Tag className="w-3 h-3" />{entry.typeName}
+                        <span className="flex items-center gap-1 font-medium">
+                          <Tag className="w-3.5 h-3.5 text-blue-600" />{entry.typeName}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Building2 className="w-3 h-3" />{entry.department}
+                        <span className="flex items-center gap-1 font-medium">
+                          <Building2 className="w-3.5 h-3.5 text-blue-600" />{entry.department}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />{new Date(entry.submittedAt).toLocaleDateString()}
+                        <span className="flex items-center gap-1 font-medium">
+                          <Calendar className="w-3.5 h-3.5 text-blue-600" />Submitted: {new Date(entry.submittedAt).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-2 lg:flex-shrink-0">
+                    <Button
+                      size="sm"
+                      onClick={() => setSelectedEntry(entry)}
+                      variant="outline"
+                      className="text-gray-700 font-semibold min-h-[38px]"
+                    >
+                      <Eye className="w-4 h-4 mr-1" /> View
+                    </Button>
+                    
                     {entry.status === 'pending_staff' && (
                       <>
                         <Button
                           size="sm"
-                          onClick={() => setSelectedEntry(entry)}
-                          variant="outline"
-                          className="text-gray-700"
+                          onClick={() => handleApprove(entry.approvalId, entry.achievementId)}
+                          disabled={processingAction === entry.approvalId}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold min-h-[38px]"
                         >
-                          <Eye className="w-4 h-4 mr-1" />View
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => handleApprove(entry.id.toString())}
-                          disabled={processingAction === entry.id.toString()}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          {processingAction === entry.id.toString() ? (
+                          {processingAction === entry.approvalId ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
-                            <><CheckCircle className="w-4 h-4 mr-1" />Approve</>
+                            <><CheckCircle className="w-4 h-4 mr-1" /> Approve</>
                           )}
                         </Button>
                         <Button
                           size="sm"
-                          onClick={() => handleReject(entry.id.toString())}
-                          disabled={processingAction === entry.id.toString()}
+                          onClick={() => openRejectModal(entry.approvalId, entry.achievementId)}
+                          disabled={processingAction === entry.approvalId}
                           variant="destructive"
+                          className="font-bold min-h-[38px]"
                         >
-                          <XCircle className="w-4 h-4 mr-1" />Reject
+                          <XCircle className="w-4 h-4 mr-1" /> Reject
                         </Button>
                       </>
-                    )}
-                    {entry.status !== 'pending_staff' && (
-                      <Button
-                        size="sm"
-                        onClick={() => setSelectedEntry(entry)}
-                        variant="outline"
-                        className="text-gray-700"
-                      >
-                        <Eye className="w-4 h-4 mr-1" />View Details
-                      </Button>
                     )}
                   </div>
                 </div>
@@ -22578,28 +22591,81 @@ function StudentAchievementViewPage({ user }: { user: User }) {
         )}
       </div>
 
-      {/* Detail Modal */}
+      {/* Rejection Reason Modal */}
+      {showRejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+                <XCircle className="w-5 h-5 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Reject Achievement Submission</h3>
+                <p className="text-xs text-gray-500">Provide feedback for the student</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-700">Rejection Reason / Comments</label>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="Enter rejection reason or requested changes..."
+                rows={3}
+                className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:border-rose-500 outline-none"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => { setShowRejectModal(false); setRejectingId(null); setRejectingAchievementId(null); }}
+                className="px-4 py-2 border border-gray-300 text-gray-700 font-bold text-sm rounded-xl hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReject}
+                disabled={processingAction !== null}
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-xl shadow-md flex items-center gap-2"
+              >
+                {processingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirm Rejection'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detailed Read-Only View Modal */}
       {selectedEntry && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSelectedEntry(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-in zoom-in-95 fade-in duration-200">
-            <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
-              <h3 className="text-lg font-bold text-gray-900">Submission Details</h3>
-              <button onClick={() => setSelectedEntry(null)} className="p-2 hover:bg-gray-100 rounded-full">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-white border-b px-6 py-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                  <Award className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Student Achievement Details</h3>
+                  <p className="text-xs text-gray-500">Submitted for Staff verification</p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedEntry(null)} className="p-2 hover:bg-gray-100 rounded-xl text-gray-400">
                 <X className="w-5 h-5" />
               </button>
             </div>
             
-            <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+            <div className="p-6 space-y-5 overflow-y-auto flex-1">
               {/* Student Info */}
-              <div className="flex items-center gap-4 pb-4 border-b">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
+              <div className="flex items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-extrabold text-xl shadow-md shrink-0">
                   {(getStudentName(selectedEntry)).charAt(0)}
                 </div>
                 <div>
-                  <h4 className="font-bold text-gray-900 text-lg">{getStudentName(selectedEntry)}</h4>
-                  <p className="text-gray-600">{getRegNo(selectedEntry)} • {selectedEntry.department || selectedEntry.dept || user.departmentName}</p>
-                  <span className={'inline-block mt-1 px-3 py-1 text-xs rounded-full border ' + getStatusColor(selectedEntry.status)}>
+                  <h4 className="font-extrabold text-gray-900 text-lg">{getStudentName(selectedEntry)}</h4>
+                  <p className="text-xs font-bold text-gray-600">{getRegNo(selectedEntry)} • {selectedEntry.department}</p>
+                  <span className={'inline-block mt-1.5 px-3 py-0.5 text-xs rounded-full border ' + getStatusColor(selectedEntry.status)}>
                     {getStatusLabel(selectedEntry.status)}
                   </span>
                 </div>
@@ -22607,83 +22673,96 @@ function StudentAchievementViewPage({ user }: { user: User }) {
 
               {/* Achievement Details */}
               <div className="space-y-3">
-                <h5 className="font-semibold text-gray-800 flex items-center gap-2">
-                  <Award className="w-5 h-5 text-blue-500" />
-                  Achievement Information
+                <h5 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-blue-600" /> Achievement Information
                 </h5>
-                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Type</span>
-                    <span className="font-medium text-gray-900">{selectedEntry.typeName}</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                  <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <span className="text-xs text-gray-500 font-medium block">Title</span>
+                    <span className="font-bold text-gray-900">{selectedEntry.title}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Title</span>
-                    <span className="font-medium text-gray-900">{selectedEntry.title}</span>
+                  <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <span className="text-xs text-gray-500 font-medium block">Category</span>
+                    <span className="font-bold text-gray-900">{selectedEntry.typeName}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Submitted On</span>
-                    <span className="font-medium text-gray-900">{new Date(selectedEntry.submittedAt).toLocaleString()}</span>
+                  {selectedEntry.level && (
+                    <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                      <span className="text-xs text-gray-500 font-medium block">Level</span>
+                      <span className="font-bold text-gray-900">{selectedEntry.level}</span>
+                    </div>
+                  )}
+                  {selectedEntry.position && (
+                    <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                      <span className="text-xs text-gray-500 font-medium block">Position / Award</span>
+                      <span className="font-bold text-gray-900">{selectedEntry.position}</span>
+                    </div>
+                  )}
+                  {selectedEntry.organizedBy && (
+                    <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                      <span className="text-xs text-gray-500 font-medium block">Organized By</span>
+                      <span className="font-bold text-gray-900">{selectedEntry.organizedBy}</span>
+                    </div>
+                  )}
+                  <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <span className="text-xs text-gray-500 font-medium block">Submitted Date</span>
+                    <span className="font-bold text-gray-900">{new Date(selectedEntry.submittedAt).toLocaleString()}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Submitted Data */}
-              {selectedEntry.data && (
-                <div className="space-y-3">
-                  <h5 className="font-semibold text-gray-800 flex items-center gap-2">
-                    <ClipboardList className="w-5 h-5 text-green-500" />
-                    Submitted Data
-                  </h5>
-                  <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-                    {Object.entries(selectedEntry.data).map(([key, value]) => (
-                      <div key={key} className="flex justify-between text-sm">
-                        <span className="text-gray-600 capitalize">{key.replace(/_/g, ' ')}</span>
-                        <span className="font-medium text-gray-900">{String(value)}</span>
-                      </div>
-                    ))}
+              {selectedEntry.description && (
+                <div className="space-y-2">
+                  <span className="text-xs text-gray-500 font-bold block">Description</span>
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 whitespace-pre-wrap">
+                    {selectedEntry.description}
                   </div>
                 </div>
               )}
 
-              {/* Attached Files Placeholder */}
-              <div className="space-y-3">
-                <h5 className="font-semibold text-gray-800 flex items-center gap-2">
-                  <Paperclip className="w-5 h-5 text-amber-500" />
-                  Attached Documents
-                </h5>
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
-                  <FileText className="w-10 h-10 mx-auto text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500">Supporting documents would be displayed here</p>
+              {/* Supporting Document */}
+              {selectedEntry.attachments && (
+                <div className="space-y-2">
+                  <span className="text-xs text-gray-500 font-bold block">Supporting Certificate Document</span>
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-xs font-bold text-blue-900">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-blue-600" />
+                      <span>{selectedEntry.attachments}</span>
+                    </div>
+                    <Badge className="bg-blue-600 text-white text-[10px]">Verified Attachment</Badge>
+                  </div>
                 </div>
-              </div>
+              )}
+            </div>
 
-              {/* Action Buttons (only for pending) */}
+            {/* Modal Actions */}
+            <div className="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between shrink-0">
+              <Button
+                variant="outline"
+                onClick={() => setSelectedEntry(null)}
+                className="font-bold text-sm"
+              >
+                Close
+              </Button>
+
               {selectedEntry.status === 'pending_staff' && (
-                <div className="flex gap-3 pt-4 border-t">
+                <div className="flex items-center gap-3">
                   <Button
-                    variant="outline"
-                    onClick={() => setSelectedEntry(null)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
+                    onClick={() => openRejectModal(selectedEntry.approvalId, selectedEntry.achievementId)}
+                    disabled={processingAction === selectedEntry.approvalId}
                     variant="destructive"
-                    onClick={() => handleReject(selectedEntry.id.toString())}
-                    disabled={processingAction === selectedEntry.id.toString()}
-                    className="flex-1"
+                    className="font-bold text-sm"
                   >
-                    {processingAction === selectedEntry.id.toString() ? 'Processing...' : 'Reject Submission'}
+                    Reject
                   </Button>
                   <Button
-                    onClick={() => handleApprove(selectedEntry.id.toString())}
-                    disabled={processingAction === selectedEntry.id.toString()}
-                    className="flex-1 bg-green-600 hover:bg-green-700"
+                    onClick={() => handleApprove(selectedEntry.approvalId, selectedEntry.achievementId)}
+                    disabled={processingAction === selectedEntry.approvalId}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm"
                   >
-                    {processingAction === selectedEntry.id.toString() ? (
-                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
+                    {processingAction === selectedEntry.approvalId ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      <><Send className="w-4 h-4 mr-2" />Approve & Send to HOD</>
+                      'Approve Achievement'
                     )}
                   </Button>
                 </div>
@@ -22893,181 +22972,84 @@ function HODStudentApprovalPage({ user }: { user: User }) {
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterType, setFilterType] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
-  const [studentAchievements, setStudentAchievements] = useState<any[]>([
-    {
-      id: 1,
-      studentName: 'Bhavani S',
-      regNo: 'CSE001',
-      department: 'CSE',
-      type: 'journal',
-      typeName: 'Journal Publication',
-      title: 'Research on Machine Learning Algorithms',
-      submittedAt: '2024-01-15T10:30:00Z',
-      status: 'pending_hod',
-      data: { name: 'Bhavani S', dept: 'CSE', reg: 'CSE001', year: 'III', title: 'Research on ML Algorithms', journal: 'IEEE Transactions' },
-      staffApprovedBy: 'Dr. Kumar'
-    },
-    {
-      id: 2,
-      studentName: 'Arun Kumar',
-      regNo: 'CSE002',
-      department: 'CSE',
-      type: 'hackathon',
-      typeName: 'Hackathon Participation',
-      title: 'Smart India Hackathon 2024',
-      submittedAt: '2024-01-14T09:15:00Z',
-      status: 'pending_hod',
-      data: { name: 'Arun Kumar', dept: 'CSE', reg: 'CSE002', year: 'IV', title: 'Smart India Hackathon' },
-      staffApprovedBy: 'Prof. Ramesh'
-    },
-    {
-      id: 3,
-      studentName: 'Priya Devi',
-      regNo: 'ECE001',
-      department: 'ECE',
-      type: 'internship',
-      typeName: 'Internship Completion',
-      title: 'Internship at TCS',
-      submittedAt: '2024-01-13T14:20:00Z',
-      status: 'hod_approved',
-      data: { name: 'Priya Devi', dept: 'ECE', reg: 'ECE001', year: 'III' },
-      approvedAt: '2024-01-16T11:00:00Z'
-    },
-    {
-      id: 4,
-      studentName: 'Rahul R',
-      regNo: 'CSE003',
-      department: 'CSE',
-      type: 'award',
-      typeName: 'Award Received',
-      title: 'Best Project Award at Symposium',
-      submittedAt: '2024-01-12T11:45:00Z',
-      status: 'rejected',
-      rejectionReason: 'Documentation incomplete - missing certificate proof',
-      rejectedAt: '2024-01-15T14:30:00Z',
-      data: { name: 'Rahul R', dept: 'CSE', reg: 'CSE003', year: 'II' }
-    },
-    {
-      id: 5,
-      studentName: 'Sneha M',
-      regNo: 'AI001',
-      department: 'AI&DS',
-      type: 'nptel',
-      typeName: 'NPTEL Certification',
-      title: 'NPTEL Data Structures Course',
-      submittedAt: '2024-01-16T08:00:00Z',
-      status: 'pending_hod',
-      data: { name: 'Sneha M', dept: 'AI&DS', reg: 'AI001', year: 'III', course: 'Data Structures', score: '85%' },
-      staffApprovedBy: 'Dr. Sharma'
-    }
-  ])
+  const [approvals, setApprovals] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [selectedEntry, setSelectedEntry] = useState<any>(null)
   const [processingAction, setProcessingAction] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [rejectingId, setRejectingId] = useState<string | null>(null)
+  const [rejectingAchievementId, setRejectingAchievementId] = useState<string | null>(null)
 
-  // Load saved student achievements from localStorage on mount
-  useEffect(() => {
+  const targetDeptId = user.departmentId || (user as any)?.faculty?.departmentId
+
+  const fetchApprovals = useCallback(async () => {
     try {
-      const saved = localStorage.getItem('student_achievements')
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setStudentAchievements(prev => {
-            const map = new Map(prev.map(item => [item.id, item]))
-            parsed.forEach((item: any) => map.set(item.id, item))
-            return Array.from(map.values())
-          })
-        }
+      setLoading(true)
+      setErrorMessage(null)
+      const deptParam = targetDeptId ? `&departmentId=${targetDeptId}` : ''
+      const res = await fetch(`/api/approvals?status=ALL&mode=monitoring${deptParam}&role=HOD`, {
+        headers: { 'x-user-role': 'HOD' },
+        cache: 'no-store'
+      })
+      
+      if (!res.ok) {
+        setErrorMessage('Unable to load student approvals. Please try again.')
+        setApprovals([])
+        return
       }
-    } catch (e) {
-      console.error('Failed to load student achievements:', e)
+
+      const data = await res.json()
+      if (data.success && Array.isArray(data.approvals)) {
+        const mapped = data.approvals.map((app: any) => {
+          const ach = app.achievement || {}
+          const studentMeta = app.studentMeta || ach.student || {}
+          const userMeta = studentMeta.user || {}
+          
+          return {
+            id: app.id,
+            approvalId: app.id,
+            achievementId: app.entityId || ach.id,
+            studentName: app.studentName || studentMeta.name || userMeta.name || 'Student',
+            regNo: app.registerNumber || studentMeta.registerNumber || 'N/A',
+            department: app.departmentName || studentMeta.department?.name || user.departmentName,
+            type: ach.type || app.entityType || 'general',
+            typeName: ach.type ? (ACHIEVEMENT_TYPES[ach.type]?.label || ach.type) : 'Achievement',
+            title: ach.title || app.comments || 'Achievement Submission',
+            submittedAt: app.createdAt || ach.createdAt || new Date().toISOString(),
+            status: app.status === 'PENDING' ? 'pending_hod' : app.status === 'APPROVED' ? 'hod_approved' : 'rejected',
+            rawStatus: app.status,
+            attachments: ach.attachments,
+            description: ach.description,
+            level: ach.level,
+            position: ach.position,
+            organizedBy: ach.organizedBy,
+            data: { title: ach.title, type: ach.type, description: ach.description }
+          }
+        })
+        setApprovals(mapped)
+      } else {
+        setErrorMessage(data.error || 'Unable to load student approvals. Please try again.')
+        setApprovals([])
+      }
+    } catch (err) {
+      console.error('Error fetching HOD student approvals:', err)
+      setErrorMessage('Unable to load student approvals. Please try again.')
+      setApprovals([])
+    } finally {
+      setLoading(false)
     }
-  }, [])
+  }, [targetDeptId, user.departmentName])
 
-  const handleApprove = async (id: string) => {
-    setProcessingAction(id)
-    await new Promise(resolve => setTimeout(resolve, 800))
+  useEffect(() => {
+    fetchApprovals()
+  }, [fetchApprovals])
 
-    setStudentAchievements(prev => {
-      const updated = prev.map(a =>
-        a.id.toString() === id
-          ? { ...a, status: 'hod_approved', hodApprovedBy: user.name, approvedAt: new Date().toISOString() }
-          : a
-      )
-      try { localStorage.setItem('student_achievements', JSON.stringify(updated)) } catch (e) {}
-      return updated
-    })
-    setProcessingAction(null)
-    setSelectedEntry(null)
-  }
+  const getStudentName = (entry: any) => entry?.studentName || 'Student'
+  const getRegNo = (entry: any) => entry?.regNo || 'N/A'
 
-  const handleRejectWithReason = async () => {
-    if (!rejectingId || !rejectReason.trim()) return
-
-    setProcessingAction(rejectingId)
-    await new Promise(resolve => setTimeout(resolve, 800))
-
-    setStudentAchievements(prev => {
-      const updated = prev.map(a =>
-        a.id.toString() === rejectingId
-          ? { ...a, status: 'rejected', rejectionReason: rejectReason, rejectedBy: user.name, rejectedAt: new Date().toISOString() }
-          : a
-      )
-      try { localStorage.setItem('student_achievements', JSON.stringify(updated)) } catch (e) {}
-      return updated
-    })
-    setProcessingAction(null)
-    setShowRejectModal(false)
-    setRejectReason('')
-    setRejectingId(null)
-    setSelectedEntry(null)
-  }
-
-  const openRejectModal = (id: string) => {
-    setRejectingId(id)
-    setRejectReason('')
-    setShowRejectModal(true)
-  }
-
-  const handleApproveAll = async () => {
-    setProcessingAction('all_approve')
-    await new Promise(resolve => setTimeout(resolve, 800))
-    setStudentAchievements(prev => {
-      const updated = prev.map(a => 
-        (a.status === 'pending_hod' || a.status === 'pending_staff')
-          ? { ...a, status: 'hod_approved', hodApprovedBy: user.name, approvedAt: new Date().toISOString() }
-          : a
-      )
-      try { localStorage.setItem('student_achievements', JSON.stringify(updated)) } catch (e) {}
-      return updated
-    })
-    setProcessingAction(null)
-    setSelectedEntry(null)
-  }
-
-  const handleRejectAll = async () => {
-    setProcessingAction('all_reject')
-    await new Promise(resolve => setTimeout(resolve, 800))
-    setStudentAchievements(prev => {
-      const updated = prev.map(a => 
-        (a.status === 'pending_hod' || a.status === 'pending_staff')
-          ? { ...a, status: 'rejected', rejectionReason: 'Bulk rejected by HOD', rejectedBy: user.name, rejectedAt: new Date().toISOString() }
-          : a
-      )
-      try { localStorage.setItem('student_achievements', JSON.stringify(updated)) } catch (e) {}
-      return updated
-    })
-    setProcessingAction(null)
-    setSelectedEntry(null)
-  }
-
-  const getStudentName = (entry: any) => entry?.studentName || entry?.submittedBy || entry?.data?.name || entry?.data?.studentName || 'Student'
-  const getRegNo = (entry: any) => entry?.regNo || entry?.reg || entry?.data?.reg || entry?.data?.regNo || 'N/A'
-  const getStaffName = (entry: any) => entry?.staffName || entry?.submittedBy || entry?.data?.faculty_name || entry?.data?.pi_name || 'Faculty Member'
-
-  const filteredAchievements = studentAchievements.filter(a => {
+  const filteredAchievements = approvals.filter(a => {
     const matchesStatus = filterStatus === 'all' || a.status === filterStatus
     const matchesType = filterType === 'all' || a.type === filterType
     const matchesSearch = searchTerm === '' || 
@@ -23079,31 +23061,27 @@ function HODStudentApprovalPage({ user }: { user: User }) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending_staff': return 'bg-yellow-100 text-yellow-700 border-yellow-200'
-      case 'staff_approved': return 'bg-blue-100 text-blue-700 border-blue-200'
-      case 'pending_hod': return 'bg-purple-100 text-purple-700 border-purple-200'
-      case 'hod_approved': return 'bg-green-100 text-green-700 border-green-200'
-      case 'rejected': return 'bg-red-100 text-red-700 border-red-200'
-      default: return 'bg-gray-100 text-gray-700 border-gray-200'
+      case 'pending_hod': return 'bg-amber-100 text-amber-800 border-amber-300 font-semibold'
+      case 'hod_approved': return 'bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold'
+      case 'rejected': return 'bg-rose-100 text-rose-800 border-rose-300 font-semibold'
+      default: return 'bg-slate-100 text-slate-700 border-slate-300 font-semibold'
     }
   }
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'pending_staff': return '⏳ Pending Staff Review'
-      case 'staff_approved': return '✓ Staff Approved'
-      case 'pending_hod': return '📋 Pending Your Approval'
-      case 'hod_approved': return '✅ Approved by You'
+      case 'pending_hod': return '⏳ Pending Staff Approval'
+      case 'hod_approved': return '✅ Approved'
       case 'rejected': return '❌ Rejected'
       default: return status
     }
   }
 
   const stats = {
-    total: studentAchievements.length,
-    pending_hod: studentAchievements.filter(a => a.status === 'pending_hod' || a.status === 'pending_staff').length,
-    approved: studentAchievements.filter(a => a.status === 'hod_approved').length,
-    rejected: studentAchievements.filter(a => a.status === 'rejected').length
+    total: approvals.length,
+    pending_hod: approvals.filter(a => a.status === 'pending_hod').length,
+    approved: approvals.filter(a => a.status === 'hod_approved').length,
+    rejected: approvals.filter(a => a.status === 'rejected').length
   }
 
   return (

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { AchievementType, ApprovalStatus, EntityType } from '@prisma/client'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 // GET /api/achievements - Fetch student achievements
 export async function GET(request: NextRequest) {
   try {
