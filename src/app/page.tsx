@@ -7315,7 +7315,8 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
   
   const fetchStaffDashboardData = useCallback(async () => {
     try {
-      const deptQuery = user.departmentId ? `&departmentId=${user.departmentId}` : ''
+      const targetDeptId = user.departmentId || (user as any)?.faculty?.departmentId
+      const deptQuery = targetDeptId ? `&departmentId=${targetDeptId}` : ''
       const res = await fetch(`/api/approvals?status=PENDING&stage=STAFF_REVIEW${deptQuery}`, {
         headers: { 'x-user-role': 'STAFF' }
       })
@@ -8933,7 +8934,8 @@ function ApprovalsPage({ user }: { user?: User }) {
   const fetchApprovalsData = useCallback(async () => {
     setLoading(true)
     try {
-      const deptQuery = user?.departmentId ? `&departmentId=${user.departmentId}` : ''
+      const targetDeptId = user?.departmentId || (user as any)?.faculty?.departmentId
+      const deptQuery = targetDeptId ? `&departmentId=${targetDeptId}` : ''
       const roleQuery = `&role=${user?.role || 'STAFF'}`
       
       const [pendingRes, approvedRes, rejectedRes, monitoringRes] = await Promise.all([

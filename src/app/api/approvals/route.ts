@@ -45,7 +45,9 @@ export async function GET(request: NextRequest) {
       const pendingAchievements = await db.studentAchievement.findMany({
         where: {
           approvalStatus: 'PENDING',
-          ...(departmentId && departmentId !== 'ALL' && departmentId !== 'all' ? { student: { departmentId } } : {})
+          ...(departmentId && departmentId !== 'ALL' && departmentId !== 'all' 
+            ? { OR: [{ student: { departmentId } }, { student: { user: { departmentId } } }] } 
+            : {})
         },
         include: {
           student: {
@@ -95,7 +97,7 @@ export async function GET(request: NextRequest) {
         ? db.student.findMany({
             where: { OR: [{ id: { in: requestedByIds } }, { userId: { in: requestedByIds } }] },
             include: {
-              user: { select: { id: true, name: true, email: true, role: true } },
+              user: { select: { id: true, name: true, email: true, role: true, departmentId: true } },
               department: { select: { id: true, name: true, code: true } }
             }
           })
@@ -104,7 +106,7 @@ export async function GET(request: NextRequest) {
         ? db.faculty.findMany({
             where: { OR: [{ id: { in: requestedByIds } }, { userId: { in: requestedByIds } }] },
             include: {
-              user: { select: { id: true, name: true, email: true, role: true } },
+              user: { select: { id: true, name: true, email: true, role: true, departmentId: true } },
               department: { select: { id: true, name: true, code: true } }
             }
           })
@@ -115,7 +117,7 @@ export async function GET(request: NextRequest) {
             include: {
               student: {
                 include: {
-                  user: { select: { id: true, name: true, email: true } },
+                  user: { select: { id: true, name: true, email: true, departmentId: true } },
                   department: { select: { id: true, name: true, code: true } }
                 }
               }
@@ -145,7 +147,7 @@ export async function GET(request: NextRequest) {
 
       const studentMeta = entityData?.student || studentObj
       const submitterRole = requesterUser?.role || (studentMeta ? 'STUDENT' : facultyObj ? 'STAFF' : 'STUDENT')
-      const resolvedDeptId = studentMeta?.departmentId || facultyObj?.departmentId || requesterUser?.departmentId
+      const resolvedDeptId = studentMeta?.departmentId || studentMeta?.user?.departmentId || facultyObj?.departmentId || facultyObj?.user?.departmentId || requesterUser?.departmentId
       const resolvedDeptName = studentMeta?.department?.name || facultyObj?.department?.name || 'Department'
       const submitterName = studentMeta?.name || studentMeta?.user?.name || facultyObj?.name || facultyObj?.user?.name || requesterUser?.name || 'Student'
       const registerNumber = studentMeta?.registerNumber || facultyObj?.employeeId || 'N/A'

@@ -182,6 +182,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Ensure student record has valid departmentId
+    const targetStudentObj = await db.student.findUnique({
+      where: { id: targetStudentId },
+      include: { user: true, department: true }
+    })
+
+    if (targetStudentObj && !targetStudentObj.departmentId && targetStudentObj.user?.departmentId) {
+      try {
+        await db.student.update({
+          where: { id: targetStudentId },
+          data: { departmentId: targetStudentObj.user.departmentId }
+        })
+        targetStudentObj.departmentId = targetStudentObj.user.departmentId
+      } catch (e) {
+        // Ignore silent repair error
+      }
+    }
+
     // Map achievement type enum
     let achType: AchievementType = 'TECHNICAL'
     const typeUpper = (type || 'TECHNICAL').toString().toUpperCase().replace(/[\s-]/g, '_')
