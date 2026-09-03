@@ -6889,50 +6889,50 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
       
       {/* Student Add/Edit Modal */}
       {showStudentModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-[calc(100%-16px)] sm:w-full sm:max-w-md max-h-[90dvh] flex flex-col overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-gray-200 shrink-0">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-900">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 leading-tight">
                   {editingStudent ? 'Edit Student' : 'Add New Student'}
                 </h3>
                 <button
                   onClick={() => setShowStudentModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <XCircle className="w-5 h-5 text-gray-500" />
+                  <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
-              <p className="text-sm text-gray-500 mt-1">{user.departmentName} Department</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{user.departmentName} Department</p>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 text-left">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Full Name *</label>
                 <input
                   type="text"
                   value={studentForm.name}
                   onChange={(e) => setStudentForm({...studentForm, name: e.target.value})}
                   placeholder="Enter student full name"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none h-10"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Register Number *</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Register Number *</label>
                 <input
                   type="text"
-                  value={studentForm.regNo}
-                  onChange={(e) => setStudentForm({...studentForm, regNo: e.target.value.toUpperCase()})}
+                  value={studentForm.regNo || studentForm.registerNumber}
+                  onChange={(e) => setStudentForm({...studentForm, regNo: e.target.value.toUpperCase(), registerNumber: e.target.value.toUpperCase()})}
                   placeholder="e.g., CSE001"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none font-mono"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none h-10"
                 />
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-2.5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Year *</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Year *</label>
                   <select
                     value={studentForm.year}
                     onChange={(e) => setStudentForm({...studentForm, year: e.target.value})}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                    className="w-full px-2.5 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none h-10 bg-white"
                   >
                     <option value="1st Year">1st Year</option>
                     <option value="2nd Year">2nd Year</option>
@@ -6941,22 +6941,22 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Section *</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Section *</label>
                   <select
                     value={studentForm.section}
                     onChange={(e) => setStudentForm({...studentForm, section: e.target.value})}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                    className="w-full px-2.5 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none h-10 bg-white"
                   >
                     <option value="A">A</option>
                     <option value="B">B</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Batch *</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Batch *</label>
                   <select
                     value={studentForm.batch}
                     onChange={(e) => setStudentForm({...studentForm, batch: e.target.value})}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none bg-white"
+                    className="w-full px-2.5 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none bg-white h-10"
                   >
                     <option value="2024-2028">2024-2028</option>
                     <option value="2023-2027">2023-2027</option>
@@ -6967,50 +6967,50 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Email</label>
                 <input
                   type="email"
                   value={studentForm.email}
                   onChange={(e) => setStudentForm({...studentForm, email: e.target.value})}
                   placeholder="student@niet.ac.in"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none h-10"
                 />
               </div>
               {!editingStudent && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Initial Password *</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Initial Password *</label>
                   <input
                     type="password"
                     value={studentForm.password || ''}
                     onChange={(e) => setStudentForm({...studentForm, password: e.target.value})}
                     placeholder="Student@123"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none h-10"
                   />
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Status</label>
                 <select
                   value={studentForm.status}
                   onChange={(e) => setStudentForm({...studentForm, status: e.target.value})}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none h-10 bg-white"
                 >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
                 </select>
               </div>
             </div>
-            <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
+            <div className="p-3.5 sm:p-4 border-t border-gray-200 shrink-0 bg-white grid grid-cols-2 gap-3 sm:flex sm:justify-end">
               <Button
                 variant="outline"
                 onClick={() => setShowStudentModal(false)}
-                className="px-6"
+                className="w-full sm:w-auto px-5 min-h-[44px]"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSaveStudent}
-                className="px-6 bg-blue-600 hover:bg-blue-700"
+                className="w-full sm:w-auto px-5 bg-blue-600 hover:bg-blue-700 min-h-[44px]"
               >
                 {editingStudent ? 'Update Student' : 'Add Student'}
               </Button>
@@ -10886,67 +10886,67 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
 
       {/* Add/Edit Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="p-6 border-b border-gray-200">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-[calc(100%-16px)] sm:w-full sm:max-w-md max-h-[90dvh] flex flex-col overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-gray-200 shrink-0">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-900">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 leading-tight">
                   {editingStudent ? 'Edit Student' : 'Add New Student'}
                 </h3>
                 <button
                   onClick={() => setShowAddModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <XCircle className="w-5 h-5 text-gray-500" />
+                  <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
-              <p className="text-sm text-gray-500 mt-1">{user.departmentName} Department</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{user.departmentName} Department</p>
             </div>
             
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 text-left">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Full Name *</label>
                 <input
                   type="text"
                   value={studentForm.name}
                   onChange={(e) => setStudentForm({...studentForm, name: e.target.value})}
                   placeholder="Enter student full name"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none h-10"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Register Number *</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Register Number *</label>
                 <input
                   type="text"
                   value={studentForm.registerNumber}
                   onChange={(e) => setStudentForm({...studentForm, registerNumber: e.target.value.toUpperCase()})}
                   placeholder="e.g., CSE001"
                   disabled={!!editingStudent}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none font-mono disabled:bg-gray-100"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none disabled:bg-gray-100 h-10"
                 />
               </div>
               
               {!editingStudent && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Email</label>
                   <input
                     type="email"
                     value={studentForm.email}
                     onChange={(e) => setStudentForm({...studentForm, email: e.target.value})}
                     placeholder="student@niet.ac.in"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none h-10"
                   />
                 </div>
               )}
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Year *</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Year *</label>
                   <select
                     value={studentForm.year}
                     onChange={(e) => setStudentForm({...studentForm, year: e.target.value})}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none h-10 bg-white"
                   >
                     <option value="1st Year">1st Year</option>
                     <option value="2nd Year">2nd Year</option>
@@ -10956,11 +10956,11 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Section *</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Section *</label>
                   <select
                     value={studentForm.section}
                     onChange={(e) => setStudentForm({...studentForm, section: e.target.value})}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none h-10 bg-white"
                   >
                     <option value="A">A</option>
                     <option value="B">B</option>
@@ -10969,49 +10969,49 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
               </div>
 
               {!editingStudent && (
-                <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl space-y-3">
+                <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2 cursor-pointer font-semibold text-blue-900 text-sm">
+                    <label className="flex items-center gap-2 cursor-pointer font-semibold text-blue-900 text-xs">
                       <input 
                         type="checkbox" 
                         checked={studentForm.createLoginAccess} 
                         onChange={(e) => setStudentForm({...studentForm, createLoginAccess: e.target.checked})} 
                         className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4" 
                       />
-                      <Lock className="w-4 h-4 text-blue-600" />
+                      <Lock className="w-4 h-4 text-blue-600 shrink-0" />
                       Enable Login Access for Student
                     </label>
                     {studentForm.createLoginAccess && (
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full shrink-0">
                         Active Account
                       </span>
                     )}
                   </div>
                   {studentForm.createLoginAccess && (
-                    <div className="space-y-2 pt-1">
+                    <div className="space-y-2 pt-0.5">
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Initial Password *</label>
+                        <label className="block text-[11px] font-medium text-gray-700 mb-1">Initial Password *</label>
                         <div className="flex gap-2">
                           <input
                             type="text"
                             value={studentForm.password}
                             onChange={(e) => setStudentForm({...studentForm, password: e.target.value})}
                             placeholder="Set password (default: student123)"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+                            className="flex-1 min-w-0 px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none h-9"
                           />
                           <Button 
                             type="button" 
                             variant="outline" 
                             size="sm"
                             onClick={() => setStudentForm({...studentForm, password: generateTempPassword()})}
-                            className="shrink-0 text-xs text-blue-700 border-blue-300 hover:bg-blue-100"
+                            className="shrink-0 text-xs text-blue-700 border-blue-300 hover:bg-blue-100 h-9 px-3"
                           >
                             Generate
                           </Button>
                         </div>
                       </div>
-                      <div className="text-xs text-gray-600 bg-white p-2.5 rounded-lg border border-blue-100">
-                        <p><strong className="text-gray-800">Login ID / Email:</strong> {studentForm.email || (studentForm.registerNumber ? `${studentForm.registerNumber.toLowerCase()}@niet.ac.in` : 'Email or Reg No')}</p>
+                      <div className="text-[11px] leading-relaxed text-gray-600 bg-white p-2.5 rounded-lg border border-blue-100 space-y-1">
+                        <p><strong className="text-gray-800">Login ID / Email:</strong> {studentForm.email || (studentForm.registerNumber ? `${studentForm.registerNumber.toLowerCase()}@niet.ac.in` : 'Email or Register Number')}</p>
                         <p><strong className="text-gray-800">Initial Password:</strong> <code className="bg-blue-100 px-1 rounded text-blue-800 font-bold">{studentForm.password || 'student123'}</code></p>
                       </div>
                     </div>
@@ -11020,17 +11020,17 @@ CSE2025003,Bob Wilson,bob@niet.ac.in,+91-9876543212,3,B,8.5`
               )}
             </div>
             
-            <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
+            <div className="p-3.5 sm:p-4 border-t border-gray-200 shrink-0 bg-white grid grid-cols-2 gap-3 sm:flex sm:justify-end">
               <Button
                 variant="outline"
                 onClick={() => setShowAddModal(false)}
-                className="px-6"
+                className="w-full sm:w-auto px-5 min-h-[44px]"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSaveStudent}
-                className="px-6 bg-blue-600 hover:bg-blue-700"
+                className="w-full sm:w-auto px-5 bg-blue-600 hover:bg-blue-700 min-h-[44px]"
               >
                 {editingStudent ? 'Update' : 'Add'} Student
               </Button>
