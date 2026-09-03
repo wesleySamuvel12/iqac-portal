@@ -7338,6 +7338,7 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
 function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (tab: TabType) => void }) {
   const [staffAchievements, setStaffAchievements] = useState<any[]>([])
   const [pendingStudentApprovals, setPendingStudentApprovals] = useState<any[]>([])
+  const [serverPendingCount, setServerPendingCount] = useState<number | null>(null)
   const [selectedDashboardType, setSelectedDashboardType] = useState<string | null>(null)
   const [facultyProfile, setFacultyProfile] = useState<any>(null)
   const [loadingProfile, setLoadingProfile] = useState(true)
@@ -7347,10 +7348,14 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
       const targetDeptId = user.departmentId || (user as any)?.faculty?.departmentId
       const deptQuery = targetDeptId ? `&departmentId=${targetDeptId}` : ''
       const res = await fetch(`/api/approvals?status=PENDING&stage=STAFF_REVIEW${deptQuery}`, {
-        headers: { 'x-user-role': 'STAFF' }
+        headers: { 'x-user-role': 'STAFF' },
+        cache: 'no-store'
       })
       const data = await res.json()
       if (data.success && Array.isArray(data.approvals)) {
+        if (data.summary && typeof data.summary.pending === 'number') {
+          setServerPendingCount(data.summary.pending)
+        }
         const mapped = data.approvals.map((app: any) => ({
           id: app.id,
           achievementId: app.entityId || app.achievement?.id,
@@ -7391,7 +7396,7 @@ function StaffDashboardContent({ user, setActiveTab }: { user: User; setActiveTa
   
   // Calculate stats from actual data
   const totalRecords = staffAchievements.length
-  const pendingCount = pendingStudentApprovals.length
+  const pendingCount = serverPendingCount ?? pendingStudentApprovals.length
   const approvedCount = staffAchievements.filter((a: any) => 
     a.status === 'hod_approved' || a.status === 'staff_approved' || a.status === 'APPROVED'
   ).length
@@ -22187,6 +22192,7 @@ function StudentAchievementViewPage({ user }: { user: User }) {
   const [filterType, setFilterType] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [approvals, setApprovals] = useState<any[]>([])
+  const [serverStats, setServerStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 })
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [selectedEntry, setSelectedEntry] = useState<any>(null)
@@ -22220,6 +22226,9 @@ function StudentAchievementViewPage({ user }: { user: User }) {
       
       const data = await res.json()
       if (data.success && Array.isArray(data.approvals)) {
+        if (data.summary) {
+          setServerStats(data.summary)
+        }
         const mapped = data.approvals.map((app: any) => {
           const ach = app.achievement || {}
           const studentMeta = app.studentMeta || ach.student || {}
@@ -22386,10 +22395,10 @@ function StudentAchievementViewPage({ user }: { user: User }) {
   }
 
   const stats = {
-    total: approvals.length,
-    pending_staff: approvals.filter(a => a.status === 'pending_staff').length,
-    approved: approvals.filter(a => a.status === 'staff_approved').length,
-    rejected: approvals.filter(a => a.status === 'rejected').length
+    total: serverStats.total || approvals.length,
+    pending_staff: serverStats.pending ?? approvals.filter(a => a.status === 'pending_staff').length,
+    approved: serverStats.approved ?? approvals.filter(a => a.status === 'staff_approved').length,
+    rejected: serverStats.rejected ?? approvals.filter(a => a.status === 'rejected').length
   }
 
   return (
@@ -22982,6 +22991,7 @@ function HODStudentApprovalPage({ user }: { user: User }) {
   const [filterType, setFilterType] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [approvals, setApprovals] = useState<any[]>([])
+  const [serverStats, setServerStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 })
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [selectedEntry, setSelectedEntry] = useState<any>(null)
@@ -23011,6 +23021,9 @@ function HODStudentApprovalPage({ user }: { user: User }) {
 
       const data = await res.json()
       if (data.success && Array.isArray(data.approvals)) {
+        if (data.summary) {
+          setServerStats(data.summary)
+        }
         const mapped = data.approvals.map((app: any) => {
           const ach = app.achievement || {}
           const studentMeta = app.studentMeta || ach.student || {}
@@ -23087,10 +23100,10 @@ function HODStudentApprovalPage({ user }: { user: User }) {
   }
 
   const stats = {
-    total: approvals.length,
-    pending_hod: approvals.filter(a => a.status === 'pending_hod').length,
-    approved: approvals.filter(a => a.status === 'hod_approved').length,
-    rejected: approvals.filter(a => a.status === 'rejected').length
+    total: serverStats.total || approvals.length,
+    pending_hod: serverStats.pending ?? approvals.filter(a => a.status === 'pending_hod').length,
+    approved: serverStats.approved ?? approvals.filter(a => a.status === 'hod_approved').length,
+    rejected: serverStats.rejected ?? approvals.filter(a => a.status === 'rejected').length
   }
 
   return (

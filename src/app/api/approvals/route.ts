@@ -194,9 +194,32 @@ export async function GET(request: NextRequest) {
       filteredItems = filteredItems.filter(item => item.departmentId === departmentId)
     }
 
+    // 4. Calculate cumulative summary statistics directly from database for the specified department
+    const summaryDeptWhere = departmentId && departmentId !== 'ALL' && departmentId !== 'all'
+      ? {
+          OR: [
+            { student: { departmentId } },
+            { student: { user: { departmentId } } }
+          ]
+        }
+      : {}
+
+    const allDeptAchievements = await db.studentAchievement.findMany({
+      where: summaryDeptWhere,
+      select: { id: true, approvalStatus: true }
+    })
+
+    const summary = {
+      total: allDeptAchievements.length,
+      pending: allDeptAchievements.filter(a => a.approvalStatus === 'PENDING').length,
+      approved: allDeptAchievements.filter(a => a.approvalStatus === 'APPROVED').length,
+      rejected: allDeptAchievements.filter(a => a.approvalStatus === 'REJECTED').length,
+    }
+
     return NextResponse.json({
       success: true,
       approvals: filteredItems,
+      summary,
       pagination: { page, limit, total: filteredItems.length, pages: Math.ceil(filteredItems.length / limit) },
     })
   } catch (error: any) {
@@ -265,6 +288,17 @@ export async function POST(request: NextRequest) {
         submitterRole = requesterUser.role
         targetDeptId = requesterUser.departmentId || ''
       }
+    }
+
+    // State transition guard: Ensure status is PENDING before updating (Prevents double approval or approving after rejection)
+    const isApprovalPending = approval ? approval.status === 'PENDING' : true
+    const isAchievementPending = achievementData ? achievementData.approvalStatus === 'PENDING' : true
+
+    if (!isApprovalPending || !isAchievementPending) {
+      return NextResponse.json(
+        { success: false, error: 'This achievement has already been processed and is no longer pending.' },
+        { status: 400 }
+      )
     }
 
     // 2. BACKEND PERMISSION ENFORCEMENT (REQUIREMENT #5 & #6)
