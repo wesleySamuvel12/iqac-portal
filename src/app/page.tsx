@@ -22299,10 +22299,11 @@ function StudentAchievementViewPage({ user }: { user: User }) {
           action: 'approve',
           reviewerRole: 'STAFF',
           reviewerName: user.name,
+          reviewedBy: user.id,
           reviewerDeptId: targetDeptId
         })
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({ success: false, error: 'Failed to parse response' }))
       if (res.ok && data.success) {
         await fetchApprovals()
         setSelectedEntry(null)
@@ -22341,10 +22342,11 @@ function StudentAchievementViewPage({ user }: { user: User }) {
           comments: rejectReason || 'Rejected by Staff',
           reviewerRole: 'STAFF',
           reviewerName: user.name,
+          reviewedBy: user.id,
           reviewerDeptId: targetDeptId
         })
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({ success: false, error: 'Failed to parse response' }))
       if (res.ok && data.success) {
         setShowRejectModal(false)
         setRejectingId(null)

@@ -412,27 +412,32 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    try {
-      await db.auditLog.create({
-        data: {
-          userId: reviewedBy || 'SYSTEM',
-          action: updatedResult.finalStatus === 'APPROVED' ? 'APPROVE_ACHIEVEMENT' : 'REJECT_ACHIEVEMENT',
-          entityType: 'ACHIEVEMENT',
-          entityId: targetAchievementId || approval?.id || 'UNKNOWN',
-          newValue: JSON.stringify({
-            action: updatedResult.finalStatus,
-            statusText: updatedResult.statusText,
-            reviewerRole: callerRoleUpper,
-            reviewerName: reviewerName || 'Reviewer',
-            submitterRole,
-            departmentId: targetDeptId,
-            reason: comments || 'N/A',
-            timestamp: new Date().toISOString()
+    if (reviewedBy && typeof reviewedBy === 'string' && reviewedBy.length > 5) {
+      try {
+        const existingUser = await db.user.findUnique({ where: { id: reviewedBy }, select: { id: true } })
+        if (existingUser) {
+          await db.auditLog.create({
+            data: {
+              userId: existingUser.id,
+              action: updatedResult.finalStatus === 'APPROVED' ? 'APPROVE_ACHIEVEMENT' : 'REJECT_ACHIEVEMENT',
+              entityType: 'ACHIEVEMENT',
+              entityId: targetAchievementId || approval?.id || 'UNKNOWN',
+              newValue: JSON.stringify({
+                action: updatedResult.finalStatus,
+                statusText: updatedResult.statusText,
+                reviewerRole: callerRoleUpper,
+                reviewerName: reviewerName || 'Reviewer',
+                submitterRole,
+                departmentId: targetDeptId,
+                reason: comments || 'N/A',
+                timestamp: new Date().toISOString()
+              })
+            }
           })
         }
-      })
-    } catch (auditError) {
-      console.error('Non-critical audit log error:', auditError)
+      } catch (auditError) {
+        console.error('Non-critical audit log error:', auditError)
+      }
     }
 
     return NextResponse.json({
