@@ -22365,6 +22365,74 @@ function StudentAchievementViewPage({ user }: { user: User }) {
     }
   }
 
+  const handleApproveAll = async () => {
+    if (stats.pending_staff === 0) return
+    if (!confirm(`Are you sure you want to approve all ${stats.pending_staff} pending student achievement submissions?`)) return
+    try {
+      setProcessingAction('approve_all')
+      const res = await fetch('/api/approvals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-role': 'STAFF'
+        },
+        body: JSON.stringify({
+          action: 'approve_all',
+          reviewerRole: 'STAFF',
+          reviewerName: user.name,
+          reviewedBy: user.id,
+          reviewerDeptId: targetDeptId
+        })
+      })
+      const data = await res.json().catch(() => ({ success: false }))
+      if (res.ok && data.success) {
+        await fetchApprovals()
+      } else {
+        alert(data.error || 'Failed to approve all submissions')
+      }
+    } catch (err: any) {
+      console.error('Error approving all submissions:', err)
+      alert('Error processing bulk approval: ' + (err.message || 'Network error'))
+    } finally {
+      setProcessingAction(null)
+    }
+  }
+
+  const handleRejectAll = async () => {
+    if (stats.pending_staff === 0) return
+    const reason = prompt(`Enter rejection reason for all ${stats.pending_staff} pending submissions:`, 'Bulk rejected by Staff')
+    if (reason === null) return
+    try {
+      setProcessingAction('reject_all')
+      const res = await fetch('/api/approvals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-role': 'STAFF'
+        },
+        body: JSON.stringify({
+          action: 'reject_all',
+          comments: reason || 'Bulk rejected by Staff',
+          reviewerRole: 'STAFF',
+          reviewerName: user.name,
+          reviewedBy: user.id,
+          reviewerDeptId: targetDeptId
+        })
+      })
+      const data = await res.json().catch(() => ({ success: false }))
+      if (res.ok && data.success) {
+        await fetchApprovals()
+      } else {
+        alert(data.error || 'Failed to reject all submissions')
+      }
+    } catch (err: any) {
+      console.error('Error rejecting all submissions:', err)
+      alert('Error processing bulk rejection: ' + (err.message || 'Network error'))
+    } finally {
+      setProcessingAction(null)
+    }
+  }
+
   const getStudentName = (entry: any) => entry?.studentName || 'Student'
   const getRegNo = (entry: any) => entry?.regNo || 'N/A'
 
@@ -22413,6 +22481,33 @@ function StudentAchievementViewPage({ user }: { user: User }) {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <Button
+            onClick={handleApproveAll}
+            disabled={stats.pending_staff === 0 || processingAction !== null}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center gap-2 shadow-sm"
+          >
+            {processingAction === 'approve_all' ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <CheckCircle className="w-4 h-4" />
+            )}
+            Approve All ({stats.pending_staff})
+          </Button>
+
+          <Button
+            onClick={handleRejectAll}
+            disabled={stats.pending_staff === 0 || processingAction !== null}
+            variant="destructive"
+            className="font-semibold flex items-center gap-2 shadow-sm"
+          >
+            {processingAction === 'reject_all' ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <XCircle className="w-4 h-4" />
+            )}
+            Reject All ({stats.pending_staff})
+          </Button>
+
+          <Button
             onClick={fetchApprovals}
             disabled={loading}
             variant="outline"
@@ -22421,6 +22516,7 @@ function StudentAchievementViewPage({ user }: { user: User }) {
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh Queue
           </Button>
+
           <Badge variant="outline" className="px-4 py-2 text-sm bg-blue-50 text-blue-700 border-blue-200 font-bold">
             {user.departmentName || 'Department'} • Staff Reviewer
           </Badge>
@@ -23098,6 +23194,155 @@ function HODStudentApprovalPage({ user }: { user: User }) {
       case 'hod_approved': return '✅ Approved'
       case 'rejected': return '❌ Rejected'
       default: return status
+    }
+  }
+
+  const handleApprove = async (approvalId: string, achievementId?: string) => {
+    try {
+      setProcessingAction(approvalId)
+      const res = await fetch('/api/approvals', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-role': 'HOD' 
+        },
+        body: JSON.stringify({
+          approvalId,
+          achievementId,
+          action: 'approve',
+          reviewerRole: 'HOD',
+          reviewerName: user.name,
+          reviewedBy: user.id,
+          reviewerDeptId: targetDeptId
+        })
+      })
+      const data = await res.json().catch(() => ({ success: false }))
+      if (res.ok && data.success) {
+        await fetchApprovals()
+        setSelectedEntry(null)
+      } else {
+        alert(data.error || 'Failed to approve submission')
+      }
+    } catch (err: any) {
+      console.error('Error approving submission:', err)
+      alert('Error processing approval: ' + (err.message || 'Network error'))
+    } finally {
+      setProcessingAction(null)
+    }
+  }
+
+  const openRejectModal = (approvalId: string, achievementId?: string) => {
+    setRejectingId(approvalId)
+    setRejectingAchievementId(achievementId || null)
+    setRejectReason('')
+    setShowRejectModal(true)
+  }
+
+  const handleRejectWithReason = async () => {
+    if (!rejectingId) return
+    try {
+      setProcessingAction(rejectingId)
+      const res = await fetch('/api/approvals', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-role': 'HOD' 
+        },
+        body: JSON.stringify({
+          approvalId: rejectingId,
+          achievementId: rejectingAchievementId,
+          action: 'reject',
+          comments: rejectReason || 'Rejected by HOD',
+          reviewerRole: 'HOD',
+          reviewerName: user.name,
+          reviewedBy: user.id,
+          reviewerDeptId: targetDeptId
+        })
+      })
+      const data = await res.json().catch(() => ({ success: false }))
+      if (res.ok && data.success) {
+        setShowRejectModal(false)
+        setRejectingId(null)
+        setRejectingAchievementId(null)
+        setRejectReason('')
+        await fetchApprovals()
+        setSelectedEntry(null)
+      } else {
+        alert(data.error || 'Failed to reject submission')
+      }
+    } catch (err: any) {
+      console.error('Error rejecting submission:', err)
+      alert('Error processing rejection: ' + (err.message || 'Network error'))
+    } finally {
+      setProcessingAction(null)
+    }
+  }
+
+  const handleApproveAll = async () => {
+    if (stats.pending_hod === 0) return
+    if (!confirm(`Are you sure you want to approve all ${stats.pending_hod} pending student achievement submissions?`)) return
+    try {
+      setProcessingAction('all_approve')
+      const res = await fetch('/api/approvals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-role': 'HOD'
+        },
+        body: JSON.stringify({
+          action: 'approve_all',
+          reviewerRole: 'HOD',
+          reviewerName: user.name,
+          reviewedBy: user.id,
+          reviewerDeptId: targetDeptId
+        })
+      })
+      const data = await res.json().catch(() => ({ success: false }))
+      if (res.ok && data.success) {
+        await fetchApprovals()
+      } else {
+        alert(data.error || 'Failed to approve all submissions')
+      }
+    } catch (err: any) {
+      console.error('Error approving all submissions:', err)
+      alert('Error processing bulk approval: ' + (err.message || 'Network error'))
+    } finally {
+      setProcessingAction(null)
+    }
+  }
+
+  const handleRejectAll = async () => {
+    if (stats.pending_hod === 0) return
+    const reason = prompt(`Enter rejection reason for all ${stats.pending_hod} pending submissions:`, 'Bulk rejected by HOD')
+    if (reason === null) return
+    try {
+      setProcessingAction('all_reject')
+      const res = await fetch('/api/approvals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-role': 'HOD'
+        },
+        body: JSON.stringify({
+          action: 'reject_all',
+          comments: reason || 'Bulk rejected by HOD',
+          reviewerRole: 'HOD',
+          reviewerName: user.name,
+          reviewedBy: user.id,
+          reviewerDeptId: targetDeptId
+        })
+      })
+      const data = await res.json().catch(() => ({ success: false }))
+      if (res.ok && data.success) {
+        await fetchApprovals()
+      } else {
+        alert(data.error || 'Failed to reject all submissions')
+      }
+    } catch (err: any) {
+      console.error('Error rejecting all submissions:', err)
+      alert('Error processing bulk rejection: ' + (err.message || 'Network error'))
+    } finally {
+      setProcessingAction(null)
     }
   }
 

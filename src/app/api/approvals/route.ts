@@ -236,6 +236,73 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
     const { approvalId, achievementId, action, comments, reviewedBy, reviewerRole, reviewerName, reviewerDeptId } = data
+    const actionLower = (action || '').toLowerCase()
+    const callerRoleUpper = (reviewerRole || request.headers.get('x-user-role') || 'STAFF').toUpperCase()
+
+    // Handle Bulk Actions (Approve All / Reject All)
+    if (actionLower === 'approve_all' || actionLower === 'reject_all') {
+      const isReject = actionLower === 'reject_all'
+      const newStatus: ApprovalStatus = isReject ? 'REJECTED' : 'APPROVED'
+      const newStage = isReject ? 'REJECTED' : 'APPROVED'
+
+      const deptWhere = reviewerDeptId && reviewerDeptId !== 'ALL' && reviewerDeptId !== 'all' ? {
+        OR: [
+          { student: { departmentId: reviewerDeptId } },
+          { student: { user: { departmentId: reviewerDeptId } } }
+        ]
+      } : {}
+
+      const pendingAchs = await db.studentAchievement.findMany({
+        where: {
+          approvalStatus: 'PENDING',
+          ...deptWhere
+        },
+        select: { id: true, title: true, student: { select: { userId: true } } }
+      })
+
+      const achIds = pendingAchs.map(a => a.id)
+
+      if (achIds.length > 0) {
+        await db.studentAchievement.updateMany({
+          where: { id: { in: achIds } },
+          data: { approvalStatus: newStatus }
+        })
+
+        await db.approval.updateMany({
+          where: { entityType: 'ACHIEVEMENT', entityId: { in: achIds } },
+          data: {
+            status: newStatus,
+            currentStage: newStage as any,
+            reviewedBy: reviewerName || callerRoleUpper,
+            reviewedAt: new Date(),
+            comments: comments || (isReject ? 'Bulk rejected by Staff' : 'Bulk approved by Staff')
+          }
+        })
+
+        for (const ach of pendingAchs) {
+          if (ach.student?.userId) {
+            try {
+              await db.notification.create({
+                data: {
+                  title: `Achievement Submission ${isReject ? 'Rejected ✕' : 'Approved ✓'}`,
+                  message: `Your achievement '${ach.title}' has been ${isReject ? 'rejected' : 'approved by Staff'}${comments ? ': ' + comments : ''}`,
+                  type: isReject ? 'REJECTED' : 'APPROVED',
+                  userId: ach.student.userId,
+                  relatedId: ach.id,
+                  entityType: 'ACHIEVEMENT'
+                }
+              })
+            } catch (e) {}
+          }
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Successfully ${isReject ? 'rejected' : 'approved'} ${achIds.length} pending submissions`,
+        count: achIds.length
+      })
+    }
 
     if ((!approvalId && !achievementId) || !action) {
       return NextResponse.json(
@@ -256,9 +323,6 @@ export async function POST(request: NextRequest) {
         orderBy: { createdAt: 'desc' }
       })
     }
-
-    const actionLower = action.toLowerCase()
-    const callerRoleUpper = (reviewerRole || request.headers.get('x-user-role') || 'STAFF').toUpperCase()
 
     // 1. Identify Submitter Role & Target Metadata
     let submitterRole = 'STUDENT'
