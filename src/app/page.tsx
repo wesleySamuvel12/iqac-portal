@@ -3911,14 +3911,18 @@ function DashboardContent({ user, setActiveTab }: { user: User; setActiveTab: (t
         .finally(() => setLoadingDepts(false))
     }, [])
 
-    // Load achievements from localStorage
+    // Load achievements from API
     useEffect(() => {
-      try {
-        const saved = localStorage.getItem('student_achievements')
-        if (saved) {
-          setAllAchievements(JSON.parse(saved))
-        }
-      } catch (e) {}
+      async function loadAchievements() {
+        try {
+          const res = await fetch('/api/admin/achievements', { cache: 'no-store' })
+          const data = await res.json()
+          if (data.success && Array.isArray(data.achievements)) {
+            setAllAchievements(data.achievements)
+          }
+        } catch (e) {}
+      }
+      loadAchievements()
     }, [])
 
     // Get filtered achievements based on selected department
@@ -4348,22 +4352,32 @@ function StudentDashboardContent({ user, setActiveTab }: { user: User; setActive
   const [allStudentAchievements, setAllStudentAchievements] = useState<any[]>([])
   const [selectedDashboardType, setSelectedDashboardType] = useState<string | null>(null)
   
-  // Load achievements from localStorage on mount
+  // Load achievements from API on mount
   useEffect(() => {
-    const saved = localStorage.getItem('student_achievements')
-    if (saved) {
+    async function fetchStudentDBAchievements() {
+      if (!user?.id) return
       try {
-        setAllStudentAchievements(JSON.parse(saved))
+        const res = await fetch(`/api/achievements?userId=${user.id}`, { cache: 'no-store' })
+        const data = await res.json()
+        if (data.success && Array.isArray(data.achievements)) {
+          const mapped = data.achievements.map((a: any) => ({
+            id: a.id,
+            title: a.title,
+            type: a.type,
+            status: a.approvalStatus === 'PENDING' ? 'pending_staff' : a.approvalStatus === 'APPROVED' ? 'staff_approved' : 'rejected',
+            achievedDate: a.achievedDate,
+            studentId: user.id
+          }))
+          setAllStudentAchievements(mapped)
+        }
       } catch (e) {
-        console.error('Failed to parse achievements:', e)
+        console.error('Failed to load student achievements:', e)
       }
     }
-  }, [])
+    fetchStudentDBAchievements()
+  }, [user?.id])
   
-  // IMPORTANT: Filter to show ONLY current student's achievements safely
-  const studentAchievements = user ? allStudentAchievements.filter((a: any) => 
-    (user.id && a.studentId === user.id) || (user.email && a.studentEmail === user.email) || (user.name && a.studentName === user.name)
-  ) : []
+  const studentAchievements = allStudentAchievements
   
   // Calculate stats from actual data (filtered for current student only)
   const totalRecords = studentAchievements.length
@@ -9183,25 +9197,24 @@ function HODDepartmentAnalyticsPage({ user }: { user: User }) {
   const [activeSection, setActiveSection] = useState<'students' | 'staff' | 'overview'>('overview')
   const [chartView, setChartView] = useState<'bar' | 'horizontal' | 'donut'>('bar')
 
-  // Load achievements from localStorage on mount
+  // Load achievements from API on mount
   useEffect(() => {
-    try {
-      const savedStudent = localStorage.getItem('student_achievements')
-      if (savedStudent) {
-        const parsed = JSON.parse(savedStudent)
-        const deptStudent = parsed.filter((a: any) => a.dept === user.departmentName || a.department === user.departmentName)
-        setStudentAchievements(deptStudent)
+    async function fetchAnalyticsData() {
+      try {
+        const res = await fetch('/api/admin/achievements', { cache: 'no-store' })
+        const data = await res.json()
+        if (data.success && Array.isArray(data.achievements)) {
+          const targetDept = user.departmentName
+          const deptAch = data.achievements.filter((a: any) => 
+            !targetDept || a.dept === targetDept || a.department === targetDept || a.departmentName === targetDept
+          )
+          setStudentAchievements(deptAch)
+        }
+      } catch (e) {
+        console.error('Failed to load achievements from API:', e)
       }
-      
-      const savedStaff = localStorage.getItem('staff_achievements')
-      if (savedStaff) {
-        const parsed = JSON.parse(savedStaff)
-        const deptStaff = parsed.filter((a: any) => a.dept === user.departmentName || a.department === user.departmentName)
-        setStaffAchievements(deptStaff)
-      }
-    } catch (e) {
-      console.error('Failed to parse achievements:', e)
     }
+    fetchAnalyticsData()
   }, [user.departmentName])
 
   // Student achievement counts by type
@@ -20257,15 +20270,11 @@ function StudentAchievementsPage({ user }: { user: User }) {
         }))
         setAchievements(mapped)
       } else {
-        // Fallback to localStorage
-        const saved = localStorage.getItem('student_achievements')
-        if (saved) {
-          const all = JSON.parse(saved)
-          setAchievements(all.filter((a: any) => a.studentId === user.id || a.studentEmail === user.email))
-        }
+        setAchievements([])
       }
     } catch (e) {
       console.error('Failed to fetch achievements from DB:', e)
+      setAchievements([])
     }
   }, [user.id, user.email, user.departmentName])
 
@@ -22507,7 +22516,7 @@ function StudentAchievementViewPage({ user }: { user: User }) {
         ) : filteredAchievements.length === 0 ? (
           <Card className="p-12 text-center">
             <Inbox className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-lg font-bold text-gray-700">No student approval records found</h3>
+            <h3 className="text-lg font-bold text-gray-700">No pending student approvals</h3>
             <p className="text-gray-500 mt-1">There are no pending achievement submissions for your department at this time.</p>
           </Card>
         ) : (
@@ -24451,249 +24460,27 @@ function AcademicHierarchyPage({
     }
   }, [hierarchyState.level, hierarchyState.departmentId, hierarchyState.year, hierarchyState.section])
   
-  // Load achievements from localStorage
+  // Load achievements from API
   useEffect(() => {
-    try {
-      const savedStudent = localStorage.getItem('student_achievements')
-      if (savedStudent) {
-        const parsed = JSON.parse(savedStudent)
-        // Filter for current department or get all for admin
-        let deptAchievements = parsed
-        if (user.role !== 'ADMIN') {
-          deptAchievements = parsed.filter((a: any) => a.dept === user.departmentName || a.department === user.departmentName)
+    async function loadRealAchievementsFromAPI() {
+      try {
+        const res = await fetch('/api/admin/achievements', { cache: 'no-store' })
+        const data = await res.json()
+        if (data.success && Array.isArray(data.achievements)) {
+          let deptAchievements = data.achievements
+          if (user.role !== 'ADMIN' && user.departmentName) {
+            deptAchievements = data.achievements.filter((a: any) => 
+              a.dept === user.departmentName || a.department === user.departmentName || a.departmentName === user.departmentName
+            )
+          }
+          setAllAchievements(deptAchievements)
         }
-        setAllAchievements(deptAchievements)
-      } else {
-        // Generate sample achievement data for demonstration
-        const sampleAchievements = generateSampleAchievements()
-        localStorage.setItem('student_achievements', JSON.stringify(sampleAchievements))
-        setAllAchievements(user.role === 'ADMIN' ? sampleAchievements : sampleAchievements)
+      } catch (e) {
+        console.error('Failed to load real achievements:', e)
       }
-      
-      // Also check achievements key
-      const savedAchievements = localStorage.getItem('achievements')
-      if (savedAchievements && allAchievements.length === 0) {
-        const parsed = JSON.parse(savedAchievements)
-        setAllAchievements(parsed)
-      }
-    } catch (e) {
-      console.error('Failed to parse achievements:', e)
     }
+    loadRealAchievementsFromAPI()
   }, [user.departmentName, user.role])
-
-  // Generate sample achievement data for demonstration
-  const generateSampleAchievements = () => {
-    // Use comprehensive list of 11 official departments
-    const allDepartments = [
-      'Aeronautical Engineering',
-      'Artificial Intelligence & Data Science',
-      'Computer Science and Business Systems',
-      'Computer Science and Engineering',
-      'Electronics & Communication Engineering',
-      'Electrical & Electronics Engineering',
-      'Information Technology',
-      'Mechatronics Engineering',
-      'Mechatronics',
-      'Mechanical Engineering',
-      'MBA',
-      'Science & Humanities'
-    ]
-    
-    const sections = ['A', 'B', 'C', 'D']
-    const years = ['1st Year', '2nd Year', '3rd Year', '4th Year']
-    
-    const achievementTypes = Object.entries(ACHIEVEMENT_TYPES).map(([key, config]) => ({
-      typeKey: key,
-      typeLabel: config.label
-    }))
-    
-    const maleNames = ['Rahul Kumar', 'Arjun Sharma', 'Vikram Singh', 'Amit Patel', 'Karthik Reddy', 
-                       'Sanjay Gupta', 'Deepak Joshi', 'Rajesh Verma', 'Nikhil Das', 'Praveen Kumar',
-                       'Suresh Babu', 'Manoj Tiwari', 'Ravi Shankar', 'Anil Kumar', 'Sunil Verma',
-                       'Mohammed Ali', 'David Raj', 'Thomas John', 'Kiran Kumar', 'Venkat Raman',
-                       'Harsh Patel', 'Aditya Verma', 'Rohit Mehta', 'Varun Kapoor', 'Gautham Reddy']
-    const femaleNames = ['Priya Sharma', 'Sneha Reddy', 'Ananya Iyer', 'Divya Nair', 'Kavya Krishnan', 
-                         'Meera Suresh', 'Lakshmi Priya', 'Sunita Devi', 'Pooja Singh', 'Ritu Kapoor',
-                         'Anjali Menon', 'Bhavani K', 'Chitra Lakshmi', 'Deepika Rani', 'Eesha Gupta',
-                         'Fatima Begum', 'Geetha Raj', 'Harini S', 'Indira P', 'Jyothi Lakshmi',
-                         'Keerthi V', 'Lavanya R', 'Madhuri S', 'Nandhini K', 'Oviya S']
-    
-    const sampleData: any[] = []
-    let id = 1
-    
-    // Enhanced sample data generation with more comprehensive coverage
-    allDepartments.forEach((dept, deptIdx) => {
-      // Generate 20-35 achievements per department for richer data
-      const numAchievements = Math.floor(Math.random() * 16) + 20
-      
-      // Create more consistent students per department (24 students - 6 per section)
-      const deptStudents: {name: string, regNo: string, gender: string, section: string, year: string}[] = []
-      
-      // Create students distributed across all sections and years
-      for (let s = 0; s < 24; s++) {
-        const isFemale = Math.random() > 0.55 // More balanced gender ratio
-        const nameList = isFemale ? femaleNames : maleNames
-        const section = sections[s % 4] // Distribute across A, B, C, D
-        const yearIdx = Math.floor(s / 6) // 6 students per year
-        const year = years[yearIdx]
-        const regNo = `${String(deptIdx + 1).padStart(2, '0')}${String(s + 1).padStart(3, '0')}${section}${String(yearIdx + 1).padStart(2, '0')}`
-        
-        deptStudents.push({
-          name: nameList[s % nameList.length],
-          regNo,
-          gender: isFemale ? 'female' : 'male',
-          section,
-          year
-        })
-      }
-      
-      // Generate achievements ensuring good distribution across types, sections, and years
-      for (let i = 0; i < numAchievements; i++) {
-        const student = deptStudents[Math.floor(Math.random() * deptStudents.length)]
-        const typeInfo = achievementTypes[Math.floor(Math.random() * achievementTypes.length)]
-        
-        // Generate detailed title based on type and department
-        let title = ''
-        const deptPrefix = dept.substring(0, 4).toUpperCase()
-        
-        switch (typeInfo.typeKey) {
-          case 'journal':
-            const journalTopics = ['AI/ML Applications', 'Cloud Computing Architecture', 'Cybersecurity Frameworks', 
-                'IoT Integration', 'Blockchain Technology', 'Quantum Computing', 'Edge Computing', 
-                '5G Networks', 'Renewable Energy Systems', 'Smart Manufacturing', 'Bioinformatics',
-                'Data Analytics', 'Neural Networks', 'Robotics Automation', 'Sustainable Development']
-            title = `Research Paper on ${journalTopics[Math.floor(Math.random() * journalTopics.length)]} in ${dept}`
-            break
-          case 'conference':
-            const conferences = ['IEEE International Conference', 'ACM Symposium', 'Global Tech Summit', 
-                'National Forum on Computing', 'International Congress', 'Annual Technical Conference',
-                'Research Symposium', 'Innovation Summit', 'Engineering Congress']
-            title = `Paper Presented at ${conferences[Math.floor(Math.random() * conferences.length)]} - ${dept}`
-            break
-          case 'patent':
-            const patentIdeas = ['Smart Device for Healthcare', 'Novel AI Algorithm', 'Efficient Energy System',
-                'Innovative Manufacturing Process', 'Autonomous Vehicle Component', 'Green Technology Solution',
-                'Advanced Material Composition', 'Digital Security Framework', 'Smart Agriculture System']
-            title = `Patent Filed: ${patentIdeas[Math.floor(Math.random() * patentIdeas.length)]}`
-            break
-          case 'nptel':
-            const nptelCourses = ['Data Structures & Algorithms', 'Machine Learning', 'Database Management Systems',
-                'Computer Networks', 'Operating Systems', 'Software Engineering', 'Cloud Computing',
-                'Python Programming', 'Java Development', 'Web Technologies', 'Mobile App Development',
-                'Cybersecurity Fundamentals', 'AI Basics', 'Data Science Introduction']
-            title = `NPTEL Certification: ${nptelCourses[Math.floor(Math.random() * nptelCourses.length)]}`
-            break
-          case 'hackathon':
-            const hackathons = ['Smart India Hackathon', 'Code Sprint', 'Innovation Challenge', 'HackIT',
-                'DevFest Hackathon', 'SIH Grand Finale', 'State Level Hackathon', 'Corporate Hackathon']
-            const positions = ['Winner 🏆', 'Runner Up 🥈', 'Finalist', 'Best Innovation Award 💡', 'Participants', 'Special Mention ⭐']
-            title = `${hackathons[Math.floor(Math.random() * hackathons.length)]} - ${positions[Math.floor(Math.random() * positions.length)]}`
-            break
-          case 'competition':
-            const competitions = ['Coding Contest', 'Technical Quiz', 'Project Expo', 'Paper Presentation',
-                'Debugging Challenge', 'Hackathon', 'Case Study Competition', 'Model Making Contest',
-                'Poster Presentation', 'Technical Debate']
-            const awards = ['Gold Medal 🥇', 'Silver Medal 🥈', 'Bronze 🥉', 'Participation Certificate', 'First Prize 🏆', 'Second Prize', 'Third Prize']
-            title = `${competitions[Math.floor(Math.random() * competitions.length)]} - ${awards[Math.floor(Math.random() * awards.length)]}`
-            break
-          case 'certification':
-            const certs = ['AWS Solutions Architect Associate', 'Google Cloud Professional', 'Python Developer (PCPP1)',
-                'Data Science Professional', 'Azure Administrator Associate', 'Oracle Java SE 11 Developer',
-                'Cisco CCNA', 'CompTIA Security+', 'MongoDB Developer', 'TensorFlow Developer',
-                'Tableau Desktop Specialist', 'Salesforce Administrator', 'PMI-ACP Agile Certification']
-            title = `${certs[Math.floor(Math.random() * certs.length)]}`
-            break
-          case 'internship':
-            const companies = ['Google', 'Microsoft', 'Amazon', 'TCS', 'Infosys', 'Wipro', 'HCL Technologies',
-                'Cognizant', 'Accenture', 'IBM', 'Tech Mahindra', 'Mindtree', 'Mphasis', 'Zoho Corporation',
-                'Freshworks', 'Swiggy', 'Flipkart', 'Paytm', 'Ola', 'Byju\'s']
-            title = `Internship at ${companies[Math.floor(Math.random() * companies.length)]}`
-            break
-          case 'workshop':
-            const workshops = ['Full Stack Web Development', 'Mobile App Development', 'Data Science with Python',
-                'DevOps & Cloud', 'Blockchain Development', 'IoT Systems', 'Robotics & Automation',
-                'Cybersecurity Essentials', 'AI/ML Bootcamp', 'UI/UX Design', 'React.js Advanced',
-                'Node.js Backend', 'Docker & Kubernetes', 'AWS Cloud Practitioner']
-            title = `Workshop on ${workshops[Math.floor(Math.random() * workshops.length)]}`
-            break
-          case 'project':
-            const projects = ['E-Commerce Platform', 'Healthcare Management System', 'Smart City IoT Solution',
-                'AI Chatbot Application', 'Blockchain Voting System', 'Farm Automation System',
-                'Traffic Management App', 'Online Learning Platform', 'Inventory Management System',
-                'Social Media Dashboard', 'Weather Prediction ML Model', 'Restaurant Booking App',
-                'Fitness Tracker Application', 'Real Estate Portal', 'Waste Management System']
-            title = `Project: ${projects[Math.floor(Math.random() * projects.length)]}`
-            break
-          case 'training':
-            const trainings = ['4-week Summer Industrial Training', '6-month Internship Program',
-                'Industry Certification Course', 'Technical Skill Development Workshop',
-                'Corporate Training Program', 'Research Methodology Training',
-                'Entrepreneurship Development Program', 'Soft Skills & Communication Training']
-            title = `${trainings[Math.floor(Math.random() * trainings.length)]}`
-            break
-          case 'award':
-            const awardList = ['Academic Excellence Award 🎓', 'Best Project Award 🏆', 'Outstanding Student Award ⭐',
-                'Sports Achievement 🏅', 'Cultural Event Winner 🎭', 'Department Topper Award 👑',
-                'Innovation Award 💡', 'Leadership Award 🎖️', 'Community Service Award 🤝',
-                'Research Excellence Award 🔬', 'All Rounder Student Award 🌟']
-            title = `${awardList[Math.floor(Math.random() * awardList.length)]}`
-            break
-          case 'placement':
-            const placements = [
-              { company: 'TCS', package: '₹7 LPA' },
-              { company: 'Infosys', package: '₹6.5 LPA' },
-              { company: 'Wipro', package: '₹5.5 LPA' },
-              { company: 'Cognizant', package: '₹6 LPA' },
-              { company: 'Accenture', package: '₹7.5 LPA' },
-              { company: 'Amazon', package: '₹22 LPA' },
-              { company: 'Microsoft', package: '₹28 LPA' },
-              { company: 'Google', package: '₹35 LPA' },
-              { company: 'Flipkart', package: '₹18 LPA' },
-              { company: 'Zoho', package: '₹10 LPA' }
-            ]
-            const placement = placements[Math.floor(Math.random() * placements.length)]
-            title = `Placement at ${placement.company} (${placement.package})`
-            break
-          case 'startup':
-            const startups = ['Launched Tech Startup', 'Founded E-Commerce Venture', 'Developed Mobile App Business',
-                'Created EdTech Platform', 'Built SaaS Product', 'Started AI Consulting Firm',
-                'Founded HealthTech Company', 'Launched FinTech Solution', 'Created AgriTech Platform',
-                'Developed CleanTech Initiative']
-            title = `${startups[Math.floor(Math.random() * startups.length)]}`
-            break
-          default:
-            title = `${typeInfo.typeLabel} Achievement #${id}`
-        }
-        
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        
-        sampleData.push({
-          id: id,
-          regNo: student.regNo,
-          registerNumber: student.regNo,
-          studentName: student.name,
-          studentEmail: `${student.name.toLowerCase().replace(/\s+/g, '.').replace(/[^a-z.]/g, '')}@niet.ac.in`,
-          title: title,
-          type: typeInfo.typeLabel,
-          achievementType: typeInfo.typeKey,
-          dept: dept,
-          department: dept,
-          section: student.section,
-          year: student.year,
-          date: `${months[Math.floor(Math.random() * 12)]} ${2023 + Math.floor(Math.random() * 3)}`,
-          description: `This is a detailed description of the achievement: ${title}. The student demonstrated exceptional skills and dedication in completing this milestone.`,
-          status: Math.random() > 0.2 ? 'verified' : 'pending',
-          gender: student.gender,
-          score: Math.floor(Math.random() * 30) + 70 // Score between 70-100
-        })
-        
-        id++
-      }
-    })
-    
-    console.log(`Generated ${sampleData.length} sample achievements across ${allDepartments.length} departments`)
-    return sampleData
-  }
 
   const fetchDepartments = async () => {
     try {
