@@ -318,3 +318,44 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+// PUT /api/achievements - Reject update attempts on submitted/locked achievements
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { id } = body
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'Achievement ID is required' }, { status: 400 })
+    }
+
+    const achievement = await db.studentAchievement.findUnique({
+      where: { id }
+    })
+
+    if (!achievement) {
+      return NextResponse.json({ success: false, error: 'Achievement not found' }, { status: 404 })
+    }
+
+    // Strict Backend Lock Enforcement
+    if (achievement.approvalStatus !== 'DRAFT') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'This achievement has already been submitted and cannot be edited.'
+        },
+        { status: 403 }
+      )
+    }
+
+    return NextResponse.json({ success: true, message: 'Achievement updated' })
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message || 'Failed to update achievement' }, { status: 500 })
+  }
+}
+
+// PATCH /api/achievements - Reject update attempts on submitted/locked achievements
+export async function PATCH(request: NextRequest) {
+  return PUT(request)
+}
+
