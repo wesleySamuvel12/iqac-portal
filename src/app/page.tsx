@@ -4345,11 +4345,10 @@ function StudentDashboardContent({ user, setActiveTab }: { user: User; setActive
     }
   }, [])
   
-  // IMPORTANT: Filter to show ONLY current student's achievements
-  // Each student can only see their own records, not other students'
-  const studentAchievements = allStudentAchievements.filter((a: any) => 
-    a.studentId === user.id || a.studentEmail === user.email || a.studentName === user.name
-  )
+  // IMPORTANT: Filter to show ONLY current student's achievements safely
+  const studentAchievements = user ? allStudentAchievements.filter((a: any) => 
+    (user.id && a.studentId === user.id) || (user.email && a.studentEmail === user.email) || (user.name && a.studentName === user.name)
+  ) : []
   
   // Calculate stats from actual data (filtered for current student only)
   const totalRecords = studentAchievements.length
@@ -4641,7 +4640,7 @@ function StudentDashboardContent({ user, setActiveTab }: { user: User; setActive
                 <div className="grid gap-3 max-h-64 overflow-y-auto">
                   {selectedTypeAchievements.map((achievement: any, idx: number) => (
                     <div key={idx} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 hover:border-cyan-200 transition-colors">
-                      <div className={'w-10 h-10 rounded-lg bg-gradient-to-br ' + ACHIEVEMENT_TYPES[selectedDashboardType]?.color || 'from-gray-400 to-gray-500' + ' flex items-center justify-center'}>
+                      <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${ACHIEVEMENT_TYPES[selectedDashboardType]?.color || 'from-gray-400 to-gray-500'} flex items-center justify-center`}>
                         {(() => {
                           const TypeIcon = ACHIEVEMENT_TYPES[selectedDashboardType]?.icon
                           return TypeIcon ? <TypeIcon className="w-5 h-5 text-white" /> : null
