@@ -80,44 +80,38 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 3. Enrich approval items with complete submitter, department, and achievement details
-    const enrichedApprovals = await Promise.all(
-      approvals.map(async (app) => {
-        let requesterUser: any = null
-        let studentObj: any = null
-        let facultyObj: any = null
-        let entityData: any = null
+    // 3. Enrich approval items with complete submitter, department, and achievement details using batch queries (prevents connection pool timeout)
+    const requestedByIds = Array.from(new Set(approvals.map(a => a.requestedBy).filter(Boolean)))
+    const achievementEntityIds = Array.from(new Set(approvals.filter(a => a.entityType === 'ACHIEVEMENT').map(a => a.entityId).filter(Boolean)))
 
-        if (app.requestedBy) {
-          requesterUser = await db.user.findUnique({
-            where: { id: app.requestedBy },
+    const [usersList, studentsList, facultyList, achievementsList] = await Promise.all([
+      requestedByIds.length > 0
+        ? db.user.findMany({
+            where: { id: { in: requestedByIds } },
             select: { id: true, name: true, email: true, role: true, departmentId: true }
           })
-
-          if (!requesterUser) {
-            studentObj = await db.student.findFirst({
-              where: { OR: [{ id: app.requestedBy }, { userId: app.requestedBy }] },
-              include: {
-                user: { select: { id: true, name: true, email: true, role: true } },
-                department: { select: { id: true, name: true, code: true } }
-              }
-            })
-
-            if (!studentObj) {
-              facultyObj = await db.faculty.findFirst({
-                where: { OR: [{ id: app.requestedBy }, { userId: app.requestedBy }] },
-                include: {
-                  user: { select: { id: true, name: true, email: true, role: true } },
-                  department: { select: { id: true, name: true, code: true } }
-                }
-              })
+        : [],
+      requestedByIds.length > 0
+        ? db.student.findMany({
+            where: { OR: [{ id: { in: requestedByIds } }, { userId: { in: requestedByIds } }] },
+            include: {
+              user: { select: { id: true, name: true, email: true, role: true } },
+              department: { select: { id: true, name: true, code: true } }
             }
-          }
-        }
-
-        if (app.entityType === 'ACHIEVEMENT') {
-          entityData = await db.studentAchievement.findUnique({
-            where: { id: app.entityId },
+          })
+        : [],
+      requestedByIds.length > 0
+        ? db.faculty.findMany({
+            where: { OR: [{ id: { in: requestedByIds } }, { userId: { in: requestedByIds } }] },
+            include: {
+              user: { select: { id: true, name: true, email: true, role: true } },
+              department: { select: { id: true, name: true, code: true } }
+            }
+          })
+        : [],
+      achievementEntityIds.length > 0
+        ? db.studentAchievement.findMany({
+            where: { id: { in: achievementEntityIds } },
             include: {
               student: {
                 include: {
@@ -127,35 +121,54 @@ export async function GET(request: NextRequest) {
               }
             }
           })
-        }
+        : []
+    ])
 
-        const studentMeta = entityData?.student || studentObj
-        const submitterRole = requesterUser?.role || (studentMeta ? 'STUDENT' : facultyObj ? 'STAFF' : 'STUDENT')
-        const resolvedDeptId = studentMeta?.departmentId || facultyObj?.departmentId || requesterUser?.departmentId
-        const resolvedDeptName = studentMeta?.department?.name || facultyObj?.department?.name || 'Department'
-        const submitterName = studentMeta?.name || studentMeta?.user?.name || facultyObj?.name || facultyObj?.user?.name || requesterUser?.name || 'Student'
-        const registerNumber = studentMeta?.registerNumber || facultyObj?.employeeId || 'N/A'
+    const userMap = new Map(usersList.map(u => [u.id, u]))
+    const studentMap = new Map<string, any>()
+    studentsList.forEach(s => {
+      studentMap.set(s.id, s)
+      if (s.userId) studentMap.set(s.userId, s)
+    })
+    const facultyMap = new Map<string, any>()
+    facultyList.forEach(f => {
+      facultyMap.set(f.id, f)
+      if (f.userId) facultyMap.set(f.userId, f)
+    })
+    const achievementMap = new Map(achievementsList.map(ach => [ach.id, ach]))
 
-        let displayStatus = app.status === 'APPROVED' 
-          ? (submitterRole === 'STUDENT' ? 'Approved by Staff' : 'Approved by HOD')
-          : app.status === 'REJECTED'
-          ? (submitterRole === 'STUDENT' ? 'Rejected by Staff' : 'Rejected by HOD')
-          : (submitterRole === 'STUDENT' ? 'Pending Staff Approval' : 'Pending HOD Approval')
+    const enrichedApprovals = approvals.map((app) => {
+      const requesterUser = app.requestedBy ? userMap.get(app.requestedBy) : null
+      const studentObj = app.requestedBy ? studentMap.get(app.requestedBy) : null
+      const facultyObj = !studentObj && app.requestedBy ? facultyMap.get(app.requestedBy) : null
+      const entityData = app.entityType === 'ACHIEVEMENT' ? achievementMap.get(app.entityId) : null
 
-        return {
-          ...app,
-          submitterRole,
-          departmentId: resolvedDeptId,
-          departmentName: resolvedDeptName,
-          studentName: submitterName,
-          registerNumber,
-          displayStatus,
-          requiredApproverRole: submitterRole === 'STUDENT' ? 'STAFF' : 'HOD',
-          requester: requesterUser || { name: submitterName, email: studentMeta?.email || facultyObj?.email, role: submitterRole },
-          achievement: entityData,
-        }
-      })
-    )
+      const studentMeta = entityData?.student || studentObj
+      const submitterRole = requesterUser?.role || (studentMeta ? 'STUDENT' : facultyObj ? 'STAFF' : 'STUDENT')
+      const resolvedDeptId = studentMeta?.departmentId || facultyObj?.departmentId || requesterUser?.departmentId
+      const resolvedDeptName = studentMeta?.department?.name || facultyObj?.department?.name || 'Department'
+      const submitterName = studentMeta?.name || studentMeta?.user?.name || facultyObj?.name || facultyObj?.user?.name || requesterUser?.name || 'Student'
+      const registerNumber = studentMeta?.registerNumber || facultyObj?.employeeId || 'N/A'
+
+      let displayStatus = app.status === 'APPROVED' 
+        ? (submitterRole === 'STUDENT' ? 'Approved by Staff' : 'Approved by HOD')
+        : app.status === 'REJECTED'
+        ? (submitterRole === 'STUDENT' ? 'Rejected by Staff' : 'Rejected by HOD')
+        : (submitterRole === 'STUDENT' ? 'Pending Staff Approval' : 'Pending HOD Approval')
+
+      return {
+        ...app,
+        submitterRole,
+        departmentId: resolvedDeptId,
+        departmentName: resolvedDeptName,
+        studentName: submitterName,
+        registerNumber,
+        displayStatus,
+        requiredApproverRole: submitterRole === 'STUDENT' ? 'STAFF' : 'HOD',
+        requester: requesterUser || { name: submitterName, email: studentMeta?.email || facultyObj?.email, role: submitterRole },
+        achievement: entityData,
+      }
+    })
 
     // Filter by status, role & department
     let filteredItems = enrichedApprovals

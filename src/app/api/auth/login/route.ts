@@ -162,6 +162,34 @@ export async function POST(request: NextRequest) {
       data: { lastLogin: new Date() },
     })
 
+    // Resolve fallback department ID & Name from linked Faculty or Student record if missing on User
+    let resolvedDepartmentId = user.departmentId || user.faculty?.departmentId || (user.student && user.student[0]?.departmentId)
+    let resolvedDepartmentName = user.department?.name || user.faculty?.department?.name || (user.student && user.student[0]?.department?.name)
+
+    if (!resolvedDepartmentName && resolvedDepartmentId) {
+      try {
+        const deptObj = await db.department.findUnique({
+          where: { id: resolvedDepartmentId },
+          select: { name: true }
+        })
+        if (deptObj) resolvedDepartmentName = deptObj.name
+      } catch (e) {
+        // Ignore fallback fetch error
+      }
+    }
+
+    // Auto-repair User.departmentId in database if misaligned
+    if (resolvedDepartmentId && user.departmentId !== resolvedDepartmentId) {
+      try {
+        await db.user.update({
+          where: { id: user.id },
+          data: { departmentId: resolvedDepartmentId }
+        })
+      } catch (e) {
+        // Ignore update error
+      }
+    }
+
     // Return user without password
     const { password: _, faculty: __, student: ___, ...userWithoutPassword } = user
 
@@ -170,7 +198,8 @@ export async function POST(request: NextRequest) {
       user: {
         ...userWithoutPassword,
         role: correctRole,
-        departmentName: user.department?.name,
+        departmentId: resolvedDepartmentId || undefined,
+        departmentName: resolvedDepartmentName || 'Department',
       },
     })
   } catch (error) {

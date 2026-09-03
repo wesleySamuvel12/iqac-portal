@@ -171,6 +171,45 @@ interface TimelineItem {
   icon: string
 }
 
+// Department short codes mapping helper (Top-level scope)
+const getDeptShortCode = (name: string) => {
+  if (!name) return 'DEPT'
+  const codeMap: Record<string, string> = {
+    'Aeronautical Engineering': 'Aero',
+    'AER': 'Aero',
+    'Artificial Intelligence & Data Science': 'AI&DS',
+    'AI & DS': 'AI&DS',
+    'AI&DS': 'AI&DS',
+    'Computer Science and Business Systems': 'CSBS',
+    'Computer Science & Business Systems': 'CSBS',
+    'CSBS': 'CSBS',
+    'Computer Science and Engineering': 'CSE',
+    'CSE': 'CSE',
+    'Electronics & Communication Engineering': 'ECE',
+    'ECE': 'ECE',
+    'Electrical & Electronics Engineering': 'EEE',
+    'EEE': 'EEE',
+    'Information Technology': 'IT',
+    'IT': 'IT',
+    'Mechatronics Engineering': 'MCT',
+    'Mechatronics': 'MCT',
+    'MCT': 'MCT',
+    'Mechanical Engineering': 'MECH',
+    'MECH': 'MECH',
+    'MBA': 'MBA',
+    'Science & Humanities': 'S&H',
+    'S&H': 'S&H',
+  }
+  if (codeMap[name]) return codeMap[name]
+  const words = name.split(/\s+/)
+  if (words.length >= 3) {
+    return words.slice(0, -1).map(w => w[0]).join('').toUpperCase()
+  } else if (words.length === 2) {
+    return (words[0].substring(0, 3) + words[1][0]).toUpperCase()
+  }
+  return name.substring(0, 4).toUpperCase()
+}
+
 // ============ ACHIEVEMENT TYPES DEFINITION (13 Types - Student Focused) ============
 const ACHIEVEMENT_TYPES: Record<string, {
   label: string
@@ -4877,13 +4916,15 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
     }
   }
 
-  // Fetch department students from database
+  // Fetch department students from database safely
   const fetchHodStudents = useCallback(async () => {
-    if (!user.departmentId) return
+    const targetDeptId = user.departmentId || (user as any).faculty?.departmentId
+    if (!targetDeptId) return
     try {
-      const res = await fetch(`/api/students?departmentId=${user.departmentId}&limit=200`)
+      const res = await fetch(`/api/students?departmentId=${targetDeptId}&limit=200`)
+      if (!res.ok) return
       const data = await res.json()
-      if (data.success && Array.isArray(data.students) && data.students.length > 0) {
+      if (data.success && Array.isArray(data.students)) {
         const mapped = data.students.map((s: any) => ({
           id: s.id,
           name: s.name || s.user?.name || `Student ${s.registerNumber}`,
@@ -4903,16 +4944,18 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
     }
   }, [user.departmentId, user.departmentName])
 
-  // Fetch pending approvals & student achievements from database for HOD tab
+  // Fetch pending approvals & student achievements from database for HOD tab safely
   const fetchHodApprovals = useCallback(async () => {
     try {
-      const deptQuery = user.departmentId ? `&departmentId=${user.departmentId}` : ''
+      const targetDeptId = user.departmentId || (user as any).faculty?.departmentId
+      const deptQuery = targetDeptId ? `&departmentId=${targetDeptId}` : ''
       const [approvalsRes, achievementsRes] = await Promise.all([
-        fetch(`/api/approvals?status=PENDING${deptQuery}`, { headers: { 'x-user-role': 'HOD' } }),
-        fetch(`/api/achievements?departmentId=${user.departmentId || ''}`)
+        fetch(`/api/approvals?status=PENDING${deptQuery}`, { headers: { 'x-user-role': 'HOD' } }).catch(() => null),
+        fetch(`/api/achievements?departmentId=${targetDeptId || ''}`).catch(() => null)
       ])
-      const data = await approvalsRes.json()
-      const achData = await achievementsRes.json()
+      
+      const data = approvalsRes && approvalsRes.ok ? await approvalsRes.json().catch(() => ({})) : {}
+      const achData = achievementsRes && achievementsRes.ok ? await achievementsRes.json().catch(() => ({})) : {}
 
       let combined: any[] = []
 
@@ -4963,11 +5006,13 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
     }
   }, [user.departmentId, user.departmentName])
 
-  // Fetch department staff from database
+  // Fetch department staff from database safely
   const fetchHodStaff = useCallback(async () => {
-    if (!user.departmentId) return
+    const targetDeptId = user.departmentId || (user as any).faculty?.departmentId
+    if (!targetDeptId) return
     try {
-      const res = await fetch(`/api/faculty?departmentId=${user.departmentId}&limit=200`)
+      const res = await fetch(`/api/faculty?departmentId=${targetDeptId}&limit=200`)
+      if (!res.ok) return
       const data = await res.json()
       if (data.success && Array.isArray(data.faculty)) {
         const mapped = data.faculty.map((f: any) => ({
@@ -5541,7 +5586,7 @@ EMP102,Ms. Deepa K,deepa@niet.ac.in,+91-9876543221,Assistant Professor,M.Tech CS
                     <p className="font-medium text-violet-900 text-sm">Department Analytics</p>
                     <p className="text-xs text-violet-600">{showInlineAnalytics ? 'Hide' : 'Show'} inline analytics</p>
                   </div>
-                  <ChevronRight className={'w-4 h-4 text-violet-400 ml-auto transition-transform ' + showInlineAnalytics ? 'rotate-90' : '' + ''} />
+                  <ChevronRight className={`w-4 h-4 text-violet-400 ml-auto transition-transform ${showInlineAnalytics ? 'rotate-90' : ''}`} />
                 </button>
               </CardContent>
             </Card>
