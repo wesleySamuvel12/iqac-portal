@@ -2110,7 +2110,10 @@ export async function generateAchievementPdf(filters: FilterOptions): Promise<{ 
 }
 
 export async function generateAchievementDocx(filters: FilterOptions): Promise<Buffer> {
-  const { results, grandTotal, departmentName, roleLabel, datePeriod, generatedDateStr, isAll, keysToInclude } = await fetchAchievementData(filters)
+  const reportData = await fetchAchievementData(filters)
+  const { results, grandTotal, departmentName, roleLabel, datePeriod, generatedDateStr } = reportData
+  const isAll = !filters.achievementType || filters.achievementType === 'ALL'
+  const keysToInclude = isAll ? Object.keys(ACHIEVEMENT_TYPES) : (ACHIEVEMENT_TYPES[filters.achievementType] ? [filters.achievementType] : [])
 
   const children: any[] = []
 
@@ -2318,7 +2321,7 @@ export async function generateAchievementDocx(filters: FilterOptions): Promise<B
       {
         properties: {
           page: {
-            pageSize: {
+            size: {
               orientation: DocxPageOrientation.LANDSCAPE,
             },
           },
