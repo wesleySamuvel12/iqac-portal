@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateAchievementExcel, generateAchievementPdf, FilterOptions } from '@/lib/reports/achievement-report-service'
+import { generateAchievementExcel, generateAchievementPdf, generateAchievementDocx, FilterOptions } from '@/lib/reports/achievement-report-service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,11 +29,24 @@ export async function POST(request: NextRequest) {
       currentUserId,
     }
 
-    if (String(format).toLowerCase() === 'pdf') {
+    const fmt = String(format).toLowerCase()
+
+    if (fmt === 'pdf') {
       const { buffer, filename } = await generateAchievementPdf(filters)
       return new NextResponse(new Uint8Array(buffer), {
         headers: {
           'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="${filename}"`,
+        },
+      })
+    }
+
+    if (fmt === 'docx') {
+      const buffer = await generateAchievementDocx(filters)
+      const filename = `IQAC_Achievement_Report_${filters.achievementType}_${Date.now()}.docx`
+      return new NextResponse(new Uint8Array(buffer), {
+        headers: {
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           'Content-Disposition': `attachment; filename="${filename}"`,
         },
       })

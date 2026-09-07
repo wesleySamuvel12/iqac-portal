@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         columnCount = schema.columns.length
         const matched = results[achievementType] || []
         recordsFound = matched.length
-        previewRows = matched.slice(0, 10) // First 10 records preview
+        previewRows = matched // Return all matched records for full preview alignment
       }
     }
 

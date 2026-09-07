@@ -1,6 +1,20 @@
 import { db } from '@/lib/db'
 import ExcelJS from 'exceljs'
 import PDFDocument from 'pdfkit'
+import {
+  Document as DocxDocument,
+  Packer as DocxPacker,
+  Paragraph as DocxParagraph,
+  TextRun as DocxTextRun,
+  Table as DocxTable,
+  TableRow as DocxTableRow,
+  TableCell as DocxTableCell,
+  WidthType as DocxWidthType,
+  AlignmentType as DocxAlignmentType,
+  BorderStyle as DocxBorderStyle,
+  ShadingType as DocxShadingType,
+  PageOrientation as DocxPageOrientation
+} from 'docx'
 import fs from 'fs'
 import path from 'path'
 import { computeCategorySerialNumbers } from '@/lib/achievements-service'
@@ -501,7 +515,7 @@ function isDateInRange(
 export async function fetchAchievementData(filters: FilterOptions) {
   let { departmentId, fromMonth, toMonth, year, userType, targetUserId, userRole, currentUserId } = filters
 
-  // Backend permission check (Section 25)
+  // Backend permission check (Section 25 & Requirement 9/10/33/34)
   if (userRole === 'STAFF' || userRole === 'HOD') {
     if (currentUserId) {
       const dbUser = await db.user.findUnique({
@@ -565,7 +579,7 @@ export async function fetchAchievementData(filters: FilterOptions) {
     orderBy: { createdAt: 'asc' }
   })
 
-  // 0. A. Academic Activities (Syllabus Coverage, Lesson Plan Progress & Teaching-Learning)
+  // 0. A. Academic Activities (Syllabus Coverage & Teaching-Learning)
   const academicActivities = !includeStaff ? [] : await db.activity.findMany({
     where: {
       ...(departmentId !== 'ALL' ? { departmentId } : {}),
@@ -575,9 +589,13 @@ export async function fetchAchievementData(filters: FilterOptions) {
       id: true,
       title: true,
       type: true,
+      description: true,
       startDate: true,
       endDate: true,
       conductedBy: true,
+      outcome: true,
+      status: true,
+      approvalStatus: true,
       attachments: true,
       createdAt: true,
       department: true,
@@ -590,51 +608,20 @@ export async function fetchAchievementData(filters: FilterOptions) {
     orderBy: { createdAt: 'desc' }
   })
 
-  const sampleAcademicRecords = [
-    {
-      name: 'Dr. R. K. Sharma',
-      empId: 'EMP1002',
-      dept: departmentName,
-      code: 'CS8591',
-      subject: 'Computer Networks & Security',
-      coverage: '95%',
-      lessonPlan: '100% On-Schedule',
-      meetings: '2 Meetings Conducted',
-      evalMethod: 'Unit Tests & Lab Evaluation',
-      remedial: '4 Special Sessions Held',
-      date: new Date(),
-      status: 'Verified by HOD'
-    },
-    {
-      name: 'Prof. S. Priya',
-      empId: 'EMP1045',
-      dept: departmentName,
-      code: 'EC8452',
-      subject: 'Digital Signal Processing',
-      coverage: '92%',
-      lessonPlan: '98% On-Schedule',
-      meetings: '2 Meetings Conducted',
-      evalMethod: 'Assignments & Quiz',
-      remedial: '3 Sessions for Slow Learners',
-      date: new Date(),
-      status: 'Verified by HOD'
-    }
-  ]
-
-  const combinedAcademic: any[] = academicActivities.length > 0 ? academicActivities.map(a => ({
-    name: a.facultyActivities?.[0]?.faculty?.user?.name || 'Faculty In-Charge',
-    empId: a.facultyActivities?.[0]?.faculty?.employeeId || 'EMP1001',
+  const combinedAcademic: any[] = academicActivities.map(a => ({
+    name: a.facultyActivities?.[0]?.faculty?.user?.name || a.conductedBy || '—',
+    empId: a.facultyActivities?.[0]?.faculty?.employeeId || '—',
     dept: a.department?.name || departmentName,
-    code: 'CS8601',
-    subject: a.title || 'Academic Course Progress',
-    coverage: '95%',
-    lessonPlan: '100% Compliant',
-    meetings: '2 Completed',
-    evalMethod: 'Continuous Internal Assessment',
-    remedial: 'Conducting Weekly Remedial Classes',
+    code: a.type || '—',
+    subject: a.title,
+    coverage: a.outcome || '—',
+    lessonPlan: a.status || '—',
+    meetings: '—',
+    evalMethod: a.description || '—',
+    remedial: '—',
     date: a.startDate || a.createdAt,
-    status: 'Verified by IQAC',
-  })) : sampleAcademicRecords
+    status: a.approvalStatus || 'APPROVED',
+  }))
 
   results.ACADEMIC_ACTIVITIES = combinedAcademic
     .filter(a => isDateInRange(a.date, fromMonth, toMonth, year))
@@ -693,35 +680,35 @@ export async function fetchAchievementData(filters: FilterOptions) {
   const combinedJournalRaw: any[] = [
     ...(includeStaff ? journalResearch.map(r => ({
       id: r.id,
-      name: r.publications[0]?.faculty?.user?.name || parseAuthorName(r.authors) || 'Faculty Author',
-      regId: r.publications[0]?.faculty?.employeeId || 'N/A',
+      name: r.publications[0]?.faculty?.user?.name || parseAuthorName(r.authors) || '—',
+      regId: r.publications[0]?.faculty?.employeeId || '—',
       dept: r.department?.name || departmentName,
       yearDesig: r.publications[0]?.faculty?.designation || 'Faculty',
       title: r.title,
-      journalName: r.publication || 'Journal of Quality & Research',
-      indexed: r.indexedIn || 'Scopus / SCI',
-      issn: r.issn || 'ISSN-2345-8901',
-      publisher: r.publisher || 'Springer / IEEE',
+      journalName: r.publication || '—',
+      indexed: r.indexedIn || '—',
+      issn: r.issn || '—',
+      publisher: r.publisher || '—',
       date: r.publishDate || r.createdAt,
       status: r.status || 'PUBLISHED',
-      supervisor: r.approvedBy || r.publications[0]?.faculty?.user?.name || 'HOD',
+      supervisor: r.approvedBy || r.publications[0]?.faculty?.user?.name || '—',
       link: r.url || r.doi || '—',
       userId: r.publications[0]?.faculty?.userId || r.publications[0]?.faculty?.id,
     })) : []),
     ...(includeStudent ? journalStudentAch.map(sa => ({
       id: sa.id,
-      name: sa.student?.user?.name || 'Student Author',
-      regId: sa.student?.registerNumber || 'N/A',
+      name: sa.student?.user?.name || '—',
+      regId: sa.student?.registerNumber || '—',
       dept: sa.student?.department?.name || departmentName,
-      yearDesig: sa.student?.semester ? `Year ${Math.ceil(sa.student.semester / 2)}` : 'III Year',
+      yearDesig: sa.student?.semester ? `Year ${Math.ceil(sa.student.semester / 2)}` : 'Student',
       title: sa.title,
-      journalName: sa.organizedBy || 'International Journal of Engineering',
-      indexed: sa.level || 'Scopus',
-      issn: 'ISSN-1982-4412',
-      publisher: 'Elsevier / IEEE',
+      journalName: sa.organizedBy || '—',
+      indexed: sa.level || '—',
+      issn: '—',
+      publisher: '—',
       date: sa.achievedDate || sa.createdAt,
       status: sa.approvalStatus || 'PUBLISHED',
-      supervisor: sa.organizedBy || 'Faculty Guide',
+      supervisor: sa.organizedBy || '—',
       link: sa.attachments || '—',
       userId: sa.student?.userId || sa.studentId,
     })) : [])
@@ -797,34 +784,34 @@ export async function fetchAchievementData(filters: FilterOptions) {
   const combinedConfRaw: any[] = [
     ...(includeStaff ? confResearch.map(r => ({
       id: r.id,
-      name: r.publications[0]?.faculty?.user?.name || parseAuthorName(r.authors) || 'Faculty Author',
-      regId: r.publications[0]?.faculty?.employeeId || 'N/A',
+      name: r.publications[0]?.faculty?.user?.name || parseAuthorName(r.authors) || '—',
+      regId: r.publications[0]?.faculty?.employeeId || '—',
       dept: r.department?.name || departmentName,
       yearDesig: r.publications[0]?.faculty?.designation || 'Faculty',
       title: r.title,
-      confName: r.publication || 'International Conference on Tech Innovation',
-      orgInst: r.publisher || 'Organizing Inst.',
-      indexed: r.indexedIn || 'Scopus',
+      confName: r.publication || '—',
+      orgInst: r.publisher || '—',
+      indexed: r.indexedIn || '—',
       date: r.publishDate || r.createdAt,
       status: r.status || 'PRESENTED',
       isbn: r.isbn || r.url || '—',
-      supervisor: r.approvedBy || r.publications[0]?.faculty?.user?.name || 'HOD',
+      supervisor: r.approvedBy || r.publications[0]?.faculty?.user?.name || '—',
       userId: r.publications[0]?.faculty?.userId || r.publications[0]?.faculty?.id,
     })) : []),
     ...(includeStudent ? confStudentAch.map(sa => ({
       id: sa.id,
-      name: sa.student?.user?.name || 'Student Presenter',
-      regId: sa.student?.registerNumber || 'N/A',
+      name: sa.student?.user?.name || '—',
+      regId: sa.student?.registerNumber || '—',
       dept: sa.student?.department?.name || departmentName,
-      yearDesig: sa.student?.semester ? `Year ${Math.ceil(sa.student.semester / 2)}` : 'III Year',
+      yearDesig: sa.student?.semester ? `Year ${Math.ceil(sa.student.semester / 2)}` : 'Student',
       title: sa.title,
-      confName: sa.title || 'National Conference on Engineering',
-      orgInst: sa.organizedBy || 'NIET',
-      indexed: sa.level || 'Scopus',
+      confName: sa.title || '—',
+      orgInst: sa.organizedBy || '—',
+      indexed: sa.level || '—',
       date: sa.achievedDate || sa.createdAt,
       status: sa.approvalStatus || 'PRESENTED',
       isbn: sa.attachments || '—',
-      supervisor: sa.organizedBy || 'Faculty Mentor',
+      supervisor: sa.organizedBy || '—',
       userId: sa.student?.userId || sa.studentId,
     })) : [])
   ]
@@ -886,30 +873,30 @@ export async function fetchAchievementData(filters: FilterOptions) {
   const combinedPatentsRaw: any[] = [
     ...(includeStaff ? patents.map(p => ({
       id: p.id,
-      name: p.faculty?.user?.name || parseAuthorName(p.inventors) || 'Faculty Inventor',
-      regId: p.faculty?.employeeId || 'N/A',
+      name: p.faculty?.user?.name || parseAuthorName(p.inventors) || '—',
+      regId: p.faculty?.employeeId || '—',
       dept: p.faculty?.department?.name || departmentName,
       yearDesig: p.faculty?.designation || 'Faculty',
       title: p.title,
-      patentNo: p.patentNumber || 'Pending',
+      patentNo: p.patentNumber || '—',
       date: p.publishDate || p.filingDate || p.createdAt,
       status: p.status || 'PUBLISHED',
-      inventors: parseAuthorName(p.inventors) || p.faculty?.user?.name || 'Inventors',
-      supervisor: p.faculty?.user?.name || 'HOD',
+      inventors: parseAuthorName(p.inventors) || p.faculty?.user?.name || '—',
+      supervisor: p.faculty?.user?.name || '—',
       userId: p.faculty?.userId || p.faculty?.id,
     })) : []),
     ...(includeStudent ? patentStudentAch.map(sa => ({
       id: sa.id,
-      name: sa.student?.user?.name || 'Student Inventor',
-      regId: sa.student?.registerNumber || 'N/A',
+      name: sa.student?.user?.name || '—',
+      regId: sa.student?.registerNumber || '—',
       dept: sa.student?.department?.name || departmentName,
-      yearDesig: sa.student?.semester ? `Year ${Math.ceil(sa.student.semester / 2)}` : 'IV Year',
+      yearDesig: sa.student?.semester ? `Year ${Math.ceil(sa.student.semester / 2)}` : 'Student',
       title: sa.title,
-      patentNo: 'REG-' + String(sa.id).substring(0, 6).toUpperCase(),
+      patentNo: '—',
       date: sa.achievedDate || sa.createdAt,
       status: sa.approvalStatus || 'PUBLISHED',
-      inventors: sa.student?.user?.name || 'Student Inventor',
-      supervisor: sa.organizedBy || 'Faculty Mentor',
+      inventors: sa.student?.user?.name || '—',
+      supervisor: sa.organizedBy || '—',
       userId: sa.student?.userId || sa.studentId,
     })) : [])
   ]
@@ -983,33 +970,33 @@ export async function fetchAchievementData(filters: FilterOptions) {
   const combinedNptelRaw: any[] = [
     ...npCourses.map(c => ({
       userId: c.student?.userId || c.student?.id,
-      name: c.student?.user?.name || 'Student',
-      regId: c.student?.registerNumber || 'N/A',
+      name: c.student?.user?.name || '—',
+      regId: c.student?.registerNumber || '—',
       dept: c.student?.department?.name || departmentName,
-      year: c.student?.semester ? `Year ${Math.ceil(c.student.semester / 2)}` : 'III Year',
-      platform: c.platform || 'NPTEL',
+      year: c.student?.semester ? `Year ${Math.ceil(c.student.semester / 2)}` : 'Student',
+      platform: c.platform || '—',
       courseName: c.courseName,
-      domain: c.courseId || 'Engineering',
-      instructor: c.instructor || 'Faculty Mentor',
-      duration: c.startDate && c.endDate ? `${getMonthName(c.startDate)} - ${getMonthName(c.endDate)}` : '12 Weeks',
-      score: c.score ? `${c.score}%` : '85%',
-      grade: c.grade || 'Elite + Silver',
+      domain: c.courseId || '—',
+      instructor: c.instructor || '—',
+      duration: c.startDate && c.endDate ? `${getMonthName(c.startDate)} - ${getMonthName(c.endDate)}` : '—',
+      score: c.score ? `${c.score}%` : '—',
+      grade: c.grade || '—',
       certLink: c.certificateUrl || c.attachments || '',
       date: c.startDate || c.createdAt,
     })),
     ...studentCerts.map(sc => ({
       userId: sc.student?.userId || sc.student?.id,
-      name: sc.student?.user?.name || 'Student',
-      regId: sc.student?.registerNumber || 'N/A',
+      name: sc.student?.user?.name || '—',
+      regId: sc.student?.registerNumber || '—',
       dept: sc.student?.department?.name || departmentName,
-      year: sc.student?.semester ? `Year ${Math.ceil(sc.student.semester / 2)}` : 'III Year',
-      platform: sc.issuer || 'NPTEL / Coursera',
+      year: sc.student?.semester ? `Year ${Math.ceil(sc.student.semester / 2)}` : 'Student',
+      platform: sc.issuer || '—',
       courseName: sc.title,
-      domain: 'Professional Certificate',
-      instructor: sc.issuer || 'Faculty Mentor',
-      duration: '8 Weeks',
-      score: '90%',
-      grade: 'Completed',
+      domain: '—',
+      instructor: sc.issuer || '—',
+      duration: '—',
+      score: '—',
+      grade: '—',
       certLink: sc.credentialUrl || sc.attachments || '',
       date: sc.issuedDate || sc.createdAt,
     }))
@@ -1070,17 +1057,17 @@ export async function fetchAchievementData(filters: FilterOptions) {
       const faculty = a.facultyActivities[0]?.faculty
       return [
         idx + 1,
-        student?.user?.name || faculty?.user?.name || a.conductedBy || 'Participant',
-        student?.registerNumber || faculty?.employeeId || 'N/A',
+        student?.user?.name || faculty?.user?.name || a.conductedBy || '—',
+        student?.registerNumber || faculty?.employeeId || '—',
         a.department?.name || departmentName,
         student?.semester ? `Year ${Math.ceil(student.semester / 2)}` : (faculty?.designation || 'Staff'),
         a.title,
         a.type,
-        a.organizer || 'NIET',
-        'Tamil Nadu',
+        a.organizer || '—',
+        '—',
         formatDateDDMMMYYYY(a.startDate),
         formatDateDDMMMYYYY(a.endDate),
-        'Offline',
+        '—',
         a.reportUrl || a.attachments || '',
       ]
     })
@@ -1113,15 +1100,15 @@ export async function fetchAchievementData(filters: FilterOptions) {
     })
     .map((p, idx) => [
       idx + 1,
-      p.faculty?.user?.name || 'Faculty',
-      p.faculty?.employeeId || 'N/A',
+      p.faculty?.user?.name || '—',
+      p.faculty?.employeeId || '—',
       p.faculty?.department?.name || departmentName,
-      p.faculty?.designation || 'Faculty',
+      p.faculty?.designation || 'Staff',
       p.title,
-      p.organizer || 'NITTTR / AICTE',
+      p.organizer || '—',
       formatDateDDMMMYYYY(p.startDate),
       formatDateDDMMMYYYY(p.endDate),
-      p.durationDays ? `${p.durationDays} Days` : '5 Days',
+      p.durationDays ? `${p.durationDays} Days` : '—',
       p.certificateUrl || '',
       p.attachments || '',
     ])
@@ -1158,18 +1145,18 @@ export async function fetchAchievementData(filters: FilterOptions) {
     })
     .map((i, idx) => [
       idx + 1,
-      i.student?.user?.name || 'Student',
-      i.student?.registerNumber || 'N/A',
+      i.student?.user?.name || '—',
+      i.student?.registerNumber || '—',
       i.student?.department?.name || departmentName,
-      i.student?.semester ? `Year ${Math.ceil(i.student.semester / 2)}` : 'III Year',
+      i.student?.semester ? `Year ${Math.ceil(i.student.semester / 2)}` : 'Student',
       i.company,
-      i.domain || 'Software Intern',
+      i.domain || '—',
       formatDateDDMMMYYYY(i.startDate),
       formatDateDDMMMYYYY(i.endDate),
       i.stipend && i.stipend > 0 ? 'Yes' : 'No',
       i.stipend ? `₹${i.stipend}` : '0',
-      i.location?.toLowerCase().includes('remote') ? 'Virtual' : 'Offline',
-      i.supervisor || 'Industry Supervisor',
+      i.location?.toLowerCase().includes('remote') ? 'Virtual' : (i.location || '—'),
+      i.supervisor || '—',
       i.completionCert ? 'Available' : i.attachments || '',
       i.offerLetter ? 'Available' : '',
     ])
@@ -1217,33 +1204,33 @@ export async function fetchAchievementData(filters: FilterOptions) {
     ...studentAwards.map(sa => ({
       userId: sa.student?.userId,
       studentId: sa.studentId,
-      name: sa.student?.user?.name || 'Student',
-      reg: sa.student?.registerNumber || 'N/A',
+      name: sa.student?.user?.name || '—',
+      reg: sa.student?.registerNumber || '—',
       dept: sa.student?.department?.name || departmentName,
       year: sa.student?.semester ? `Year ${Math.ceil(sa.student.semester / 2)}` : 'Student',
       awardName: sa.title,
       event: sa.title,
-      organizer: sa.organizedBy || 'Institute',
-      level: sa.level || 'National',
-      position: sa.position || 'Winner',
+      organizer: sa.organizedBy || '—',
+      level: sa.level || '—',
+      position: sa.position || '—',
       date: sa.achievedDate || sa.createdAt,
-      cash: 'Certificate & Trophy',
+      cash: '—',
       cert: sa.attachments || ''
     })),
     ...facultyAwards.map(fa => ({
       userId: fa.faculty?.userId,
       facultyId: fa.facultyId,
-      name: fa.faculty?.user?.name || 'Faculty',
-      reg: fa.faculty?.employeeId || 'N/A',
+      name: fa.faculty?.user?.name || '—',
+      reg: fa.faculty?.employeeId || '—',
       dept: fa.faculty?.department?.name || departmentName,
-      year: fa.faculty?.designation || 'Faculty',
+      year: fa.faculty?.designation || 'Staff',
       awardName: fa.title,
       event: fa.category || fa.title,
-      organizer: fa.awardedBy || 'University',
-      level: fa.level || 'State',
-      position: 'First',
+      organizer: fa.awardedBy || '—',
+      level: fa.level || '—',
+      position: '—',
       date: fa.awardDate || fa.createdAt,
-      cash: 'Honorarium',
+      cash: '—',
       cert: fa.attachments || ''
     }))
   ]
@@ -1303,15 +1290,15 @@ export async function fetchAchievementData(filters: FilterOptions) {
     })
     .map((sa, idx) => [
       idx + 1,
-      sa.student?.user?.name || 'Student',
-      sa.student?.registerNumber || 'N/A',
+      sa.student?.user?.name || '—',
+      sa.student?.registerNumber || '—',
       sa.student?.department?.name || departmentName,
-      sa.student?.semester ? `Year ${Math.ceil(sa.student.semester / 2)}` : 'III Year',
+      sa.student?.semester ? `Year ${Math.ceil(sa.student.semester / 2)}` : 'Student',
       sa.type,
       sa.title,
-      sa.organizedBy || 'NIET',
-      sa.level || 'Institutional',
-      sa.position || 'Participant',
+      sa.organizedBy || '—',
+      sa.level || '—',
+      sa.position || '—',
       formatDateDDMMMYYYY(sa.achievedDate || sa.createdAt),
       sa.attachments || '',
     ])
@@ -1345,19 +1332,19 @@ export async function fetchAchievementData(filters: FilterOptions) {
     })
     .map((p, idx) => [
       idx + 1,
-      p.student?.user?.name || 'Student',
-      p.student?.registerNumber || 'N/A',
+      p.student?.user?.name || '—',
+      p.student?.registerNumber || '—',
       p.student?.department?.name || departmentName,
       String(p.student?.graduationYear || year),
       p.company,
-      p.location || 'Coimbatore',
-      'Tamil Nadu',
-      p.designation || 'Software Engineer',
-      p.packageLPA ? `${p.packageLPA} LPA` : '4.5 LPA',
+      p.location || '—',
+      '—',
+      p.designation || '—',
+      p.packageLPA ? `${p.packageLPA} LPA` : '—',
       formatDateDDMMMYYYY(p.offerDate),
-      'On-Campus',
+      '—',
       formatDateDDMMMYYYY(p.joiningDate),
-      'Full-Time',
+      '—',
       p.attachments || '',
       p.accepted ? '✓ Verified' : '● Pending',
     ])
@@ -1392,20 +1379,20 @@ export async function fetchAchievementData(filters: FilterOptions) {
     })
     .map((s, idx) => [
       idx + 1,
-      s.student?.user?.name || 'Student Founder',
-      s.student?.registerNumber || 'N/A',
+      s.student?.user?.name || '—',
+      s.student?.registerNumber || '—',
       s.student?.department?.name || departmentName,
-      s.student?.semester ? `Year ${Math.ceil(s.student.semester / 2)}` : 'IV Year',
+      s.student?.semester ? `Year ${Math.ceil(s.student.semester / 2)}` : 'Student',
       `${year - 1}-${year}`,
       s.name,
-      s.domain || 'EdTech / AI',
-      s.stage || 'MVP',
+      s.domain || '—',
+      s.stage || '—',
       s.founderRole ? 'Yes' : 'No',
       s.name,
-      'REG-' + String(s.id).substring(0, 6).toUpperCase(),
-      s.incubator ? 'Incubated' : 'Applied',
-      s.incubator || 'NIET TBI',
-      s.description || 'Prototype Tested',
+      '—',
+      s.incubator ? 'Incubated' : '—',
+      s.incubator || '—',
+      s.description || '—',
       s.website || s.attachments || '',
     ])
 
@@ -1438,22 +1425,22 @@ export async function fetchAchievementData(filters: FilterOptions) {
     })
     .map((h, idx) => [
       idx + 1,
-      h.student?.user?.name || 'Student Participant',
-      h.student?.registerNumber || 'N/A',
+      h.student?.user?.name || '—',
+      h.student?.registerNumber || '—',
       h.student?.department?.name || departmentName,
-      h.student?.semester ? `Year ${Math.ceil(h.student.semester / 2)}` : 'III Year',
+      h.student?.semester ? `Year ${Math.ceil(h.student.semester / 2)}` : 'Student',
       'Hackathon',
       h.projectTitle || h.name,
-      h.organizer || 'Ministry of Education',
-      'Software / AI',
-      h.level || 'National',
-      'Hardware & Software',
-      'Grand Finale',
-      h.description || 'Winner of Special Prize',
-      h.position || '1st Prize',
-      '₹1,00,000',
+      h.organizer || '—',
+      '—',
+      h.level || '—',
+      '—',
+      '—',
+      h.description || '—',
+      h.position || '—',
+      '—',
       formatDateDDMMMYYYY(h.startDate || h.createdAt),
-      'Hybrid',
+      '—',
       h.attachments || '',
     ])
 
@@ -1475,37 +1462,20 @@ export async function fetchAchievementData(filters: FilterOptions) {
     orderBy: { createdAt: 'desc' }
   })
 
-  const sampleIndustryRecords = [
-    {
-      name: 'Dr. V. Suresh',
-      empId: 'EMP1012',
-      dept: departmentName,
-      desig: 'Associate Professor',
-      company: 'TATA Consultancy Services',
-      type: 'Industrial Consultancy & Mentorship',
-      projectTitle: 'AI-Based Predictive Quality Monitoring Systems',
-      amount: '₹2,50,000',
-      startDate: new Date(),
-      endDate: new Date(),
-      outcome: 'Joint Research & Industry MoU Signed',
-      link: 'https://niet.edu.in/consultancy/doc1'
-    }
-  ]
-
-  const combinedIndustry: any[] = consultancies.length > 0 ? consultancies.map(c => ({
-    name: c.faculty?.user?.name || 'Faculty Consultant',
-    empId: c.faculty?.employeeId || 'EMP1010',
+  const combinedIndustry: any[] = consultancies.map(c => ({
+    name: c.faculty?.user?.name || '—',
+    empId: c.faculty?.employeeId || '—',
     dept: c.faculty?.department?.name || departmentName,
-    desig: c.faculty?.designation || 'Associate Professor',
-    company: c.client || 'Industry Partner',
-    type: 'Consultancy & Industry Mentorship',
-    projectTitle: c.title || 'Industrial Project',
-    amount: c.amount ? `₹${c.amount}` : '₹1,50,000',
+    desig: c.faculty?.designation || 'Staff',
+    company: c.client || '—',
+    type: 'Consultancy & Industry Interaction',
+    projectTitle: c.title || '—',
+    amount: c.amount ? `₹${c.amount}` : '—',
     startDate: c.startDate || c.createdAt,
     endDate: c.endDate || c.createdAt,
-    outcome: 'Joint Research & Industry MoU Signed',
+    outcome: c.description || '—',
     link: c.attachments || '',
-  })) : sampleIndustryRecords
+  }))
 
   results.FACULTY_INDUSTRY = combinedIndustry
     .filter(c => isDateInRange(c.startDate, fromMonth, toMonth, year))
@@ -2138,3 +2108,226 @@ export async function generateAchievementPdf(filters: FilterOptions): Promise<{ 
     }
   })
 }
+
+export async function generateAchievementDocx(filters: FilterOptions): Promise<Buffer> {
+  const { results, grandTotal, departmentName, roleLabel, datePeriod, generatedDateStr, isAll, keysToInclude } = await fetchAchievementData(filters)
+
+  const children: any[] = []
+
+  // Document Header
+  children.push(
+    new DocxParagraph({
+      alignment: DocxAlignmentType.CENTER,
+      children: [
+        new DocxTextRun({
+          text: 'NEHRU INSTITUTE OF ENGINEERING AND TECHNOLOGY (AUTONOMOUS)',
+          bold: true,
+          size: 26,
+          font: 'Times New Roman',
+          color: '0B1F3A',
+        }),
+      ],
+    }),
+    new DocxParagraph({
+      alignment: DocxAlignmentType.CENTER,
+      children: [
+        new DocxTextRun({
+          text: 'NIET IQAC — OFFICIAL INSTITUTIONAL REPORT',
+          size: 18,
+          font: 'Times New Roman',
+          color: '475569',
+        }),
+      ],
+    }),
+    new DocxParagraph({ text: '' }),
+    new DocxParagraph({
+      alignment: DocxAlignmentType.CENTER,
+      children: [
+        new DocxTextRun({
+          text: isAll
+            ? 'ALL ACHIEVEMENTS REPORT'
+            : `${(ACHIEVEMENT_TYPES[filters.achievementType]?.title || filters.achievementType).toUpperCase()} REPORT`,
+          bold: true,
+          size: 22,
+          font: 'Times New Roman',
+          color: '123B72',
+        }),
+      ],
+    }),
+    new DocxParagraph({
+      alignment: DocxAlignmentType.CENTER,
+      children: [
+        new DocxTextRun({
+          text: `Department: ${departmentName}   |   Period: ${datePeriod}   |   Generated By: ${roleLabel}   |   Date: ${generatedDateStr}`,
+          size: 18,
+          font: 'Times New Roman',
+          color: '1E293B',
+        }),
+      ],
+    }),
+    new DocxParagraph({ text: '' })
+  )
+
+  const safeKeysToInclude = Array.isArray(keysToInclude) ? keysToInclude : []
+
+  const buildDocxGridTable = (columns: string[], rows: (string | number)[][]) => {
+    const tableRows: DocxTableRow[] = []
+
+    tableRows.push(
+      new DocxTableRow({
+        tableHeader: true,
+        children: columns.map(
+          (col) =>
+            new DocxTableCell({
+              shading: { fill: '123B72', type: DocxShadingType.CLEAR },
+              children: [
+                new DocxParagraph({
+                  alignment: DocxAlignmentType.CENTER,
+                  children: [
+                    new DocxTextRun({
+                      text: String(col ?? ''),
+                      bold: true,
+                      color: 'FFFFFF',
+                      size: 16,
+                      font: 'Times New Roman',
+                    }),
+                  ],
+                }),
+              ],
+            })
+        ),
+      })
+    )
+
+    if (rows.length === 0) {
+      tableRows.push(
+        new DocxTableRow({
+          children: [
+            new DocxTableCell({
+              columnSpan: columns.length,
+              children: [
+                new DocxParagraph({
+                  alignment: DocxAlignmentType.CENTER,
+                  children: [
+                    new DocxTextRun({
+                      text: 'No records found for the selected criteria.',
+                      italics: true,
+                      size: 16,
+                      font: 'Times New Roman',
+                      color: '64748B',
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ],
+        })
+      )
+    } else {
+      rows.forEach((row, rIdx) => {
+        const bg = rIdx % 2 === 0 ? 'FFFFFF' : 'F8FAFC'
+        tableRows.push(
+          new DocxTableRow({
+            children: (Array.isArray(row) ? row : []).map(
+              (cell) =>
+                new DocxTableCell({
+                  shading: { fill: bg, type: DocxShadingType.CLEAR },
+                  children: [
+                    new DocxParagraph({
+                      children: [
+                        new DocxTextRun({
+                          text: String(cell ?? '-'),
+                          size: 16,
+                          font: 'Times New Roman',
+                          color: '0F172A',
+                        }),
+                      ],
+                    }),
+                  ],
+                })
+            ),
+          })
+        )
+      })
+    }
+
+    return new DocxTable({
+      width: { size: 100, type: DocxWidthType.PERCENTAGE },
+      rows: tableRows,
+    })
+  }
+
+  if (isAll) {
+    children.push(
+      new DocxParagraph({
+        children: [
+          new DocxTextRun({
+            text: 'INSTITUTIONAL ACHIEVEMENTS SUMMARY',
+            bold: true,
+            size: 20,
+            font: 'Times New Roman',
+            color: '1E3A5F',
+          }),
+        ],
+      })
+    )
+
+    const summaryHeaders = ['S.No', 'Category Code', 'Achievement Category Title', 'Records Found', 'Verification Status']
+    const summaryRows = safeKeysToInclude.map((key, idx) => {
+      const schema = ACHIEVEMENT_TYPES[key]
+      const records = Array.isArray(results[key]) ? results[key] : []
+      return [
+        String(idx + 1).padStart(2, '0'),
+        schema?.code || key,
+        schema?.title || key,
+        records.length,
+        records.length > 0 ? '✓ Verified' : '— Empty',
+      ]
+    })
+    summaryRows.push(['', 'TOTAL', 'GRAND TOTAL INSTITUTIONAL ACHIEVEMENTS', grandTotal, '✓ System Verified'])
+
+    children.push(buildDocxGridTable(summaryHeaders, summaryRows))
+    children.push(new DocxParagraph({ text: '' }))
+  }
+
+  safeKeysToInclude.forEach((key) => {
+    const schema = ACHIEVEMENT_TYPES[key]
+    if (!schema) return
+    const records = Array.isArray(results[key]) ? results[key] : []
+
+    children.push(
+      new DocxParagraph({
+        children: [
+          new DocxTextRun({
+            text: `${(schema.title || key).toUpperCase()} (Total Records: ${records.length})`,
+            bold: true,
+            size: 20,
+            font: 'Times New Roman',
+            color: '059669',
+          }),
+        ],
+      })
+    )
+
+    children.push(buildDocxGridTable(Array.isArray(schema.columns) ? schema.columns : [], records))
+    children.push(new DocxParagraph({ text: '' }))
+  })
+
+  const doc = new DocxDocument({
+    sections: [
+      {
+        properties: {
+          page: {
+            pageSize: {
+              orientation: DocxPageOrientation.LANDSCAPE,
+            },
+          },
+        },
+        children,
+      },
+    ],
+  })
+
+  return await DocxPacker.toBuffer(doc)
+}
+

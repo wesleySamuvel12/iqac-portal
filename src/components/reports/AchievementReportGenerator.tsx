@@ -89,6 +89,7 @@ export function AchievementReportGenerator({ user }: { user: User }) {
   const [loadingPreview, setLoadingPreview] = useState<boolean>(false)
   const [downloading, setDownloading] = useState<boolean>(false)
   const [downloadingPdf, setDownloadingPdf] = useState<boolean>(false)
+  const [downloadingDocx, setDownloadingDocx] = useState<boolean>(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [previewData, setPreviewData] = useState<{
     success: boolean
@@ -150,10 +151,10 @@ export function AchievementReportGenerator({ user }: { user: User }) {
       if (res.ok && data.success) {
         setPreviewData(data)
       } else {
-        setErrorMsg(data.error || 'Failed to generate preview')
+        setErrorMsg(data.error || 'Unable to fetch report data. Please try again.')
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Error fetching report preview')
+      setErrorMsg('Unable to fetch report data. Please try again.')
     } finally {
       setLoadingPreview(false)
     }
@@ -164,9 +165,10 @@ export function AchievementReportGenerator({ user }: { user: User }) {
     handleFetchPreview()
   }, [handleFetchPreview])
 
-  // Download Excel / PDF
-  const handleDownloadReport = async (format: 'excel' | 'pdf') => {
+  // Download Excel / PDF / DOCX
+  const handleDownloadReport = async (format: 'excel' | 'pdf' | 'docx') => {
     if (format === 'pdf') setDownloadingPdf(true)
+    else if (format === 'docx') setDownloadingDocx(true)
     else setDownloading(true)
 
     setErrorMsg(null)
@@ -195,7 +197,7 @@ export function AchievementReportGenerator({ user }: { user: User }) {
 
       // Extract filename from disposition header
       const contentDisposition = res.headers.get('Content-Disposition')
-      let filename = `Achievement_Report.${format === 'pdf' ? 'pdf' : 'xlsx'}`
+      let filename = `Achievement_Report.${format === 'pdf' ? 'pdf' : format === 'docx' ? 'docx' : 'xlsx'}`
       if (contentDisposition) {
         const match = contentDisposition.match(/filename="?([^"]+)"?/)
         if (match && match[1]) {
@@ -217,6 +219,7 @@ export function AchievementReportGenerator({ user }: { user: User }) {
     } finally {
       setDownloading(false)
       setDownloadingPdf(false)
+      setDownloadingDocx(false)
     }
   }
 
@@ -276,7 +279,7 @@ export function AchievementReportGenerator({ user }: { user: User }) {
                   Official Institutional Report Generator
                 </h1>
                 <p className="text-blue-200/90 text-sm mt-1">
-                  Professional Excel Export Engine • Full Field Preservation • Print Ready
+                  Professional Report Engine • Excel, PDF & Word DOCX • Full Field Preservation • Print Ready
                 </p>
               </div>
             </div>
@@ -374,7 +377,7 @@ export function AchievementReportGenerator({ user }: { user: User }) {
               <select
                 value={fromMonth}
                 onChange={(e) => setFromMonth(Number(e.target.value))}
-                className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-white text-slate-800 font-medium text-sm focus:ring-2 focus:ring-[#123B72] focus:border-[#123B72] transition-all shadow-sm"
+                className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-white text-[#123B72] font-medium text-sm focus:ring-2 focus:ring-[#123B72] focus:border-[#123B72] transition-all shadow-sm"
               >
                 {MONTHS.map((m) => (
                   <option key={m.value} value={m.value}>
@@ -393,7 +396,7 @@ export function AchievementReportGenerator({ user }: { user: User }) {
               <select
                 value={toMonth}
                 onChange={(e) => setToMonth(Number(e.target.value))}
-                className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-white text-slate-800 font-medium text-sm focus:ring-2 focus:ring-[#123B72] focus:border-[#123B72] transition-all shadow-sm"
+                className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-white text-[#123B72] font-medium text-sm focus:ring-2 focus:ring-[#123B72] focus:border-[#123B72] transition-all shadow-sm"
               >
                 {MONTHS.map((m) => (
                   <option key={m.value} value={m.value}>
@@ -507,9 +510,27 @@ export function AchievementReportGenerator({ user }: { user: User }) {
 
             <div className="flex flex-wrap items-center gap-3">
               <Button
+                onClick={() => handleDownloadReport('docx')}
+                disabled={downloadingDocx || downloadingPdf || downloading}
+                className="rounded-xl bg-gradient-to-r from-blue-700 via-indigo-800 to-blue-900 hover:from-blue-800 hover:to-blue-950 text-white font-bold shadow-lg shadow-indigo-950/20 px-5 py-3"
+              >
+                {downloadingDocx ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Generating DOCX Document...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2 text-indigo-300" />
+                    Generate Official DOCX Report (.docx)
+                  </>
+                )}
+              </Button>
+
+              <Button
                 onClick={() => handleDownloadReport('pdf')}
-                disabled={downloadingPdf || downloading}
-                className="rounded-xl bg-gradient-to-r from-emerald-700 via-teal-800 to-emerald-900 hover:from-emerald-800 hover:to-emerald-950 text-white font-bold shadow-lg shadow-emerald-950/20 px-6 py-3"
+                disabled={downloadingPdf || downloading || downloadingDocx}
+                className="rounded-xl bg-gradient-to-r from-emerald-700 via-teal-800 to-emerald-900 hover:from-emerald-800 hover:to-emerald-950 text-white font-bold shadow-lg shadow-emerald-950/20 px-5 py-3"
               >
                 {downloadingPdf ? (
                   <>
@@ -526,8 +547,8 @@ export function AchievementReportGenerator({ user }: { user: User }) {
 
               <Button
                 onClick={() => handleDownloadReport('excel')}
-                disabled={downloading || downloadingPdf}
-                className="rounded-xl bg-gradient-to-r from-[#0B1F3A] via-[#123B72] to-[#1E3A5F] hover:from-[#0B1F3A] hover:to-[#0A2E6D] text-white font-bold shadow-lg shadow-blue-950/20 px-6 py-3"
+                disabled={downloading || downloadingPdf || downloadingDocx}
+                className="rounded-xl bg-gradient-to-r from-[#0B1F3A] via-[#123B72] to-[#1E3A5F] hover:from-[#0B1F3A] hover:to-[#0A2E6D] text-white font-bold shadow-lg shadow-blue-950/20 px-5 py-3"
               >
                 {downloading ? (
                   <>
@@ -634,7 +655,7 @@ export function AchievementReportGenerator({ user }: { user: User }) {
                           colSpan={previewData.columns.length}
                           className="px-6 py-10 text-center text-slate-400 font-medium"
                         >
-                          No matching records found for the selected criteria. All column headers will still be present in Excel.
+                          No records found for the selected filters.
                         </td>
                       </tr>
                     ) : (
@@ -658,8 +679,8 @@ export function AchievementReportGenerator({ user }: { user: User }) {
               {/* Preview Footer note */}
               {previewData.previewRows && previewData.previewRows.length > 0 && achievementType !== 'ALL' && (
                 <div className="p-4 bg-slate-50 border-t border-slate-100 text-center text-xs text-slate-500 font-medium">
-                  Showing first {Math.min(10, (previewData.previewRows || []).length)} of {previewData.recordsFound} records in preview.
-                  Click <strong className="text-slate-800">Generate Official Excel Report</strong> to download all records with full NIET formatting.
+                  Displaying {previewData.previewRows.length} database records in preview.
+                  Click <strong className="text-slate-800">Excel</strong>, <strong className="text-slate-800">PDF</strong>, or <strong className="text-slate-800">DOCX</strong> to download.
                 </div>
               )}
             </div>
@@ -674,3 +695,4 @@ export function AchievementReportGenerator({ user }: { user: User }) {
     </motion.div>
   )
 }
+
