@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import path from 'path'
+import fs from 'fs'
 
 declare global {
   var prismaGlobal: PrismaClient | undefined
@@ -10,11 +11,39 @@ function getSanitizedDatabaseUrl(): string {
 
   // Support local SQLite database
   if (!url || url.startsWith('file:')) {
-    if (url.startsWith('file:')) {
-      return url
+    const candidatePaths = [
+      path.join(process.cwd(), 'db', 'custom.db'),
+      path.resolve('./db/custom.db'),
+    ]
+
+    let foundPath = ''
+    for (const p of candidatePaths) {
+      if (fs.existsSync(/*turbopackIgnore: true*/ p)) {
+        foundPath = p
+        break
+      }
     }
-    const localDbPath = path.join(process.cwd(), 'db', 'custom.db')
-    return `file:${localDbPath}`
+
+    // On Vercel Serverless Environment, copy DB to /tmp for write access
+    if (process.env.VERCEL) {
+      const tmpPath = '/tmp/custom.db'
+      try {
+        if (!fs.existsSync(/*turbopackIgnore: true*/ tmpPath) && foundPath) {
+          fs.copyFileSync(foundPath, tmpPath)
+        }
+        if (fs.existsSync(/*turbopackIgnore: true*/ tmpPath)) {
+          return `file:${tmpPath}`
+        }
+      } catch (e) {
+        console.warn('[DB] Could not copy DB to /tmp, falling back to foundPath:', e)
+      }
+    }
+
+    if (foundPath) {
+      return `file:${foundPath}`
+    }
+
+    return `file:${path.join(process.cwd(), 'db', 'custom.db')}`
   }
 
   // Transform direct host (db.ref.supabase.co) to Transaction Pooler host (aws-0-ap-southeast-2.pooler.supabase.com)

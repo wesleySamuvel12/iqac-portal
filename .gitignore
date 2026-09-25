@@ -56,3 +56,4 @@ scratch/
 tool-results/
 worklog.md
 .vercel
+.env*
