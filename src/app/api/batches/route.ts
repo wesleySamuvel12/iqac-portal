@@ -15,9 +15,8 @@ export async function GET(request: NextRequest) {
     if (departmentId) where.departmentId = departmentId
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' as const } },
-        { description: { contains: search, mode: 'insensitive' as const } },
-        { section: { contains: search, mode: 'insensitive' as const } },
+        { name: { contains: search } },
+        { academicYear: { contains: search } },
       ]
     }
 

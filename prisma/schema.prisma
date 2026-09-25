@@ -1,4 +1,4 @@
-// IQAC Enterprise ERP Management System - Database Schema (SQLite)
+// IQAC Enterprise ERP Management System - Complete Database Schema (SQLite)
 // Nehru Institute of Engineering and Technology (Autonomous)
 
 generator client {
@@ -37,7 +37,7 @@ model User {
   notifications Notification[]
   auditLogs     AuditLog[]
   feedbacks     Feedback[]
-  createdFeedbackForms FeedbackForm[]     @relation("FeedbackFormCreator")
+  createdFeedbackForms FeedbackForm[] @relation("FeedbackFormCreator")
   feedbackAssignments  FeedbackAssignment[]
   feedbackResponses    FeedbackResponse[]
   
@@ -45,8 +45,6 @@ model User {
   @@index([role])
   @@index([email])
 }
-
-// ==================== DEPARTMENT ====================
 
 model Department {
   id              String   @id @default(cuid())
@@ -75,8 +73,6 @@ model Department {
   
   @@index([code])
 }
-
-// ==================== FACULTY ====================
 
 model Faculty {
   id                String    @id @default(cuid())
@@ -116,8 +112,6 @@ model Faculty {
   @@index([userId])
 }
 
-// ==================== STUDENT ====================
-
 model Student {
   id                String    @id @default(cuid())
   registerNumber    String    @unique
@@ -155,8 +149,6 @@ model Student {
   @@index([registerNumber])
   @@index([userId])
 }
-
-// ==================== ACTIVITY MODULES ====================
 
 model Activity {
   id               String        @id @default(cuid())
@@ -219,8 +211,6 @@ model StudentActivity {
   @@unique([studentId, activityId])
 }
 
-// ==================== RESEARCH MODULES ====================
-
 model Research {
   id               String         @id @default(cuid())
   title            String
@@ -270,8 +260,6 @@ model ResearchPublication {
   
   @@unique([researchId, facultyId])
 }
-
-// ==================== CERTIFICATION & AWARDS ====================
 
 model Certification {
   id                String   @id @default(cuid())
@@ -349,8 +337,6 @@ model StudentAchievement {
   @@index([type])
 }
 
-// ==================== INTERNSHIP & PLACEMENT ====================
-
 model Internship {
   id               String   @id @default(cuid())
   company          String
@@ -397,8 +383,6 @@ model Placement {
   @@index([studentId])
 }
 
-// ==================== NPTEL & ONLINE COURSES ====================
-
 model NPCourse {
   id             String   @id @default(cuid())
   courseName     String
@@ -420,8 +404,6 @@ model NPCourse {
   
   @@index([studentId])
 }
-
-// ==================== HACKATHON & STARTUP ====================
 
 model HackathonParticipation {
   id           String   @id @default(cuid())
@@ -467,8 +449,6 @@ model Startup {
   @@index([studentId])
 }
 
-// ==================== PATENTS & BOOKS ====================
-
 model Patent {
   id           String        @id @default(cuid())
   title        String
@@ -509,8 +489,6 @@ model Book {
   
   @@index([facultyId])
 }
-
-// ==================== PROJECTS & CONSULTANCY ====================
 
 model Project {
   id                   String        @id @default(cuid())
@@ -556,8 +534,6 @@ model Consultancy {
   @@index([facultyId])
 }
 
-// ==================== FDP & TRAINING ====================
-
 model FDPProgram {
   id             String   @id @default(cuid())
   title          String
@@ -580,8 +556,6 @@ model FDPProgram {
   @@index([facultyId])
 }
 
-// ==================== APPROVAL WORKFLOW ====================
-
 model Approval {
   id           String        @id @default(cuid())
   entityType   String
@@ -602,8 +576,6 @@ model Approval {
   @@index([currentStage])
 }
 
-// ==================== NOTIFICATIONS ====================
-
 model Notification {
   id          String           @id @default(cuid())
   title       String
@@ -622,8 +594,6 @@ model Notification {
   @@index([isRead])
   @@index([createdAt])
 }
-
-// ==================== FEEDBACK ====================
 
 model Feedback {
   id          String   @id @default(cuid())
@@ -645,21 +615,19 @@ model Feedback {
   @@index([category])
 }
 
-// ==================== DOCUMENTS ====================
-
 model Document {
   id            String   @id @default(cuid())
-  title         String
-  fileName      String
-  fileUrl       String
-  fileType      String
-  fileSize      Int
-  uploadedBy    String
-  category      String   @default("OTHER")
+  name          String?
+  originalName  String?
+  mimeType      String?
+  size          Int?
+  url           String?
+  uploadedBy    String?
+  category      String?  @default("OTHER")
   entityType    String?
   entityId      String?
-  tags          String?
-  isPublic      Boolean  @default(false)
+  version       Int?     @default(1)
+  isLatest      Boolean? @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
@@ -667,8 +635,6 @@ model Document {
   @@index([category])
   @@index([entityType, entityId])
 }
-
-// ==================== AUDIT LOGS ====================
 
 model AuditLog {
   id         String   @id @default(cuid())
@@ -690,53 +656,50 @@ model AuditLog {
   @@index([createdAt])
 }
 
-// ==================== SYSTEM SETTINGS ====================
-
 model Setting {
   id          String   @id @default(cuid())
   key         String   @unique
   value       String
+  category    String?  @default("GENERAL")
   description String?
-  category    String   @default("GENERAL")
-  isPublic    Boolean  @default(false)
-  updatedBy   String?
-  createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
   @@index([key])
-  @@index([category])
 }
 
-// ==================== INSTITUTION & ACADEMIC STRUCTURE ====================
-
 model Institution {
-  id             String   @id @default(cuid())
-  name           String
-  code           String   @unique
-  address        String?
-  email          String?
-  phone          String?
-  website        String?
-  logo           String?
-  principalName  String?
-  iqacCoordinator String?
-  naacGrade      String?
-  nbaAccredited  Boolean  @default(false)
-  nirfRank       Int?
-  establishedYear Int?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  name                 String
+  shortName            String?
+  address              String?
+  city                 String?
+  state                String?
+  pincode              String?
+  country              String?
+  phone                String?
+  email                String?
+  website              String?
+  logo                 String?
+  establishedYear      Int?
+  accreditation        String?
+  accreditationGrade   String?
+  affiliation          String?
+  type                 String?
+  currentAcademicYear  String?
+  currentSemester      String?
+  updatedAt            DateTime @updatedAt
 }
 
 model Batch {
   id            String    @id @default(cuid())
   name          String
-  academicYear  String
-  startYear     Int
-  endYear       Int
+  year          Int?
   departmentId  String
+  section       String?
+  strength      Int?
   advisorId     String?
-  isCurrent     Boolean   @default(false)
+  description   String?
+  isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   
@@ -745,70 +708,47 @@ model Batch {
   students      Student[]
   
   @@index([departmentId])
-  @@index([academicYear])
 }
 
-// ==================== CMS MODULE ====================
-
 model CmsConfig {
-  id               String   @id @default(cuid())
-  collegeName      String   @default("Nehru Institute of Engineering and Technology")
-  tagline          String?  @default("Autonomous Institution | Accredited by NAAC with A+ Grade")
-  logoUrl          String?
-  faviconUrl       String?
-  primaryColor     String   @default("#1e3a8a")
-  secondaryColor   String   @default("#0f766e")
-  accentColor      String   @default("#f59e0b")
-  contactEmail     String?
-  contactPhone     String?
-  address          String?
-  facebookUrl      String?
-  twitterUrl       String?
-  linkedinUrl      String?
-  youtubeUrl       String?
-  instagramUrl     String?
-  footerText       String?  @default("© 2026 Nehru Institute of Engineering and Technology. All rights reserved.")
-  heroTitle        String?  @default("Internal Quality Assurance Cell (IQAC)")
-  heroSubtitle     String?  @default("Building Excellence in Technical Education & Research")
-  heroBgUrl        String?
-  statsDepartments Int      @default(8)
-  statsFaculty     Int      @default(120)
-  statsStudents    Int      @default(2500)
-  statsResearch    Int      @default(450)
-  updatedBy        String?
-  updatedAt        DateTime @updatedAt
-  createdAt        DateTime @default(now())
+  id           String   @id @default(cuid())
+  key          String   @unique
+  value        String
+  category     String?
+  description  String?
+  updatedAt    DateTime @updatedAt
 }
 
 model CmsPage {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique
-  content     String?
-  status      String   @default("DRAFT")
-  metaTitle   String?
-  metaDesc    String?
-  authorId    String?
-  publishedAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  content         String?
+  status          String   @default("DRAFT")
+  template        String?
+  metaTitle       String?
+  metaDescription String?
+  createdBy       String?
+  updatedBy       String?
+  publishedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([slug])
   @@index([status])
 }
 
 model CmsMenu {
-  id        String    @id @default(cuid())
-  title     String
-  url       String?
-  parentId  String?
-  order     Int       @default(0)
-  target    String    @default("_self")
-  isActive  Boolean   @default(true)
-  parent    CmsMenu?  @relation("MenuHierarchy", fields: [parentId], references: [id])
-  children  CmsMenu[] @relation("MenuHierarchy")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id           String    @id @default(cuid())
+  title        String
+  url          String?
+  parentId     String?
+  order        Int       @default(0)
+  icon         String?
+  isVisible    Boolean   @default(true)
+  openInNewTab Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([parentId])
 }
@@ -816,13 +756,14 @@ model CmsMenu {
 model CmsBanner {
   id          String   @id @default(cuid())
   title       String
+  subtitle    String?
   imageUrl    String
   linkUrl     String?
   position    String   @default("HOME_TOP")
   status      String   @default("ACTIVE")
-  order       Int      @default(0)
   startDate   DateTime?
   endDate     DateTime?
+  order       Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -835,93 +776,92 @@ model CmsAnnouncement {
   title       String
   content     String?
   type        String    @default("INFO")
-  linkUrl     String?
+  targetRoles String?
+  targetDepts String?
   isPinned    Boolean   @default(false)
   status      String    @default("ACTIVE")
-  targetAudience String @default("ALL")
   startDate   DateTime?
   endDate     DateTime?
+  createdBy   String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   @@index([status])
 }
 
-// ==================== AUDIT & BACKUP ====================
-
 model AuditLogEntry {
   id        String   @id @default(cuid())
-  actor     String
+  userId    String?
+  userName  String?
   action    String
-  target    String?
+  module    String?
   details   String?
-  ip        String?
-  timestamp DateTime @default(now())
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
 
-  @@index([actor])
   @@index([action])
-  @@index([timestamp])
 }
 
 model SystemBackup {
   id        String   @id @default(cuid())
-  filename  String
-  path      String
+  fileName  String
+  filePath  String
   size      Int
   type      String   @default("FULL")
   status    String   @default("COMPLETED")
   createdBy String?
+  notes     String?
   createdAt DateTime @default(now())
 
   @@index([status])
   @@index([type])
 }
 
-// ==================== FEEDBACK ENGINE ====================
-
 model FeedbackForm {
-  id             String               @id @default(cuid())
-  title          String
-  description    String?
-  targetAudience String               @default("ALL")
-  targetRole     String?
-  departmentId   String?
-  batchId        String?
-  academicYear   String?
-  semester       Int?
-  startDate      DateTime?
-  endDate        DateTime?
-  isActive       Boolean              @default(true)
-  isAnonymous    Boolean              @default(false)
-  creatorId      String
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+  id                 String               @id @default(cuid())
+  title              String
+  description        String?
+  targetAudience     String               @default("ALL")
+  targetRole         String?
+  departmentId       String?
+  batchId            String?
+  targetUserIds      String?
+  startDate          DateTime?
+  endDate            DateTime?
+  isAnonymous        Boolean              @default(false)
+  isMandatory        Boolean              @default(false)
+  allowResubmission  Boolean              @default(false)
+  status             String               @default("ACTIVE")
+  createdById        String
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
 
-  creator        User                 @relation("FeedbackFormCreator", fields: [creatorId], references: [id])
-  department     Department?          @relation(fields: [departmentId], references: [id])
-  questions      FeedbackQuestion[]
-  assignments    FeedbackAssignment[]
-  responses      FeedbackResponse[]
+  creator            User                 @relation("FeedbackFormCreator", fields: [createdById], references: [id])
+  department         Department?          @relation(fields: [departmentId], references: [id])
+  questions          FeedbackQuestion[]
+  assignments        FeedbackAssignment[]
+  responses          FeedbackResponse[]
 
-  @@index([creatorId])
+  @@index([createdById])
   @@index([departmentId])
-  @@index([isActive])
 }
 
 model FeedbackQuestion {
-  id           String           @id @default(cuid())
-  formId       String
-  questionText String
-  questionType String           @default("RATING_1_5")
-  options      String?
-  isRequired   Boolean          @default(true)
-  order        Int              @default(0)
-  category     String?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  id         String           @id @default(cuid())
+  formId     String
+  prompt     String
+  type       String           @default("RATING_1_5")
+  isRequired Boolean          @default(true)
+  order      Int              @default(0)
+  options    String?
+  minScale   Int?
+  maxScale   Int?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 
-  form         FeedbackForm     @relation(fields: [formId], references: [id], onDelete: Cascade)
-  answers      FeedbackAnswer[]
+  form       FeedbackForm     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  answers    FeedbackAnswer[]
 
   @@index([formId])
 }
@@ -930,11 +870,10 @@ model FeedbackAssignment {
   id           String       @id @default(cuid())
   formId       String
   userId       String?
-  role         String?
-  departmentId String?
-  isCompleted  Boolean      @default(false)
+  status       String?      @default("PENDING")
   completedAt  DateTime?
   createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   form         FeedbackForm @relation(fields: [formId], references: [id], onDelete: Cascade)
   user         User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -947,8 +886,8 @@ model FeedbackResponse {
   id           String           @id @default(cuid())
   formId       String
   userId       String?
+  isAnonymous  Boolean          @default(false)
   submittedAt  DateTime         @default(now())
-  comments     String?
 
   form         FeedbackForm     @relation(fields: [formId], references: [id], onDelete: Cascade)
   user         User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -962,9 +901,10 @@ model FeedbackAnswer {
   id          String           @id @default(cuid())
   responseId  String
   questionId  String
-  ratingValue Int?
+  ratingValue Float?
   textValue   String?
-  optionsValue String?
+  jsonValue   String?
+  createdAt   DateTime         @default(now())
 
   response    FeedbackResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
   question    FeedbackQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
