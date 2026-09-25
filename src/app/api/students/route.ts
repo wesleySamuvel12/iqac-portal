@@ -40,11 +40,11 @@ export async function GET(request: NextRequest) {
     if (semester) where.semester = parseInt(semester)
     if (search) {
       where.OR = [
-        { registerNumber: { contains: search, mode: 'insensitive' as const } },
-        { name: { contains: search, mode: 'insensitive' as const } },
-        { email: { contains: search, mode: 'insensitive' as const } },
-        { user: { name: { contains: search, mode: 'insensitive' as const } } },
-        { user: { email: { contains: search, mode: 'insensitive' as const } } },
+        { registerNumber: { contains: search } },
+        { name: { contains: search } },
+        { email: { contains: search } },
+        { user: { name: { contains: search } } },
+        { user: { email: { contains: search } } },
       ]
     }
 

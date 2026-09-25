@@ -19,12 +19,12 @@ export async function POST(request: NextRequest) {
     let user = await db.user.findFirst({
       where: {
         OR: [
-          { email: { equals: inputIdentifier, mode: 'insensitive' } },
-          { faculty: { employeeId: { equals: inputIdentifier, mode: 'insensitive' } } },
-          { faculty: { email: { equals: inputIdentifier, mode: 'insensitive' } } },
-          { student: { some: { registerNumber: { equals: inputIdentifier, mode: 'insensitive' } } } },
-          { student: { some: { rollNumber: { equals: inputIdentifier, mode: 'insensitive' } } } },
-          { student: { some: { email: { equals: inputIdentifier, mode: 'insensitive' } } } },
+          { email: { equals: inputIdentifier } },
+          { faculty: { employeeId: { equals: inputIdentifier } } },
+          { faculty: { email: { equals: inputIdentifier } } },
+          { student: { some: { registerNumber: { equals: inputIdentifier } } } },
+          { student: { some: { rollNumber: { equals: inputIdentifier } } } },
+          { student: { some: { email: { equals: inputIdentifier } } } },
         ]
       },
       include: { department: true, faculty: true, student: true },
@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
       const faculty = await db.faculty.findFirst({
         where: {
           OR: [
-            { employeeId: { equals: inputIdentifier, mode: 'insensitive' } },
-            { email: { equals: inputIdentifier, mode: 'insensitive' } }
+            { employeeId: { equals: inputIdentifier } },
+            { email: { equals: inputIdentifier } }
           ]
         },
         include: {
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       } else if (faculty) {
         // Faculty exists but userId link was missing. Find matching User or repair link!
         const matchingUser = await db.user.findFirst({
-          where: { email: { equals: faculty.email || inputIdentifier, mode: 'insensitive' } },
+          where: { email: { equals: faculty.email || inputIdentifier } },
           include: { department: true, faculty: true, student: true }
         })
         if (matchingUser) {
@@ -67,9 +67,9 @@ export async function POST(request: NextRequest) {
       const student = await db.student.findFirst({
         where: {
           OR: [
-            { registerNumber: { equals: inputIdentifier, mode: 'insensitive' } },
-            { rollNumber: { equals: inputIdentifier, mode: 'insensitive' } },
-            { email: { equals: inputIdentifier, mode: 'insensitive' } }
+            { registerNumber: { equals: inputIdentifier } },
+            { rollNumber: { equals: inputIdentifier } },
+            { email: { equals: inputIdentifier } }
           ]
         },
         include: {
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       } else if (student) {
         // Student exists but userId link was missing. Find matching User or repair link!
         const matchingUser = await db.user.findFirst({
-          where: { email: { equals: student.email || inputIdentifier, mode: 'insensitive' } },
+          where: { email: { equals: student.email || inputIdentifier } },
           include: { department: true, faculty: true, student: true }
         })
         if (matchingUser) {

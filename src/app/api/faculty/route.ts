@@ -17,10 +17,10 @@ export async function GET(request: NextRequest) {
     if (departmentId) where.departmentId = departmentId
     if (search) {
       where.OR = [
-        { employeeId: { contains: search, mode: 'insensitive' as const } },
-        { user: { name: { contains: search, mode: 'insensitive' as const } } },
-        { user: { email: { contains: search, mode: 'insensitive' as const } } },
-        { designation: { contains: search, mode: 'insensitive' as const } },
+        { employeeId: { contains: search } },
+        { user: { name: { contains: search } } },
+        { user: { email: { contains: search } } },
+        { designation: { contains: search } },
       ]
     }
 

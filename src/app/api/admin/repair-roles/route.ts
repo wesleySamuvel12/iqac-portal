@@ -43,7 +43,7 @@ async function repairStaffRoles() {
     for (const f of unlinkedFaculty) {
       if (f.email) {
         const matchingUser = await db.user.findFirst({
-          where: { email: { equals: f.email, mode: 'insensitive' } }
+          where: { email: { equals: f.email } }
         })
         if (matchingUser) {
           const targetRole = f.isHOD ? 'HOD' : 'STAFF'
