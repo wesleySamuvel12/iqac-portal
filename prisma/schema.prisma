@@ -1,4 +1,4 @@
-// IQAC Enterprise ERP Management System - Complete Database Schema
+// IQAC Enterprise ERP Management System - Database Schema (SQLite)
 // Nehru Institute of Engineering and Technology (Autonomous)
 
 generator client {
@@ -6,9 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 // ==================== USER & AUTHENTICATION ====================
@@ -18,11 +17,11 @@ model User {
   email              String     @unique
   password           String
   name               String
-  role               UserRole   @default(STAFF)
+  role               String     @default("STAFF")
   phone              String?
   avatar             String?
   isActive           Boolean    @default(true)
-  status             UserStatus @default(ACTIVE)
+  status             String     @default("ACTIVE")
   mustChangePassword Boolean    @default(false)
   createdBy          String?
   createdByRole      String?
@@ -45,20 +44,6 @@ model User {
   @@index([departmentId])
   @@index([role])
   @@index([email])
-}
-
-enum UserRole {
-  SUPER_ADMIN
-  ADMIN
-  HOD
-  STAFF
-  STUDENT
-}
-
-enum UserStatus {
-  ACTIVE
-  INACTIVE
-  SUSPENDED
 }
 
 // ==================== DEPARTMENT ====================
@@ -109,7 +94,7 @@ model Faculty {
   researchArea      String?
   photo             String?
   isHOD             Boolean   @default(false)
-  approvalStatus    ApprovalStatus @default(APPROVED)
+  approvalStatus    String    @default("APPROVED")
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   
@@ -150,7 +135,7 @@ model Student {
   admissionYear     Int?
   graduationYear    Int?
   photo             String?
-  approvalStatus    ApprovalStatus @default(APPROVED)
+  approvalStatus    String    @default("APPROVED")
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   
@@ -176,7 +161,7 @@ model Student {
 model Activity {
   id               String        @id @default(cuid())
   title            String
-  type             ActivityType
+  type             String
   description      String?
   startDate        DateTime?
   endDate          DateTime?
@@ -184,12 +169,12 @@ model Activity {
   organizer        String?
   participants     Int?
   outcome          String?
-  status           ActivityStatus @default(PLANNED)
+  status           String        @default("PLANNED")
   departmentId     String
   conductedBy      String?
   attachments      String?
   reportUrl        String?
-  approvalStatus   ApprovalStatus @default(PENDING)
+  approvalStatus   String        @default("PENDING")
   approvedBy       String?
   approvedAt       DateTime?
   createdAt        DateTime      @default(now())
@@ -203,29 +188,6 @@ model Activity {
   @@index([type])
   @@index([status])
   @@index([approvalStatus])
-}
-
-enum ActivityType {
-  EVENT
-  WORKSHOP
-  SEMINAR
-  CONFERENCE
-  GUEST_LECTURE
-  FDP
-  INDUSTRIAL_VISIT
-  RESOURCE_PERSON
-  EXTENSION_ACTIVITY
-  INDUSTRY_COLLABORATION
-  MOU_SIGNED
-  OTHER
-}
-
-enum ActivityStatus {
-  PLANNED
-  ONGOING
-  COMPLETED
-  CANCELLED
-  POSTPONED
 }
 
 model FacultyActivity {
@@ -262,7 +224,7 @@ model StudentActivity {
 model Research {
   id               String         @id @default(cuid())
   title            String
-  type             ResearchType
+  type             String
   description      String?
   authors          String?
   publication      String?
@@ -280,8 +242,8 @@ model Research {
   url              String?
   departmentId     String
   facultyId        String?
-  status           ResearchStatus @default(PUBLISHED)
-  approvalStatus   ApprovalStatus @default(PENDING)
+  status           String         @default("PUBLISHED")
+  approvalStatus   String         @default("PENDING")
   approvedBy       String?
   approvedAt       DateTime?
   attachments      String?
@@ -294,27 +256,6 @@ model Research {
   @@index([departmentId])
   @@index([type])
   @@index([status])
-}
-
-enum ResearchType {
-  JOURNAL
-  CONFERENCE
-  PATENT
-  BOOK
-  BOOK_CHAPTER
-  PROJECT
-  CONSULTANCY
-  RESEARCH_GRANT
-}
-
-enum ResearchStatus {
-  DRAFT
-  SUBMITTED
-  UNDER_REVIEW
-  ACCEPTED
-  PUBLISHED
-  REJECTED
-  WITHDRAWN
 }
 
 model ResearchPublication {
@@ -342,7 +283,7 @@ model Certification {
   credentialUrl     String?
   facultyId         String
   attachments       String?
-  approvalStatus    ApprovalStatus @default(PENDING)
+  approvalStatus    String   @default("PENDING")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   
@@ -361,7 +302,7 @@ model StudentCertification {
   credentialUrl     String?
   studentId         String
   attachments       String?
-  approvalStatus    ApprovalStatus @default(PENDING)
+  approvalStatus    String   @default("PENDING")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   
@@ -390,7 +331,7 @@ model Award {
 model StudentAchievement {
   id            String          @id @default(cuid())
   title         String
-  type          AchievementType
+  type          String
   description   String?
   achievedDate  DateTime?
   level         String?
@@ -398,7 +339,7 @@ model StudentAchievement {
   organizedBy   String?
   studentId     String
   attachments   String?
-  approvalStatus ApprovalStatus @default(PENDING)
+  approvalStatus String         @default("PENDING")
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   
@@ -406,19 +347,6 @@ model StudentAchievement {
   
   @@index([studentId])
   @@index([type])
-}
-
-enum AchievementType {
-  SPORTS
-  CULTURAL
-  TECHNICAL
-  ACADEMIC
-  EXTRA_CURRICULAR
-  CO_CURRICULAR
-  COMMUNITY_SERVICE
-  PROJECT
-  COMPETITION
-  OTHER
 }
 
 // ==================== INTERNSHIP & PLACEMENT ====================
@@ -438,7 +366,7 @@ model Internship {
   supervisor       String?
   supervisorEmail  String?
   attachments      String?
-  approvalStatus   ApprovalStatus @default(PENDING)
+  approvalStatus   String   @default("PENDING")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   
@@ -460,7 +388,7 @@ model Placement {
   description      String?
   studentId        String
   attachments      String?
-  approvalStatus   ApprovalStatus @default(PENDING)
+  approvalStatus   String   @default("PENDING")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   
@@ -484,7 +412,7 @@ model NPCourse {
   certificateUrl String?
   studentId      String
   attachments    String?
-  approvalStatus ApprovalStatus @default(PENDING)
+  approvalStatus String   @default("PENDING")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   
@@ -508,7 +436,7 @@ model HackathonParticipation {
   description  String?
   studentId    String
   attachments  String?
-  approvalStatus ApprovalStatus @default(PENDING)
+  approvalStatus String @default("PENDING")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
     
@@ -530,7 +458,7 @@ model Startup {
   studentId    String
   incubator    String?
   attachments  String?
-  approvalStatus ApprovalStatus @default(PENDING)
+  approvalStatus String @default("PENDING")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   
@@ -549,25 +477,17 @@ model Patent {
   filingDate   DateTime?
   publishDate  DateTime?
   grantDate    DateTime?
-  status       PatentStatus @default(FILED)
+  status       String        @default("FILED")
   country      String?
   category     String?
   facultyId    String
   attachments  String?
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   
   faculty      Faculty  @relation(fields: [facultyId], references: [id])
   
   @@index([facultyId])
-}
-
-enum PatentStatus {
-  FILED
-  PUBLISHED
-  GRANTED
-  ABANDONED
-  REJECTED
 }
 
 model Book {
@@ -578,7 +498,7 @@ model Book {
   isbn         String?
   edition      String?
   publishDate  DateTime?
-  bookType     BookType @default(TEXTBOOK)
+  bookType     String   @default("TEXTBOOK")
   category     String?
   facultyId    String
   attachments  String?
@@ -590,20 +510,12 @@ model Book {
   @@index([facultyId])
 }
 
-enum BookType {
-  TEXTBOOK
-  REFERENCE_BOOK
-  EDITED_BOOK
-  BOOK_CHAPTER
-  MANUAL
-}
-
 // ==================== PROJECTS & CONSULTANCY ====================
 
 model Project {
   id                   String        @id @default(cuid())
   title                String
-  type                 ProjectType   @default(RESEARCH)
+  type                 String        @default("RESEARCH")
   description          String?
   principalInvestigator String?
   coInvestigators      String?
@@ -611,12 +523,12 @@ model Project {
   amount               Float?
   startDate            DateTime?
   endDate              DateTime?
-  status               ProjectStatus @default(ONGOING)
+  status               String        @default("ONGOING")
   outcomes             String?
   facultyId            String
   attachments          String?
-  createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @updatedAt
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
   
   faculty              Faculty  @relation(fields: [facultyId], references: [id])
   
@@ -625,46 +537,23 @@ model Project {
   @@index([status])
 }
 
-enum ProjectType {
-  RESEARCH
-  CONSULTANCY
-  SPONSORED
-  INTERNALLY_FUNDED
-  STUDENT_PROJECT
-}
-
-enum ProjectStatus {
-  PROPOSED
-  APPROVED
-  ONGOING
-  COMPLETED
-  ON_HOLD
-  TERMINATED
-}
-
 model Consultancy {
-  id           String             @id @default(cuid())
+  id           String    @id @default(cuid())
   title        String
   client       String?
   amount       Float?
   startDate    DateTime?
   endDate      DateTime?
-  status       ConsultancyStatus @default(ONGOING)
+  status       String    @default("ONGOING")
   description  String?
   facultyId    String
   attachments  String?
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   
   faculty      Faculty  @relation(fields: [facultyId], references: [id])
   
   @@index([facultyId])
-}
-
-enum ConsultancyStatus {
-  ONGOING
-  COMPLETED
-  CANCELLED
 }
 
 // ==================== FDP & TRAINING ====================
@@ -694,12 +583,12 @@ model FDPProgram {
 // ==================== APPROVAL WORKFLOW ====================
 
 model Approval {
-  id           String         @id @default(cuid())
-  entityType   EntityType
+  id           String        @id @default(cuid())
+  entityType   String
   entityId     String
   requestedBy  String
-  currentStage ApprovalStage @default(STAFF_REVIEW)
-  status       ApprovalStatus @default(PENDING)
+  currentStage String        @default("STAFF_REVIEW")
+  status       String        @default("PENDING")
   reviewedBy   String?
   reviewedAt   DateTime?
   comments     String?
@@ -713,54 +602,18 @@ model Approval {
   @@index([currentStage])
 }
 
-enum EntityType {
-  ACTIVITY
-  RESEARCH
-  ACHIEVEMENT
-  INTERNSHIP
-  PLACEMENT
-  CERTIFICATION
-  NPTEL_COURSE
-  HACKATHON
-  STARTUP
-  PATENT
-  BOOK
-  PROJECT
-  CONSULTANCY
-  FDP
-  FACULTY_PROFILE
-  STUDENT_PROFILE
-}
-
-enum ApprovalStage {
-  STAFF_REVIEW
-  HOD_REVIEW
-  ADMIN_REVIEW
-  APPROVED
-  REJECTED
-  NEEDS_REVISION
-}
-
-enum ApprovalStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  NEEDS_REVISION
-  WITHDRAWN
-}
-
 // ==================== NOTIFICATIONS ====================
 
 model Notification {
   id          String           @id @default(cuid())
   title       String
   message     String
-  type        NotificationType @default(INFO)
+  type        String           @default("INFO")
   userId      String
   isRead      Boolean          @default(false)
   actionUrl   String?
   relatedId   String?
-  entityType  EntityType?
+  entityType  String?
   createdAt   DateTime         @default(now())
   
   user        User             @relation(fields: [userId], references: [id])
@@ -768,19 +621,6 @@ model Notification {
   @@index([userId])
   @@index([isRead])
   @@index([createdAt])
-}
-
-enum NotificationType {
-  INFO
-  SUCCESS
-  WARNING
-  ERROR
-  APPROVAL_REQUIRED
-  APPROVED
-  REJECTED
-  REMINDER
-  DEADLINE
-  SYSTEM
 }
 
 // ==================== FEEDBACK ====================
@@ -803,89 +643,316 @@ model Feedback {
   
   @@index([userId])
   @@index([category])
-  @@index([rating])
 }
 
-// ==================== FEEDBACK ENGINE (ADVANCED) ====================
+// ==================== DOCUMENTS ====================
+
+model Document {
+  id            String   @id @default(cuid())
+  title         String
+  fileName      String
+  fileUrl       String
+  fileType      String
+  fileSize      Int
+  uploadedBy    String
+  category      String   @default("OTHER")
+  entityType    String?
+  entityId      String?
+  tags          String?
+  isPublic      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([uploadedBy])
+  @@index([category])
+  @@index([entityType, entityId])
+}
+
+// ==================== AUDIT LOGS ====================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entityType String
+  entityId   String?
+  oldValue   String?
+  newValue   String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  @@index([userId])
+  @@index([action])
+  @@index([entityType])
+  @@index([createdAt])
+}
+
+// ==================== SYSTEM SETTINGS ====================
+
+model Setting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  category    String   @default("GENERAL")
+  isPublic    Boolean  @default(false)
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([key])
+  @@index([category])
+}
+
+// ==================== INSTITUTION & ACADEMIC STRUCTURE ====================
+
+model Institution {
+  id             String   @id @default(cuid())
+  name           String
+  code           String   @unique
+  address        String?
+  email          String?
+  phone          String?
+  website        String?
+  logo           String?
+  principalName  String?
+  iqacCoordinator String?
+  naacGrade      String?
+  nbaAccredited  Boolean  @default(false)
+  nirfRank       Int?
+  establishedYear Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Batch {
+  id            String    @id @default(cuid())
+  name          String
+  academicYear  String
+  startYear     Int
+  endYear       Int
+  departmentId  String
+  advisorId     String?
+  isCurrent     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  department    Department @relation(fields: [departmentId], references: [id])
+  advisor       Faculty?   @relation(fields: [advisorId], references: [id])
+  students      Student[]
+  
+  @@index([departmentId])
+  @@index([academicYear])
+}
+
+// ==================== CMS MODULE ====================
+
+model CmsConfig {
+  id               String   @id @default(cuid())
+  collegeName      String   @default("Nehru Institute of Engineering and Technology")
+  tagline          String?  @default("Autonomous Institution | Accredited by NAAC with A+ Grade")
+  logoUrl          String?
+  faviconUrl       String?
+  primaryColor     String   @default("#1e3a8a")
+  secondaryColor   String   @default("#0f766e")
+  accentColor      String   @default("#f59e0b")
+  contactEmail     String?
+  contactPhone     String?
+  address          String?
+  facebookUrl      String?
+  twitterUrl       String?
+  linkedinUrl      String?
+  youtubeUrl       String?
+  instagramUrl     String?
+  footerText       String?  @default("© 2026 Nehru Institute of Engineering and Technology. All rights reserved.")
+  heroTitle        String?  @default("Internal Quality Assurance Cell (IQAC)")
+  heroSubtitle     String?  @default("Building Excellence in Technical Education & Research")
+  heroBgUrl        String?
+  statsDepartments Int      @default(8)
+  statsFaculty     Int      @default(120)
+  statsStudents    Int      @default(2500)
+  statsResearch    Int      @default(450)
+  updatedBy        String?
+  updatedAt        DateTime @updatedAt
+  createdAt        DateTime @default(now())
+}
+
+model CmsPage {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String?
+  status      String   @default("DRAFT")
+  metaTitle   String?
+  metaDesc    String?
+  authorId    String?
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug])
+  @@index([status])
+}
+
+model CmsMenu {
+  id        String    @id @default(cuid())
+  title     String
+  url       String?
+  parentId  String?
+  order     Int       @default(0)
+  target    String    @default("_self")
+  isActive  Boolean   @default(true)
+  parent    CmsMenu?  @relation("MenuHierarchy", fields: [parentId], references: [id])
+  children  CmsMenu[] @relation("MenuHierarchy")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([parentId])
+}
+
+model CmsBanner {
+  id          String   @id @default(cuid())
+  title       String
+  imageUrl    String
+  linkUrl     String?
+  position    String   @default("HOME_TOP")
+  status      String   @default("ACTIVE")
+  order       Int      @default(0)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([position])
+  @@index([status])
+}
+
+model CmsAnnouncement {
+  id          String    @id @default(cuid())
+  title       String
+  content     String?
+  type        String    @default("INFO")
+  linkUrl     String?
+  isPinned    Boolean   @default(false)
+  status      String    @default("ACTIVE")
+  targetAudience String @default("ALL")
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+}
+
+// ==================== AUDIT & BACKUP ====================
+
+model AuditLogEntry {
+  id        String   @id @default(cuid())
+  actor     String
+  action    String
+  target    String?
+  details   String?
+  ip        String?
+  timestamp DateTime @default(now())
+
+  @@index([actor])
+  @@index([action])
+  @@index([timestamp])
+}
+
+model SystemBackup {
+  id        String   @id @default(cuid())
+  filename  String
+  path      String
+  size      Int
+  type      String   @default("FULL")
+  status    String   @default("COMPLETED")
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@index([status])
+  @@index([type])
+}
+
+// ==================== FEEDBACK ENGINE ====================
 
 model FeedbackForm {
-  id                String               @id @default(cuid())
-  title             String
-  description       String?
-  targetAudience    String               @default("ALL") // 'ALL' | 'ROLE' | 'DEPARTMENT' | 'BATCH' | 'INDIVIDUAL' | 'MULTIPLE_USERS'
-  targetRole        UserRole?
-  departmentId      String?
-  batchId           String?
-  targetUserIds     String?              // JSON array string of user IDs
-  startDate         DateTime             @default(now())
-  endDate           DateTime
-  isAnonymous       Boolean              @default(false)
-  isMandatory       Boolean              @default(false)
-  allowResubmission Boolean              @default(false)
-  status            String               @default("PUBLISHED") // 'DRAFT' | 'PUBLISHED' | 'EXPIRED' | 'CLOSED'
-  createdById       String
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
+  id             String               @id @default(cuid())
+  title          String
+  description    String?
+  targetAudience String               @default("ALL")
+  targetRole     String?
+  departmentId   String?
+  batchId        String?
+  academicYear   String?
+  semester       Int?
+  startDate      DateTime?
+  endDate        DateTime?
+  isActive       Boolean              @default(true)
+  isAnonymous    Boolean              @default(false)
+  creatorId      String
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
 
-  createdBy         User                 @relation("FeedbackFormCreator", fields: [createdById], references: [id])
-  department        Department?          @relation(fields: [departmentId], references: [id])
-  batch             Batch?               @relation(fields: [batchId], references: [id])
-  questions         FeedbackQuestion[]
-  assignments       FeedbackAssignment[]
-  responses         FeedbackResponse[]
+  creator        User                 @relation("FeedbackFormCreator", fields: [creatorId], references: [id])
+  department     Department?          @relation(fields: [departmentId], references: [id])
+  questions      FeedbackQuestion[]
+  assignments    FeedbackAssignment[]
+  responses      FeedbackResponse[]
 
-  @@index([targetAudience])
-  @@index([createdById])
-  @@index([status])
+  @@index([creatorId])
+  @@index([departmentId])
+  @@index([isActive])
 }
 
 model FeedbackQuestion {
-  id          String           @id @default(cuid())
-  formId      String
-  form        FeedbackForm     @relation(fields: [formId], references: [id], onDelete: Cascade)
-  prompt      String
-  type        String           // 'NUMBER_RATING' | 'STAR_RATING' | 'TEXT' | 'LONG_TEXT' | 'YES_NO' | 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'DROPDOWN' | 'CHECKBOX' | 'NUMBER_SCALE'
-  isRequired  Boolean          @default(true)
-  order       Int              @default(0)
-  options     String?          // JSON array string for choices e.g. ["Option 1", "Option 2"]
-  minScale    Int?             @default(1)
-  maxScale    Int?             @default(5)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id           String           @id @default(cuid())
+  formId       String
+  questionText String
+  questionType String           @default("RATING_1_5")
+  options      String?
+  isRequired   Boolean          @default(true)
+  order        Int              @default(0)
+  category     String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
-  answers     FeedbackAnswer[]
+  form         FeedbackForm     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  answers      FeedbackAnswer[]
 
   @@index([formId])
-  @@index([order])
 }
 
 model FeedbackAssignment {
-  id          String       @id @default(cuid())
-  formId      String
-  form        FeedbackForm @relation(fields: [formId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status      String       @default("PENDING") // 'PENDING' | 'COMPLETED' | 'EXPIRED'
-  completedAt DateTime?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id           String       @id @default(cuid())
+  formId       String
+  userId       String?
+  role         String?
+  departmentId String?
+  isCompleted  Boolean      @default(false)
+  completedAt  DateTime?
+  createdAt    DateTime     @default(now())
 
-  @@unique([formId, userId])
-  @@index([userId])
+  form         FeedbackForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([formId])
-  @@index([status])
+  @@index([userId])
 }
 
 model FeedbackResponse {
-  id          String           @id @default(cuid())
-  formId      String
-  form        FeedbackForm     @relation(fields: [formId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  isAnonymous Boolean          @default(false)
-  submittedAt DateTime         @default(now())
+  id           String           @id @default(cuid())
+  formId       String
+  userId       String?
+  submittedAt  DateTime         @default(now())
+  comments     String?
 
-  answers     FeedbackAnswer[]
+  form         FeedbackForm     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  user         User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  answers      FeedbackAnswer[]
 
   @@index([formId])
   @@index([userId])
@@ -894,311 +961,14 @@ model FeedbackResponse {
 model FeedbackAnswer {
   id          String           @id @default(cuid())
   responseId  String
-  response    FeedbackResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
   questionId  String
-  question    FeedbackQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  ratingValue Float?
+  ratingValue Int?
   textValue   String?
-  jsonValue   String?          // For multi-select / checkbox arrays
-  createdAt   DateTime         @default(now())
+  optionsValue String?
+
+  response    FeedbackResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  question    FeedbackQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@index([responseId])
   @@index([questionId])
-}
-
-// ==================== DOCUMENT MANAGEMENT ====================
-
-model Document {
-  id            String           @id @default(cuid())
-  name          String
-  originalName  String
-  mimeType      String
-  size          Int
-  url           String
-  uploadedBy    String
-  category      DocumentCategory @default(OTHER)
-  entityType    EntityType?
-  entityId      String?
-  version       Int             @default(1)
-  isLatest      Boolean          @default(true)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  
-  @@index([entityType, entityId])
-  @@index([uploadedBy])
-  @@index([category])
-}
-
-enum DocumentCategory {
-  REPORT
-  CERTIFICATE
-  PUBLICATION
-  PRESENTATION
-  SPREADSHEET
-  IMAGE
-  VIDEO
-  ARCHIVE
-  TEMPLATE
-  OTHER
-}
-
-// ==================== AUDIT LOGS ====================
-
-model AuditLog {
-  id         String   @id @default(cuid())
-  userId     String
-  action     String
-  entityType String?
-  entityId   String?
-  oldValue   String?
-  newValue   String?
-  ipAddress  String?
-  userAgent  String?
-  createdAt DateTime @default(now())
-  
-  user       User     @relation(fields: [userId], references: [id])
-  
-  @@index([userId])
-  @@index([action])
-  @@index([createdAt])
-}
-
-// ==================== SETTINGS & CONFIGURATION ====================
-
-model Setting {
-  id          String   @id @default(cuid())
-  key         String   @unique
-  value       String
-  category    String   @default("GENERAL")
-  description String?
-  updatedAt   DateTime @updatedAt
-  
-  @@index([key])
-  @@index([category])
-}
-
-// ==================== BATCH MANAGEMENT ====================
-
-model Batch {
-  id              String     @id @default(cuid())
-  name            String                    // e.g., "2024 Batch", "2025 Batch"
-  year            Int                       // Admission year
-  departmentId    String
-  section         String?                   // e.g., "A", "B", "C"
-  strength        Int?                       // Total students
-  advisorId       String?                   // Faculty advisor/mentor
-  description     String?
-  isActive        Boolean    @default(true)
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-  
-  department      Department @relation(fields: [departmentId], references: [id])
-  advisor         Faculty?   @relation(fields: [advisorId], references: [id])
-  students        Student[]
-  feedbackForms   FeedbackForm[]
-  
-  @@index([departmentId])
-  @@index([year])
-  @@unique([name, departmentId])
-}
-
-// ==================== INSTITUTION INFO ====================
-
-model Institution {
-  id                  String   @id @default(cuid())
-  name                String
-  shortName           String?
-  address             String?
-  city                String?
-  state               String?
-  pincode             String?
-  country             String   @default("India")
-  phone               String?
-  email               String?
-  website             String?
-  logo                String?
-  establishedYear     Int?
-  accreditation       String?
-  accreditationGrade  String?
-  affiliation         String?
-  type                String?
-  currentAcademicYear String?
-  currentSemester     String?
-  updatedAt           DateTime @updatedAt
-}
-
-// ==================== CMS / SUPER ADMIN CONFIGURATION ====================
-
-model CmsConfig {
-  id          String   @id @default(cuid())
-  key         String   @unique
-  value       String
-  category    String   @default("GENERAL")
-  description String?
-  updatedAt   DateTime @updatedAt
-  
-  @@index([key])
-  @@index([category])
-}
-
-model CmsPage {
-  id          String       @id @default(cuid())
-  title       String
-  slug        String       @unique
-  content     String?      // JSON or HTML content
-  status      PageStatus   @default(DRAFT)
-  template    String?      // Template name
-  metaTitle   String?
-  metaDescription String?
-  createdBy   String
-  updatedBy   String?
-  publishedAt DateTime?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  
-  @@index([slug])
-  @@index([status])
-}
-
-enum PageStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-}
-
-model CmsMenu {
-  id        String     @id @default(cuid())
-  title     String
-  url       String?
-  parentId  String?
-  order     Int        @default(0)
-  icon      String?
-  isVisible Boolean    @default(true)
-  openInNewTab Boolean  @default(false)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  
-  parent    CmsMenu?   @relation("MenuHierarchy", fields: [parentId], references: [id])
-  children  CmsMenu[]  @relation("MenuHierarchy")
-  
-  @@index([parentId])
-  @@index([order])
-}
-
-model CmsBanner {
-  id          String       @id @default(cuid())
-  title       String
-  subtitle    String?
-  imageUrl    String
-  linkUrl     String?
-  position    BannerPosition @default(HOME_TOP)
-  status      BannerStatus  @default(ACTIVE)
-  startDate   DateTime?
-  endDate     DateTime?
-  order       Int          @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  
-  @@index([position])
-  @@index([status])
-}
-
-enum BannerPosition {
-  HOME_TOP
-  HOME_MIDDLE
-  HOME_BOTTOM
-  LOGIN_PAGE
-  DASHBOARD_TOP
-}
-
-enum BannerStatus {
-  ACTIVE
-  INACTIVE
-  SCHEDULED
-}
-
-model CmsAnnouncement {
-  id          String            @id @default(cuid())
-  title       String
-  content     String?
-  type        AnnouncementType  @default(INFO)
-  targetRoles String?           // JSON array of roles
-  targetDepts String?           // JSON array of department IDs
-  isPinned    Boolean           @default(false)
-  status      AnnouncementStatus @default(ACTIVE)
-  startDate   DateTime?
-  endDate     DateTime?
-  createdBy   String
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  
-  @@index([status])
-  @@index([isPinned])
-  @@index([startDate])
-}
-
-enum AnnouncementType {
-  INFO
-  WARNING
-  SUCCESS
-  URGENT
-  EVENT
-  HOLIDAY
-  MAINTENANCE
-}
-
-enum AnnouncementStatus {
-  ACTIVE
-  EXPIRED
-  SCHEDULED
-  DRAFT
-}
-
-model AuditLogEntry {
-  id         String   @id @default(cuid())
-  userId     String?
-  userName   String?
-  action     String
-  module     String
-  details    String?  // JSON string with additional data
-  ipAddress  String?
-  userAgent  String?
-  createdAt DateTime @default(now())
-  
-  @@index([userId])
-  @@index([module])
-  @@index([action])
-  @@index([createdAt])
-}
-
-model SystemBackup {
-  id          String   @id @default(cuid())
-  fileName    String
-  filePath    String
-  size        Int      // in bytes
-  type        BackupType @default(FULL)
-  status      BackupStatus @default(COMPLETED)
-  createdBy   String?
-  notes       String?
-  createdAt   DateTime @default(now())
-  
-  @@index([status])
-  @@index([type])
-  @@index([createdAt])
-}
-
-enum BackupType {
-  FULL
-  USERS
-  DATA
-  SETTINGS
-  MEDIA
-}
-
-enum BackupStatus {
-  PENDING
-  IN_PROGRESS
-  COMPLETED
-  FAILED
-  RESTORED
 }

@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
         include: {
           user: { select: { id: true, email: true, name: true, role: true, phone: true, status: true, isActive: true } },
           department: { select: { id: true, name: true, code: true } },
-          batchInfo: { select: { id: true, name: true, year: true, section: true } },
+          batchInfo: { select: { id: true, name: true, academicYear: true } },
         },
         skip: (page - 1) * limit,
         take: limit,

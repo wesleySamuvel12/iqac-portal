@@ -14,7 +14,7 @@ export async function GET(
         user: { select: { id: true, email: true, name: true, role: true, phone: true, isActive: true } },
         department: { select: { id: true, name: true, code: true } },
         batchInfo: { 
-          select: { id: true, name: true, year: true, section: true },
+          select: { id: true, name: true, academicYear: true },
           include: { advisor: { include: { user: { select: { name: true } } } } }
         },
         achievements: true,
